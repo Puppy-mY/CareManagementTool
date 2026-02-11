@@ -1014,17 +1014,18 @@ def generate_assessment_excel(assessment):
             'sitting_can_do': 'できる',
             'sitting_self_support': '自分の手で支えればできる',
             'sitting_support_needed': '支えてもらえればできる',
+            'sitting_cannot': 'できない',
             # 立位（standing）
-            'standing_one_minute': '1分間できる',
-            'standing_support_self': '支えがあればできる',
             'standing_no_support': '支えなしでできる',
             'standing_with_something': '何か支えがあればできる',
+            'standing_cannot': 'できない',
             # 移乗・移動（transfer, indoor_mobility, outdoor_mobility）
             'mobility_independent': '自立',
             'mobility_supervision': '見守り',
             'mobility_partial_assistance': '一部介助',
             'mobility_full_assistance': '全介助',
             # 移動用具（indoor_mobility_equipment, outdoor_mobility_equipment）
+            'equipment_none': 'なし',
             'equipment_wheelchair': '車椅子',
             'equipment_walker': '歩行器',
             'equipment_cane': '杖',
@@ -1182,11 +1183,13 @@ def generate_assessment_excel(assessment):
             'modification_need_not_needed': 'なし',
             # 視力（vision）
             'vision_normal': '正常',
-            'vision_poor': '不良',
+            'vision_large_letters_ok': '大きい字は可',
+            'vision_barely_visible': 'ほぼ見えない',
             'vision_blind': '失明',
             # 聴力（hearing）
             'hearing_normal': '正常',
-            'hearing_poor': '不良',
+            'hearing_loud_voice_ok': '大きい声は可',
+            'hearing_barely_audible': 'ほぼ聞こえない',
             'hearing_deaf': '聞こえない',
             # 眼鏡等（uses_glasses）
             'glasses_yes': '使用',
@@ -1385,29 +1388,38 @@ def generate_assessment_excel(assessment):
         else:
             safe_write_cell(coords.get('burden_ratio'), '')
 
-        if assessment.insurance_info:
-            # 医療保険は利用者登録の医療保険種別を使用
-            safe_write_cell(coords.get('medical_insurance'), assessment.client.medical_insurance_type)
+        # 保険関連情報（利用者モデルから取得）
+        client = assessment.client
 
-            # 身体障がい者手帳（値がある場合のみ出力）
-            disability_handbook = assessment.insurance_info.get('disability_handbook')
-            if disability_handbook:
+        # 医療保険
+        safe_write_cell(coords.get('medical_insurance'), client.medical_insurance_type)
+
+        # 身体障がい者手帳
+        if client.disability_handbook:
+            if client.disability_handbook_type:
+                safe_write_cell(coords.get('disability_handbook'), f'あり（{client.disability_handbook_type}）')
+            else:
                 safe_write_cell(coords.get('disability_handbook'), 'あり')
+        else:
+            safe_write_cell(coords.get('disability_handbook'), 'なし')
 
-            safe_write_cell(coords.get('disability_type'), assessment.insurance_info.get('disability_type', ''))
+        # 難病申請
+        if client.difficult_disease:
+            safe_write_cell(coords.get('difficult_disease'), 'あり')
+        else:
+            safe_write_cell(coords.get('difficult_disease'), 'なし')
 
-            # 難病申請（値がある場合のみ出力）
-            difficult_disease = assessment.insurance_info.get('difficult_disease')
-            if difficult_disease:
-                safe_write_cell(coords.get('difficult_disease'), 'あり')
+        # 生活保護
+        if client.life_protection:
+            safe_write_cell(coords.get('life_protection'), 'あり')
+        else:
+            safe_write_cell(coords.get('life_protection'), 'なし')
 
-            # 生活保護（値がある場合のみ出力）
-            life_protection = assessment.insurance_info.get('life_protection')
-            if life_protection:
-                safe_write_cell(coords.get('life_protection'), 'あり')
-
-            safe_write_cell(coords.get('disability_level'), assessment.insurance_info.get('disability_level', ''))
-            safe_write_cell(coords.get('dementia_level'), assessment.insurance_info.get('dementia_level', ''))
+        # 障がい者日常生活自立度・認知症日常生活自立度
+        if client.disability_level:
+            safe_write_cell(coords.get('disability_level'), client.get_disability_level_display())
+        if client.dementia_level:
+            safe_write_cell(coords.get('dementia_level'), client.get_dementia_level_display())
 
         # 家族状況（利用者登録から取得）
         safe_write_cell(coords.get('family_member1_name'), assessment.client.family_name1)
@@ -1763,7 +1775,16 @@ def generate_assessment_excel(assessment):
             safe_write_cell(coords.get('personal_hopes'), info.get('personal_hopes', ''))
             safe_write_cell(coords.get('family_hopes'), info.get('family_hopes', ''))
             safe_write_cell(coords.get('life_history'), info.get('life_history', ''))
-            safe_write_cell(coords.get('notes'), info.get('notes', ''))
+            # 特記・備考（住居備考があれば追記）
+            notes_parts = []
+            notes_text = info.get('notes', '')
+            if notes_text:
+                notes_parts.append(notes_text)
+            if assessment.living_situation:
+                housing_notes = assessment.living_situation.get('housing_notes', '')
+                if housing_notes:
+                    notes_parts.append(f'【住居備考】{housing_notes}')
+            safe_write_cell(coords.get('notes'), '\n'.join(notes_parts) if notes_parts else '')
 
         # 身体状況
         if assessment.physical_status:
@@ -1831,7 +1852,15 @@ def generate_assessment_excel(assessment):
             uses_hearing_aid = assessment.health_status.get('uses_hearing_aid', '')
             if uses_hearing_aid:
                 safe_write_cell(coords.get('uses_hearing_aid'), get_choice_label(f'hearing_aid_{uses_hearing_aid}'))
-            safe_write_cell(coords.get('physical_notes'), physical.get('physical_notes', ''))
+            # 身体状況メモ（麻痺・痛みの詳細があれば追記）
+            physical_notes_parts = []
+            physical_notes_text = physical.get('physical_notes', '')
+            if physical_notes_text:
+                physical_notes_parts.append(physical_notes_text)
+            paralysis_pain_details = physical.get('paralysis_pain_details', '')
+            if paralysis_pain_details:
+                physical_notes_parts.append(f'【麻痺・痛み】{paralysis_pain_details}')
+            safe_write_cell(coords.get('physical_notes'), '\n'.join(physical_notes_parts) if physical_notes_parts else '')
 
         # 基本動作
         if assessment.basic_activities:
@@ -1890,14 +1919,17 @@ def generate_assessment_excel(assessment):
             if meal_main:
                 safe_write_cell(coords.get('meal_form_main'), get_choice_label(f'meal_main_{meal_main}'))
 
-            # 副食の変換（softは「一口大」、他は通常の変換）
+            # 副食の変換
             meal_side = adl.get('meal_form_side', '')
-            if meal_side == 'soft':
-                safe_write_cell(coords.get('meal_form_side'), '一口大')
-            elif meal_side == 'paste':
-                safe_write_cell(coords.get('meal_form_side'), 'キザミ')
-            else:
-                safe_write_cell(coords.get('meal_form_side'), get_choice_label(meal_side))
+            meal_side_labels = {
+                'normal': '普通',
+                'soft': '一口大',
+                'minced': 'キザミ',
+                'paste': 'ペースト',
+                'paste_form': 'ペースト',
+            }
+            if meal_side:
+                safe_write_cell(coords.get('meal_form_side'), meal_side_labels.get(meal_side, meal_side))
 
             water_thick = adl.get('water_thickening', '')
             if water_thick:
@@ -2044,7 +2076,15 @@ def generate_assessment_excel(assessment):
             communication = cognitive.get('communication', '')
             if communication:
                 safe_write_cell(coords.get('communication'), get_choice_label(f'communication_{communication}'))
-            safe_write_cell(coords.get('cognitive_notes'), cognitive.get('cognitive_notes', ''))
+            # 認知機能メモ（認知症詳細があれば追記）
+            cognitive_notes_parts = []
+            cognitive_notes_text = cognitive.get('cognitive_notes', '')
+            if cognitive_notes_text:
+                cognitive_notes_parts.append(cognitive_notes_text)
+            dementia_details = cognitive.get('dementia_details', '')
+            if dementia_details:
+                cognitive_notes_parts.append(f'【認知症詳細】{dementia_details}')
+            safe_write_cell(coords.get('cognitive_notes'), '\n'.join(cognitive_notes_parts) if cognitive_notes_parts else '')
 
         # HTTPレスポンスの準備
         response = HttpResponse(

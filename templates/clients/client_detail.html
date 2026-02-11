@@ -575,11 +575,29 @@
                             <tbody>
                                 <tr>
                                     <th class="bg-light text-muted align-middle" style="width: 25%;">障害高齢者の<br>日常生活自立度<br>（寝たきり度）</th>
-                                    <td class="align-middle text-danger">データ無</td>
+                                    <td class="align-middle">{{ client.get_disability_level_display|default:"未設定" }}</td>
                                 </tr>
                                 <tr>
                                     <th class="bg-light text-muted align-middle">認知症高齢者の<br>日常生活自立度</th>
-                                    <td class="align-middle text-danger">データ無</td>
+                                    <td class="align-middle">{{ client.get_dementia_level_display|default:"未設定" }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="bg-light text-muted align-middle">身体障がい者手帳</th>
+                                    <td class="align-middle">
+                                        {% if client.disability_handbook %}
+                                            あり{% if client.disability_handbook_type %}（{{ client.disability_handbook_type }}）{% endif %}
+                                        {% else %}
+                                            なし
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th class="bg-light text-muted align-middle">難病申請</th>
+                                    <td class="align-middle">{% if client.difficult_disease %}あり{% else %}なし{% endif %}</td>
+                                </tr>
+                                <tr>
+                                    <th class="bg-light text-muted align-middle">生活保護</th>
+                                    <td class="align-middle">{% if client.life_protection %}あり{% else %}なし{% endif %}</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -683,17 +701,15 @@
                                         <td>{{ assessment.get_interview_location_display }}</td>
                                         <td>
                                             <div class="btn-group btn-group-sm d-flex justify-content-end">
+                                                <a href="{% url 'assessment_edit' assessment.pk %}" class="btn btn-outline-secondary btn-sm btn-edit" style="transition: all 0.2s ease;">
+                                                    <i class="fas fa-edit me-1"></i>編集
+                                                </a>
                                                 <button type="button" class="btn btn-outline-secondary btn-sm btn-preview" style="transition: all 0.2s ease; font-size: 0.7rem; line-height: 1.2;" disabled>
                                                     プレビュー<br>開発中
                                                 </button>
                                                 <a href="{% url 'assessment_excel_export' assessment.pk %}" class="btn btn-outline-secondary btn-sm btn-excel" style="transition: all 0.2s ease;">
                                                     <i class="fas fa-file-excel me-1"></i>Excel
                                                 </a>
-                                                {% if assessment.status == 'draft' %}
-                                                <a href="{% url 'assessment_edit' assessment.pk %}" class="btn btn-outline-secondary btn-sm btn-edit" style="transition: all 0.2s ease;">
-                                                    <i class="fas fa-edit me-1"></i>編集
-                                                </a>
-                                                {% endif %}
                                                 <button type="button" class="btn btn-outline-secondary btn-sm btn-delete" style="transition: all 0.2s ease;" onclick="deleteAssessment({{ assessment.pk }})">
                                                     <i class="fas fa-trash me-1"></i>削除
                                                 </button>

@@ -46,6 +46,17 @@
         white-space: normal;
     }
 
+    /* 編集ボタン - オレンジ系 */
+    .btn-group a.btn-edit:hover,
+    .btn-group .btn.btn-edit:hover,
+    .btn-group .btn-outline-secondary.btn-edit:hover {
+        background-color: #ffe5cc !important;
+        border-color: #fd7e14 !important;
+        color: #fd7e14 !important;
+        transform: translateY(-1px) !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+    }
+
     /* Excelボタン - 緑っぽい色 */
     a.btn-excel:hover,
     .btn.btn-excel:hover,
@@ -247,6 +258,9 @@
                                     <td class="assessor-col">{{ assessment.assessor.username }}</td>
                                     <td class="actions-col">
                                         <div class="btn-group btn-group-sm d-flex justify-content-end">
+                                            <a href="{% url 'assessment_edit' assessment.pk %}" class="btn btn-outline-secondary btn-sm btn-edit" style="transition: all 0.2s ease;">
+                                                <i class="fas fa-edit me-1"></i>編集
+                                            </a>
                                             <button type="button" class="btn btn-outline-secondary btn-sm btn-preview" style="transition: all 0.2s ease; font-size: 0.7rem; line-height: 1.2;" disabled>
                                                 プレビュー<br>開発中
                                             </button>

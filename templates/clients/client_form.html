@@ -257,10 +257,52 @@
                         
                         <div style="border-top: 1px solid #dee2e6; width: 50%; margin: 1rem 0;"></div>
                         
-                        <div class="row g-3">
+                        <div class="row g-3 mb-3">
                             <div class="col-lg-6 col-md-6 col-sm-6">
                                 <label for="{{ form.care_burden.id_for_label }}" class="form-label">負担割合</label>
                                 {% bootstrap_field form.care_burden show_label=False %}
+                            </div>
+                        </div>
+
+                        <div style="border-top: 1px solid #dee2e6; width: 50%; margin: 1rem 0;"></div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-lg-6 col-md-6 col-sm-6">
+                                <label for="{{ form.disability_level.id_for_label }}" class="form-label">障がい者日常生活自立度</label>
+                                {% bootstrap_field form.disability_level show_label=False %}
+                            </div>
+                            <div class="col-lg-6 col-md-6 col-sm-6">
+                                <label for="{{ form.dementia_level.id_for_label }}" class="form-label">認知症日常生活自立度</label>
+                                {% bootstrap_field form.dementia_level show_label=False %}
+                            </div>
+                        </div>
+
+                        <div style="border-top: 1px solid #dee2e6; width: 50%; margin: 1rem 0;"></div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-lg-4 col-md-4 col-sm-6">
+                                <div class="form-check mt-2">
+                                    {{ form.disability_handbook }}
+                                    <label class="form-check-label" for="{{ form.disability_handbook.id_for_label }}">身体障がい者手帳あり</label>
+                                </div>
+                            </div>
+                            <div class="col-lg-4 col-md-4 col-sm-6">
+                                <label for="{{ form.disability_handbook_type.id_for_label }}" class="form-label">障害種別</label>
+                                {% bootstrap_field form.disability_handbook_type show_label=False %}
+                            </div>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-lg-4 col-md-4 col-sm-6">
+                                <div class="form-check mt-2">
+                                    {{ form.difficult_disease }}
+                                    <label class="form-check-label" for="{{ form.difficult_disease.id_for_label }}">難病申請あり</label>
+                                </div>
+                            </div>
+                            <div class="col-lg-4 col-md-4 col-sm-6">
+                                <div class="form-check mt-2">
+                                    {{ form.life_protection }}
+                                    <label class="form-check-label" for="{{ form.life_protection.id_for_label }}">生活保護あり</label>
+                                </div>
                             </div>
                         </div>
                     </div>

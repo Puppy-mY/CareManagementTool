@@ -11,6 +11,8 @@ class ClientForm(forms.ModelForm):
             # 保険情報
             'insurance_number', 'care_level', 'certification_date', 'certification_period_start', 'certification_period_end',
             'care_burden',
+            'disability_level', 'dementia_level',
+            'disability_handbook', 'disability_handbook_type', 'difficult_disease', 'life_protection',
             'medical_insurance_type', 'medical_insurer_name_issuer', 'medical_insurer_number', 'medical_insurance_symbol', 'medical_insurance_number',
             # 家族情報（1人目）
             'family_name1', 'family_relationship1', 'family_address1', 'family_contact1',
@@ -42,7 +44,13 @@ class ClientForm(forms.ModelForm):
             'certification_period_start': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'certification_period_end': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'care_burden': forms.Select(attrs={'class': 'form-select'}),
-            
+            'disability_level': forms.Select(attrs={'class': 'form-select'}),
+            'dementia_level': forms.Select(attrs={'class': 'form-select'}),
+            'disability_handbook': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'disability_handbook_type': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '例: 肢体不自由'}),
+            'difficult_disease': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'life_protection': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+
             # 医療保険情報
             'medical_insurance_type': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '例: 国民健康保険'}),
             'medical_insurer_name_issuer': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '例: ○○市'}),

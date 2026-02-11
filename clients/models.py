@@ -27,6 +27,31 @@ class Client(models.Model):
         ('3割負担', '3割負担'),
     ]
 
+    DISABILITY_LEVEL_CHOICES = [
+        ('', '選択してください'),
+        ('independent', '自立'),
+        ('J1', 'J1'),
+        ('J2', 'J2'),
+        ('A1', 'A1'),
+        ('A2', 'A2'),
+        ('B1', 'B1'),
+        ('B2', 'B2'),
+        ('C1', 'C1'),
+        ('C2', 'C2'),
+    ]
+
+    DEMENTIA_LEVEL_CHOICES = [
+        ('', '選択してください'),
+        ('independent', '自立'),
+        ('I', 'I'),
+        ('IIa', 'IIa'),
+        ('IIb', 'IIb'),
+        ('IIIa', 'IIIa'),
+        ('IIIb', 'IIIb'),
+        ('IV', 'IV'),
+        ('M', 'M'),
+    ]
+
     RELATIONSHIP_CHOICES = [
         ('spouse', '配偶者'),
         ('child', '子'),
@@ -78,6 +103,16 @@ class Client(models.Model):
     burden_period_start = models.DateField('負担割合期間（開始）', blank=True, null=True)
     burden_period_end = models.DateField('負担割合期間（終了）', blank=True, null=True)
     
+    # 障がい・認知症自立度
+    disability_level = models.CharField('障がい者日常生活自立度', max_length=20, choices=DISABILITY_LEVEL_CHOICES, blank=True)
+    dementia_level = models.CharField('認知症日常生活自立度', max_length=20, choices=DEMENTIA_LEVEL_CHOICES, blank=True)
+
+    # 手帳・申請・保護
+    disability_handbook = models.BooleanField('身体障がい者手帳', default=False)
+    disability_handbook_type = models.CharField('障害種別', max_length=100, blank=True)
+    difficult_disease = models.BooleanField('難病申請', default=False)
+    life_protection = models.BooleanField('生活保護', default=False)
+
     # 医療保険情報
     medical_insurance_type = models.CharField('医療保険種類', max_length=100, blank=True)
     medical_insurer_name_issuer = models.CharField('保険者の名称及び交付者名', max_length=200, blank=True)
