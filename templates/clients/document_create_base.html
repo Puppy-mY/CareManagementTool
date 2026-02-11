@@ -1,0 +1,782 @@
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+
+{% block title %}{{ document_name }} - {{ client.name }}様 - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="mb-4">
+                <!-- タイトル行 -->
+                <div style="margin-bottom: 2rem;">
+                    <h1 style="font-size: clamp(1.2rem, 3vw, 2rem); margin: 0; word-break: keep-all; overflow-wrap: break-word;">
+                        <i class="fas fa-file-alt"></i> {{ document_name }}
+                    </h1>
+                </div>
+                <!-- 利用者名と戻るボタンの行 -->
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="text-muted" style="font-size: 1.2rem; font-weight: 500;">
+                        <i class="fas fa-user"></i> {{ client.name }}様
+                    </div>
+                    <div>
+                        <button type="button" class="btn btn-outline-secondary btn-back" onclick="goBack()" style="transition: all 0.2s ease;">
+                            <i class="fas fa-arrow-left"></i> 戻る
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 書類作成フォーム -->
+    <div class="row">
+        <div class="col-12">
+            <form method="post" id="documentForm">
+                {% csrf_token %}
+                <input type="hidden" name="action" id="actionField" value="">
+
+                <!-- 利用者基本情報（アコーディオン） -->
+                <div class="accordion mb-4" id="basicInfoAccordion">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="basicInfoHeading">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#basicInfoCollapse" aria-expanded="false" aria-controls="basicInfoCollapse">
+                                <i class="fas fa-user-circle me-2"></i>
+                                <strong>利用者基本情報（自動反映）</strong>
+                                <small class="text-muted ms-2">※利用者データから自動入力</small>
+                            </button>
+                        </h2>
+                        <div id="basicInfoCollapse" class="accordion-collapse collapse" aria-labelledby="basicInfoHeading" data-bs-parent="#basicInfoAccordion">
+                            <div class="accordion-body">
+                                <!-- 氏名・フリガナ・生年月日（横並び） -->
+                                <div class="row g-3 mb-3">
+                                    <div class="col-md-4">
+                                        <label class="form-label">氏名 <span class="text-danger">*</span></label>
+                                        <input type="text" name="client_name" class="form-control" value="{{ initial_data.client_name|default:client.name }}" required readonly>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">ふりがな <span class="text-danger">*</span></label>
+                                        <input type="text" name="client_furigana" class="form-control" value="{{ initial_data.client_furigana|default:client.furigana }}" required readonly placeholder="ひらがなで入力">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">生年月日 <span class="text-danger">*</span></label>
+                                        <input type="date" name="client_birth_date" class="form-control" value="{% if initial_data.client_birth_date %}{{ initial_data.client_birth_date }}{% else %}{{ client.birth_date|date:'Y-m-d' }}{% endif %}" required readonly>
+                                    </div>
+                                </div>
+
+                                <!-- 住所（新規追加） -->
+                                <div class="row g-3 mb-3">
+                                    <div class="col-12">
+                                        <label class="form-label">住所 <span class="text-danger">*</span></label>
+                                        <input type="text" name="client_address" class="form-control" value="{{ initial_data.client_address|default:client.address }}" required readonly placeholder="住所を入力してください">
+                                    </div>
+                                </div>
+                                <!-- 被保険者番号・担当ケアマネ（横並び） -->
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">介護保険被保険者番号 <span class="text-danger">*</span></label>
+                                        <input type="text" name="client_insurance_number" class="form-control" value="{{ initial_data.client_insurance_number|default:client.insurance_number }}" required readonly>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">ケアマネ担当者名 <span class="text-danger">*</span></label>
+                                        <input type="text" name="care_manager_name" class="form-control" placeholder="担当ケアマネジャー名を入力" required value="{% if user.is_authenticated %}{{ user.profile.get_full_name }}{% endif %}">
+                                        <small class="text-muted">※ログインユーザーから自動入力・必要に応じて編集可能</small>
+                                    </div>
+                                </div>
+
+                                <!-- 編集ボタン -->
+                                <div class="mt-3 text-end">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openClientMasterDrawer();">
+                                        <i class="fas fa-edit me-1"></i>利用者マスタデータを編集
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 手動入力項目 -->
+                <div class="card mb-4">
+                    <div class="card-header d-flex align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-edit me-2"></i>入力項目（手動入力）</h5>
+                        <small class="text-muted ms-2">※以下の項目をご入力ください</small>
+                    </div>
+                    <div class="card-body">
+                        {% block provider_section %}{% endblock %}
+
+                        <!-- 届出を行う区分 -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-12">
+                                <label class="form-label">届出を行う区分 <span class="text-danger">*</span></label>
+                                <div class="mt-1">
+                                    <small class="text-muted">現在ケアマネがいる場合は「変更」、いない場合は「新規」を選択</small>
+                                </div>
+                                <div class="mt-2">
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" name="notification_type" id="notification_new" value="new" style="border-radius: 3px;" {% if initial_data.notification_type and 'new' in initial_data.notification_type %}checked{% endif %}>
+                                        <label class="form-check-label" for="notification_new">
+                                            新規（現在ケアマネジャーがいない）
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" name="notification_type" id="notification_change" value="change" style="border-radius: 3px;" {% if initial_data.notification_type and 'change' in initial_data.notification_type %}checked{% endif %}>
+                                        <label class="form-check-label" for="notification_change">
+                                            変更（現在のケアマネジャーから変更）
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 区切り線 -->
+                        <div style="border-top: 1px solid #dee2e6; width: 50%; margin: 1.5rem 0;"></div>
+
+                        <!-- 依頼事由（子テンプレートでオーバーライド） -->
+                        {% block request_reason_section %}{% endblock %}
+
+                        <!-- 区切り線 -->
+                        <div style="border-top: 1px solid #dee2e6; width: 50%; margin: 1.5rem 0;"></div>
+
+                        <!-- 有効開始（変更）日 -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-12">
+                                <label class="form-label">有効開始（変更）日 <span class="text-danger">*</span></label>
+                                <div class="mt-1">
+                                    <small class="text-muted">サービス開始予定日を入力してください</small>
+                                </div>
+                                <div class="mt-2">
+                                    <input type="date" name="effective_start_date" class="form-control" required style="max-width: 200px;" value="{{ initial_data.effective_start_date|default:'' }}">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 区切り線 -->
+                        <div style="border-top: 1px solid #dee2e6; width: 50%; margin: 1.5rem 0;"></div>
+
+                        <!-- 介護保険負担割合証の交付について -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-12">
+                                <label class="form-label">介護保険負担割合証の交付について</label>
+                                <div class="mt-1">
+                                    <small class="text-muted">※現在有効な負担割合証が発行されておらず暫定ケアプランにおいてサービスを開始する場合に限り、いずれかに☑をしてください。</small>
+                                </div>
+                                <div class="mt-3">
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" name="burden_delivery_method" id="burden_care_manager" value="care_manager" style="border-radius: 3px;" {% if initial_data.burden_delivery_method == 'care_manager' %}checked{% endif %}>
+                                        <label class="form-check-label" for="burden_care_manager">
+                                            ケアプランを作成依頼する事業者が受領することに同意します。
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" name="burden_delivery_method" id="burden_mail" value="mail" style="border-radius: 3px;" {% if initial_data.burden_delivery_method == 'mail' %}checked{% endif %}>
+                                        <label class="form-check-label" for="burden_mail">
+                                            自宅への郵送を希望します。
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" name="burden_delivery_method" id="burden_with_result" value="with_result" style="border-radius: 3px;" {% if initial_data.burden_delivery_method == 'with_result' %}checked{% endif %}>
+                                        <label class="form-check-label" for="burden_with_result">
+                                            認定結果と同時に受領することを希望します。
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- アクションボタン -->
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <button type="button" class="btn btn-outline-secondary btn-back px-4 py-2" onclick="goBack()" style="transition: all 0.2s ease;">
+                                    <i class="fas fa-arrow-left me-1"></i> 戻る
+                                </button>
+                            </div>
+                            <div>
+                                <button type="button" class="btn btn-outline-secondary excel-btn px-4 py-2 me-2" onclick="excelDocument()" style="transition: all 0.2s ease;">
+                                    <i class="fas fa-file-excel me-1"></i> Excel出力
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary save-btn px-5 py-2" onclick="saveDocument()" style="transition: all 0.2s ease;">
+                                    <i class="fas fa-save me-1"></i> 保存して戻る
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- マスタデータ編集ドロワー -->
+<div id="masterDataDrawer" class="master-drawer">
+    <div class="master-drawer-content">
+        <div class="master-drawer-header">
+            <h5 id="drawerTitle"><i class="fas fa-edit me-2"></i>マスタデータ編集</h5>
+            <button type="button" class="btn-close-drawer" onclick="closeMasterDrawer()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="master-drawer-body" id="drawerBody">
+            <!-- 動的にコンテンツが挿入されます -->
+        </div>
+        <div class="master-drawer-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeMasterDrawer()">
+                <i class="fas fa-times me-1"></i>キャンセル
+            </button>
+            <button type="button" class="btn btn-primary" onclick="saveMasterData()">
+                <i class="fas fa-save me-1"></i>保存
+            </button>
+        </div>
+    </div>
+</div>
+<div id="drawerOverlay" class="drawer-overlay" onclick="closeMasterDrawer()"></div>
+
+<script>
+// グローバル変数
+let currentDrawerType = null; // 'client' or 'office'
+
+// 戻るボタンの機能
+function goBack() {
+    if (confirm('入力中のデータがすべて失われます。本当に戻りますか？')) {
+        window.location.href = "{% url 'client_list' %}";
+    }
+}
+
+// ドロワーを開く
+function openMasterDrawer() {
+    document.getElementById('masterDataDrawer').classList.add('open');
+    document.getElementById('drawerOverlay').classList.add('show');
+    document.body.style.overflow = 'hidden';
+}
+
+// ドロワーを閉じる
+function closeMasterDrawer() {
+    document.getElementById('masterDataDrawer').classList.remove('open');
+    document.getElementById('drawerOverlay').classList.remove('show');
+    document.body.style.overflow = '';
+    currentDrawerType = null;
+}
+
+// 利用者マスタデータ編集ドロワーを開く
+function openClientMasterDrawer() {
+    currentDrawerType = 'client';
+    document.getElementById('drawerTitle').innerHTML = '<i class="fas fa-user-edit me-2"></i>利用者マスタデータ編集';
+
+    const clientName = document.querySelector('input[name="client_name"]').value;
+    const clientFurigana = document.querySelector('input[name="client_furigana"]').value;
+    const clientBirthDate = document.querySelector('input[name="client_birth_date"]').value;
+    const clientAddress = document.querySelector('input[name="client_address"]').value;
+    const clientInsuranceNumber = document.querySelector('input[name="client_insurance_number"]').value;
+
+    const drawerBody = document.getElementById('drawerBody');
+    drawerBody.innerHTML = `
+        <div class="mb-3">
+            <label class="form-label">氏名 <span class="text-danger">*</span></label>
+            <input type="text" id="edit_client_name" class="form-control" value="${clientName}" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">ふりがな <span class="text-danger">*</span></label>
+            <input type="text" id="edit_client_furigana" class="form-control" value="${clientFurigana}" required placeholder="ひらがなで入力">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">生年月日 <span class="text-danger">*</span></label>
+            <input type="date" id="edit_client_birth_date" class="form-control" value="${clientBirthDate}" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">住所 <span class="text-danger">*</span></label>
+            <input type="text" id="edit_client_address" class="form-control" value="${clientAddress}" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">介護保険被保険者番号 <span class="text-danger">*</span></label>
+            <input type="text" id="edit_client_insurance_number" class="form-control" value="${clientInsuranceNumber}" required>
+        </div>
+    `;
+
+    openMasterDrawer();
+}
+
+// 事業所マスタデータ編集ドロワーを開く
+function openOfficeMasterDrawer() {
+    currentDrawerType = 'office';
+    document.getElementById('drawerTitle').innerHTML = '<i class="fas fa-building me-2"></i>事業所マスタデータ編集';
+
+    const officeNumber = document.querySelector('input[name="kyotaku_office_number"]').value;
+    const postalCode = document.querySelector('input[name="kyotaku_postal_code"]').value;
+    const address = document.querySelector('input[name="kyotaku_address"]').value;
+    const phone = document.querySelector('input[name="kyotaku_phone"]').value;
+
+    const drawerBody = document.getElementById('drawerBody');
+    drawerBody.innerHTML = `
+        <div class="mb-3">
+            <label class="form-label">事業所番号 <span class="text-danger">*</span></label>
+            <input type="text" id="edit_office_number" class="form-control" value="${officeNumber}" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">郵便番号 <span class="text-danger">*</span></label>
+            <input type="text" id="edit_postal_code" class="form-control" value="${postalCode}" required placeholder="000-0000" maxlength="8">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">住所 <span class="text-danger">*</span></label>
+            <input type="text" id="edit_address" class="form-control" value="${address}" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">電話番号 <span class="text-danger">*</span></label>
+            <input type="text" id="edit_phone" class="form-control" value="${phone}" required>
+        </div>
+    `;
+
+    openMasterDrawer();
+}
+
+// マスタデータを保存
+function saveMasterData() {
+    if (currentDrawerType === 'client') {
+        saveClientMasterData();
+    } else if (currentDrawerType === 'office') {
+        saveOfficeMasterData();
+    }
+}
+
+// 利用者マスタデータを保存
+function saveClientMasterData() {
+    const clientId = {{ client.id }};
+    const data = {
+        name: document.getElementById('edit_client_name').value,
+        furigana: document.getElementById('edit_client_furigana').value,
+        birth_date: document.getElementById('edit_client_birth_date').value,
+        address: document.getElementById('edit_client_address').value,
+        insurance_number: document.getElementById('edit_client_insurance_number').value
+    };
+
+    // バリデーション
+    if (!data.name || !data.furigana || !data.birth_date || !data.address || !data.insurance_number) {
+        alert('すべての必須項目を入力してください。');
+        return;
+    }
+
+    // Ajax送信
+    fetch(`/clients/${clientId}/update-master/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            // 書類作成画面のreadonly項目を更新
+            document.querySelector('input[name="client_name"]').value = data.name;
+            document.querySelector('input[name="client_furigana"]').value = data.furigana;
+            document.querySelector('input[name="client_birth_date"]').value = data.birth_date;
+            document.querySelector('input[name="client_address"]').value = data.address;
+            document.querySelector('input[name="client_insurance_number"]').value = data.insurance_number;
+
+            closeMasterDrawer();
+            alert('利用者マスタデータを更新しました。');
+        } else {
+            alert('エラー: ' + (result.error || '更新に失敗しました。'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('更新中にエラーが発生しました。');
+    });
+}
+
+// 事業所マスタデータを保存
+function saveOfficeMasterData() {
+    const officeId = {% if user.profile.home_care_office %}{{ user.profile.home_care_office.id }}{% else %}null{% endif %};
+
+    if (!officeId) {
+        alert('事業所情報が見つかりません。');
+        return;
+    }
+
+    const data = {
+        office_number: document.getElementById('edit_office_number').value,
+        postal_code: document.getElementById('edit_postal_code').value,
+        address: document.getElementById('edit_address').value,
+        phone: document.getElementById('edit_phone').value
+    };
+
+    // バリデーション
+    if (!data.office_number || !data.postal_code || !data.address || !data.phone) {
+        alert('すべての必須項目を入力してください。');
+        return;
+    }
+
+    // Ajax送信
+    fetch(`/clients/office/${officeId}/update-master/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            // 書類作成画面のreadonly項目を更新
+            document.querySelector('input[name="kyotaku_office_number"]').value = data.office_number;
+            document.querySelector('input[name="kyotaku_postal_code"]').value = data.postal_code;
+            document.querySelector('input[name="kyotaku_address"]').value = data.address;
+            document.querySelector('input[name="kyotaku_phone"]').value = data.phone;
+
+            closeMasterDrawer();
+            alert('事業所マスタデータを更新しました。');
+        } else {
+            alert('エラー: ' + (result.error || '更新に失敗しました。'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('更新中にエラーが発生しました。');
+    });
+}
+
+// 保存機能
+function saveDocument() {
+    console.log('保存ボタンがクリックされました');
+    if (validateForm()) {
+        document.getElementById('actionField').value = 'save';
+        document.getElementById('documentForm').submit();
+    }
+}
+
+// Excel出力機能
+function excelDocument() {
+    console.log('Excel出力ボタンがクリックされました');
+    if (validateForm()) {
+        document.getElementById('actionField').value = 'excel';
+        const form = document.getElementById('documentForm');
+        form.target = '_self';
+        form.submit();
+    }
+}
+
+// 基本バリデーション（子テンプレートで拡張可能）
+function validateFormBase() {
+    const clientNameEl = document.querySelector('input[name="client_name"]');
+    const careManagerNameEl = document.querySelector('input[name="care_manager_name"]');
+    const notificationType = document.querySelector('input[name="notification_type"]:checked');
+    const requestReason = document.querySelector('input[name="request_reason"]:checked');
+    const effectiveDateEl = document.querySelector('input[name="effective_start_date"]');
+
+    // フォーカス移動用関数
+    const focusAndScroll = function(element) {
+        if (element) {
+            element.focus();
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    };
+
+    if (!clientNameEl.value.trim()) {
+        alert('利用者氏名を入力してください。');
+        focusAndScroll(clientNameEl);
+        return false;
+    }
+
+    if (!careManagerNameEl.value.trim()) {
+        alert('ケアマネ担当者名を入力してください。');
+        focusAndScroll(careManagerNameEl);
+        return false;
+    }
+
+    if (!notificationType) {
+        alert('届出を行う区分を選択してください。');
+        const firstNotification = document.querySelector('input[name="notification_type"]');
+        focusAndScroll(firstNotification);
+        return false;
+    }
+
+    if (!requestReason) {
+        alert('依頼事由を選択してください。');
+        const firstReason = document.querySelector('input[name="request_reason"]');
+        focusAndScroll(firstReason);
+        return false;
+    }
+
+    if (requestReason.value === 'other') {
+        const otherDetailEl = document.querySelector('input[name="other_reason_detail"]');
+        if (!otherDetailEl.value.trim()) {
+            alert('その他の事由を具体的に入力してください。');
+            focusAndScroll(otherDetailEl);
+            return false;
+        }
+    }
+
+    if (!effectiveDateEl.value.trim()) {
+        alert('有効開始（変更）日を入力してください。');
+        focusAndScroll(effectiveDateEl);
+        return false;
+    }
+
+    return true;
+}
+
+// デフォルトのvalidateForm（子テンプレートで拡張可能）
+function validateForm() {
+    if (!validateFormBase()) return false;
+    // 子テンプレートのバリデーション
+    if (typeof validateDocumentSpecific === 'function') {
+        if (!validateDocumentSpecific()) return false;
+    }
+    return true;
+}
+
+// DOMContentLoaded - 共通処理
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('書類作成ページが読み込まれました');
+
+    // 届出を行う区分の単一選択制御
+    const notificationCheckboxes = document.querySelectorAll('input[name="notification_type"]');
+    notificationCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            if (this.checked) {
+                notificationCheckboxes.forEach(cb => {
+                    if (cb !== this) cb.checked = false;
+                });
+            }
+        });
+    });
+
+    // 依頼事由の単一選択制御
+    const reasonCheckboxes = document.querySelectorAll('input[name="request_reason"]');
+    const otherReasonInput = document.getElementById('other_reason_input');
+
+    reasonCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            if (this.checked) {
+                reasonCheckboxes.forEach(cb => {
+                    if (cb !== this) cb.checked = false;
+                });
+
+                if (this.value === 'other') {
+                    if (otherReasonInput) {
+                        otherReasonInput.style.display = 'block';
+                        otherReasonInput.querySelector('input').setAttribute('required', 'required');
+                    }
+                } else {
+                    if (otherReasonInput) {
+                        otherReasonInput.style.display = 'none';
+                        otherReasonInput.querySelector('input').removeAttribute('required');
+                    }
+                }
+            }
+        });
+    });
+
+    // 負担割合証の単一選択制御
+    const burdenCheckboxes = document.querySelectorAll('input[name="burden_delivery_method"]');
+    burdenCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            if (this.checked) {
+                burdenCheckboxes.forEach(cb => {
+                    if (cb !== this) cb.checked = false;
+                });
+            }
+        });
+    });
+
+    // 子テンプレートの初期化関数を呼び出し
+    if (typeof initDocumentSpecific === 'function') {
+        initDocumentSpecific();
+    }
+});
+</script>
+
+<style>
+.bg-pink {
+    background-color: #f8d7da !important;
+}
+
+/* UI.md準拠のボタンスタイル */
+.btn {
+    transition: all 0.2s ease;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* 戻るボタン */
+.btn.btn-outline-secondary.btn-back:hover,
+a.btn.btn-outline-secondary.btn-back:hover {
+    background-color: #f5f5f5 !important;
+    border-color: #999 !important;
+    color: #333 !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+}
+
+/* Excel出力ボタン */
+.btn.btn-outline-secondary.excel-btn:hover,
+button.btn.btn-outline-secondary.excel-btn:hover {
+    background-color: #d1f2d1 !important;
+    border-color: #198754 !important;
+    color: #198754 !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+}
+
+/* 保存ボタン */
+.btn.btn-outline-secondary.save-btn:hover,
+button.btn.btn-outline-secondary.save-btn:hover {
+    background-color: #f8d7da !important;
+    border-color: #dc3545 !important;
+    color: #dc3545 !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+}
+
+.card-header {
+    border-bottom: 2px solid #dee2e6;
+}
+
+.form-check-input:checked {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.gap-3 {
+    gap: 1rem !important;
+}
+
+/* 編集不可フィールドのスタイル */
+input[readonly],
+textarea[readonly] {
+    background-color: #f0f0f0 !important;
+    cursor: not-allowed !important;
+    color: #6c757d !important;
+}
+
+input[readonly]:focus,
+textarea[readonly]:focus {
+    background-color: #f0f0f0 !important;
+    box-shadow: none !important;
+}
+
+/* マスタデータ編集ドロワー */
+.master-drawer {
+    position: fixed;
+    top: 0;
+    right: -500px;
+    width: 500px;
+    height: 100vh;
+    background-color: white;
+    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.3);
+    z-index: 1050;
+    transition: right 0.3s ease-in-out;
+    overflow: hidden;
+}
+
+.master-drawer.open {
+    right: 0;
+}
+
+.master-drawer-content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.master-drawer-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid #dee2e6;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #f8f9fa;
+}
+
+.master-drawer-header h5 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.btn-close-drawer {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #6c757d;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s;
+}
+
+.btn-close-drawer:hover {
+    color: #000;
+}
+
+.master-drawer-body {
+    flex: 1;
+    padding: 1.5rem;
+    overflow-y: auto;
+}
+
+.master-drawer-footer {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid #dee2e6;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    background-color: #f8f9fa;
+}
+
+.drawer-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1040;
+    display: none;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+}
+
+.drawer-overlay.show {
+    display: block;
+    opacity: 1;
+}
+
+/* 編集ボタン */
+.btn-edit-master {
+    background-color: #ffffff;
+    border: 1px solid #6c757d;
+    color: #6c757d;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.875rem;
+    border-radius: 0.25rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-edit-master:hover {
+    background-color: #e3f2fd;
+    border-color: #2196F3;
+    color: #2196F3;
+}
+
+{% block extra_styles %}{% endblock %}
+</style>
+
+{% block extra_content %}{% endblock %}
+
+{% block extra_scripts %}{% endblock %}
+
+{% endblock %}

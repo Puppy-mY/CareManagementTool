@@ -1,0 +1,1073 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ client.name }} - 利用者詳細 - {{ block.super }}{% endblock %}
+
+{% block content %}
+<!-- 権限情報（開発用） -->
+<div class="permission-label">
+    居宅、ヘルパー、ヘルパー庶務、デイ、デイ庶務、訪看、訪看庶務、事務所
+</div>
+
+<style>
+    /* メインタブのスタイル */
+    #assessmentTabs {
+        border-bottom: none;
+        background-color: transparent;
+        padding: 0;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        overflow-y: hidden;
+        white-space: nowrap;
+        justify-content: space-between;
+    }
+
+    #assessmentTabs .nav-item {
+        flex: 1;
+        text-align: center;
+        position: relative;
+    }
+
+    #assessmentTabs .nav-item:not(:last-child)::after {
+        content: '';
+        position: absolute;
+        right: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 1px;
+        height: 60%;
+        background-color: #dee2e6;
+    }
+
+    #assessmentTabs .nav-link {
+        border: none;
+        border-bottom: 3px solid transparent;
+        border-radius: 0;
+        padding: 0.75rem 1rem;
+        font-weight: 500;
+        color: #6c757d;
+        background-color: transparent;
+        margin-right: 0;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+        width: 100%;
+    }
+
+    #assessmentTabs .nav-link:hover {
+        color: #495057;
+        border-bottom-color: #dee2e6;
+        background-color: transparent;
+    }
+
+    #assessmentTabs .nav-link.active {
+        color: #495057;
+        background-color: transparent;
+        border-bottom: 3px solid #6c757d !important;
+    }
+
+    /* クライアント詳細サブタブ - アセスメントと同じスタイル */
+    #clientSubTabs {
+        border-bottom: none !important;
+        display: flex !important;
+    }
+
+    #clientSubTabs .nav-item {
+        flex: 1 !important;
+        margin: 0 !important;
+    }
+
+    #clientSubTabs .nav-item:not(:last-child)::after {
+        display: none !important;
+    }
+
+    #clientSubTabs .nav-link {
+        transition: all 0.2s ease;
+        border: 1px solid #dee2e6 !important;
+        border-bottom: none !important;
+        border-top-left-radius: 0.375rem !important;
+        border-top-right-radius: 0.375rem !important;
+        width: 100% !important;
+        margin: 0 !important;
+    }
+
+    #clientSubTabs .nav-link.active {
+        border-bottom: none !important;
+    }
+
+    /* 非アクティブ時は白背景 */
+    #clientSubTabs .nav-link:not(.active) {
+        background-color: #ffffff !important;
+        color: #6c757d !important;
+    }
+
+    /* アクティブ時は薄いグレー系 */
+    #client-basic-info-tab.active,
+    #client-contact-tab.active,
+    #client-insurance-tab.active {
+        background-color: #f5f5f5 !important;
+        border-color: #999 !important;
+        color: #333 !important;
+    }
+
+    #client-basic-info-tab:not(.active):hover,
+    #client-contact-tab:not(.active):hover,
+    #client-insurance-tab:not(.active):hover {
+        background-color: #e9ecef !important;
+        color: #495057 !important;
+    }
+
+    /* サブタブコンテンツエリアの枠線 - 常に表示 */
+    #clientSubTabContent .tab-pane {
+        border: 1px solid #6c757d !important;
+        border-radius: 0 0 0.375rem 0.375rem !important;
+        background-color: white;
+    }
+
+    /* アクティブでないコンテンツは非表示だが枠線は維持 */
+    #clientSubTabContent .tab-pane:not(.show) {
+        display: none;
+    }
+
+    #clientSubTabContent .tab-pane.show {
+        display: block;
+    }
+
+
+    .info-card {
+        border: none;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        margin-bottom: 1.5rem;
+    }
+
+    .document-history-row:hover {
+        background-color: #f8f9fa !important;
+    }
+    .document-history-row {
+        transition: background-color 0.2s;
+    }
+
+    .btn-outline-info.btn-sm:hover {
+        background-color: #e3f2fd !important;
+        border-color: #0d6efd !important;
+        color: #0d6efd !important;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .btn-outline-success.btn-sm:hover {
+        background-color: #d1f2d1 !important;
+        border-color: #198754 !important;
+        color: #198754 !important;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .btn-outline-warning.btn-sm:hover {
+        background-color: #fff3cd !important;
+        border-color: #ffc107 !important;
+        color: #ffc107 !important;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    /* アセスメント履歴のボタン - UI.mdに従ったスタイル */
+    /* Excelボタン（プレビュー系） - 緑っぽい色 */
+    a.btn-excel:hover,
+    a.btn.btn-excel:hover,
+    .btn-outline-secondary.btn-excel:hover {
+        background-color: #d1f2d1 !important;
+        border-color: #198754 !important;
+        color: #198754 !important;
+        transform: translateY(-1px) !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+    }
+    /* 編集ボタン - オレンジ系 */
+    a.btn-edit:hover,
+    a.btn.btn-edit:hover,
+    .btn-outline-secondary.btn-edit:hover {
+        background-color: #ffe5cc !important;
+        border-color: #fd7e14 !important;
+        color: #fd7e14 !important;
+        transform: translateY(-1px) !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+    }
+    /* 削除ボタン - 赤系 */
+    button.btn-delete:hover,
+    .btn.btn-delete:hover,
+    .btn-sm.btn-delete:hover,
+    .btn-outline-secondary.btn-delete:hover,
+    button.btn-outline-secondary.btn-delete:hover,
+    button.btn-outline-secondary.btn-sm.btn-delete:hover {
+        background-color: #f8d7da !important;
+        border-color: #dc3545 !important;
+        color: #dc3545 !important;
+        transform: translateY(-1px) !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+    }
+
+    /* アセスメント履歴テーブルの縦枠線を削除 */
+    #assessment-history .table-bordered th,
+    #assessment-history .table-bordered td {
+        border-left: none;
+        border-right: none;
+    }
+
+    /* 操作列の余白調整 */
+    #assessment-history .table td:last-child,
+    #assessment-history .table th:last-child {
+        padding-right: 0.5rem;
+    }
+
+    /* アセスメント履歴のボタンサイズ調整 */
+    #assessment-history .btn-group .btn {
+        height: 34px;
+        line-height: 1.2;
+        padding-top: 0.3rem;
+        padding-bottom: 0.3rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-color: #718096;
+        color: #718096;
+        white-space: nowrap;
+    }
+
+    /* プレビューボタンは2行 */
+    #assessment-history .btn-group .btn-preview {
+        font-size: 0.65rem;
+        line-height: 1.2;
+        min-width: 60px;
+        flex-shrink: 0;
+        white-space: normal;
+    }
+
+    /* 書類作成履歴のテーブル縦枠線を削除 */
+    #documents .table-bordered th,
+    #documents .table-bordered td {
+        border-left: none;
+        border-right: none;
+    }
+
+    /* 書類作成履歴の操作列の余白調整 */
+    #documents .table td:last-child,
+    #documents .table th:last-child {
+        padding-right: 0.5rem;
+    }
+
+    /* 書類作成履歴のボタンサイズ調整 */
+    #documents .btn-group .btn {
+        height: 34px;
+        line-height: 1.2;
+        padding-top: 0.3rem;
+        padding-bottom: 0.3rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-color: #718096;
+        color: #718096;
+        white-space: nowrap;
+    }
+
+    /* バッジの垂直位置調整 */
+    #assessment-history .card-header .badge,
+    #documents .card-header .badge {
+        vertical-align: baseline;
+        position: relative;
+        top: -2px;
+    }
+
+    /* アセスメント履歴と書類作成履歴のテーブルセルを上下中央揃え */
+    #assessment-history .table td,
+    #assessment-history .table th,
+    #documents .table td,
+    #documents .table th {
+        vertical-align: middle;
+    }
+
+    /* プレビューボタン（書類） */
+    #documents .btn-group .btn-preview-doc {
+        font-size: 0.65rem;
+        line-height: 1.2;
+        min-width: 60px;
+        flex-shrink: 0;
+        white-space: normal;
+    }
+
+    /* Excelボタン（書類）（プレビュー系） - 緑っぽい色 */
+    #documents button.btn-excel-doc:hover,
+    #documents .btn.btn-excel-doc:hover,
+    #documents .btn-outline-secondary.btn-excel-doc:hover,
+    #documents .btn-sm.btn-excel-doc:hover,
+    #documents button.btn-outline-secondary.btn-sm.btn-excel-doc:hover {
+        background-color: #d1f2d1 !important;
+        border-color: #198754 !important;
+        color: #198754 !important;
+        transform: translateY(-1px) !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+    }
+
+    /* 編集ボタン（書類） - オレンジ系 */
+    #documents button.btn-edit-doc:hover,
+    #documents .btn.btn-edit-doc:hover,
+    #documents .btn-outline-secondary.btn-edit-doc:hover,
+    #documents .btn-sm.btn-edit-doc:hover,
+    #documents button.btn-outline-secondary.btn-sm.btn-edit-doc:hover {
+        background-color: #ffe5cc !important;
+        border-color: #fd7e14 !important;
+        color: #fd7e14 !important;
+        transform: translateY(-1px) !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+    }
+
+    /* 削除ボタン（書類） - 赤系 */
+    #documents button.btn-delete-doc:hover,
+    #documents .btn.btn-delete-doc:hover,
+    #documents .btn-sm.btn-delete-doc:hover,
+    #documents .btn-outline-secondary.btn-delete-doc:hover,
+    #documents button.btn-outline-secondary.btn-delete-doc:hover,
+    #documents button.btn-outline-secondary.btn-sm.btn-delete-doc:hover {
+        background-color: #f8d7da !important;
+        border-color: #dc3545 !important;
+        color: #dc3545 !important;
+        transform: translateY(-1px) !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+    }
+</style>
+
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><i class="fas fa-user"></i> {{ client.name }} さん</h1>
+            <div>
+                <a href="{% url 'client_list' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> 一覧に戻る
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- メインタブナビゲーション -->
+<div class="bg-white border-bottom mb-0 pb-0">
+    <div class="container-fluid px-4">
+        <div class="row">
+            <ul class="nav nav-tabs" id="assessmentTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="client-family-tab" data-bs-toggle="tab" data-bs-target="#basic-info" type="button" role="tab">
+                        基本情報
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="health-tab" data-bs-toggle="tab" data-bs-target="#assessment-history" type="button" role="tab">
+                        アセスメント履歴
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="physical-tab" data-bs-toggle="tab" data-bs-target="#documents" type="button" role="tab">
+                        書類作成履歴
+                    </button>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- タブコンテンツ -->
+<div class="tab-content">
+    <!-- 基本情報タブ -->
+    <div class="tab-pane fade show active" id="basic-info" role="tabpanel">
+        <div class="pt-4 pb-3">
+            <div class="mb-0">
+                <ul class="nav nav-tabs" id="clientSubTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="client-basic-info-tab" data-bs-toggle="tab" data-bs-target="#client-basic-info" type="button" role="tab" aria-controls="client-basic-info" aria-selected="true" style="background-color: #f5f5f5; color: #333; border: 1px solid #999; border-bottom: none; border-top-left-radius: 0.375rem; border-top-right-radius: 0.375rem;">基本情報</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="client-contact-tab" data-bs-toggle="tab" data-bs-target="#client-contact" type="button" role="tab" aria-controls="client-contact" aria-selected="false" style="background-color: #ffffff; color: #6c757d; border: 1px solid #dee2e6; border-bottom: none; border-top-left-radius: 0.375rem; border-top-right-radius: 0.375rem;">家族情報</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="client-insurance-tab" data-bs-toggle="tab" data-bs-target="#client-insurance" type="button" role="tab" aria-controls="client-insurance" aria-selected="false" style="background-color: #ffffff; color: #6c757d; border: 1px solid #dee2e6; border-bottom: none; border-top-left-radius: 0.375rem; border-top-right-radius: 0.375rem;">保険情報</button>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="tab-content" id="clientSubTabContent">
+                <!-- 基本情報タブ -->
+                <div class="tab-pane fade show active px-4 py-4" id="client-basic-info" role="tabpanel" aria-labelledby="client-basic-info-tab">
+                    <!-- 基本情報セクション -->
+                    <div class="mb-4">
+                        <h6 class="text-secondary mb-3 pb-2" style="border-bottom: 2px solid #dee2e6;">
+                            <i class="fas fa-id-card me-2"></i>基本情報
+                        </h6>
+                        <table class="table table-bordered">
+                            <tbody>
+                                <tr>
+                                    <th class="bg-light text-muted" style="width: 25%;">氏名</th>
+                                    <td>{{ client.name }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="bg-light text-muted">ふりがな</th>
+                                    <td>{{ client.furigana }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="bg-light text-muted">生年月日</th>
+                                    <td>{{ client.birth_date }} ({{ client.age }}歳)</td>
+                                </tr>
+                                <tr>
+                                    <th class="bg-light text-muted">性別</th>
+                                    <td>{{ client.get_gender_display }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="bg-light text-muted">住所</th>
+                                    <td>{{ client.address|default:"未登録" }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="bg-light text-muted">連絡先</th>
+                                    <td>{{ client.phone|default:"未登録" }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {% if client.notes %}
+                    <!-- 備考セクション -->
+                    <div class="mb-3">
+                        <h6 class="text-secondary mb-3 pb-2" style="border-bottom: 2px solid #dee2e6;">
+                            <i class="fas fa-sticky-note me-2"></i>備考
+                        </h6>
+                        <div class="p-3 border bg-light">
+                            {{ client.notes|linebreaks }}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- 家族情報タブ -->
+                <div class="tab-pane fade px-4 py-4" id="client-contact" role="tabpanel" aria-labelledby="client-contact-tab">
+                    <h6 class="text-secondary mb-3 pb-2" style="border-bottom: 2px solid #dee2e6;">
+                        <i class="fas fa-users me-2"></i>家族情報
+                    </h6>
+
+                    <!-- 家族1 -->
+                    <div class="mb-4">
+                        <table class="table table-bordered">
+                            <tbody>
+                                <tr>
+                                    <th class="bg-light text-muted" style="width: 25%;">氏名</th>
+                                    <td>{{ client.family_name1|default:"未登録" }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="bg-light text-muted">続柄</th>
+                                    <td>{{ client.get_family_relationship1_display|default:"未登録" }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="bg-light text-muted">住所</th>
+                                    <td>{{ client.family_address1|default:"未登録" }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="bg-light text-muted">連絡先</th>
+                                    <td>{{ client.family_contact1|default:"未登録" }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="bg-light text-muted">同居の有無</th>
+                                    <td>{{ client.get_family_living_status1_display|default:"未登録" }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="bg-light text-muted">介護状況</th>
+                                    <td>{{ client.get_family_care_status1_display|default:"未登録" }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="bg-light text-muted">就労状況</th>
+                                    <td>{{ client.get_family_employment1_display|default:"未登録" }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="bg-light text-muted">備考</th>
+                                    <td>{{ client.family_notes1|default:"未登録" }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- 家族2 -->
+                    <div class="mb-3">
+                        <table class="table table-bordered">
+                            <tbody>
+                                <tr>
+                                    <th class="bg-light text-muted" style="width: 25%;">氏名</th>
+                                    <td>{{ client.family_name2|default:"未登録" }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="bg-light text-muted">続柄</th>
+                                    <td>{{ client.get_family_relationship2_display|default:"未登録" }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="bg-light text-muted">住所</th>
+                                    <td>{{ client.family_address2|default:"未登録" }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="bg-light text-muted">連絡先</th>
+                                    <td>{{ client.family_contact2|default:"未登録" }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="bg-light text-muted">同居の有無</th>
+                                    <td>{{ client.get_family_living_status2_display|default:"未登録" }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="bg-light text-muted">介護状況</th>
+                                    <td>{{ client.get_family_care_status2_display|default:"未登録" }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="bg-light text-muted">就労状況</th>
+                                    <td>{{ client.get_family_employment2_display|default:"未登録" }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="bg-light text-muted">備考</th>
+                                    <td>{{ client.family_notes2|default:"未登録" }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 保険情報タブ -->
+                <div class="tab-pane fade px-4 py-4" id="client-insurance" role="tabpanel" aria-labelledby="client-insurance-tab">
+                    <!-- 介護保険 -->
+                    <div class="mb-4">
+                        <h6 class="text-secondary mb-3 pb-2" style="border-bottom: 2px solid #dee2e6;">
+                            <i class="fas fa-file-medical me-2"></i>介護保険
+                        </h6>
+                        <table class="table table-bordered">
+                            <tbody>
+                                <tr>
+                                    <th class="bg-light text-muted" style="width: 25%;">被保険者番号</th>
+                                    <td>{{ client.insurance_number|default:"未登録" }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="bg-light text-muted">介護度</th>
+                                    <td>{{ client.get_care_level_display|default:"未設定" }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="bg-light text-muted">認定日</th>
+                                    <td>
+                                        {% if client.certification_date %}
+                                            {% load custom_filters %}
+                                            {{ client.certification_date|wareki }}
+                                        {% else %}
+                                            未登録
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th class="bg-light text-muted">認定期間</th>
+                                    <td>
+                                        {% if client.certification_period_start and client.certification_period_end %}
+                                            {% load custom_filters %}
+                                            {{ client.certification_period_start|wareki }}～{{ client.certification_period_end|wareki }}
+                                        {% else %}
+                                            未登録
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th class="bg-light text-muted">負担割合</th>
+                                    <td>{{ client.care_burden|default:"未設定" }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <table class="table table-bordered mt-3">
+                            <tbody>
+                                <tr>
+                                    <th class="bg-light text-muted align-middle" style="width: 25%;">障害高齢者の<br>日常生活自立度<br>（寝たきり度）</th>
+                                    <td class="align-middle text-danger">データ無</td>
+                                </tr>
+                                <tr>
+                                    <th class="bg-light text-muted align-middle">認知症高齢者の<br>日常生活自立度</th>
+                                    <td class="align-middle text-danger">データ無</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- 医療保険 -->
+                    <div class="mb-4">
+                        <h6 class="text-secondary mb-3 pb-2" style="border-bottom: 2px solid #dee2e6;">
+                            <i class="fas fa-hospital me-2"></i>医療保険
+                        </h6>
+                        <table class="table table-bordered">
+                            <tbody>
+                                <tr>
+                                    <th class="bg-light text-muted align-middle" style="width: 25%;">保険種別</th>
+                                    <td class="align-middle">{{ client.medical_insurance_type|default:"未登録" }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="bg-light text-muted align-middle">被保険者番号<br>(記号・番号)</th>
+                                    <td class="align-middle">
+                                        {% if client.medical_insurance_symbol and client.medical_insurance_number %}
+                                            記号：{{ client.medical_insurance_symbol }}　番号：{{ client.medical_insurance_number }}
+                                        {% elif client.medical_insurance_number %}
+                                            番号：{{ client.medical_insurance_number }}
+                                        {% else %}
+                                            未登録
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th class="bg-light text-muted align-middle">保険者の名称及び<br>交付者名(番号)</th>
+                                    <td class="align-middle">
+                                        {% if client.medical_insurer_name_issuer and client.medical_insurer_number %}
+                                            {{ client.medical_insurer_name_issuer }}　番号：{{ client.medical_insurer_number }}
+                                        {% elif client.medical_insurer_name_issuer %}
+                                            {{ client.medical_insurer_name_issuer }}
+                                        {% else %}
+                                            未登録
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th class="bg-light text-muted align-middle">負担割合</th>
+                                    <td class="align-middle text-danger">データ無</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- 受給者証 -->
+                    <div class="mb-3">
+                        <h6 class="text-secondary mb-3 pb-2" style="border-bottom: 2px solid #dee2e6;">
+                            <i class="fas fa-id-card me-2"></i>受給者証
+                        </h6>
+                        <table class="table table-bordered">
+                            <tbody>
+                                <tr>
+                                    <th class="bg-light text-muted" style="width: 25%;">受給者証番号</th>
+                                    <td class="text-danger">データ無</td>
+                                </tr>
+                                <tr>
+                                    <th class="bg-light text-muted">有効期間</th>
+                                    <td class="text-danger">データ無</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- アセスメント履歴タブ -->
+    <div class="tab-pane fade" id="assessment-history" role="tabpanel">
+        <div class="pt-4 pb-3">
+            <div class="card" style="border: none; background-color: white;">
+                <div class="card-header" style="background-color: white; border: none;">
+                    <h5 class="mb-0">
+                        <i class="fas fa-file-medical-alt"></i> アセスメント履歴
+                        {% if client.assessments.count %}
+                        <span class="badge" style="background-color: #f5f5f5; border: 1px solid #999; color: #333; vertical-align: middle;">{{ client.assessments.count }}件</span>
+                        {% endif %}
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if recent_assessments %}
+                        <div class="table-responsive">
+                            <table class="table table-hover table-bordered mb-0">
+                                <thead>
+                                    <tr style="background-color: #f5f5f5;">
+                                        <th style="background-color: #f5f5f5;">作成日</th>
+                                        <th style="background-color: #f5f5f5;">アセスメント理由</th>
+                                        <th style="background-color: #f5f5f5;">面談場所</th>
+                                        <th style="background-color: #f5f5f5;">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for assessment in recent_assessments %}
+                                    <tr>
+                                        <td>{{ assessment.assessment_date|wareki }}</td>
+                                        <td>{{ assessment.get_assessment_type_display }}</td>
+                                        <td>{{ assessment.get_interview_location_display }}</td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm d-flex justify-content-end">
+                                                <button type="button" class="btn btn-outline-secondary btn-sm btn-preview" style="transition: all 0.2s ease; font-size: 0.7rem; line-height: 1.2;" disabled>
+                                                    プレビュー<br>開発中
+                                                </button>
+                                                <a href="{% url 'assessment_excel_export' assessment.pk %}" class="btn btn-outline-secondary btn-sm btn-excel" style="transition: all 0.2s ease;">
+                                                    <i class="fas fa-file-excel me-1"></i>Excel
+                                                </a>
+                                                {% if assessment.status == 'draft' %}
+                                                <a href="{% url 'assessment_edit' assessment.pk %}" class="btn btn-outline-secondary btn-sm btn-edit" style="transition: all 0.2s ease;">
+                                                    <i class="fas fa-edit me-1"></i>編集
+                                                </a>
+                                                {% endif %}
+                                                <button type="button" class="btn btn-outline-secondary btn-sm btn-delete" style="transition: all 0.2s ease;" onclick="deleteAssessment({{ assessment.pk }})">
+                                                    <i class="fas fa-trash me-1"></i>削除
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-file-medical-alt fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">アセスメントがまだ作成されていません</h5>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 書類作成履歴タブ -->
+    <div class="tab-pane fade" id="documents" role="tabpanel">
+        <div class="pt-4 pb-3">
+            <div class="card" style="border: none; background-color: white;">
+                <div class="card-header" style="background-color: white; border: none;">
+                    <h5 class="mb-0">
+                        <i class="fas fa-file-alt"></i> 書類作成履歴
+                        {% if document_histories.count %}
+                        <span class="badge" style="background-color: #f5f5f5; border: 1px solid #999; color: #333; vertical-align: middle;">{{ document_histories.count }}件</span>
+                        {% endif %}
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if document_histories %}
+                        <div class="table-responsive">
+                            <table class="table table-hover table-bordered mb-0">
+                                <thead>
+                                    <tr style="background-color: #f5f5f5;">
+                                        <th style="background-color: #f5f5f5;">作成日</th>
+                                        <th style="background-color: #f5f5f5;">書類種別</th>
+                                        <th style="background-color: #f5f5f5;">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for history in document_histories %}
+                                    <tr>
+                                        <td>{{ history.created_at|wareki }}</td>
+                                        <td>{{ history.get_document_type_display }}</td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm d-flex justify-content-end">
+                                                <button type="button" class="btn btn-outline-secondary btn-sm btn-preview-doc" style="transition: all 0.2s ease; font-size: 0.7rem; line-height: 1.2;" disabled>
+                                                    プレビュー<br>開発中
+                                                </button>
+                                                <button onclick="downloadDocumentHistoryExcel({{ history.pk }})" class="btn btn-outline-secondary btn-sm btn-excel-doc" style="transition: all 0.2s ease;">
+                                                    <i class="fas fa-file-excel me-1"></i>Excel
+                                                </button>
+                                                <button onclick="reopenDocument('{{ history.document_type }}', {{ history.pk }}, {{ client.pk }})" class="btn btn-outline-secondary btn-sm btn-edit-doc" style="transition: all 0.2s ease;">
+                                                    <i class="fas fa-edit me-1"></i>編集
+                                                </button>
+                                                <button type="button" class="btn btn-outline-secondary btn-sm btn-delete-doc" style="transition: all 0.2s ease;" onclick="deleteDocument({{ history.pk }})">
+                                                    <i class="fas fa-trash me-1"></i>削除
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">書類作成履歴がまだありません</h5>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+
+<!-- 認知症設定モーダル -->
+<div class="modal fade" id="dementiaModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-brain text-warning"></i> 認知症対応設定
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'update_dementia_status' client.pk %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-12">
+                            <h6>{{ client.name }}さんの認知症対応設定</h6>
+                            <hr>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-12 mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="requires_dementia_care"
+                                       name="requires_dementia_care"
+                                       {% if client.dementia_status.requires_dementia_care %}checked{% endif %}>
+                                <label class="form-check-label" for="requires_dementia_care">
+                                    <strong>認知症対応が必要</strong>
+                                </label>
+                            </div>
+                            <small class="text-muted">チェックすると、デイサービス利用時に認知症加算（60単位/日）が自動で適用されます</small>
+                        </div>
+                    </div>
+
+                    <div class="row" id="dementia_level_section">
+                        <div class="col-12 mb-3">
+                            <label for="dementia_level" class="form-label">認知症レベル（任意）</label>
+                            <select class="form-select" id="dementia_level" name="dementia_level">
+                                <option value="">選択してください</option>
+                                <option value="1" {% if client.dementia_status.dementia_level == '1' %}selected{% endif %}>レベル1</option>
+                                <option value="2" {% if client.dementia_status.dementia_level == '2' %}selected{% endif %}>レベル2</option>
+                                <option value="3" {% if client.dementia_status.dementia_level == '3' %}selected{% endif %}>レベル3</option>
+                                <option value="4" {% if client.dementia_status.dementia_level == '4' %}selected{% endif %}>レベル4</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-12">
+                            <label for="dementia_notes" class="form-label">備考</label>
+                            <textarea class="form-control" id="dementia_notes" name="notes" rows="3">{{ client.dementia_status.notes }}</textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> 保存
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 認知症対応チェックボックスの制御
+    const requiresDementiaCare = document.getElementById('requires_dementia_care');
+    const dementiaLevelSection = document.getElementById('dementia_level_section');
+
+    function toggleDementiaLevel() {
+        if (requiresDementiaCare.checked) {
+            dementiaLevelSection.style.display = 'block';
+        } else {
+            dementiaLevelSection.style.display = 'none';
+            document.getElementById('dementia_level').value = '';
+        }
+    }
+
+    requiresDementiaCare.addEventListener('change', toggleDementiaLevel);
+    toggleDementiaLevel(); // 初期状態を設定
+});
+
+// 新しいウィンドウで書類作成を開く
+function openDocumentWindow(documentType) {
+    const clientId = {{ client.pk }};
+    const url = `/clients/${clientId}/document_create/${documentType}/`;
+    const windowName = `document_${documentType}_${clientId}`;
+    const windowFeatures = 'width=1200,height=800,scrollbars=yes,resizable=yes,location=yes';
+
+    window.open(url, windowName, windowFeatures);
+}
+
+// 書類履歴PDFを新しいウィンドウで表示
+function viewDocumentHistoryPDF(historyId) {
+    const url = `/clients/documents/history/${historyId}/pdf/`;
+    const windowName = `document_history_${historyId}`;
+    const windowFeatures = 'width=1000,height=800,scrollbars=yes,resizable=yes,location=yes';
+
+    window.open(url, windowName, windowFeatures);
+}
+
+// 書類履歴からExcelファイルをダウンロード
+function downloadDocumentHistoryExcel(historyId) {
+    window.location.href = `/clients/documents/history/${historyId}/excel/`;
+}
+
+// 書類を再編集
+function reopenDocument(documentType, historyId, clientId) {
+    console.log('reopenDocument called:', documentType, historyId, clientId);
+    const url = `/clients/${clientId}/documents/create/${documentType}/?history_id=${historyId}`;
+
+    console.log('Opening URL:', url);
+    window.location.href = url;
+}
+
+// クライアント詳細サブタブの色切り替え
+document.addEventListener('DOMContentLoaded', function() {
+    const clientSubTabs = document.querySelectorAll('#clientSubTabs button[data-bs-toggle="tab"]');
+
+    clientSubTabs.forEach(tab => {
+        tab.addEventListener('shown.bs.tab', function (e) {
+            // 全てのタブを白背景に
+            clientSubTabs.forEach(t => {
+                t.style.backgroundColor = '#ffffff';
+                t.style.color = '#6c757d';
+                t.style.fontWeight = 'normal';
+                t.style.borderColor = '#dee2e6';
+            });
+            // アクティブタブを薄いグレーに
+            e.target.style.backgroundColor = '#f5f5f5';
+            e.target.style.color = '#333';
+            e.target.style.fontWeight = 'normal';
+            e.target.style.borderColor = '#999';
+        });
+    });
+});
+
+// タブの色を設定
+document.addEventListener('DOMContentLoaded', function() {
+    // 現在のテーマを取得
+    const currentTheme = document.body.className.match(/theme-(\w+)/)?.[1] || 'current';
+    console.log(`現在のテーマ: ${currentTheme}`);
+
+    // テーマごとのタブ色定義
+    const themeTabColors = {
+        'simple': {
+            'client-family-tab': '#6c757d',
+            'health-tab': '#6c757d',
+            'physical-tab': '#6c757d'
+        },
+        'current': {
+            'client-family-tab': 'rgba(153, 153, 153, 0.5)',
+            'health-tab': 'rgba(13, 110, 253, 0.5)',
+            'physical-tab': 'rgba(25, 135, 84, 0.5)'
+        },
+        'muted': {
+            'client-family-tab': '#f0d9e0',
+            'health-tab': '#e8d4d9',
+            'physical-tab': '#c8d8e4'
+        }
+    };
+
+    const tabColors = themeTabColors[currentTheme] || themeTabColors['current'];
+
+    console.log('タブの色設定を開始します');
+
+    // 各タブにイベントリスナーを設定
+    Object.keys(tabColors).forEach(tabId => {
+        const tabElement = document.getElementById(tabId);
+        if (tabElement) {
+            console.log(`タブ ${tabId} が見つかりました`);
+
+            tabElement.addEventListener('shown.bs.tab', function() {
+                console.log(`タブ ${tabId} がクリックされました`);
+                // すべてのタブの色をリセット
+                Object.keys(tabColors).forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        el.style.removeProperty('border-bottom');
+                    }
+                });
+                // アクティブなタブに色を適用（!importantを使用）
+                this.style.setProperty('border-bottom', `4px solid ${tabColors[tabId]}`, 'important');
+                console.log(`色を適用: ${tabColors[tabId]}`);
+            });
+
+            // 初期表示時にアクティブなタブに色を適用（!importantを使用）
+            if (tabElement.classList.contains('active')) {
+                tabElement.style.setProperty('border-bottom', `4px solid ${tabColors[tabId]}`, 'important');
+                console.log(`初期表示: ${tabId} に色 ${tabColors[tabId]} を適用しました`);
+            }
+        } else {
+            console.log(`タブ ${tabId} が見つかりませんでした`);
+        }
+    });
+});
+
+// アセスメント削除機能
+function deleteAssessment(assessmentId) {
+    if (confirm('このアセスメントを削除してもよろしいですか？')) {
+        fetch(`/assessments/${assessmentId}/delete/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                // アセスメント履歴タブを開いた状態でリロード
+                window.location.hash = 'assessment-history';
+                window.location.reload();
+            } else {
+                alert('削除に失敗しました: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('削除中にエラーが発生しました: ' + error.message);
+        });
+    }
+}
+
+// 書類削除機能
+function deleteDocument(documentId) {
+    if (confirm('この書類を削除してもよろしいですか？')) {
+        fetch(`/clients/documents/${documentId}/delete/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                // 書類作成履歴タブを開いた状態でリロード
+                window.location.hash = 'documents';
+                window.location.reload();
+            } else {
+                alert('削除に失敗しました: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('削除中にエラーが発生しました: ' + error.message);
+        });
+    }
+}
+
+// CSRFトークン取得関数
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// URLのハッシュからタブを開く
+document.addEventListener('DOMContentLoaded', function() {
+    const hash = window.location.hash;
+    if (hash) {
+        // ハッシュに対応するタブボタンを探す
+        const tabButton = document.querySelector(`button[data-bs-target="${hash}"]`);
+        if (tabButton) {
+            // Bootstrap 5のタブを手動でアクティブ化
+            const tab = new bootstrap.Tab(tabButton);
+            tab.show();
+        }
+    }
+});
+</script>
+{% endblock %}

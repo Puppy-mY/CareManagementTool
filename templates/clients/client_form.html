@@ -1,0 +1,462 @@
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+
+{% block title %}{{ title }} - {{ block.super }}{% endblock %}
+
+{% block content %}
+<!-- 権限情報（開発用） -->
+<div class="permission-label">
+    居宅、ヘルパー、ヘルパー庶務、デイ、デイ庶務、訪看、訪看庶務、事務所
+</div>
+
+<style>
+/* Minimal, readable, 3-color-driven form layout */
+.section-title { color: var(--text-primary); font-weight: 600; margin: 0; }
+.card-header { background-color: var(--background-color); border-bottom: 1px solid var(--border-color); }
+.section-divider { border-top: 1px solid var(--border-color); margin: 1.25rem 0; }
+.btn-outline-secondary { border-color: var(--secondary-color); color: var(--secondary-color); }
+.btn-outline-secondary:hover { background-color: var(--secondary-color); color: #fff; }
+.badge-required { color: #dc3545; }
+.insurance-subsection { background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 0.375rem; padding: 1.5rem; margin-bottom: 1.5rem; }
+.subsection-title { font-size: 1rem; font-weight: 600; color: #495057; margin-bottom: 1rem; border-bottom: 2px solid #dee2e6; padding-bottom: 0.5rem; }
+
+.tab-pane {
+    padding: 0;
+}
+
+.tab-pane .card-body {
+    padding: 1.25rem;
+}
+
+.nav-tabs {
+    border-bottom: 2px solid #dee2e6;
+    background-color: transparent;
+    padding: 0;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+    justify-content: space-between;
+}
+
+.nav-tabs .nav-item {
+    flex: 1;
+    text-align: center;
+    position: relative;
+}
+
+.nav-tabs .nav-item:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1px;
+    height: 60%;
+    background-color: #dee2e6;
+}
+
+.nav-tabs .nav-link {
+    border: none;
+    border-bottom: 3px solid transparent;
+    border-radius: 0;
+    padding: 0.75rem 1rem;
+    font-weight: 500;
+    color: #6c757d;
+    background-color: transparent;
+    margin-right: 0;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    width: 100%;
+    text-align: center;
+}
+
+.nav-tabs .nav-link:hover {
+    color: #495057;
+    border-bottom-color: #dee2e6;
+    background-color: transparent;
+}
+
+.nav-tabs .nav-link.active {
+    color: #495057;
+    background-color: transparent;
+    border-bottom-color: #6c757d;
+}
+
+/* 戻るボタンのホバースタイル */
+.btn-back:hover {
+    background-color: #f4e4d7 !important;
+    border-color: #b8860b !important;
+    color: #b8860b !important;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* 保存ボタンのホバースタイル */
+.btn-save:hover {
+    background-color: #f8d7da !important;
+    border-color: #dc3545 !important;
+    color: #dc3545 !important;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* 削除ボタンのホバースタイル - 保存ボタンと同じ色 */
+.btn.btn-outline-secondary.btn-delete:hover {
+    background-color: #f8d7da !important;
+    border-color: #dc3545 !important;
+    color: #dc3545 !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+}
+
+/* Bootstrapのバリデーションスタイルを無効化 */
+.form-control.is-valid,
+.form-control.is-invalid,
+.form-select.is-valid,
+.form-select.is-invalid {
+    border-color: #ced4da !important;
+    background-image: none !important;
+    padding-right: 0.75rem !important;
+}
+
+.form-control.is-valid:focus,
+.form-control.is-invalid:focus,
+.form-select.is-valid:focus,
+.form-select.is-invalid:focus {
+    border-color: #86b7fe !important;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25) !important;
+}
+
+.valid-feedback,
+.invalid-feedback {
+    display: none !important;
+}
+</style>
+
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="mb-0"><i class="fas fa-user-plus"></i> {{ title }}</h1>
+            <a href="{% if client %}{% url 'client_detail' client.pk %}{% else %}{% url 'client_list' %}{% endif %}" class="btn btn-outline-secondary btn-back px-4 py-2" onclick="return confirmGoBack()" style="transition: all 0.2s ease;">
+                <i class="fas fa-arrow-left me-1"></i> 戻る
+            </a>
+        </div>
+    </div>
+</div>
+
+<form method="post" novalidate>
+    {% csrf_token %}
+
+    {% if form.errors %}
+    <div class="alert alert-danger">
+        <strong><i class="fas fa-exclamation-triangle me-2"></i>入力内容を確認してください。</strong>
+        <ul class="mt-2 mb-0">
+            {% for field in form %}
+                {% if field.errors %}
+                    {% for error in field.errors %}
+                        <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+                    {% endfor %}
+                {% endif %}
+            {% endfor %}
+            {% if form.non_field_errors %}
+                {% for error in form.non_field_errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+            {% endif %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <!-- 基本情報 -->
+    <div class="card mb-4">
+        <div class="card-header d-flex align-items-center">
+            <h5 class="section-title"><i class="fas fa-id-card me-2"></i>基本情報</h5>
+        </div>
+        <div class="card-body">
+            <!-- 氏名・ふりがな・生年月日・性別（4つ横並び） -->
+            <div class="row g-3 mb-4">
+                <div class="col-xl-3 col-lg-3 col-md-3 col-sm-6">
+                    <label for="{{ form.name.id_for_label }}" class="form-label">氏名 <span class="badge-required">*</span></label>
+                    {% bootstrap_field form.name show_label=False %}
+                </div>
+                <div class="col-xl-3 col-lg-3 col-md-3 col-sm-6">
+                    <label for="{{ form.furigana.id_for_label }}" class="form-label">ふりがな <span class="badge-required">*</span></label>
+                    {% bootstrap_field form.furigana show_label=False %}
+                </div>
+                <div class="col-xl-3 col-lg-3 col-md-3 col-sm-6">
+                    <label for="{{ form.birth_date.id_for_label }}" class="form-label">生年月日 <span class="badge-required">*</span></label>
+                    {% bootstrap_field form.birth_date show_label=False %}
+                </div>
+                <div class="col-xl-3 col-lg-3 col-md-3 col-sm-6">
+                    <label for="{{ form.gender.id_for_label }}" class="form-label">性別 <span class="badge-required">*</span></label>
+                    {% bootstrap_field form.gender show_label=False %}
+                </div>
+            </div>
+
+            <!-- 住所・電話番号（2つ横並び） -->
+            <div class="row g-3">
+                <div class="col-lg-8 col-md-8">
+                    <label for="{{ form.address.id_for_label }}" class="form-label">住所</label>
+                    {% bootstrap_field form.address show_label=False %}
+                </div>
+                <div class="col-lg-4 col-md-4">
+                    <label for="{{ form.phone.id_for_label }}" class="form-label">電話番号</label>
+                    {% bootstrap_field form.phone show_label=False %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 保険・家族情報タブ -->
+    <!-- タブナビゲーション -->
+    <ul class="nav nav-tabs mb-0" id="detailTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="insurance-tab" data-bs-toggle="tab" data-bs-target="#insurance" type="button" role="tab">
+                保険情報
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="family-tab" data-bs-toggle="tab" data-bs-target="#family" type="button" role="tab">
+                家族情報
+            </button>
+        </li>
+    </ul>
+    
+    <!-- タブコンテンツ -->
+    <div class="tab-content" id="detailTabsContent">
+        <!-- 保険情報タブ -->
+        <div class="tab-pane fade show active pt-4" id="insurance" role="tabpanel" aria-labelledby="insurance-tab">
+                    <!-- 介護保険関係 -->
+                    <div class="insurance-subsection">
+                        <h6 class="text-muted mb-3 pb-1" style="border-bottom: 1px solid #dee2e6; width: 50%;"><i class="fas fa-heart me-2"></i>介護保険関係</h6>
+                        <div class="row g-3 mb-3">
+                            <div class="col-xl-4 col-lg-4 col-md-4 col-sm-6">
+                                <label for="{{ form.insurance_number.id_for_label }}" class="form-label">被保険者番号 <span class="badge-required">*</span></label>
+                                {% bootstrap_field form.insurance_number show_label=False %}
+                            </div>
+                            <div class="col-xl-4 col-lg-4 col-md-4 col-sm-6">
+                                <label for="{{ form.care_level.id_for_label }}" class="form-label">要介護度</label>
+                                {% bootstrap_field form.care_level show_label=False %}
+                            </div>
+                            <div class="col-xl-4 col-lg-4 col-md-4 col-sm-6">
+                                <label for="{{ form.certification_date.id_for_label }}" class="form-label">認定日</label>
+                                {% bootstrap_field form.certification_date show_label=False %}
+                            </div>
+                        </div>
+                        <div class="row g-3 mb-4">
+                            <div class="col-lg-6 col-md-6 col-sm-6">
+                                <label for="{{ form.certification_period_start.id_for_label }}" class="form-label">認定期間（開始）</label>
+                                {% bootstrap_field form.certification_period_start show_label=False %}
+                            </div>
+                            <div class="col-lg-6 col-md-6 col-sm-6">
+                                <label for="{{ form.certification_period_end.id_for_label }}" class="form-label">認定期間（終了）</label>
+                                {% bootstrap_field form.certification_period_end show_label=False %}
+                            </div>
+                        </div>
+                        
+                        <div style="border-top: 1px solid #dee2e6; width: 50%; margin: 1rem 0;"></div>
+                        
+                        <div class="row g-3">
+                            <div class="col-lg-6 col-md-6 col-sm-6">
+                                <label for="{{ form.care_burden.id_for_label }}" class="form-label">負担割合</label>
+                                {% bootstrap_field form.care_burden show_label=False %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 医療保険関係 -->
+                    <div class="insurance-subsection">
+                        <h6 class="text-muted mb-3 pb-1" style="border-bottom: 1px solid #dee2e6; width: 50%;"><i class="fas fa-notes-medical me-2"></i>医療保険関係</h6>
+                        <div class="row g-3 mb-3">
+                            <div class="col-xl-6 col-lg-6 col-md-6 col-sm-6">
+                                <label for="{{ form.medical_insurance_type.id_for_label }}" class="form-label">医療保険種別</label>
+                                {% bootstrap_field form.medical_insurance_type show_label=False %}
+                            </div>
+                        </div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-xl-8 col-lg-7 col-md-7 col-sm-6">
+                                <label for="{{ form.medical_insurer_name_issuer.id_for_label }}" class="form-label">保険者名称・交付者</label>
+                                {% bootstrap_field form.medical_insurer_name_issuer show_label=False %}
+                            </div>
+                            <div class="col-xl-4 col-lg-5 col-md-5 col-sm-6">
+                                <label for="{{ form.medical_insurer_number.id_for_label }}" class="form-label">保険者番号</label>
+                                {% bootstrap_field form.medical_insurer_number show_label=False %}
+                            </div>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <div class="mb-2">
+                                    <span class="form-label">被保険者番号</span>
+                                </div>
+                                <div class="d-flex align-items-center gap-2 flex-wrap">
+                                    <span class="text-nowrap">記号</span>
+                                    <div style="width: 120px;">
+                                        {% bootstrap_field form.medical_insurance_symbol show_label=False %}
+                                    </div>
+                                    <span class="text-nowrap">番号</span>
+                                    <div style="width: 200px;">
+                                        {% bootstrap_field form.medical_insurance_number show_label=False %}
+                                    </div>
+                                </div>
+                                <div class="mt-1">
+                                    <small class="text-muted">医療保険証に記載されている被保険者番号です（介護保険の被保険者番号とは別の番号）</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+        </div>
+        
+        <!-- 家族情報タブ -->
+        <div class="tab-pane fade pt-4" id="family" role="tabpanel" aria-labelledby="family-tab">
+                    <!-- 家族1 -->
+                    <div class="insurance-subsection">
+                        <h6 class="text-muted mb-3 pb-1" style="border-bottom: 1px solid #dee2e6; width: 50%;"><i class="fas fa-user me-2"></i>家族1</h6>
+                        <div class="row g-3 mb-3">
+                            <div class="col-xl-8 col-lg-7 col-md-7 col-sm-6">
+                                <label for="{{ form.family_name1.id_for_label }}" class="form-label">氏名</label>
+                                {% bootstrap_field form.family_name1 show_label=False %}
+                            </div>
+                            <div class="col-xl-4 col-lg-5 col-md-5 col-sm-6">
+                                <label for="{{ form.family_relationship1.id_for_label }}" class="form-label">続柄</label>
+                                {% bootstrap_field form.family_relationship1 show_label=False %}
+                            </div>
+                        </div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-xl-8 col-lg-7 col-md-7 col-sm-6">
+                                <label for="{{ form.family_address1.id_for_label }}" class="form-label">住所</label>
+                                {% bootstrap_field form.family_address1 show_label=False %}
+                            </div>
+                            <div class="col-xl-4 col-lg-5 col-md-5 col-sm-6">
+                                <label for="{{ form.family_contact1.id_for_label }}" class="form-label">連絡先</label>
+                                {% bootstrap_field form.family_contact1 show_label=False %}
+                            </div>
+                        </div>
+                        
+                        <div style="border-top: 1px solid #dee2e6; width: 50%; margin: 1rem 0;"></div>
+                        
+                        <div class="row g-3 mb-3">
+                            <div class="col-xl-4 col-lg-4 col-md-4 col-sm-6">
+                                <label for="{{ form.family_living_status1.id_for_label }}" class="form-label">同居/別居</label>
+                                {% bootstrap_field form.family_living_status1 show_label=False %}
+                            </div>
+                            <div class="col-xl-4 col-lg-4 col-md-4 col-sm-6">
+                                <label for="{{ form.family_care_status1.id_for_label }}" class="form-label">介護状況</label>
+                                {% bootstrap_field form.family_care_status1 show_label=False %}
+                            </div>
+                            <div class="col-xl-4 col-lg-4 col-md-4 col-sm-6">
+                                <label for="{{ form.family_employment1.id_for_label }}" class="form-label">就労状況</label>
+                                {% bootstrap_field form.family_employment1 show_label=False %}
+                            </div>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label for="{{ form.family_notes1.id_for_label }}" class="form-label">備考</label>
+                                {% bootstrap_field form.family_notes1 show_label=False %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 家族2 -->
+                    <div class="insurance-subsection">
+                        <h6 class="text-muted mb-3 pb-1" style="border-bottom: 1px solid #dee2e6; width: 50%;"><i class="fas fa-user me-2"></i>家族2</h6>
+                        <div class="row g-3 mb-3">
+                            <div class="col-xl-8 col-lg-7 col-md-7 col-sm-6">
+                                <label for="{{ form.family_name2.id_for_label }}" class="form-label">氏名</label>
+                                {% bootstrap_field form.family_name2 show_label=False %}
+                            </div>
+                            <div class="col-xl-4 col-lg-5 col-md-5 col-sm-6">
+                                <label for="{{ form.family_relationship2.id_for_label }}" class="form-label">続柄</label>
+                                {% bootstrap_field form.family_relationship2 show_label=False %}
+                            </div>
+                        </div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-xl-8 col-lg-7 col-md-7 col-sm-6">
+                                <label for="{{ form.family_address2.id_for_label }}" class="form-label">住所</label>
+                                {% bootstrap_field form.family_address2 show_label=False %}
+                            </div>
+                            <div class="col-xl-4 col-lg-5 col-md-5 col-sm-6">
+                                <label for="{{ form.family_contact2.id_for_label }}" class="form-label">連絡先</label>
+                                {% bootstrap_field form.family_contact2 show_label=False %}
+                            </div>
+                        </div>
+                        
+                        <div style="border-top: 1px solid #dee2e6; width: 50%; margin: 1rem 0;"></div>
+                        
+                        <div class="row g-3 mb-3">
+                            <div class="col-xl-4 col-lg-4 col-md-4 col-sm-6">
+                                <label for="{{ form.family_living_status2.id_for_label }}" class="form-label">同居/別居</label>
+                                {% bootstrap_field form.family_living_status2 show_label=False %}
+                            </div>
+                            <div class="col-xl-4 col-lg-4 col-md-4 col-sm-6">
+                                <label for="{{ form.family_care_status2.id_for_label }}" class="form-label">介護状況</label>
+                                {% bootstrap_field form.family_care_status2 show_label=False %}
+                            </div>
+                            <div class="col-xl-4 col-lg-4 col-md-4 col-sm-6">
+                                <label for="{{ form.family_employment2.id_for_label }}" class="form-label">就労状況</label>
+                                {% bootstrap_field form.family_employment2 show_label=False %}
+                            </div>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label for="{{ form.family_notes2.id_for_label }}" class="form-label">備考</label>
+                                {% bootstrap_field form.family_notes2 show_label=False %}
+                            </div>
+                        </div>
+                    </div>
+        </div>
+    </div>
+
+    <!-- ボタン -->
+    <div class="d-flex justify-content-between align-items-center mt-4">
+        <div class="d-flex gap-3">
+            {% if client %}
+                <button type="button" class="btn btn-outline-secondary btn-delete px-4 py-2" data-bs-toggle="modal" data-bs-target="#deleteModal" style="transition: all 0.2s ease;">
+                    <i class="fas fa-trash me-1"></i> 削除
+                </button>
+            {% endif %}
+            <a href="{% if client %}{% url 'client_detail' client.pk %}{% else %}{% url 'client_list' %}{% endif %}" class="btn btn-outline-secondary btn-back px-4 py-2" onclick="return confirmGoBack()" style="transition: all 0.2s ease;">
+                <i class="fas fa-arrow-left me-1"></i> 戻る
+            </a>
+        </div>
+        <div>
+            <button type="submit" class="btn btn-outline-secondary btn-save px-5 py-2" style="transition: all 0.2s ease;">
+                <i class="fas fa-save me-1"></i> 保存
+            </button>
+        </div>
+    </div>
+</form>
+
+<!-- 削除確認モーダル -->
+{% if client %}
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle text-danger"></i> 削除確認
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>利用者「<strong>{{ client.name }}</strong>」を削除しますか？</p>
+                <p class="text-danger"><small><i class="fas fa-warning"></i> この操作は元に戻せません。関連するアセスメントも削除されます。</small></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">キャンセル</button>
+                <a href="{% url 'client_delete' client.pk %}" class="btn btn-danger">
+                    <i class="fas fa-trash"></i> 削除する
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<script>
+function confirmGoBack() {
+    return confirm('入力中のデータがすべて失われます。本当に戻りますか？');
+}
+</script>
+{% endblock %}
+

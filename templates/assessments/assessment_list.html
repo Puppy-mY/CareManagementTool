@@ -1,0 +1,344 @@
+{% extends 'base.html' %}
+{% load custom_filters %}
+
+{% block title %}アセスメント一覧 - {{ block.super }}{% endblock %}
+
+{% block content %}
+<!-- 権限情報（開発用） -->
+<div class="permission-label">
+    居宅
+</div>
+
+<style>
+    /* テーブルの縦枠線を削除 */
+    .table-bordered th,
+    .table-bordered td {
+        border-left: none;
+        border-right: none;
+    }
+
+    /* 操作列の余白調整 */
+    .table td:last-child,
+    .table th:last-child {
+        padding-right: 0.5rem;
+    }
+
+    /* ボタンサイズ調整 */
+    .btn-group .btn {
+        height: 34px;
+        line-height: 1.2;
+        padding-top: 0.3rem;
+        padding-bottom: 0.3rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-color: #718096;
+        color: #718096;
+        white-space: nowrap;
+    }
+
+    /* プレビューボタンは2行 */
+    .btn-group .btn-preview {
+        font-size: 0.65rem;
+        line-height: 1.2;
+        min-width: 60px;
+        flex-shrink: 0;
+        white-space: normal;
+    }
+
+    /* Excelボタン - 緑っぽい色 */
+    a.btn-excel:hover,
+    .btn.btn-excel:hover,
+    .btn-outline-secondary.btn-excel:hover {
+        background-color: #d1f2d1 !important;
+        border-color: #198754 !important;
+        color: #198754 !important;
+        transform: translateY(-1px) !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+    }
+
+    /* バッジの垂直位置調整 */
+    .card-header .badge {
+        vertical-align: baseline;
+        position: relative;
+        top: -2px;
+    }
+
+    /* テーブルセルを上下中央揃え */
+    .table td,
+    .table th {
+        vertical-align: middle;
+        font-size: 14px;
+    }
+
+    /* 作成日の文字サイズを小さく */
+    .assessment-date {
+        font-size: 0.85rem;
+        white-space: nowrap;
+    }
+
+    /* ふりがなのスタイル（利用者一覧と同じ） */
+    .client-name-col small {
+        font-size: 0.875em;
+    }
+
+    /* 利用者名の列幅を広げる */
+    .client-name-col {
+        width: 20%;
+        white-space: nowrap;
+    }
+
+    /* 作成日の列幅を調整 */
+    .assessment-date-col {
+        width: 12%;
+    }
+
+    /* アセスメント理由の列幅 */
+    .assessment-type-col {
+        width: 15%;
+    }
+
+    /* 面談場所の列幅 */
+    .interview-location-col {
+        width: 15%;
+    }
+
+    /* 作成者の列幅 */
+    .assessor-col {
+        width: 12%;
+    }
+
+    /* 操作の列幅 */
+    .actions-col {
+        width: 15%;
+    }
+
+    /* スマホサイズでは理由と面談場所を非表示 */
+    @media (max-width: 768px) {
+        .assessment-type-col,
+        .interview-location-col {
+            display: none;
+        }
+    }
+
+    /* ページネーションのスタイル統一（グレー枠、ホバー時青） */
+    .pagination .page-link {
+        color: #718096;
+        border-color: #718096;
+        transition: all 0.2s ease;
+    }
+
+    .pagination .page-link:hover {
+        background-color: #e3f2fd;
+        border-color: #0d6efd;
+        color: #0d6efd;
+    }
+
+    .pagination .page-item.active .page-link {
+        background-color: #e3f2fd;
+        border-color: #0d6efd;
+        color: #0d6efd;
+    }
+</style>
+
+<div class="row">
+    <div class="col-12">
+        <div class="mb-4">
+            <h1><i class="fas fa-file-medical-alt"></i> アセスメント一覧</h1>
+        </div>
+    </div>
+</div>
+
+<!-- 検索・フィルタ -->
+<div class="row mb-4" style="margin-top: 2rem;">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div id="filterForm" class="row g-3">
+                    <div class="col-md-5">
+                        <label for="search" class="form-label">
+                            <i class="fas fa-search"></i> 検索
+                        </label>
+                        <input type="text" class="form-control" id="search"
+                               placeholder="利用者名、ふりがなで検索" autocomplete="off">
+                    </div>
+
+                    <div class="col-md-3">
+                        <label for="care_level" class="form-label">
+                            <i class="fas fa-user-nurse"></i> 要介護度
+                        </label>
+                        <select class="form-select" id="care_level">
+                            <option value="">すべて</option>
+                            <option value="support1">要支援1</option>
+                            <option value="support2">要支援2</option>
+                            <option value="care1">要介護1</option>
+                            <option value="care2">要介護2</option>
+                            <option value="care3">要介護3</option>
+                            <option value="care4">要介護4</option>
+                            <option value="care5">要介護5</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label for="assessor" class="form-label">
+                            <i class="fas fa-user-tie"></i> 作成者
+                        </label>
+                        <select class="form-select" id="assessor">
+                            <option value="">すべて</option>
+                            {% for user in all_assessors %}
+                                <option value="{{ user.id }}">
+                                    {{ user.profile.get_full_name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-1 d-flex align-items-end">
+                        <button type="button" id="clearFilters" class="btn btn-outline-secondary w-100" title="クリア">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- アセスメント一覧 -->
+<div class="row">
+    <div class="col-12">
+        <div class="card" style="border: none; background-color: white;">
+            <div class="card-header" style="background-color: white; border: none;">
+                <h5 class="mb-0">
+                    <i class="fas fa-list"></i> すべてのアセスメント
+                    <span id="countBadge" class="badge" style="background-color: #f5f5f5; border: 1px solid #999; color: #333; vertical-align: middle;">{{ assessments|length }}件</span>
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                {% if assessments %}
+                    <div class="table-responsive">
+                        <table class="table table-hover table-bordered mb-0" id="assessmentTable">
+                            <thead>
+                                <tr style="background-color: #f5f5f5;">
+                                    <th style="background-color: #f5f5f5;" class="client-name-col">利用者</th>
+                                    <th style="background-color: #f5f5f5;" class="assessment-date-col">作成日</th>
+                                    <th style="background-color: #f5f5f5;" class="assessment-type-col">理由</th>
+                                    <th style="background-color: #f5f5f5;" class="interview-location-col">面談場所</th>
+                                    <th style="background-color: #f5f5f5;" class="assessor-col">作成者</th>
+                                    <th style="background-color: #f5f5f5;" class="actions-col">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for assessment in assessments %}
+                                <tr class="assessment-row"
+                                    data-name="{{ assessment.client.name }}"
+                                    data-furigana="{{ assessment.client.furigana }}"
+                                    data-care-level="{{ assessment.client.care_level }}"
+                                    data-assessor-id="{{ assessment.assessor.id }}">
+                                    <td class="client-name-col">
+                                        <strong>{{ assessment.client.name }}</strong><br>
+                                        <small class="text-muted">{{ assessment.client.furigana }}</small>
+                                    </td>
+                                    <td class="assessment-date-col">
+                                        <span class="assessment-date">{{ assessment.assessment_date|wareki }}</span>
+                                    </td>
+                                    <td class="assessment-type-col">{{ assessment.get_assessment_type_display }}</td>
+                                    <td class="interview-location-col">{{ assessment.get_interview_location_display }}</td>
+                                    <td class="assessor-col">{{ assessment.assessor.username }}</td>
+                                    <td class="actions-col">
+                                        <div class="btn-group btn-group-sm d-flex justify-content-end">
+                                            <button type="button" class="btn btn-outline-secondary btn-sm btn-preview" style="transition: all 0.2s ease; font-size: 0.7rem; line-height: 1.2;" disabled>
+                                                プレビュー<br>開発中
+                                            </button>
+                                            <a href="{% url 'assessment_excel_export' assessment.pk %}" class="btn btn-outline-success btn-sm btn-excel" style="transition: all 0.2s ease;">
+                                                <i class="fas fa-file-excel me-1"></i>Excel
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-file-medical-alt fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">アセスメントがまだ作成されていません</h5>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('search');
+    const careLevelSelect = document.getElementById('care_level');
+    const assessorSelect = document.getElementById('assessor');
+    const clearButton = document.getElementById('clearFilters');
+    const rows = document.querySelectorAll('.assessment-row');
+    const countBadge = document.getElementById('countBadge');
+
+    // フィルタリング関数
+    function filterAssessments() {
+        const searchText = searchInput.value.toLowerCase();
+        const selectedCareLevel = careLevelSelect.value;
+        const selectedAssessor = assessorSelect.value;
+        let visibleCount = 0;
+
+        rows.forEach(function(row) {
+            const name = row.getAttribute('data-name').toLowerCase();
+            const furigana = row.getAttribute('data-furigana').toLowerCase();
+            const careLevel = row.getAttribute('data-care-level');
+            const assessorId = row.getAttribute('data-assessor-id');
+
+            const matchesSearch = !searchText ||
+                name.includes(searchText) ||
+                furigana.includes(searchText);
+            const matchesCareLevel = !selectedCareLevel || careLevel === selectedCareLevel;
+            const matchesAssessor = !selectedAssessor || assessorId === selectedAssessor;
+
+            if (matchesSearch && matchesCareLevel && matchesAssessor) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        // 件数バッジを更新
+        countBadge.textContent = visibleCount + '件';
+    }
+
+    // 検索入力イベント
+    if (searchInput) {
+        searchInput.addEventListener('input', filterAssessments);
+        searchInput.addEventListener('focus', function() {
+            this.select();
+        });
+    }
+
+    // プルダウン変更イベント
+    if (careLevelSelect) {
+        careLevelSelect.addEventListener('change', filterAssessments);
+    }
+    if (assessorSelect) {
+        assessorSelect.addEventListener('change', filterAssessments);
+    }
+
+    // クリアボタン
+    if (clearButton) {
+        clearButton.addEventListener('click', function() {
+            searchInput.value = '';
+            careLevelSelect.value = '';
+            assessorSelect.value = '';
+            filterAssessments();
+        });
+    }
+});
+</script>
+{% endblock %}

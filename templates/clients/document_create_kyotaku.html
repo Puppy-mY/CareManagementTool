@@ -1,0 +1,444 @@
+{% extends 'clients/document_create_base.html' %}
+
+{% block provider_section %}
+<!-- 居宅サービス計画の作成を依頼（変更）する事業者 -->
+<div class="row g-3 mb-4">
+    <div class="col-12">
+        <label class="form-label">居宅サービス計画の作成を依頼（変更）する居宅介護支援事業者 <span class="text-danger">*</span></label>
+        <div class="d-flex flex-column gap-2" style="width: fit-content;">
+            <select name="kyotaku_provider" id="kyotaku_provider" class="form-select" style="width: 400px;">
+                {% if user.profile.home_care_office %}
+                <option value="{{ user.profile.home_care_office.id }}" selected>{{ user.profile.home_care_office.name }}</option>
+                {% else %}
+                <option value="" selected>居宅介護支援事業所　安濃津ろまん</option>
+                {% endif %}
+            </select>
+        </div>
+        <small class="text-muted mt-1">※所属事業所から自動入力されています</small>
+    </div>
+</div>
+
+<!-- 事業所情報 -->
+<div id="kyotaku_detail_section" class="accordion" style="margin: 0.5rem 0 1rem 0;">
+    <div class="accordion-item" style="border: none; background-color: #f8f9fa; border-radius: 0.5rem;">
+        <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#kyotakuDetailCollapse" aria-expanded="false" aria-controls="kyotakuDetailCollapse" style="background-color: #f8f9fa; padding: 0.5rem 1rem; color: #333;">
+                <span id="kyotaku_status_icon" class="me-2"><i class="fas fa-check-circle" style="color: rgba(25, 135, 84, 0.5);"></i></span>事業所情報
+            </button>
+        </h2>
+        <div id="kyotakuDetailCollapse" class="accordion-collapse collapse">
+            <div class="accordion-body row g-3" style="padding: 0.5rem 1rem 1rem 1rem;">
+                <div class="col-md-4">
+                    <label class="form-label">事業所番号 <span class="text-danger">*</span></label>
+                    <input type="text" name="kyotaku_office_number" id="kyotaku_office_number" class="form-control" value="{% if user.profile.home_care_office %}{{ user.profile.home_care_office.office_number }}{% else %}2470100419{% endif %}" readonly>
+                </div>
+                <div class="col-12">
+                    <label class="form-label">所在地 <span class="text-danger">*</span></label>
+                    <div class="d-flex gap-2">
+                        <div class="input-group" style="width: 140px; flex-shrink: 0;">
+                            <span class="input-group-text">〒</span>
+                            <input type="text" name="kyotaku_postal_code" id="kyotaku_postal_code" class="form-control" value="{% if user.profile.home_care_office %}{{ user.profile.home_care_office.postal_code }}{% else %}514-0009{% endif %}" placeholder="000-0000" maxlength="8" style="width: 90px;" readonly>
+                        </div>
+                        <div class="flex-grow-1">
+                            <input type="text" name="kyotaku_address" id="kyotaku_address" class="form-control" value="{% if user.profile.home_care_office %}{{ user.profile.home_care_office.address }}{% else %}三重県津市羽所町○○{% endif %}" placeholder="住所を入力" readonly>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">電話番号 <span class="text-danger">*</span></label>
+                    <input type="text" name="kyotaku_phone" id="kyotaku_phone" class="form-control" value="{% if user.profile.home_care_office %}{{ user.profile.home_care_office.phone }}{% else %}059-123-4567{% endif %}" placeholder="電話番号を入力" readonly>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">担当者氏名 <span class="text-danger">*</span></label>
+                    <input type="text" name="kyotaku_staff_name" id="kyotaku_staff_name" class="form-control" value="{% if initial_data.kyotaku_staff_name %}{{ initial_data.kyotaku_staff_name }}{% elif user.is_authenticated %}{{ user.profile.get_full_name }}{% endif %}" placeholder="担当者氏名を入力">
+                </div>
+
+                <!-- 編集ボタン -->
+                <div class="col-12 text-end mt-2">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openOfficeMasterDrawer();">
+                        <i class="fas fa-edit me-1"></i>事業所マスタデータを編集
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- マスタ編集ドロワー（居宅版） -->
+<div class="drawer-overlay" id="kyotakuDrawerOverlay"></div>
+<div class="drawer" id="kyotakuDrawer">
+    <div class="drawer-header">
+        <h5 id="kyotakuDrawerTitle" class="mb-0"></h5>
+        <button type="button" class="btn-close" onclick="closeKyotakuMasterDrawer();"></button>
+    </div>
+    <div class="drawer-body" id="kyotakuDrawerBody">
+        <!-- ドロワーの内容は JavaScript で動的に設定 -->
+    </div>
+    <div class="drawer-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeKyotakuMasterDrawer()">キャンセル</button>
+        <button type="button" class="btn btn-primary" onclick="saveKyotakuMasterData()">保存して反映</button>
+    </div>
+</div>
+{% endblock %}
+
+{% block request_reason_section %}
+<!-- 依頼事由（居宅版） -->
+<div class="row g-3 mb-4">
+    <div class="col-12">
+        <label class="form-label">居宅サービス計画の作成を依頼（変更）する事由 <span class="text-danger">*</span></label>
+        <div class="mt-2">
+            <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" name="request_reason" id="reason_new" value="new_or_change" style="border-radius: 3px;" {% if initial_data.reason_new_or_change %}checked{% endif %}>
+                <label class="form-check-label" for="reason_new">
+                    新規または事業所変更のため
+                </label>
+            </div>
+            <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" name="request_reason" id="reason_level_change" value="level_change" style="border-radius: 3px;" {% if initial_data.reason_level_change %}checked{% endif %}>
+                <label class="form-check-label" for="reason_level_change">
+                    要支援から要介護へ変更のため
+                </label>
+            </div>
+            <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" name="request_reason" id="reason_provisional" value="provisional_different" style="border-radius: 3px;" {% if initial_data.reason_provisional_different %}checked{% endif %}>
+                <label class="form-check-label" for="reason_provisional">
+                    暫定での届出と認定結果が異なるため
+                </label>
+            </div>
+            <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" name="request_reason" id="reason_other" value="other" style="border-radius: 3px;" {% if initial_data.reason_other %}checked{% endif %}>
+                <label class="form-check-label" for="reason_other">
+                    その他
+                </label>
+            </div>
+            <div id="other_reason_input" style="{% if initial_data.reason_other %}display: block;{% else %}display: none;{% endif %}" class="mt-3">
+                <label class="form-label">その他の事由（具体的に） <small class="text-muted">※全角25文字まで</small></label>
+                <div style="width: 420px;">
+                    <input type="text" name="other_reason_detail" id="other_reason_detail" class="form-control" placeholder="具体的な事由を入力" value="{{ initial_data.other_reason_detail|default:'' }}" maxlength="25">
+                    <div class="text-end mt-1"><small class="text-muted"><span id="other_reason_count">0</span>/25文字</small></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_styles %}
+<style>
+/* ドロワースタイル */
+.drawer-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1040;
+    display: none;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+}
+
+.drawer-overlay.show {
+    display: block;
+    opacity: 1;
+}
+
+.drawer {
+    position: fixed;
+    top: 0;
+    right: -500px;
+    width: 500px;
+    height: 100%;
+    background-color: #fff;
+    box-shadow: -2px 0 8px rgba(0, 0, 0, 0.15);
+    z-index: 1050;
+    display: flex;
+    flex-direction: column;
+    transition: right 0.3s ease-in-out;
+}
+
+.drawer.show {
+    right: 0;
+}
+
+.drawer-header {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #dee2e6;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.drawer-body {
+    flex: 1;
+    padding: 1.5rem;
+    overflow-y: auto;
+}
+
+.drawer-footer {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid #dee2e6;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+</style>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// 現在のドロワーの編集データ
+let currentEditData = {};
+
+// CSRFトークン取得用関数
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// 事業所情報のステータスアイコンを更新（グローバルスコープに登録）
+window.updateKyotakuStatusIcon = function() {
+    const statusIcon = document.getElementById('kyotaku_status_icon');
+    if (!statusIcon) return;
+
+    const staffName = document.getElementById('kyotaku_staff_name');
+
+    // 必須項目（担当者氏名）が入力されているかチェック
+    const isComplete = staffName && staffName.value.trim() !== '';
+
+    if (isComplete) {
+        statusIcon.innerHTML = '<i class="fas fa-check-circle" style="color: rgba(25, 135, 84, 0.5);"></i>';
+    } else {
+        statusIcon.innerHTML = '<i class="fas fa-circle-exclamation" style="color: rgba(220, 53, 69, 0.5);"></i>';
+    }
+};
+
+// 居宅版の事業所情報バリデーション
+function validateKyotakuProvider() {
+    const staffName = document.getElementById('kyotaku_staff_name');
+
+    const openAccordionAndFocus = function(element) {
+        const collapse = document.getElementById('kyotakuDetailCollapse');
+        if (collapse && !collapse.classList.contains('show')) {
+            new bootstrap.Collapse(collapse, { show: true });
+            setTimeout(function() {
+                element.focus();
+                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 400);
+        } else {
+            element.focus();
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    };
+
+    if (!staffName || !staffName.value.trim()) {
+        alert('担当者氏名を入力してください。');
+        openAccordionAndFocus(staffName);
+        return false;
+    }
+    return true;
+}
+
+// 居宅版専用の初期化
+function initDocumentSpecific() {
+    console.log('居宅サービス計画作成依頼届出書が読み込まれました');
+
+    // その他の事由 文字数カウント
+    const otherReasonDetail = document.getElementById('other_reason_detail');
+    const otherReasonCount = document.getElementById('other_reason_count');
+    if (otherReasonDetail && otherReasonCount) {
+        otherReasonCount.textContent = otherReasonDetail.value.length;
+        otherReasonDetail.addEventListener('input', function() {
+            otherReasonCount.textContent = this.value.length;
+        });
+    }
+
+    // 事業所情報のステータスアイコン更新
+    updateKyotakuStatusIcon();
+
+    // 担当者氏名の入力時にアイコンを更新
+    const staffNameField = document.getElementById('kyotaku_staff_name');
+    if (staffNameField) {
+        staffNameField.addEventListener('input', updateKyotakuStatusIcon);
+    }
+}
+
+// 居宅版のバリデーション（ベーステンプレートから呼び出される）
+function validateDocumentSpecific() {
+    return validateKyotakuProvider();
+}
+
+// ドロワーを開く
+function openKyotakuMasterDrawer() {
+    const drawer = document.getElementById('kyotakuDrawer');
+    const overlay = document.getElementById('kyotakuDrawerOverlay');
+    if (drawer && overlay) {
+        drawer.classList.add('show');
+        overlay.classList.add('show');
+    }
+}
+
+// ドロワーを閉じる
+function closeKyotakuMasterDrawer() {
+    const drawer = document.getElementById('kyotakuDrawer');
+    const overlay = document.getElementById('kyotakuDrawerOverlay');
+    if (drawer && overlay) {
+        drawer.classList.remove('show');
+        overlay.classList.remove('show');
+    }
+}
+
+// 事業所編集ドロワーを開く
+function openOfficeMasterDrawer() {
+    console.log('openOfficeMasterDrawer called');
+
+    {% if user.profile.home_care_office %}
+    console.log('user.profile.home_care_office exists');
+    // 現在の値を保存
+    currentEditData = {
+        id: {{ user.profile.home_care_office.id }},
+        name: '{{ user.profile.home_care_office.name }}',
+        office_number: '{{ user.profile.home_care_office.office_number }}',
+        postal_code: '{{ user.profile.home_care_office.postal_code }}',
+        address: '{{ user.profile.home_care_office.address }}',
+        phone: '{{ user.profile.home_care_office.phone }}',
+        fax: '{{ user.profile.home_care_office.fax }}',
+        manager_name: '{{ user.profile.home_care_office.manager_name }}'
+    };
+
+    // ドロワーのタイトルを設定
+    document.getElementById('kyotakuDrawerTitle').innerHTML = '<i class="fas fa-hospital me-2"></i>居宅介護支援事業所編集';
+
+    // ドロワーの内容を設定
+    const drawerBody = document.getElementById('kyotakuDrawerBody');
+    drawerBody.innerHTML = `
+        <div class="mb-3">
+            <label class="form-label">事業所名 <span class="text-danger">*</span></label>
+            <input type="text" id="edit_office_name" class="form-control" value="${currentEditData.name || ''}" readonly>
+            <small class="text-muted">※事業所名は変更できません</small>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">事業所番号 <span class="text-danger">*</span></label>
+            <input type="text" id="edit_office_number" class="form-control" value="${currentEditData.office_number || ''}" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">郵便番号 <span class="text-danger">*</span></label>
+            <input type="text" id="edit_office_postal_code" class="form-control" value="${currentEditData.postal_code || ''}" placeholder="000-0000" maxlength="8" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">住所 <span class="text-danger">*</span></label>
+            <input type="text" id="edit_office_address" class="form-control" value="${currentEditData.address || ''}" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">電話番号 <span class="text-danger">*</span></label>
+            <input type="text" id="edit_office_phone" class="form-control" value="${currentEditData.phone || ''}" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">FAX番号</label>
+            <input type="text" id="edit_office_fax" class="form-control" value="${currentEditData.fax || ''}">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">管理者氏名 <span class="text-danger">*</span></label>
+            <input type="text" id="edit_office_manager_name" class="form-control" value="${currentEditData.manager_name || ''}" required>
+        </div>
+    `;
+
+    openKyotakuMasterDrawer();
+    {% else %}
+    alert('居宅介護支援事業所の情報が設定されていません。');
+    {% endif %}
+}
+
+// マスタデータを保存
+function saveKyotakuMasterData() {
+    saveOfficeData();
+}
+
+// 事業所データを保存
+function saveOfficeData() {
+    const officeNumber = document.getElementById('edit_office_number').value.trim();
+    const postalCode = document.getElementById('edit_office_postal_code').value.trim();
+    const address = document.getElementById('edit_office_address').value.trim();
+    const phone = document.getElementById('edit_office_phone').value.trim();
+    const fax = document.getElementById('edit_office_fax').value.trim();
+    const managerName = document.getElementById('edit_office_manager_name').value.trim();
+
+    if (!officeNumber || !postalCode || !address || !phone || !managerName) {
+        alert('すべての必須項目を入力してください。');
+        return;
+    }
+
+    // マスタデータベースを更新
+    const officeId = currentEditData.id;
+    fetch(`/clients/office/${officeId}/update-master/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({
+            office_number: officeNumber,
+            postal_code: postalCode,
+            address: address,
+            phone: phone
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // フォームの値を更新
+            document.getElementById('kyotaku_office_number').value = officeNumber;
+            document.getElementById('kyotaku_postal_code').value = postalCode;
+            document.getElementById('kyotaku_address').value = address;
+            document.getElementById('kyotaku_phone').value = phone;
+
+            // currentEditDataを更新（次回編集時に最新データを表示するため）
+            currentEditData.office_number = officeNumber;
+            currentEditData.postal_code = postalCode;
+            currentEditData.address = address;
+            currentEditData.phone = phone;
+
+            // ドロワーを閉じる
+            closeKyotakuMasterDrawer();
+
+            // ステータスアイコンをリアルタイムで更新
+            try {
+                if (typeof updateKyotakuStatusIcon === 'function') {
+                    updateKyotakuStatusIcon();
+                } else {
+                    console.warn('[WARN] updateKyotakuStatusIcon function not found');
+                }
+            } catch (iconError) {
+                console.error('[ERROR] Failed to update kyotaku status icon:', iconError);
+            }
+
+            alert('事業所のマスタデータを更新し、書類フォームに反映しました。');
+        } else {
+            alert('マスタデータの更新に失敗しました: ' + (data.error || '不明なエラー'));
+        }
+    })
+    .catch(error => {
+        console.error('Error updating office master:', error);
+        alert('マスタデータの更新中にエラーが発生しました。');
+    });
+}
+
+// オーバーレイクリックで閉じる
+document.addEventListener('DOMContentLoaded', function() {
+    const overlay = document.getElementById('kyotakuDrawerOverlay');
+    if (overlay) {
+        overlay.addEventListener('click', closeKyotakuMasterDrawer);
+    }
+});
+</script>
+{% endblock %}

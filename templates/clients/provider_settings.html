@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+
+{% block title %}事業所設定 | {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-building"></i> 事業所設定</h2>
+    <div>
+        <a href="{% url 'client_list' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> 利用者一覧に戻る
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i>
+            <strong>事業所別加算設定</strong><br>
+            各事業所で取得している加算を設定できます。設定した加算は、該当事業所のサービス利用時に自動で適用されます。
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    {% for provider in providers %}
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-building text-primary"></i>
+                        {{ provider.name }}
+                    </h5>
+                    <span class="badge bg-secondary">{{ provider.get_service_category_display }}</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-8">
+                        <p class="text-muted mb-2">
+                            <i class="fas fa-calendar-alt"></i> 作成日: {{ provider.created_at|date:"Y年n月j日" }}
+                        </p>
+                        <div class="mb-3">
+                            {% if provider.addon_settings.exists %}
+                                <small class="text-success">
+                                    <i class="fas fa-check-circle"></i> 
+                                    {{ provider.addon_settings.count }}件の加算が設定済み
+                                </small>
+                            {% else %}
+                                <small class="text-muted">
+                                    <i class="fas fa-exclamation-triangle"></i> 
+                                    加算未設定
+                                </small>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-4 text-end">
+                        <a href="{% url 'provider_addon_settings' provider.pk %}" class="btn btn-primary">
+                            <i class="fas fa-cog"></i> 加算設定
+                        </a>
+                    </div>
+                </div>
+                
+                {% if provider.addon_settings.exists %}
+                    <hr>
+                    <div>
+                        <small class="text-muted d-block mb-2">現在有効な加算:</small>
+                        {% for setting in provider.addon_settings.all %}
+                            {% if setting.is_enabled %}
+                                <span class="badge bg-success me-1 mb-1">
+                                    {{ setting.addon.name }}
+                                    {% if setting.addon.is_addition %}+{% else %}-{% endif %}{{ setting.addon.units }}単位
+                                </span>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% if not providers %}
+<div class="text-center py-5">
+    <i class="fas fa-building fa-3x text-muted mb-3"></i>
+    <h5 class="text-muted">事業所が登録されていません</h5>
+    <p class="text-muted">事業所を登録してから加算設定を行ってください。</p>
+</div>
+{% endif %}
+
+{% endblock %}

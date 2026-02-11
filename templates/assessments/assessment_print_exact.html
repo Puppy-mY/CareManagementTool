@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ client.name }}様 - アセスメントシート（完全版）</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'MS Gothic', monospace; font-size: 8pt; color: #000; background: #fff; }
+        
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto 10px auto;
+            padding: 10mm;
+            background: white;
+            page-break-after: always;
+        }
+        
+        .excel-grid {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+            font-size: 7pt;
+        }
+        
+        .excel-grid td {
+            border: 1px solid #000;
+            padding: 1px 2px;
+            height: 5.0mm;  /* 実際のExcel行高に合わせる */
+            vertical-align: top;
+            overflow: hidden;
+            font-size: 7pt;
+        }
+
+        /* 実際のExcel列幅に基づく列定義 */
+        .excel-grid colgroup col:nth-child(1)  { width: 7.1mm; }   /* A列 */
+        .excel-grid colgroup col:nth-child(2)  { width: 6.1mm; }   /* B列 */
+        .excel-grid colgroup col:nth-child(3)  { width: 32.5mm; }  /* C列 */
+        .excel-grid colgroup col:nth-child(4)  { width: 32.5mm; }  /* D列 */
+        .excel-grid colgroup col:nth-child(5)  { width: 32.5mm; }  /* E列 */
+        .excel-grid colgroup col:nth-child(6)  { width: 32.5mm; }  /* F列 */
+        .excel-grid colgroup col:nth-child(7)  { width: 5.0mm; }   /* G列 */
+        .excel-grid colgroup col:nth-child(8)  { width: 7.5mm; }   /* H列 */
+        .excel-grid colgroup col:nth-child(9)  { width: 6.1mm; }   /* I列 */
+        .excel-grid colgroup col:nth-child(10) { width: 32.5mm; }  /* J列 */
+        .excel-grid colgroup col:nth-child(11) { width: 32.5mm; }  /* K列 */
+        .excel-grid colgroup col:nth-child(12) { width: 32.5mm; }  /* L列 */
+        .excel-grid colgroup col:nth-child(13) { width: 32.5mm; }  /* M列 */
+        .excel-grid colgroup col:nth-child(14) { width: 32.5mm; }  /* N列 */
+        .excel-grid colgroup col:nth-child(15) { width: 32.5mm; }  /* O列 */
+        .excel-grid colgroup col:nth-child(16) { width: 32.5mm; }  /* P列 */
+        .excel-grid colgroup col:nth-child(17) { width: 32.5mm; }  /* Q列 */
+        .excel-grid colgroup col:nth-child(18) { width: 32.5mm; }  /* R列 */
+        .excel-grid colgroup col:nth-child(19) { width: 32.5mm; }  /* S列 */
+        .excel-grid colgroup col:nth-child(20) { width: 32.5mm; }  /* T列 */
+        .excel-grid colgroup col:nth-child(21) { width: 32.5mm; }  /* U列 */
+        .excel-grid colgroup col:nth-child(22) { width: 32.5mm; }  /* V列 */
+        .excel-grid colgroup col:nth-child(23) { width: 32.5mm; }  /* W列 */
+        .excel-grid colgroup col:nth-child(24) { width: 32.5mm; }  /* X列 */
+        .excel-grid colgroup col:nth-child(25) { width: 32.5mm; }  /* Y列 */
+        .excel-grid colgroup col:nth-child(26) { width: 32.5mm; }  /* Z列 */
+        .excel-grid colgroup col:nth-child(27) { width: 32.5mm; }  /* AA列 */
+        .excel-grid colgroup col:nth-child(28) { width: 32.5mm; }  /* AB列 */
+        .excel-grid colgroup col:nth-child(29) { width: 32.5mm; }  /* AC列 */
+        .excel-grid colgroup col:nth-child(30) { width: 32.5mm; }  /* AD列 */
+        .excel-grid colgroup col:nth-child(31) { width: 10.0mm; }  /* AE列 */
+        .excel-grid colgroup col:nth-child(32) { width: 6.1mm; }   /* AF列 */
+        .excel-grid colgroup col:nth-child(33) { width: 32.5mm; }  /* AG列 */
+        .excel-grid colgroup col:nth-child(34) { width: 32.5mm; }  /* AH列 */
+        .excel-grid colgroup col:nth-child(35) { width: 32.5mm; }  /* AI列 */
+        .excel-grid colgroup col:nth-child(36) { width: 32.5mm; }  /* AJ列 */
+        .excel-grid colgroup col:nth-child(37) { width: 32.5mm; }  /* AK列 */
+        
+        .bg-gray { background-color: #d9d9d9; }
+        .bg-light-gray { background-color: #f2f2f2; }
+        .bg-white { background-color: #ffffff; }
+        .center { text-align: center; }
+        .bold { font-weight: bold; }
+        .title { font-size: 10pt; font-weight: bold; text-align: center; }
+        
+        .print-controls {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+        }
+        
+        .btn {
+            margin: 2px;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            text-decoration: none;
+            color: white;
+            font-size: 11px;
+        }
+        
+        .btn-print { background: #007bff; }
+        .btn-back { background: #6c757d; }
+        
+        @media print {
+            body { margin: 0; padding: 0; }
+            .page { margin: 0; padding: 5mm; box-shadow: none; }
+            .print-controls { display: none; }
+            .excel-grid td { height: 4.5mm; font-size: 6pt; }
+            @page { size: A4 portrait; margin: 5mm; }
+        }
+    </style>
+</head>
+<body>
+    <div class="print-controls">
+        <button class="btn btn-print" onclick="window.print()">印刷</button>
+        <a href="{% url 'assessment_detail' assessment.pk %}" class="btn btn-back">戻る</a>
+    </div>
+
+    <!-- ページ1 -->
+    <div class="page">
+        <table class="excel-grid">
+            <colgroup>
+                <col><col><col><col><col><col><col><col><col><col>
+                <col><col><col><col><col><col><col><col><col><col>
+                <col><col><col><col><col><col><col><col><col><col>
+                <col><col><col><col><col><col><col>
+            </colgroup>
+            <tr>
+                <td class="bg-white title" colspan="25" rowspan="2">アセスメントシート</td>
+                <td class="bg-white"></td>
+                <td class="bg-white center" colspan="5">作成年月日：</td>
+                <td class="bg-white center" colspan="6"></td>
+            </tr>
+            <tr>
+                <td class="bg-white center" colspan="12">居宅介護支援事業所　安濃津ろまん</td>
+            </tr>
+            <tr>
+                <td class="bg-white center" colspan="6">アセスメントの理由</td>
+                <td class="bg-white center" colspan="11"></td>
+                <td class="bg-white center" colspan="4">面談場所</td>
+                <td class="bg-white center" colspan="8"></td>
+                <td class="bg-white center" colspan="3">作成者</td>
+                <td class="bg-white center" colspan="5"></td>
+            </tr>
+            <tr>
+                <td class="bg-white center" rowspan="5">基本事項</td>
+                <td class="bg-white center" colspan="2">ふりがな</td>
+                <td class="bg-white center" colspan="14">{{ client.furigana|default:'' }}</td>
+                <td class="bg-white center" colspan="6">{{ client.furigana|default:'' }}</td>
+                <td class="bg-white center" colspan="6">{{ client.furigana|default:'' }}</td>
+                <td class="bg-white center" colspan="8">{{ client.furigana|default:'' }}</td>
+            </tr>
+            <tr>
+                <td class="bg-white center" colspan="2" rowspan="2">氏名</td>
+                <td class="bg-white bold center" colspan="12" rowspan="2">{{ client.name|default:'' }}</td>
+                <td class="bg-white center" colspan="2" rowspan="2">{{ client.name|default:'' }}</td>
+                <td class="bg-white center" colspan="6" rowspan="2">{{ client.name|default:'' }}</td>
+                <td class="bg-white center" colspan="6" rowspan="2">{{ client.name|default:'' }}</td>
+                <td class="bg-white center" colspan="6" rowspan="2">{{ client.name|default:'' }}</td>
+                <td class="bg-white center" colspan="2" rowspan="2">{{ client.name|default:'' }}</td>
+            </tr>
+            <tr>
+            </tr>
+            <tr>
+                <td class="bg-white center" colspan="2" rowspan="2">住所</td>
+                <td class="bg-white center" colspan="23" rowspan="2">{{ client.address|default:'' }}</td>
+                <td class="bg-white center" colspan="3" rowspan="2">{{ client.address|default:'' }}</td>
+                <td class="bg-white center" colspan="8" rowspan="2">{{ client.address|default:'' }}</td>
+            </tr>
+            <tr>
+            </tr>
+            <tr>
+                <td class="bg-white center" rowspan="6">保険情報</td>
+                <td class="bg-white center" colspan="3" rowspan="3">介護保険</td>
+                <td class="bg-white center" colspan="5">{{ client.insurance_number|default:'' }}</td>
+                <td class="bg-white center" colspan="7">{{ assessment.insurance_info.care_level|default:'' }}</td>
+                <td class="bg-white center" colspan="5">認定日</td>
+                <td class="bg-white center" colspan="13">認定期間</td>
+                <td class="bg-white center" colspan="3">{{ assessment.insurance_info.burden_ratio|default:'' }}</td>
+            </tr>
+            <tr>
+                <td class="bg-white center" colspan="5" rowspan="2"></td>
+                <td class="bg-white center" colspan="7" rowspan="2"></td>
+                <td class="bg-white center" colspan="5" rowspan="2"></td>
+                <td class="bg-white center" colspan="6" rowspan="2"></td>
+                <td class="bg-white center" rowspan="2">～</td>
+                <td class="bg-white center" colspan="6" rowspan="2"></td>
+                <td class="bg-white center" colspan="3" rowspan="2"></td>
+            </tr>
+            <tr>
+            </tr>
+            <tr>
+                <td class="bg-white center" colspan="11">医療保険</td>
+                <td class="bg-white center" colspan="5">身体障害者手帳</td>
+                <td class="bg-white center" colspan="4">難病申請</td>
+                <td class="bg-white center" colspan="4">生活保護</td>
+                <td class="bg-white center" colspan="6">障害者日常生活自立度</td>
+                <td class="bg-white center" colspan="6">認知症日常生活自立度</td>
+            </tr>
+            <tr>
+                <td class="bg-white center" colspan="11" rowspan="2"></td>
+                <td class="bg-white center" colspan="2" rowspan="2"></td>
+                <td class="bg-white center" colspan="3" rowspan="2"></td>
+                <td class="bg-white center" colspan="4" rowspan="2"></td>
+                <td class="bg-white center" colspan="4" rowspan="2"></td>
+                <td class="bg-white center" colspan="6" rowspan="2"></td>
+                <td class="bg-white center" colspan="6" rowspan="2"></td>
+            </tr>
+            <tr>
+            </tr>
+            <tr>
+                <td class="bg-white center" rowspan="5">家族状況</td>
+                <td class="bg-white center" colspan="7">家族氏名</td>
+                <td class="bg-white center" colspan="3">続柄</td>
+                <td class="bg-white center" colspan="7">住所</td>
+                <td class="bg-white center" colspan="5">連絡先</td>
+                <td class="bg-white center" colspan="3">介護</td>
+                <td class="bg-white center" colspan="3">同居有無</td>
+                <td class="bg-white center" colspan="2">就労</td>
+                <td class="bg-white center" colspan="6">備考（KP等）</td>
+            </tr>
+            <tr>
+                <td class="bg-white center" rowspan="2">①</td>
+                <td class="bg-white center" colspan="5" rowspan="2"></td>
+                <td class="bg-white center" rowspan="2">様</td>
+                <td class="bg-white center" colspan="3" rowspan="2"></td>
+                <td class="bg-white" colspan="7" rowspan="2"></td>
+                <td class="bg-white center" colspan="5" rowspan="2"></td>
+                <td class="bg-white center" colspan="3" rowspan="2"></td>
+                <td class="bg-white center" colspan="3" rowspan="2"></td>
+                <td class="bg-white center" colspan="2" rowspan="2"></td>
+                <td class="bg-white center" colspan="6" rowspan="2"></td>
+            </tr>
+            <tr>
+            </tr>
+            <tr>
+                <td class="bg-white center" rowspan="2">②</td>
+                <td class="bg-white center" colspan="5" rowspan="2"></td>
+                <td class="bg-white center" rowspan="2">様</td>
+                <td class="bg-white center" colspan="3" rowspan="2"></td>
+                <td class="bg-white center" colspan="7" rowspan="2"></td>
+                <td class="bg-white center" colspan="5" rowspan="2"></td>
+                <td class="bg-white center" colspan="3" rowspan="2"></td>
+                <td class="bg-white center" colspan="3" rowspan="2"></td>
+                <td class="bg-white center" colspan="2" rowspan="2"></td>
+                <td class="bg-white center" colspan="6" rowspan="2"></td>
+            </tr>
+            <tr>
+            </tr>
+            <tr>
+                <td class="bg-white center" rowspan="4">住居状況</td>
+                <td class="bg-white" colspan="4">●家庭環境</td>
+                <td class="bg-white center" colspan="8"></td>
+                <td class="bg-white" colspan="4">●冷暖房</td>
+                <td class="bg-white center" colspan="8"></td>
+                <td class="bg-white" colspan="4">●居室段差</td>
+                <td class="bg-white center" colspan="8"></td>
+            </tr>
+            <tr>
+                <td class="bg-white" colspan="4">●住居形態</td>
+                <td class="bg-white center" colspan="3"></td>
+                <td class="bg-white center" colspan="5"></td>
+                <td class="bg-white" colspan="4">●トイレ</td>
+                <td class="bg-white center" colspan="2"></td>
+                <td class="bg-white center" colspan="3"></td>
+                <td class="bg-white center" colspan="3"></td>
+                <td class="bg-white" colspan="4">●住宅改修</td>
+                <td class="bg-white center" colspan="8"></td>
+            </tr>
+            <tr>
+                <td class="bg-white" colspan="4">●住宅権利</td>
+                <td class="bg-white center" colspan="8"></td>
+                <td class="bg-white" colspan="4">●浴室</td>
+                <td class="bg-white center" colspan="4"></td>
+                <td class="bg-white center" colspan="4"></td>
+                <td class="bg-white center" colspan="6">●住宅改修の必要性</td>
+                <td class="bg-white center" colspan="6"></td>
+            </tr>
+            <tr>
+                <td class="bg-white" colspan="4">●専有居室</td>
+                <td class="bg-white center" colspan="8"></td>
+                <td class="bg-white" colspan="4">●就寝</td>
+                <td class="bg-white center" colspan="8"></td>
+                <td class="bg-white" colspan="5">●特別な状況</td>
+                <td class="bg-white center" colspan="7"></td>
+            </tr>
+            <tr>
+                <td class="bg-white center" rowspan="15">健康状態</td>
+                <td class="bg-white center" colspan="12">疾患名</td>
+                <td class="bg-white center" colspan="4">発症日</td>
+                <td class="bg-white center" colspan="20">既往</td>
+            </tr>
+            <tr>
+                <td class="bg-white center" colspan="12" rowspan="2"></td>
+                <td class="bg-white center" colspan="4" rowspan="2"></td>
+                <td class="bg-white" colspan="20" rowspan="3"></td>
+            </tr>
+            <tr>
+            </tr>
+            <tr>
+                <td class="bg-white center" colspan="12" rowspan="2"></td>
+                <td class="bg-white center" colspan="4" rowspan="2"></td>
+            </tr>
+            <tr>
+                <td class="bg-white center" colspan="4" rowspan="2">主治医
+＊安濃津ろまん
+　入居後(中)　</td>
+                <td class="bg-white" colspan="7" rowspan="2"></td>
+                <td class="bg-white" colspan="7" rowspan="2"></td>
+                <td class="bg-white" colspan="2" rowspan="2">先生</td>
+            </tr>
+            <tr>
+                <td class="bg-white center" colspan="12" rowspan="2"></td>
+                <td class="bg-white center" colspan="4" rowspan="2"></td>
+            </tr>
+            <tr>
+                <td class="bg-white center" colspan="4" rowspan="2">往診医</td>
+                <td class="bg-white" colspan="7" rowspan="2"></td>
+                <td class="bg-white" colspan="7" rowspan="2"></td>
+                <td class="bg-white" colspan="2" rowspan="2">先生</td>
+            </tr>
+            <tr>
+                <td class="bg-white center" colspan="12" rowspan="2"></td>
+                <td class="bg-white center" colspan="4" rowspan="2"></td>
+            </tr>
+            <tr>
+                <td class="bg-white center" colspan="4" rowspan="2">かかりつけ</td>
+                <td class="bg-white" colspan="8"></td>
+                <td class="bg-white" colspan="8"></td>
+            </tr>
+            <tr>
+                <td class="bg-white center" colspan="12" rowspan="2"></td>
+                <td class="bg-white center" colspan="4" rowspan="2"></td>
+                <td class="bg-white" colspan="8"></td>
+                <td class="bg-white" colspan="8"></td>
+            </tr>
+            <tr>
+                <td class="bg-white center" colspan="4" rowspan="3">通院状況</td>
+                <td class="bg-white" colspan="16" rowspan="3"></td>
+            </tr>
+            <tr>
+                <td class="bg-white center" colspan="12" rowspan="2"></td>
+                <td class="bg-white center" colspan="4" rowspan="2"></td>
+            </tr>
+            <tr>
+            </tr>
+            <tr>
+                <td class="bg-white center" colspan="4" rowspan="2">アレルギー</td>
+                <td class="bg-white" colspan="3" rowspan="2"></td>
+                <td class="bg-white" colspan="9" rowspan="2"></td>
+                <td class="bg-white center" colspan="4" rowspan="2">服薬状況</td>
+                <td class="bg-white" colspan="16" rowspan="2"></td>
+            </tr>
+            <tr>
+            </tr>
+            <tr>
+                <td class="bg-white center" rowspan="5">利用サ|ビス</td>
+                <td class="bg-white center" colspan="4" rowspan="3">介護サービス</td>
+                <td class="bg-white" colspan="12" rowspan="3"></td>
+                <td class="bg-white center" colspan="4" rowspan="2">福祉用具</td>
+                <td class="bg-white" colspan="16" rowspan="2"></td>
+            </tr>
+            <tr>
+            </tr>
+            <tr>
+                <td class="bg-white center" colspan="4">その他</td>
+                <td class="bg-white" colspan="16"></td>
+            </tr>
+            <tr>
+                <td class="bg-white center" colspan="4" rowspan="2">インフォーマル
+サービス</td>
+                <td class="bg-white" colspan="12" rowspan="2"></td>
+                <td class="bg-white center" colspan="4" rowspan="2">社会との
+関わり</td>
+                <td class="bg-white" colspan="16" rowspan="2"></td>
+            </tr>
+            <tr>
+            </tr>
+            <tr>
+                <td class="bg-white" colspan="18">本人の希望</td>
+                <td class="bg-white" colspan="19">家族の希望</td>
+            </tr>
+            <tr>
+                <td class="bg-white" colspan="18" rowspan="2"></td>
+                <td class="bg-white" colspan="19" rowspan="2"></td>
+            </tr>
+            <tr>
+            </tr>
+            <tr>
+                <td class="bg-white" colspan="37">生活歴</td>
+            </tr>
+            <tr>
+                <td class="bg-white" colspan="37" rowspan="5"></td>
+            </tr>
+            <tr>
+            </tr>
+            <tr>
+            </tr>
+            <tr>
+            </tr>
+            <tr>
+            </tr>
+            <tr>
+                <td class="bg-white" colspan="37">特記・備考</td>
+            </tr>
+            <tr>
+                <td class="bg-white" colspan="37" rowspan="3"></td>
+            </tr>
+            <tr>
+            </tr>
+        </table>
+    </div>
+
+    <!-- ページ2 -->
+    <div class="page">
+        <table class="excel-grid">
+            <colgroup>
+                <col><col><col><col><col><col><col><col><col><col>
+                <col><col><col><col><col><col><col><col><col><col>
+                <col><col><col><col><col><col><col><col><col><col>
+                <col><col><col><col><col><col><col>
+            </colgroup>
+            <tr>
+            </tr>
+            <tr>
+                <td class="bg-white center" colspan="27">◆ 現在の状況 ◆</td>
+                <td class="bg-white center" colspan="10">◆ 課題分析 ◆</td>
+            </tr>
+            <tr>
+                <td class="bg-white center" rowspan="11">身体状況</td>
+                <td class="bg-white center" colspan="7">皮膚疾患</td>
+                <td class="bg-white center" colspan="7"></td>
+                <td class="bg-white" colspan="12" rowspan="11"></td>
+                <td class="bg-white" colspan="10" rowspan="11"></td>
+            </tr>
+            <tr>
+                <td class="bg-white center" colspan="7">感染症</td>
+                <td class="bg-white center" colspan="7"></td>
+            </tr>
+            <tr>
+                <td class="bg-white center" colspan="7">特別な医療処置</td>
+                <td class="bg-white center" colspan="7"></td>
+            </tr>
+            <tr>
+                <td class="bg-white center" colspan="7">麻痺</td>
+                <td class="bg-white center" colspan="7"></td>
+            </tr>
+            <tr>
+                <td class="bg-white center" colspan="7">痛み</td>
+                <td class="bg-white center" colspan="7"></td>
+            </tr>
+            <tr>
+                <td class="bg-white center" colspan="7">身長</td>
+                <td class="bg-white center" colspan="5">{{ assessment.physical_status.height|default:'' }}</td>
+                <td class="bg-white center" colspan="2">cm</td>
+            </tr>
+            <tr>
+                <td class="bg-white center" colspan="7">体重</td>
+                <td class="bg-white center" colspan="5">{{ assessment.physical_status.weight|default:'' }}</td>
+                <td class="bg-white center" colspan="2">ｋｇ</td>
+            </tr>
+            <tr>
+                <td class="bg-white center" rowspan="2">視力</td>
+                <td class="bg-white center" colspan="6">視力</td>
+                <td class="bg-white center" colspan="7"></td>
+            </tr>
+            <tr>
+                <td class="bg-white center" colspan="6">眼鏡等</td>
+                <td class="bg-white center" colspan="7"></td>
+            </tr>
+            <tr>
+                <td class="bg-white center" rowspan="2">聴力</td>
+                <td class="bg-white center" colspan="6">聴力</td>
+                <td class="bg-white center" colspan="7"></td>
+            </tr>
+            <tr>
+                <td class="bg-white center" colspan="6">補聴器等</td>
+                <td class="bg-white center" colspan="7"></td>
+            </tr>
+            <tr>
+                <td class="bg-white center" rowspan="10">基 本 動 作</td>
+                <td class="bg-white center" colspan="7">寝返り</td>
+                <td class="bg-white center" colspan="7"></td>
+                <td class="bg-white" colspan="12" rowspan="10"></td>
+                <td class="bg-white" colspan="10" rowspan="10"></td>
+            </tr>
+            <tr>
+                <td class="bg-white center" colspan="7">起き上がり</td>
+                <td class="bg-white center" colspan="7"></td>
+            </tr>
+            <tr>
+                <td class="bg-white center" colspan="7">座位</td>
+                <td class="bg-white center" colspan="7"></td>
+            </tr>
+            <tr>
+                <td class="bg-white center" colspan="7">立ち上がり</td>
+                <td class="bg-white center" colspan="7"></td>
+            </tr>
+            <tr>
+                <td class="bg-white center" colspan="7">立位</td>
+                <td class="bg-white center" colspan="7"></td>
+            </tr>
+            <tr>
+                <td class="bg-white center" colspan="7">移乗</td>
+                <td class="bg-white center" colspan="7"></td>
+            </tr>
+            <tr>
+                <td class="bg-white center" colspan="7">屋内移動</td>
+                <td class="bg-white center" colspan="7"></td>
+            </tr>
+            <tr>
+                <td class="bg-white center" colspan="7">使用用具（屋内）</td>
+                <td class="bg-white center" colspan="7"></td>
+            </tr>
+            <tr>
+                <td class="bg-white center" colspan="7">屋外移動</td>
+                <td class="bg-white center" colspan="7"></td>
+            </tr>
+            <tr>
+                <td class="bg-white center" colspan="7">使用用具（屋外）</td>
+                <td class="bg-white center" colspan="7"></td>
+            </tr>
+            <tr>
+                <td class="bg-white center" rowspan="25">A  D  L</td>
+                <td class="bg-white center" rowspan="8">食事</td>
+                <td class="bg-white center" colspan="6">食事方法</td>
+                <td class="bg-white center" colspan="7"></td>
+                <td class="bg-white" colspan="12" rowspan="8"></td>
+                <td class="bg-white" colspan="10" rowspan="8"></td>
+            </tr>
+            <tr>
+                <td class="bg-white center" colspan="6">食事動作</td>
+                <td class="bg-white center" colspan="7"></td>
+            </tr>
+            <tr>
+                <td class="bg-white center" colspan="6">嚥下</td>
+                <td class="bg-white center" colspan="7"></td>
+            </tr>
+            <tr>
+                <td class="bg-white center" colspan="2" rowspan="3">形態</td>
+                <td class="bg-white center" colspan="4">主食</td>
+                <td class="bg-white center" colspan="7"></td>
+            </tr>
+            <tr>
+                <td class="bg-white center" colspan="4">副食</td>
+                <td class="bg-white center" colspan="7"></td>
+            </tr>
+            <tr>
+                <td class="bg-white center" colspan="4">水分とろみ</td>
+                <td class="bg-white center" colspan="7"></td>
+            </tr>
+            <tr>
+                <td class="bg-white center" colspan="6">食事制限</td>
+                <td class="bg-white center" colspan="7"></td>
+            </tr>
+            <tr>
+                <td class="bg-white center" colspan="6">道具・用具</td>
+                <td class="bg-white center" colspan="7"></td>
+            </tr>
+            <tr>
+                <td class="bg-white center" rowspan="4">口腔</td>
+                <td class="bg-white center" colspan="6">口腔衛生</td>
+                <td class="bg-white center" colspan="7"></td>
+                <td class="bg-white" colspan="12" rowspan="4"></td>
+                <td class="bg-white" colspan="10" rowspan="4"></td>
+            </tr>
+            <tr>
+                <td class="bg-white center" colspan="6">自歯の有無</td>
+                <td class="bg-white center" colspan="7"></td>
+            </tr>
+            <tr>
+                <td class="bg-white center" colspan="2" rowspan="2">義歯</td>
+                <td class="bg-white center" colspan="4">有無・種類</td>
+                <td class="bg-white center" colspan="3"></td>
+                <td class="bg-white center" colspan="4"></td>
+            </tr>
+            <tr>
+                <td class="bg-white center" colspan="4">場所</td>
+                <td class="bg-white center" colspan="7"></td>
+            </tr>
+            <tr>
+                <td class="bg-white center" rowspan="3">入浴</td>
+                <td class="bg-white center" colspan="6">入浴動作</td>
+                <td class="bg-white center" colspan="7"></td>
+                <td class="bg-white" colspan="12" rowspan="5"></td>
+                <td class="bg-white" colspan="10" rowspan="5"></td>
+            </tr>
+            <tr>
+                <td class="bg-white center" colspan="6">形態</td>
+                <td class="bg-white center" colspan="7"></td>
+            </tr>
+            <tr>
+                <td class="bg-white center" colspan="6">入浴の制限</td>
+                <td class="bg-white center" colspan="7"></td>
+            </tr>
+            <tr>
+                <td class="bg-white center" rowspan="2">更衣</td>
+                <td class="bg-white center" colspan="6">上衣</td>
+                <td class="bg-white center" colspan="7"></td>
+            </tr>
+            <tr>
+                <td class="bg-white center" colspan="6">下衣</td>
+                <td class="bg-white center" colspan="7"></td>
+            </tr>
+            <tr>
+                <td class="bg-white center" rowspan="8">排泄</td>
+                <td class="bg-white center" colspan="6">排泄動作</td>
+                <td class="bg-white center" colspan="7"></td>
+                <td class="bg-white" colspan="12" rowspan="8"></td>
+                <td class="bg-white" colspan="10" rowspan="8"></td>
+            </tr>
+            <tr>
+                <td class="bg-white center" colspan="2" rowspan="2">排尿</td>
+                <td class="bg-white center" colspan="4">尿意</td>
+                <td class="bg-white center" colspan="7"></td>
+            </tr>
+            <tr>
+                <td class="bg-white center" colspan="4">失禁</td>
+                <td class="bg-white center" colspan="7"></td>
+            </tr>
+            <tr>
+                <td class="bg-white center" colspan="2" rowspan="2">排便</td>
+                <td class="bg-white center" colspan="4">便意</td>
+                <td class="bg-white center" colspan="7"></td>
+            </tr>
+            <tr>
+                <td class="bg-white center" colspan="4">失禁</td>
+                <td class="bg-white center" colspan="7"></td>
+            </tr>
+            <tr>
+                <td class="bg-white center" colspan="2" rowspan="2">場所</td>
+                <td class="bg-white center" colspan="4">日中</td>
+                <td class="bg-white center" colspan="7"></td>
+            </tr>
+            <tr>
+                <td class="bg-white center" colspan="4">夜間</td>
+                <td class="bg-white center" colspan="7"></td>
+            </tr>
+            <tr>
+                <td class="bg-white center" colspan="6">排泄用品</td>
+                <td class="bg-white center" colspan="7"></td>
+            </tr>
+            <tr>
+                <td class="bg-white center" rowspan="3">IADL</td>
+                <td class="bg-white center" colspan="4">調理</td>
+                <td class="bg-white center" colspan="3"></td>
+                <td class="bg-white center" colspan="4">掃除</td>
+                <td class="bg-white center" colspan="3"></td>
+                <td class="bg-white" colspan="12" rowspan="3"></td>
+                <td class="bg-white" colspan="10" rowspan="3"></td>
+            </tr>
+            <tr>
+                <td class="bg-white center" colspan="4">洗濯</td>
+                <td class="bg-white center" colspan="3"></td>
+                <td class="bg-white center" colspan="4">買い物</td>
+                <td class="bg-white center" colspan="3"></td>
+            </tr>
+            <tr>
+                <td class="bg-white center" colspan="4">金銭管理</td>
+                <td class="bg-white center" colspan="3"></td>
+                <td class="bg-white center" colspan="7"></td>
+            </tr>
+            <tr>
+                <td class="bg-white center" rowspan="5">認知</td>
+                <td class="bg-white center" colspan="7">認知症の有無・程度</td>
+                <td class="bg-white center" colspan="3"></td>
+                <td class="bg-white center" colspan="4"></td>
+                <td class="bg-white" colspan="12" rowspan="5"></td>
+                <td class="bg-white" colspan="10" rowspan="5"></td>
+            </tr>
+            <tr>
+                <td class="bg-white center" colspan="2" rowspan="2">BPSD</td>
+                <td class="bg-white" colspan="12" rowspan="2"></td>
+            </tr>
+            <tr>
+            </tr>
+            <tr>
+                <td class="bg-white center" colspan="7">会    話</td>
+                <td class="bg-white center" colspan="7"></td>
+            </tr>
+            <tr>
+                <td class="bg-white center" colspan="7">意思疎通</td>
+                <td class="bg-white center" colspan="7"><openpyxl.worksheet.formula.ArrayFormula object at 0x000001F3EA216D50></td>
+            </tr>
+        </table>
+    </div>
+
+</body>
+</html>

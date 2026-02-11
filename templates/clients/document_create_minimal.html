@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}書類作成 - {{ client.name }}様{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-user"></i> {{ client.name }}様
+                    </div>
+                    <div>
+                        <button id="coordinateSettingBtn" class="btn btn-outline-secondary btn-sm setting-btn me-2">
+                            <i class="fas fa-cog"></i> 配置設定
+                        </button>
+                        <button type="button" class="btn btn-primary save-btn me-2" onclick="saveDocument()">
+                            <i class="fas fa-save"></i> 保存して戻る
+                        </button>
+                        <button type="button" class="btn btn-success preview-btn me-2" onclick="previewDocument()">
+                            <i class="fas fa-eye"></i> プレビュー
+                        </button>
+                        <button type="button" class="btn btn-info print-btn me-2" onclick="printDocument()">
+                            <i class="fas fa-print"></i> 印刷
+                        </button>
+                        <a href="{% url 'client_list' %}" class="btn btn-outline-secondary back-btn">
+                            <i class="fas fa-arrow-left"></i> 戻る
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- 基本的なフォーム内容 -->
+                    <form id="documentForm" method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label">テスト入力</label>
+                            <input type="text" class="form-control" name="test_field" value="テスト">
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 最小限のJavaScript
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('ページが読み込まれました');
+
+    // ホバー効果のCSS
+    const style = document.createElement('style');
+    style.textContent = `
+        .save-btn:hover {
+            background-color: #f8d7da !important;
+            border-color: #dc3545 !important;
+            color: #dc3545 !important;
+        }
+        .preview-btn:hover {
+            background-color: #d1f2d1 !important;
+            border-color: #198754 !important;
+            color: #198754 !important;
+        }
+        .print-btn:hover {
+            background-color: #e6f3ff !important;
+            border-color: #007bff !important;
+            color: #007bff !important;
+        }
+        .setting-btn:hover, .back-btn:hover {
+            background-color: #f5f5f5 !important;
+            border-color: #999 !important;
+            color: #333 !important;
+        }
+    `;
+    document.head.appendChild(style);
+
+    // 座標設定ボタン
+    const settingBtn = document.getElementById('coordinateSettingBtn');
+    if (settingBtn) {
+        settingBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            alert('座標設定機能は一時的に無効です');
+        });
+    }
+});
+
+// 基本的なボタン関数
+function saveDocument() {
+    console.log('保存ボタンがクリックされました');
+    alert('保存機能をテスト中');
+}
+
+function previewDocument() {
+    console.log('プレビューボタンがクリックされました');
+    alert('プレビュー機能をテスト中');
+}
+
+function printDocument() {
+    console.log('印刷ボタンがクリックされました');
+    alert('印刷機能をテスト中');
+}
+</script>
+{% endblock %}

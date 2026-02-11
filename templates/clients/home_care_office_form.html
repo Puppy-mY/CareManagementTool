@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+
+{% block title %}{% if is_edit %}編集{% else %}新規登録{% endif %} - 居宅介護支援事業所 - {{ block.super }}{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-hospital"></i>
+                居宅介護支援事業所 {% if is_edit %}編集{% else %}新規登録{% endif %}
+            </h1>
+            <a href="{% url 'home_care_office_list' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> 一覧に戻る
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12 col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-edit"></i>
+                    {% if is_edit %}{{ office.name }}{% else %}新規事業所情報{% endif %}
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label for="id_name" class="form-label">事業所名 <span class="text-danger">*</span></label>
+                            {{ form.name }}
+                            {% if form.name.errors %}
+                                <div class="text-danger mt-1">{{ form.name.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="id_office_number" class="form-label">事業所番号 <span class="text-danger">*</span></label>
+                            {{ form.office_number }}
+                            {% if form.office_number.errors %}
+                                <div class="text-danger mt-1">{{ form.office_number.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="id_manager_name" class="form-label">管理者名</label>
+                            {{ form.manager_name }}
+                            {% if form.manager_name.errors %}
+                                <div class="text-danger mt-1">{{ form.manager_name.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-4">
+                            <label for="id_postal_code" class="form-label">郵便番号</label>
+                            {{ form.postal_code }}
+                            {% if form.postal_code.errors %}
+                                <div class="text-danger mt-1">{{ form.postal_code.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-8">
+                            <label for="id_address" class="form-label">住所</label>
+                            {{ form.address }}
+                            {% if form.address.errors %}
+                                <div class="text-danger mt-1">{{ form.address.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="id_phone" class="form-label">電話番号</label>
+                            {{ form.phone }}
+                            {% if form.phone.errors %}
+                                <div class="text-danger mt-1">{{ form.phone.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="id_fax" class="form-label">FAX</label>
+                            {{ form.fax }}
+                            {% if form.fax.errors %}
+                                <div class="text-danger mt-1">{{ form.fax.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-12">
+                            <div class="form-check">
+                                {{ form.is_active }}
+                                <label class="form-check-label" for="id_is_active">
+                                    有効
+                                </label>
+                            </div>
+                            <small class="text-muted">チェックを外すと、この事業所は選択肢に表示されなくなります</small>
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'home_care_office_list' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times"></i> キャンセル
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> {% if is_edit %}更新{% else %}登録{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-info-circle"></i> 入力のヒント</h6>
+            </div>
+            <div class="card-body">
+                <ul class="mb-0 ps-3">
+                    <li class="mb-2"><strong>事業所名</strong>: 正式名称を入力してください</li>
+                    <li class="mb-2"><strong>事業所番号</strong>: 10桁の事業所番号を入力</li>
+                    <li class="mb-2"><strong>管理者名</strong>: 事業所の管理者名を入力</li>
+                    <li class="mb-2"><strong>郵便番号</strong>: ハイフン付きで入力可能</li>
+                    <li class="mb-2"><strong>電話/FAX</strong>: ハイフン付きで入力可能</li>
+                    <li><strong>有効</strong>: チェックを外すと選択できなくなります</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

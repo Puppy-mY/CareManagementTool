@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+
+{% block title %}返信編集 - {{ block.super }}{% endblock %}
+
+{% block content %}
+<style>
+    .feedback-btn {
+        background-color: #ffffff;
+        border: 1px solid #6c757d;
+        color: #6c757d;
+        transition: all 0.2s ease;
+    }
+    .feedback-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .feedback-btn-save:hover {
+        background-color: #ffe5cc !important;
+        border-color: #fd7e14 !important;
+        color: #fd7e14 !important;
+    }
+    .feedback-btn-cancel:hover {
+        background-color: #f5f5f5 !important;
+        border-color: #999999 !important;
+        color: #333333 !important;
+    }
+</style>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1><i class="fas fa-edit"></i> 返信編集</h1>
+            <a href="{% url 'feedback_detail_admin' feedback.pk %}" class="btn feedback-btn feedback-btn-cancel">
+                <i class="fas fa-times"></i> キャンセル
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-pencil-alt"></i> 返信内容の編集
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    {% bootstrap_form form %}
+
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{% url 'feedback_detail_admin' feedback.pk %}" class="btn feedback-btn feedback-btn-cancel">
+                            <i class="fas fa-times"></i> キャンセル
+                        </a>
+                        <button type="submit" class="btn feedback-btn feedback-btn-save">
+                            <i class="fas fa-save"></i> 更新
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 返信情報 -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-info-circle"></i> 返信情報
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-2">
+                        <label class="form-label fw-bold text-muted small">投稿者</label>
+                        <p class="mb-0">{{ reply.user.profile.get_full_name }}</p>
+                    </div>
+
+                    <div class="col-md-4 mb-2">
+                        <label class="form-label fw-bold text-muted small">投稿日時</label>
+                        <p class="mb-0">{{ reply.created_at|date:"Y年m月d日 H:i" }}</p>
+                    </div>
+
+                    <div class="col-md-4 mb-2">
+                        <label class="form-label fw-bold text-muted small">関連フィードバック</label>
+                        <p class="mb-0">
+                            <a href="{% url 'feedback_detail_admin' feedback.pk %}">#{{ feedback.id }} {{ feedback.title }}</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

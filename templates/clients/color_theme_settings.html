@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+
+{% block title %}カラーテーマ設定 - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><i class="fas fa-palette"></i> カラーテーマ設定</h1>
+            <a href="{% url 'client_list' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> 戻る
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-swatchbook"></i> 現在のカラーテーマ</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> 現在のカラーテーマ: <strong>{{ profile.get_color_theme_display }}</strong>
+                </div>
+
+                <div class="card card-body bg-light">
+                    <h6 class="mb-3">カラープレビュー</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p class="small mb-2"><strong>選択ボタン</strong></p>
+                            <div class="mb-3">
+                                <button type="button" class="btn btn-outline-secondary btn-sm">未選択</button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm btn-selected" data-category="positive">可能・自立・あり</button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm btn-selected" data-category="negative">不可能・全介助・なし</button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm btn-selected" data-category="neutral">不明・見守り</button>
+                            </div>
+
+                            <p class="small mb-2"><strong>操作ボタン</strong></p>
+                            <div class="mb-3">
+                                <button type="button" class="btn btn-outline-secondary btn-sm btn-back me-2">戻る</button>
+                                <button type="button" class="btn btn-primary btn-sm btn-save">保存</button>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <p class="small mb-2"><strong>メインタブ</strong></p>
+                            <ul class="nav nav-tabs mb-3">
+                                <li class="nav-item">
+                                    <a class="nav-link">基本情報</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link active" id="health-tab-preview" style="border-bottom: 3px solid;">健康状態</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link">身体機能</a>
+                                </li>
+                            </ul>
+
+                            <p class="small mb-2"><strong>サブタブ</strong></p>
+                            <ul class="nav nav-pills">
+                                <li class="nav-item">
+                                    <a class="nav-link">未選択</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link active" id="basic-info-tab-preview">基本情報</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link">既往歴</a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* パステルカラーテーマ */
+.theme-current .btn-selected[data-category="positive"] {
+    background-color: #e3f2fd !important;
+    border-color: #0d6efd !important;
+    color: #0d6efd !important;
+}
+.theme-current .btn-selected[data-category="negative"] {
+    background-color: #ffc8dd !important;
+    border-color: #d63384 !important;
+    color: #d63384 !important;
+}
+.theme-current .btn-selected[data-category="neutral"] {
+    background-color: #d1f2d1 !important;
+    border-color: #198754 !important;
+    color: #198754 !important;
+}
+.theme-current .btn-back:hover {
+    background-color: #f4e4d7 !important;
+    border-color: #b8860b !important;
+    color: #b8860b !important;
+}
+.theme-current .btn-save:hover {
+    background-color: #f8d7da !important;
+    border-color: #dc3545 !important;
+    color: #dc3545 !important;
+}
+.theme-current [id^="health-tab"].active {
+    border-bottom-color: #f5c2c7 !important;
+}
+.theme-current [id^="basic-info-tab"].active {
+    background-color: #f5f5f5 !important;
+    border-color: #999 !important;
+    color: #333 !important;
+}
+</style>
+{% endblock %}

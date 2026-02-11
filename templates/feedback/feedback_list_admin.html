@@ -1,0 +1,399 @@
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+
+{% block title %}フィードバック管理 - {{ block.super }}{% endblock %}
+
+{% block content %}
+<!-- 権限情報（開発用） -->
+<div class="permission-label">
+    管理者専用ページ
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><i class="fas fa-comments"></i> フィードバック管理</h1>
+        </div>
+    </div>
+</div>
+
+<!-- 検索・フィルタ -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <form method="get" id="filterForm" class="row g-3">
+                    <div class="col-md-5">
+                        <label for="search" class="form-label">
+                            <i class="fas fa-search"></i> 検索
+                        </label>
+                        <input type="text" class="form-control" id="search" name="search"
+                               value="{{ search_query }}" placeholder="タイトル、内容、ユーザー名で検索" autocomplete="off">
+                    </div>
+
+                    <div class="col-md-3">
+                        <label for="category" class="form-label">
+                            <i class="fas fa-tag"></i> カテゴリ
+                        </label>
+                        <select class="form-select" id="category" name="category">
+                            <option value="">全て</option>
+                            {% for value, label in category_choices %}
+                                <option value="{{ value }}" {% if category_filter == value %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label for="status" class="form-label">
+                            <i class="fas fa-tasks"></i> ステータス
+                        </label>
+                        <select class="form-select" id="status" name="status">
+                            <option value="">全て</option>
+                            {% for value, label in status_choices %}
+                                <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-1 d-flex align-items-end">
+                        <button type="button" id="clearFilters" class="btn btn-outline-secondary w-100" title="クリア">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- フィードバックリスト -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-list"></i> フィードバック一覧
+                    <span class="badge" style="background-color: #f5f5f5; color: #000000; border: 1px solid #999999;">{{ page_obj.paginator.count }}件</span>
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                {% if page_obj %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 50%; min-width: 300px;">タイトル</th>
+                                    <th style="width: 15%; white-space: nowrap;">カテゴリ</th>
+                                    <th style="width: 15%; white-space: nowrap;">ステータス</th>
+                                    <th style="width: 20%; white-space: nowrap;">投稿日時</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for feedback in page_obj %}
+                                <tr style="cursor: pointer;" onclick="window.location='{% url 'feedback_detail_admin' feedback.pk %}';">
+                                    <td style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 0;">
+                                        <a href="{% url 'feedback_detail_admin' feedback.pk %}" class="text-decoration-none text-dark">
+                                            {{ feedback.title }}
+                                        </a>
+                                    </td>
+                                    <td style="white-space: nowrap;">
+                                        {% if feedback.category == 'bug' %}
+                                            <span class="badge" style="background-color: #fff3e0; color: #000000; border: 1px solid #999999; font-weight: normal;">{{ feedback.get_category_display }}</span>
+                                        {% elif feedback.category == 'feature' %}
+                                            <span class="badge" style="background-color: #e8f5e8; color: #000000; border: 1px solid #999999; font-weight: normal;">{{ feedback.get_category_display }}</span>
+                                        {% elif feedback.category == 'improvement' %}
+                                            <span class="badge" style="background-color: #fff9c4; color: #000000; border: 1px solid #999999; font-weight: normal;">{{ feedback.get_category_display }}</span>
+                                        {% else %}
+                                            <span class="badge" style="background-color: #f5f5f5; color: #000000; border: 1px solid #999999; font-weight: normal;">{{ feedback.get_category_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td style="white-space: nowrap;" class="status-cell" data-feedback-id="{{ feedback.pk }}" data-current-status="{{ feedback.status }}">
+                                        {% if feedback.status == 'new' %}
+                                            <span class="badge status-badge" style="background-color: #ffffff; color: #6c757d; border: 1px solid #6c757d; font-weight: normal; cursor: pointer;" title="クリックしてステータスを変更">{{ feedback.get_status_display }}</span>
+                                        {% elif feedback.status == 'in_progress' %}
+                                            <span class="badge status-badge" style="background-color: #e3f2fd; color: #000000; border: 1px solid #999999; font-weight: normal; cursor: pointer;" title="クリックしてステータスを変更">{{ feedback.get_status_display }}</span>
+                                        {% elif feedback.status == 'completed' %}
+                                            <span class="badge status-badge" style="background-color: #ffebee; color: #000000; border: 1px solid #999999; font-weight: normal; cursor: pointer;" title="クリックしてステータスを変更">{{ feedback.get_status_display }}</span>
+                                        {% else %}
+                                            <span class="badge status-badge" style="background-color: #f5f0e8; color: #000000; border: 1px solid #999999; font-weight: normal; cursor: pointer;" title="クリックしてステータスを変更">{{ feedback.get_status_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td style="white-space: nowrap;">
+                                        <div class="d-flex align-items-center justify-content-between">
+                                            <span>{{ feedback.created_at|date:"Y/m/d H:i" }}</span>
+                                            <form method="post" action="{% url 'feedback_delete_admin' feedback.pk %}" style="display: inline;" onsubmit="return confirm('このフィードバックを削除してもよろしいですか？');" onclick="event.stopPropagation();">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-sm feedback-btn feedback-btn-delete ms-2" onclick="event.stopPropagation();">
+                                                    <i class="fas fa-trash-alt"></i> 削除
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-comments fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">フィードバックがありません</h5>
+                        <p class="text-muted">ユーザーからのフィードバックがまだ投稿されていません。</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ページネーション -->
+{% if page_obj.has_other_pages %}
+<div class="row mt-4">
+    <div class="col-12">
+        <nav aria-label="ページネーション">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if priority_filter %}&priority={{ priority_filter }}{% endif %}">最初</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if priority_filter %}&priority={{ priority_filter }}{% endif %}">前へ</a>
+                    </li>
+                {% endif %}
+
+                <li class="page-item active">
+                    <span class="page-link">
+                        {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+                    </span>
+                </li>
+
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if priority_filter %}&priority={{ priority_filter }}{% endif %}">次へ</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if priority_filter %}&priority={{ priority_filter }}{% endif %}">最後</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+</div>
+{% endif %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('filterForm');
+    const searchInput = document.getElementById('search');
+    const categorySelect = document.getElementById('category');
+    const statusSelect = document.getElementById('status');
+    const clearButton = document.getElementById('clearFilters');
+
+    let searchTimeout;
+
+    // リアルタイム検索（500ms遅延）
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(function() {
+            form.submit();
+        }, 500);
+    });
+
+    // フィルターの変更で即座に検索
+    [categorySelect, statusSelect].forEach(function(element) {
+        element.addEventListener('change', function() {
+            form.submit();
+        });
+    });
+
+    // クリアボタン
+    clearButton.addEventListener('click', function() {
+        searchInput.value = '';
+        categorySelect.value = '';
+        statusSelect.value = '';
+        form.submit();
+    });
+
+    // フォーカス時に検索フィールドの内容を全選択
+    searchInput.addEventListener('focus', function() {
+        this.select();
+    });
+
+    // ステータス変更機能
+    const statusCells = document.querySelectorAll('.status-cell');
+    let currentDropdown = null;
+
+    // ステータスの選択肢
+    const statusOptions = [
+        { value: 'new', label: '未対応', bgColor: '#ffffff', textColor: '#6c757d', borderColor: '#6c757d' },
+        { value: 'in_progress', label: '対応中', bgColor: '#e3f2fd', textColor: '#000000', borderColor: '#999999' },
+        { value: 'completed', label: '完了', bgColor: '#ffebee', textColor: '#000000', borderColor: '#999999' },
+        { value: 'rejected', label: '却下', bgColor: '#f5f0e8', textColor: '#000000', borderColor: '#999999' }
+    ];
+
+    statusCells.forEach(function(cell) {
+        const badge = cell.querySelector('.status-badge');
+
+        badge.addEventListener('click', function(e) {
+            e.stopPropagation(); // 行クリックイベントを防ぐ
+
+            // 既存のドロップダウンを閉じる
+            if (currentDropdown) {
+                currentDropdown.remove();
+                currentDropdown = null;
+            }
+
+            const feedbackId = cell.dataset.feedbackId;
+            const currentStatus = cell.dataset.currentStatus;
+
+            // ドロップダウンメニューを作成
+            const dropdown = document.createElement('div');
+            dropdown.style.position = 'absolute';
+            dropdown.style.backgroundColor = '#ffffff';
+            dropdown.style.border = '1px solid #dee2e6';
+            dropdown.style.borderRadius = '4px';
+            dropdown.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
+            dropdown.style.zIndex = '1000';
+            dropdown.style.minWidth = '120px';
+            dropdown.style.marginTop = '4px';
+
+            statusOptions.forEach(function(option) {
+                const item = document.createElement('div');
+                item.style.padding = '8px 12px';
+                item.style.cursor = 'pointer';
+                item.style.fontSize = '14px';
+                item.style.borderBottom = '1px solid #f0f0f0';
+
+                // 現在のステータスにチェックマークを表示
+                if (option.value === currentStatus) {
+                    item.innerHTML = '✓ ' + option.label;
+                    item.style.fontWeight = 'bold';
+                    item.style.backgroundColor = '#f8f9fa';
+                } else {
+                    item.textContent = option.label;
+                }
+
+                // ホバー効果
+                item.addEventListener('mouseenter', function() {
+                    if (option.value !== currentStatus) {
+                        item.style.backgroundColor = '#f8f9fa';
+                    }
+                });
+                item.addEventListener('mouseleave', function() {
+                    if (option.value !== currentStatus) {
+                        item.style.backgroundColor = '#ffffff';
+                    }
+                });
+
+                // クリックイベント
+                item.addEventListener('click', function(e) {
+                    e.stopPropagation();
+
+                    if (option.value !== currentStatus) {
+                        updateStatus(feedbackId, option.value, cell, badge);
+                    }
+
+                    dropdown.remove();
+                    currentDropdown = null;
+                });
+
+                dropdown.appendChild(item);
+            });
+
+            // 最後のボーダーを削除
+            const lastItem = dropdown.lastChild;
+            if (lastItem) {
+                lastItem.style.borderBottom = 'none';
+            }
+
+            // ドロップダウンを配置
+            const rect = badge.getBoundingClientRect();
+            dropdown.style.position = 'fixed';
+            dropdown.style.left = rect.left + 'px';
+            dropdown.style.top = (rect.bottom) + 'px';
+
+            document.body.appendChild(dropdown);
+            currentDropdown = dropdown;
+        });
+    });
+
+    // ドキュメント全体のクリックでドロップダウンを閉じる
+    document.addEventListener('click', function(e) {
+        if (currentDropdown && !currentDropdown.contains(e.target)) {
+            currentDropdown.remove();
+            currentDropdown = null;
+        }
+    });
+
+    // ステータス更新関数
+    function updateStatus(feedbackId, newStatus, cell, badge) {
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value ||
+                         '{{ csrf_token }}';
+
+        // ローディング表示
+        const originalBadgeHTML = badge.innerHTML;
+        badge.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        badge.style.pointerEvents = 'none';
+
+        fetch(`/clients/feedback/admin/${feedbackId}/status/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({ status: newStatus })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // ステータスを更新
+                cell.dataset.currentStatus = newStatus;
+
+                // バッジのスタイルと内容を更新
+                const statusOption = statusOptions.find(opt => opt.value === newStatus);
+                if (statusOption) {
+                    badge.style.backgroundColor = statusOption.bgColor;
+                    badge.style.color = statusOption.textColor;
+                    badge.style.border = `1px solid ${statusOption.borderColor}`;
+                    badge.textContent = statusOption.label;
+                }
+
+                badge.style.pointerEvents = '';
+            } else {
+                alert('ステータスの更新に失敗しました: ' + (data.error || '不明なエラー'));
+                badge.innerHTML = originalBadgeHTML;
+                badge.style.pointerEvents = '';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('ステータスの更新中にエラーが発生しました。');
+            badge.innerHTML = originalBadgeHTML;
+            badge.style.pointerEvents = '';
+        });
+    }
+});
+</script>
+
+<style>
+    .feedback-btn {
+        background-color: #ffffff;
+        border: 1px solid #6c757d;
+        color: #6c757d;
+        transition: all 0.2s ease;
+    }
+    .feedback-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .feedback-btn-delete:hover {
+        background-color: #f8d7da !important;
+        border-color: #dc3545 !important;
+        color: #dc3545 !important;
+    }
+</style>
+{% endblock %}

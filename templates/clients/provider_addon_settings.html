@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+{% load custom_filters %}
+
+{% block title %}{{ provider.name }} - 加算設定 | {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2><i class="fas fa-cog"></i> 加算設定</h2>
+        <p class="text-muted mb-0">
+            <i class="fas fa-building"></i> {{ provider.name }}
+            <span class="badge bg-secondary ms-2">{{ provider.get_service_category_display }}</span>
+        </p>
+    </div>
+    <div>
+        <a href="{% url 'provider_settings' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> 事業所一覧に戻る
+        </a>
+    </div>
+</div>
+
+<div class="alert alert-info">
+    <i class="fas fa-info-circle"></i>
+    <strong>加算設定について</strong><br>
+    チェックした加算は、この事業所のサービス利用時に自動で適用されます。
+    事業所で実際に取得している加算のみをチェックしてください。
+</div>
+
+<form method="post">
+    {% csrf_token %}
+    
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-list"></i> 利用可能な加算一覧</h5>
+        </div>
+        <div class="card-body">
+            {% regroup addons by get_addon_type_display as addon_groups %}
+            
+            {% for group in addon_groups %}
+                <div class="mb-4">
+                    <h6 class="text-primary border-bottom pb-2">
+                        <i class="fas fa-tag"></i> {{ group.grouper }}
+                    </h6>
+                    
+                    <div class="row">
+                        {% for addon in group.list %}
+                            <div class="col-md-6 col-lg-4 mb-3">
+                                <div class="card {% if current_settings|get_item:addon.pk %}border-success{% else %}border-light{% endif %}">
+                                    <div class="card-body p-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" 
+                                                   type="checkbox" 
+                                                   id="addon_{{ addon.pk }}" 
+                                                   name="addon_{{ addon.pk }}"
+                                                   {% if current_settings|get_item:addon.pk %}checked{% endif %}
+                                                   onchange="updateCardStyle(this)">
+                                            <label class="form-check-label w-100" for="addon_{{ addon.pk }}">
+                                                <div>
+                                                    <strong>{{ addon.name }}</strong>
+                                                    <div class="mt-1">
+                                                        {% if addon.is_addition %}
+                                                            <span class="badge bg-success">+{{ addon.units }}単位</span>
+                                                        {% else %}
+                                                            <span class="badge bg-warning">-{{ addon.units }}単位</span>
+                                                        {% endif %}
+                                                    </div>
+                                                    {% if addon.description %}
+                                                        <small class="text-muted d-block mt-2">{{ addon.description }}</small>
+                                                    {% endif %}
+                                                </div>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endfor %}
+            
+            {% if not addons %}
+                <div class="text-center py-4">
+                    <i class="fas fa-exclamation-circle fa-3x text-muted mb-3"></i>
+                    <h6 class="text-muted">利用可能な加算がありません</h6>
+                </div>
+            {% endif %}
+        </div>
+        <div class="card-footer">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle"></i>
+                        変更は保存ボタンを押すまで反映されません
+                    </small>
+                </div>
+                <div>
+                    <button type="button" class="btn btn-outline-secondary me-2" onclick="resetForm()">
+                        <i class="fas fa-undo"></i> リセット
+                    </button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-save"></i> 保存
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+<script>
+// カードスタイルの更新
+function updateCardStyle(checkbox) {
+    const card = checkbox.closest('.card');
+    if (checkbox.checked) {
+        card.classList.remove('border-light');
+        card.classList.add('border-success');
+    } else {
+        card.classList.remove('border-success');
+        card.classList.add('border-light');
+    }
+}
+
+// フォームリセット
+function resetForm() {
+    // すべてのチェックボックスを初期状態に戻す
+    {% for addon in addons %}
+        const checkbox{{ addon.pk }} = document.getElementById('addon_{{ addon.pk }}');
+        checkbox{{ addon.pk }}.checked = {% if current_settings|get_item:addon.pk %}true{% else %}false{% endif %};
+        updateCardStyle(checkbox{{ addon.pk }});
+    {% endfor %}
+}
+
+// ページ読み込み時にカードスタイルを適用
+document.addEventListener('DOMContentLoaded', function() {
+    const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+    checkboxes.forEach(updateCardStyle);
+});
+</script>
+
+
+{% endblock %}

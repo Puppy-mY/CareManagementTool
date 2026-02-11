@@ -1,0 +1,485 @@
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+
+{% block title %}{{ document_name }} - {{ client.name }}様 - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="mb-4">
+                <!-- タイトル行 -->
+                <div style="margin-bottom: 2rem;">
+                    <h1 style="font-size: clamp(1.2rem, 3vw, 2rem); margin: 0; word-break: keep-all; overflow-wrap: break-word;">
+                        <i class="fas fa-file-alt"></i> 居宅サービス計画作成依頼（変更）届出書
+                    </h1>
+                </div>
+                <!-- 利用者名と戻るボタンの行 -->
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="text-muted" style="font-size: 1.2rem; font-weight: 500;">
+                        <i class="fas fa-user"></i> {{ client.name }}様
+                    </div>
+                    <div>
+                        <a href="{% url 'client_list' %}" class="btn btn-outline-secondary back-btn">
+                            <i class="fas fa-arrow-left"></i> 戻る
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 書類作成フォーム -->
+    <div class="row">
+        <div class="col-12">
+            <form method="post" id="documentForm">
+                {% csrf_token %}
+                <input type="hidden" name="action" id="actionField" value="">
+
+
+                <!-- 利用者基本情報（アコーディオン） -->
+                <div class="accordion mb-4" id="basicInfoAccordion">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="basicInfoHeading">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#basicInfoCollapse" aria-expanded="false" aria-controls="basicInfoCollapse">
+                                <i class="fas fa-user-circle me-2"></i>
+                                <strong>利用者基本情報（自動反映）</strong>
+                                <small class="text-muted ms-2">※利用者データから自動入力・必要に応じて編集可能</small>
+                            </button>
+                        </h2>
+                        <div id="basicInfoCollapse" class="accordion-collapse collapse" aria-labelledby="basicInfoHeading" data-bs-parent="#basicInfoAccordion">
+                            <div class="accordion-body">
+                                <!-- 氏名・フリガナ・生年月日（横並び） -->
+                                <div class="row g-3 mb-3">
+                                    <div class="col-md-4">
+                                        <label class="form-label">氏名 <span class="text-danger">*</span></label>
+                                        <input type="text" name="client_name" class="form-control" value="{{ client.name }}" required>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">フリガナ（カタカナ） <span class="text-danger">*</span></label>
+                                        <input type="text" name="client_furigana" class="form-control" value="{{ client.furigana }}" required placeholder="カタカナで入力">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">生年月日 <span class="text-danger">*</span></label>
+                                        <input type="date" name="client_birth_date" class="form-control" value="{{ client.birth_date|date:'Y-m-d' }}" required>
+                                    </div>
+                                </div>
+                                <!-- 被保険者番号・担当ケアマネ（横並び） -->
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">介護保険被保険者番号 <span class="text-danger">*</span></label>
+                                        <input type="text" name="client_insurance_number" class="form-control" value="{{ client.insurance_number }}" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">ケアマネ担当者名 <span class="text-danger">*</span></label>
+                                        <input type="text" name="care_manager_name" class="form-control" placeholder="担当ケアマネジャー名を入力" required value="{% if user.is_authenticated %}{{ user.get_full_name|default:user.username }}{% endif %}">
+                                        <small class="text-muted">※ログインユーザーから自動入力・必要に応じて編集可能</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 手動入力項目 -->
+                <div class="card mb-4">
+                    <div class="card-header d-flex align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-edit me-2"></i>入力項目（手動入力）</h5>
+                        <small class="text-muted ms-2">※以下の項目をご入力ください</small>
+                    </div>
+                    <div class="card-body">
+                        <!-- 届出を行う区分 -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-12">
+                                <label class="form-label">届出を行う区分 <span class="text-danger">*</span></label>
+                                <div class="mt-1">
+                                    <small class="text-muted">現在ケアマネがいる場合は「変更」、いない場合は「新規」を選択</small>
+                                </div>
+                                <div class="mt-2">
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" name="notification_type" id="notification_new" value="new" style="border-radius: 3px;">
+                                        <label class="form-check-label" for="notification_new">
+                                            新規（現在ケアマネジャーがいない）
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" name="notification_type" id="notification_change" value="change" style="border-radius: 3px;">
+                                        <label class="form-check-label" for="notification_change">
+                                            変更（現在のケアマネジャーから変更）
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 区切り線 -->
+                        <div style="border-top: 1px solid #dee2e6; width: 50%; margin: 1.5rem 0;"></div>
+
+                        <!-- 依頼事由 -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-12">
+                                <label class="form-label">居宅サービス計画の作成を依頼（変更）する事由 <span class="text-danger">*</span></label>
+                                <div class="mt-2">
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" name="request_reason" id="reason_new" value="new_or_change" style="border-radius: 3px;">
+                                        <label class="form-check-label" for="reason_new">
+                                            新規または事業所変更のため
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" name="request_reason" id="reason_level_change" value="level_change" style="border-radius: 3px;">
+                                        <label class="form-check-label" for="reason_level_change">
+                                            要支援から要介護へ変更のため
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" name="request_reason" id="reason_provisional" value="provisional_different" style="border-radius: 3px;">
+                                        <label class="form-check-label" for="reason_provisional">
+                                            暫定での届出と認定結果が異なるため
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" name="request_reason" id="reason_other" value="other" style="border-radius: 3px;">
+                                        <label class="form-check-label" for="reason_other">
+                                            その他
+                                        </label>
+                                    </div>
+                                    <div id="other_reason_input" style="display: none;" class="mt-3">
+                                        <label class="form-label">その他の事由（具体的に）</label>
+                                        <input type="text" name="other_reason_detail" class="form-control" placeholder="具体的な事由を入力してください">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 区切り線 -->
+                        <div style="border-top: 1px solid #dee2e6; width: 50%; margin: 1.5rem 0;"></div>
+
+                        <!-- 有効開始（変更）日 -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-12">
+                                <label class="form-label">有効開始（変更）日 <span class="text-danger">*</span></label>
+                                <div class="mt-1">
+                                    <small class="text-muted">サービス開始予定日を入力してください</small>
+                                </div>
+                                <div class="mt-2">
+                                    <input type="date" name="effective_start_date" class="form-control" required style="max-width: 200px;">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 区切り線 -->
+                        <div style="border-top: 1px solid #dee2e6; width: 50%; margin: 1.5rem 0;"></div>
+
+                        <!-- 介護保険負担割合証の交付について -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-12">
+                                <label class="form-label">介護保険負担割合証の交付について</label>
+                                <div class="mt-1">
+                                    <small class="text-muted">※現在有効な負担割合証が発行されておらず暫定ケアプランにおいてサービスを開始する場合に限り、いずれかに☑をしてください。</small>
+                                </div>
+                                <div class="mt-3">
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" name="burden_delivery_method" id="burden_care_manager" value="care_manager" style="border-radius: 3px;">
+                                        <label class="form-check-label" for="burden_care_manager">
+                                            ケアプランを作成依頼する事業者が受領することに同意します。
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" name="burden_delivery_method" id="burden_mail" value="mail" style="border-radius: 3px;">
+                                        <label class="form-check-label" for="burden_mail">
+                                            自宅への郵送を希望します。
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" name="burden_delivery_method" id="burden_with_result" value="with_result" style="border-radius: 3px;">
+                                        <label class="form-check-label" for="burden_with_result">
+                                            認定結果と同時に受領することを希望します。
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+
+
+
+
+                <!-- アクションボタン -->
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="d-flex justify-content-end gap-3">
+                            <button type="button" class="btn btn-outline-secondary save-btn" onclick="saveDocument()">
+                                <i class="fas fa-save"></i> 保存
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary preview-btn" onclick="previewDocument()">
+                                <i class="fas fa-eye"></i> プレビュー
+                            </button>
+                            <button type="button" class="btn btn-outline-success excel-btn" onclick="excelDocument()">
+                                <i class="fas fa-file-excel"></i> Excel出力
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary general-btn" onclick="printDocument()">
+                                <i class="fas fa-print"></i> 印刷
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// シンプルなJavaScript関数
+function saveDocument() {
+    console.log('保存ボタンがクリックされました');
+    if (validateForm()) {
+        document.getElementById('actionField').value = 'save';
+        document.getElementById('documentForm').submit();
+    }
+}
+
+function previewDocument() {
+    console.log('プレビューボタンがクリックされました');
+    if (validateForm()) {
+        document.getElementById('actionField').value = 'preview';
+        const form = document.getElementById('documentForm');
+        form.target = '_blank';
+        form.submit();
+        form.target = '';
+    }
+}
+
+function excelDocument() {
+    console.log('Excel出力ボタンがクリックされました');
+    if (validateForm()) {
+        document.getElementById('actionField').value = 'excel';
+        const form = document.getElementById('documentForm');
+        form.target = '_self';  // 同じタブでダウンロード
+        form.submit();
+    }
+}
+
+function printDocument() {
+    console.log('印刷ボタンがクリックされました');
+    previewDocument();
+}
+
+// バリデーション関数
+function validateForm() {
+    // 必須項目のチェック
+    const clientName = document.querySelector('input[name="client_name"]').value;
+    const careManagerName = document.querySelector('input[name="care_manager_name"]').value;
+    const notificationType = document.querySelector('input[name="notification_type"]:checked');
+    const requestReason = document.querySelector('input[name="request_reason"]:checked');
+    const effectiveDate = document.querySelector('input[name="effective_start_date"]').value;
+
+    if (!clientName.trim()) {
+        alert('利用者氏名を入力してください。');
+        return false;
+    }
+
+    if (!careManagerName.trim()) {
+        alert('ケアマネ担当者名を入力してください。');
+        return false;
+    }
+
+    if (!notificationType) {
+        alert('届出を行う区分を選択してください。');
+        return false;
+    }
+
+    if (!requestReason) {
+        alert('依頼事由を選択してください。');
+        return false;
+    }
+
+    if (requestReason.value === 'other') {
+        const otherDetail = document.querySelector('input[name="other_reason_detail"]').value;
+        if (!otherDetail.trim()) {
+            alert('その他の事由を具体的に入力してください。');
+            return false;
+        }
+    }
+
+    if (!effectiveDate.trim()) {
+        alert('有効開始（変更）日を入力してください。');
+        return false;
+    }
+
+    return true;
+}
+
+// DOMContentLoaded
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('居宅サービス計画作成依頼届出書が読み込まれました');
+
+    // フリガナの自動変換
+    const furiganaField = document.querySelector('input[name="client_furigana"]');
+    if (furiganaField) {
+        furiganaField.addEventListener('input', function() {
+            // ひらがなをカタカナに変換
+            this.value = this.value.replace(/[\u3041-\u3096]/g, function(match) {
+                const chr = match.charCodeAt(0) + 0x60;
+                return String.fromCharCode(chr);
+            });
+        });
+    }
+
+    // 事業所番号の自動フォーカス移動
+    const officeNumberFields = document.querySelectorAll('input[name^="office_number_"]');
+    officeNumberFields.forEach((field, index) => {
+        field.addEventListener('input', function() {
+            if (this.value.length === 1 && index < officeNumberFields.length - 1) {
+                officeNumberFields[index + 1].focus();
+            }
+        });
+    });
+
+    // 削除されたフィールドへの参照を削除（今日の日付自動設定）
+
+    // 届出を行う区分の単一選択制御
+    const notificationCheckboxes = document.querySelectorAll('input[name="notification_type"]');
+    notificationCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            if (this.checked) {
+                // 他のチェックボックスをすべて外す
+                notificationCheckboxes.forEach(cb => {
+                    if (cb !== this) cb.checked = false;
+                });
+            }
+        });
+    });
+
+    // 依頼事由の単一選択制御
+    const reasonCheckboxes = document.querySelectorAll('input[name="request_reason"]');
+    const otherReasonInput = document.getElementById('other_reason_input');
+
+    reasonCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            if (this.checked) {
+                // 他のチェックボックスをすべて外す
+                reasonCheckboxes.forEach(cb => {
+                    if (cb !== this) cb.checked = false;
+                });
+
+                // その他の場合の入力欄表示制御
+                if (this.value === 'other') {
+                    otherReasonInput.style.display = 'block';
+                    otherReasonInput.querySelector('input').setAttribute('required', 'required');
+                } else {
+                    otherReasonInput.style.display = 'none';
+                    otherReasonInput.querySelector('input').removeAttribute('required');
+                }
+            }
+        });
+    });
+
+    // 負担割合証の単一選択制御
+    const burdenCheckboxes = document.querySelectorAll('input[name="burden_delivery_method"]');
+    burdenCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            if (this.checked) {
+                // 他のチェックボックスをすべて外す
+                burdenCheckboxes.forEach(cb => {
+                    if (cb !== this) cb.checked = false;
+                });
+            }
+        });
+    });
+});
+</script>
+
+<style>
+.bg-pink {
+    background-color: #f8d7da !important;
+}
+
+/* UI.md準拠のボタンスタイル */
+
+/* 基本ボタン設定 */
+.btn {
+    transition: all 0.2s ease;
+}
+
+/* 共通ホバーアニメーション */
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* 1. 保存系ボタン - 赤っぽい色 */
+.save-btn:hover {
+    background-color: #f8d7da !important;
+    border-color: #dc3545 !important;
+    color: #dc3545 !important;
+}
+
+/* 2. プレビュー系ボタン - 緑っぽい色 */
+.preview-btn:hover {
+    background-color: #d1f2d1 !important;
+    border-color: #198754 !important;
+    color: #198754 !important;
+}
+
+/* 3. Excel出力ボタン - Excelの緑色 */
+.excel-btn:hover {
+    background-color: #e6f7e6 !important;
+    border-color: #198754 !important;
+    color: #198754 !important;
+}
+
+/* 3. 一般操作ボタン - グレー色 */
+.general-btn:hover,
+.back-btn:hover {
+    background-color: #f5f5f5 !important;
+    border-color: #999 !important;
+    color: #333 !important;
+}
+
+.card-header {
+    border-bottom: 2px solid #dee2e6;
+}
+
+.form-check-input:checked {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+
+.gap-3 {
+    gap: 1rem !important;
+}
+
+/* 事業所番号の入力フィールド */
+input[name^="office_number_"] {
+    text-align: center;
+    font-weight: bold;
+}
+
+.alert-info {
+    font-size: 0.9rem;
+}
+
+/* 確認物セクションのスタイル */
+.border {
+    border-radius: 0.375rem;
+    background-color: #f8f9fa;
+}
+
+/* 小さなチェックボックス */
+.form-check-input {
+    width: 1em;
+    height: 1em;
+}
+
+/* ラジオボタンとチェックボックスの間隔調整 */
+.form-check-inline {
+    margin-right: 1rem;
+}
+</style>
+
+{% endblock %}

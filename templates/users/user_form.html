@@ -1,0 +1,179 @@
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+
+{% block title %}{% if is_edit %}ユーザー編集{% else %}ユーザー登録{% endif %} - {{ block.super }}{% endblock %}
+
+{% block content %}
+<!-- 権限情報（開発用） -->
+<div class="permission-label">
+    居宅、ヘルパー、ヘルパー庶務、デイ、デイ庶務、訪看、訪看庶務、事務所
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="mb-4">
+            <h1>
+                <i class="fas fa-user-{% if is_edit %}edit{% else %}plus{% endif %}"></i>
+                {% if is_edit %}ユーザー編集{% else %}ユーザー登録{% endif %}
+            </h1>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8 offset-lg-2">
+        <div class="card">
+            <div class="card-body">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+
+                    {% if form.errors %}
+                    <div class="alert alert-danger" role="alert">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>入力エラーがあります。</strong>
+                        <ul class="mb-0 mt-2">
+                            {% for field in form %}
+                                {% for error in field.errors %}
+                                <li>{{ field.label }}: {{ error }}</li>
+                                {% endfor %}
+                            {% endfor %}
+                            {% for error in form.non_field_errors %}
+                            <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+
+                    <!-- ログインID -->
+                    <div class="mb-3">
+                        <label for="{{ form.username.id_for_label }}" class="form-label">
+                            {{ form.username.label }} <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" class="form-control{% if form.username.errors %} is-invalid{% endif %}"
+                               id="{{ form.username.id_for_label }}" name="{{ form.username.name }}"
+                               value="{{ form.username.value|default:'' }}" required>
+                        {% if form.username.errors %}
+                        <div class="invalid-feedback">
+                            {{ form.username.errors.0 }}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    {% if not is_edit %}
+                    <!-- 新規登録時のパスワード -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="{{ form.password.id_for_label }}" class="form-label">
+                                {{ form.password.label }} <span class="text-danger">*</span>
+                            </label>
+                            <input type="password" class="form-control{% if form.password.errors %} is-invalid{% endif %}"
+                                   id="{{ form.password.id_for_label }}" name="{{ form.password.name }}" required>
+                            {% if form.password.errors %}
+                            <div class="invalid-feedback">
+                                {{ form.password.errors.0 }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.password_confirm.id_for_label }}" class="form-label">
+                                {{ form.password_confirm.label }} <span class="text-danger">*</span>
+                            </label>
+                            <input type="password" class="form-control{% if form.password_confirm.errors %} is-invalid{% endif %}"
+                                   id="{{ form.password_confirm.id_for_label }}" name="{{ form.password_confirm.name }}" required>
+                            {% if form.password_confirm.errors %}
+                            <div class="invalid-feedback">
+                                {{ form.password_confirm.errors.0 }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <hr class="my-4">
+
+                    <!-- 基本情報 -->
+                    <h5 class="mb-3"><i class="fas fa-user"></i> 基本情報</h5>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="{{ form.last_name.id_for_label }}" class="form-label">
+                                {{ form.last_name.label }} <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" class="form-control{% if form.last_name.errors %} is-invalid{% endif %}"
+                                   id="{{ form.last_name.id_for_label }}" name="{{ form.last_name.name }}"
+                                   value="{{ form.last_name.value|default:'' }}" required>
+                            {% if form.last_name.errors %}
+                            <div class="invalid-feedback">
+                                {{ form.last_name.errors.0 }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.first_name.id_for_label }}" class="form-label">
+                                {{ form.first_name.label }} <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" class="form-control{% if form.first_name.errors %} is-invalid{% endif %}"
+                                   id="{{ form.first_name.id_for_label }}" name="{{ form.first_name.name }}"
+                                   value="{{ form.first_name.value|default:'' }}" required>
+                            {% if form.first_name.errors %}
+                            <div class="invalid-feedback">
+                                {{ form.first_name.errors.0 }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <!-- 所属 -->
+                    <h5 class="mb-3"><i class="fas fa-building"></i> 所属</h5>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="{{ form.organization.id_for_label }}" class="form-label">
+                                {{ form.organization.label }} <span class="text-danger">*</span>
+                            </label>
+                            <select class="form-select{% if form.organization.errors %} is-invalid{% endif %}"
+                                    id="{{ form.organization.id_for_label }}" name="{{ form.organization.name }}" required>
+                                {% for value, label in form.fields.organization.choices %}
+                                <option value="{{ value }}" {% if form.organization.value == value %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                            {% if form.organization.errors %}
+                            <div class="invalid-feedback">
+                                {{ form.organization.errors.0 }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.department.id_for_label }}" class="form-label">
+                                {{ form.department.label }} <span class="text-danger">*</span>
+                            </label>
+                            <select class="form-select{% if form.department.errors %} is-invalid{% endif %}"
+                                    id="{{ form.department.id_for_label }}" name="{{ form.department.name }}" required>
+                                <option value="">選択してください</option>
+                                {% for value, label in form.fields.department.choices %}
+                                <option value="{{ value }}" {% if form.department.value == value %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                            {% if form.department.errors %}
+                            <div class="invalid-feedback">
+                                {{ form.department.errors.0 }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{% url 'user_list' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left"></i> キャンセル
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> {% if is_edit %}更新{% else %}登録{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,410 @@
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+
+{% block title %}ユーザー一覧 - {{ block.super }}{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+<!-- 権限情報（開発用） -->
+<div class="permission-label">
+    管理者専用ページ
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><i class="fas fa-users-cog"></i> ユーザー一覧</h1>
+            <a href="{% url 'user_create' %}" class="btn btn-outline-secondary btn-new-register">
+                <i class="fas fa-plus"></i> 新規登録
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- 検索・フィルタ -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <form method="get" id="filterForm" class="row g-3">
+                    <div class="col-md-5">
+                        <label for="search" class="form-label">
+                            <i class="fas fa-search"></i> 検索
+                        </label>
+                        <input type="text" class="form-control" id="search" name="search"
+                               value="{{ search_query }}" placeholder="氏名、ログインID、ふりがなで検索" autocomplete="off">
+                    </div>
+
+                    <div class="col-md-3">
+                        <label for="department" class="form-label">
+                            <i class="fas fa-building"></i> 所属部署
+                        </label>
+                        <select class="form-select" id="department" name="department">
+                            {% for value, label in department_choices %}
+                                <option value="{{ value }}" {% if department_filter == value %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label for="status" class="form-label">
+                            <i class="fas fa-toggle-on"></i> ステータス
+                        </label>
+                        <select class="form-select" id="status" name="status">
+                            {% for value, label in status_choices %}
+                                <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-1 d-flex align-items-end">
+                        <button type="button" id="clearFilters" class="btn btn-outline-secondary w-100" title="クリア">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ユーザーリスト -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-list"></i> ユーザー一覧
+                    <span class="badge" style="background-color: #f5f5f5; color: #000000; border: 1px solid #999999;">{{ page_obj.paginator.count }}件</span>
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                {% if page_obj %}
+                    <div class="table-responsive">
+                        <table class="table mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>氏名</th>
+                                    <th>所属部署</th>
+                                    <th>ログインID</th>
+                                    <th>パスワード</th>
+                                    <th>ステータス</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in page_obj %}
+                                <tr>
+                                    <td>
+                                        <div>
+                                            <strong>{{ user.profile.get_full_name|default:user.username }}</strong><br>
+                                            {% if user.profile.get_full_name_kana %}
+                                            <small class="text-muted">{{ user.profile.get_full_name_kana }}</small>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td>{{ user.profile.get_department_display|default:"<small class='text-muted'>未設定</small>"|safe }}</td>
+                                    <td>{{ user.username }}</td>
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-outline-warning password-reset-btn"
+                                                data-user-id="{{ user.pk }}" data-username="{{ user.username }}">
+                                            <i class="fas fa-redo"></i> 初期化
+                                        </button>
+                                    </td>
+                                    <td>
+                                        {% if user.profile.is_active %}
+                                        <span class="badge status-active">有効</span>
+                                        {% else %}
+                                        <span class="badge status-inactive">無効</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{% url 'user_edit' user.pk %}" class="btn btn-outline-primary">
+                                                <i class="fas fa-edit"></i> 編集
+                                            </a>
+                                            <a href="{% url 'user_delete' user.pk %}" class="btn btn-outline-danger">
+                                                <i class="fas fa-trash"></i> 削除
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-users-cog fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">ユーザーが登録されていません</h5>
+                        <p class="text-muted">最初のユーザーを登録してください。</p>
+                        <a href="{% url 'user_create' %}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> 新規ユーザー登録
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ページネーション -->
+{% if page_obj.has_other_pages %}
+<div class="row mt-4">
+    <div class="col-12">
+        <nav aria-label="ページネーション">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">最初</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">前へ</a>
+                    </li>
+                {% endif %}
+
+                <li class="page-item active">
+                    <span class="page-link">
+                        {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+                    </span>
+                </li>
+
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">次へ</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">最後</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+</div>
+{% endif %}
+
+<style>
+    /* 新規登録ボタンのスタイル */
+    .btn.btn-outline-secondary.btn-new-register {
+        background-color: #ffffff !important;
+        color: #6c757d !important;
+        border: 1px solid #6c757d !important;
+        transition: all 0.2s ease !important;
+    }
+    .btn.btn-outline-secondary.btn-new-register:hover {
+        background-color: #e3f2fd !important;
+        color: #0d6efd !important;
+        border-color: #0d6efd !important;
+        transform: translateY(-1px);
+    }
+
+    table th, table td {
+        vertical-align: middle;
+        padding: 12px;
+        white-space: nowrap;
+        font-size: 14px;
+    }
+
+    table th {
+        font-weight: 600;
+        font-size: 13px;
+    }
+
+    /* 氏名カラムは改行を許可 */
+    table td:first-child {
+        white-space: normal;
+        min-width: 120px;
+    }
+
+    /* 行ホバー効果 */
+    tbody tr:hover {
+        background-color: #f5f5f5;
+    }
+
+    /* パスワード初期化ボタン */
+    .password-reset-btn {
+        background-color: #ffffff !important;
+        border: 1px solid #6c757d !important;
+        color: #6c757d !important;
+        transition: all 0.2s ease !important;
+    }
+    .password-reset-btn:hover {
+        background-color: #f5f0e8 !important;
+        border-color: #d2b48c !important;
+        color: #d2b48c !important;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    /* 編集ボタン */
+    .btn-outline-primary {
+        background-color: #ffffff !important;
+        border: 1px solid #6c757d !important;
+        color: #6c757d !important;
+        transition: all 0.2s ease !important;
+    }
+    .btn-outline-primary:hover {
+        background-color: #fff3e0 !important;
+        border-color: #fd7e14 !important;
+        color: #fd7e14 !important;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    /* 削除ボタン */
+    .btn-outline-danger {
+        background-color: #ffffff !important;
+        border: 1px solid #6c757d !important;
+        color: #6c757d !important;
+        transition: all 0.2s ease !important;
+    }
+    .btn-outline-danger:hover {
+        background-color: #f8d7da !important;
+        border-color: #dc3545 !important;
+        color: #dc3545 !important;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    /* ステータスバッジ */
+    .status-active {
+        background-color: #e8f5e8 !important;
+        color: #000000 !important;
+        border: 1px solid #999999 !important;
+    }
+
+    .status-inactive {
+        background-color: #f5f5f5 !important;
+        color: #000000 !important;
+        border: 1px solid #999999 !important;
+    }
+</style>
+
+<!-- パスワード表示モーダル -->
+<div class="modal fade" id="passwordModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">パスワード初期化完了</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">ログインID</label>
+                    <input type="text" class="form-control" id="modalUsername" readonly>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">新しいパスワード</label>
+                    <input type="text" class="form-control" id="newPassword" readonly style="font-size: 16px; font-weight: bold; letter-spacing: 2px;">
+                </div>
+                <p class="text-muted small mb-0">
+                    <i class="fas fa-info-circle"></i> このパスワードは一度しか表示されません。必ずメモしてください。
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" onclick="copyPassword()">
+                    <i class="fas fa-copy"></i> コピー
+                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function copyPassword() {
+    const username = document.getElementById('modalUsername').value;
+    const password = document.getElementById('newPassword').value;
+    const textToCopy = `ログインID: ${username}\n新しいパスワード: ${password}`;
+
+    navigator.clipboard.writeText(textToCopy).then(() => {
+        alert('コピーしました');
+    }).catch(err => {
+        // フォールバック
+        const textarea = document.createElement('textarea');
+        textarea.value = textToCopy;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        alert('コピーしました');
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('filterForm');
+    const searchInput = document.getElementById('search');
+    const department = document.getElementById('department');
+    const status = document.getElementById('status');
+    const clearButton = document.getElementById('clearFilters');
+
+    let searchTimeout;
+
+    // リアルタイム検索（500ms遅延）
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(function() {
+            form.submit();
+        }, 500);
+    });
+
+    // フィルターの変更で即座に検索
+    department.addEventListener('change', function() {
+        form.submit();
+    });
+
+    status.addEventListener('change', function() {
+        form.submit();
+    });
+
+    // クリアボタン
+    clearButton.addEventListener('click', function() {
+        searchInput.value = '';
+        department.value = '';
+        status.value = '';
+        form.submit();
+    });
+
+    // フォーカス時に検索フィールドの内容を全選択
+    searchInput.addEventListener('focus', function() {
+        this.select();
+    });
+
+    // パスワード初期化ボタン
+    document.querySelectorAll('.password-reset-btn').forEach(function(button) {
+        button.addEventListener('click', function() {
+            const userId = this.dataset.userId;
+            const username = this.dataset.username;
+
+            if (confirm(`${username} のパスワードを初期化しますか？`)) {
+                fetch(`/clients/user/${userId}/reset-password/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('modalUsername').value = username;
+                        document.getElementById('newPassword').value = data.new_password;
+                        const modal = new bootstrap.Modal(document.getElementById('passwordModal'));
+                        modal.show();
+                    } else {
+                        alert('エラー: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    alert('パスワードの初期化に失敗しました: ' + error);
+                });
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

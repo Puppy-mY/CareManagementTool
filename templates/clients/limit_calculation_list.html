@@ -1,0 +1,247 @@
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+
+{% block title %}限度額試算一覧 | {{ block.super }}{% endblock %}
+
+{% block content %}
+<!-- 権限情報（開発用） -->
+<div class="permission-label">
+    居宅、ヘルパー、ヘルパー庶務、デイ、デイ庶務、訪看、訪看庶務、事務所
+</div>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-calculator"></i> 限度額試算一覧</h2>
+    <div>
+        <a href="{% url 'provider_settings' %}" class="btn btn-outline-primary me-2">
+            <i class="fas fa-building"></i> 事業所設定
+        </a>
+    </div>
+</div>
+
+<!-- 検索・フィルタ -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" id="filterForm" class="row g-3">
+            <div class="col-md-3">
+                <label for="search" class="form-label">
+                    <i class="fas fa-search"></i> 検索
+                </label>
+                <input type="text" 
+                       class="form-control" 
+                       id="search" 
+                       name="search" 
+                       value="{{ search_query }}"
+                       placeholder="利用者名・被保険者番号で検索"
+                       autocomplete="off">
+            </div>
+            
+            <div class="col-md-2">
+                <label for="care_level" class="form-label">
+                    <i class="fas fa-user-nurse"></i> 要介護度
+                </label>
+                <select class="form-select" id="care_level" name="care_level">
+                    <option value="">全て</option>
+                    {% for value, label in care_level_choices %}
+                        <option value="{{ value }}" {% if care_level_filter == value %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="col-md-2">
+                <label for="status" class="form-label">
+                    <i class="fas fa-exclamation-triangle"></i> 状況
+                </label>
+                <select class="form-select" id="status" name="status">
+                    {% for value, label in status_choices %}
+                        <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="col-md-2">
+                <label for="care_manager" class="form-label">
+                    <i class="fas fa-user-tie"></i> ケアマネ
+                </label>
+                <select class="form-select" id="care_manager" name="care_manager">
+                    <option value="">全て</option>
+                    {% for manager in care_managers %}
+                        <option value="{{ manager.id }}" {% if care_manager_filter == manager.id|stringformat:"s" %}selected{% endif %}>
+                            {{ manager.profile.get_full_name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="col-md-2">
+                <label for="show_current_only" class="form-label">
+                    <i class="fas fa-calendar"></i> 期間
+                </label>
+                <select class="form-select" id="show_current_only" name="show_current_only">
+                    <option value="true" {% if show_current_only %}selected{% endif %}>{{ current_year_month }}のみ</option>
+                    <option value="false" {% if not show_current_only %}selected{% endif %}>全期間</option>
+                </select>
+            </div>
+            
+            <div class="col-md-1 d-flex align-items-end">
+                <button type="button" id="clearFilters" class="btn btn-outline-secondary w-100" title="クリア">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 結果表示 -->
+{% if page_obj %}
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>利用者</th>
+                        <th>対象月</th>
+                        <th>要介護度</th>
+                        <th>限度単位数</th>
+                        <th>ケアマネ設定</th>
+                        <th>使用済み単位</th>
+                        <th>残り単位</th>
+                        <th>状況</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for calculation in page_obj %}
+                    <tr>
+                        <td>
+                            <strong>{{ calculation.client.name }}</strong><br>
+                            <small class="text-muted">{{ calculation.client.insurance_number }}</small>
+                        </td>
+                        <td>{{ calculation.year }}年{{ calculation.month }}月</td>
+                        <td>
+                            {% for choice in calculation.client.CARE_LEVEL_CHOICES %}
+                                {% if choice.0 == calculation.client.care_level %}
+                                    <span class="badge bg-info">{{ choice.1 }}</span>
+                                {% endif %}
+                            {% endfor %}
+                        </td>
+                        <td><strong>{{ calculation.client.care_limit_units|floatformat:0 }}</strong>単位</td>
+                        <td>{{ calculation.care_manager_units|floatformat:0 }}単位</td>
+                        <td>{{ calculation.total_used_units|floatformat:0 }}単位</td>
+                        <td>
+                            {% if calculation.remaining_units >= 0 %}
+                                <span class="text-success">{{ calculation.remaining_units|floatformat:0 }}単位</span>
+                            {% else %}
+                                <span class="text-danger">{{ calculation.remaining_units|floatformat:0 }}単位</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if calculation.is_over_limit %}
+                                <span class="badge bg-danger">限度額超過</span>
+                            {% else %}
+                                <span class="badge bg-success">範囲内</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'limit_calculation_detail' calculation.pk %}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-eye"></i> 詳細
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- ページネーション -->
+        {% if page_obj.has_other_pages %}
+        <nav class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?{% if search_query %}search={{ search_query }}&{% endif %}{% if year_filter %}year={{ year_filter }}&{% endif %}{% if month_filter %}month={{ month_filter }}&{% endif %}page={{ page_obj.previous_page_number }}">
+                            前へ
+                        </a>
+                    </li>
+                {% endif %}
+                
+                {% for i in page_obj.paginator.page_range %}
+                    {% if page_obj.number == i %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ i }}</span>
+                        </li>
+                    {% else %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{% if search_query %}search={{ search_query }}&{% endif %}{% if year_filter %}year={{ year_filter }}&{% endif %}{% if month_filter %}month={{ month_filter }}&{% endif %}page={{ i }}">{{ i }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?{% if search_query %}search={{ search_query }}&{% endif %}{% if year_filter %}year={{ year_filter }}&{% endif %}{% if month_filter %}month={{ month_filter }}&{% endif %}page={{ page_obj.next_page_number }}">
+                            次へ
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</div>
+{% else %}
+<div class="alert alert-info">
+    <i class="fas fa-info-circle"></i> 
+    該当する試算データがありません。
+    <a href="{% url 'client_list' %}" class="alert-link">利用者一覧</a>から新しい試算を作成できます。
+</div>
+{% endif %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('filterForm');
+    const searchInput = document.getElementById('search');
+    const careLevel = document.getElementById('care_level');
+    const status = document.getElementById('status');
+    const careManager = document.getElementById('care_manager');
+    const showCurrentOnly = document.getElementById('show_current_only');
+    const clearButton = document.getElementById('clearFilters');
+    
+    let searchTimeout;
+    
+    // リアルタイム検索（500ms遅延）
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(function() {
+            form.submit();
+        }, 500);
+    });
+    
+    // フィルターの変更で即座に検索
+    [careLevel, status, careManager, showCurrentOnly].forEach(function(element) {
+        element.addEventListener('change', function() {
+            form.submit();
+        });
+    });
+    
+    // クリアボタン
+    clearButton.addEventListener('click', function() {
+        searchInput.value = '';
+        careLevel.value = '';
+        status.value = '';
+        careManager.value = '';
+        showCurrentOnly.value = 'true';
+        form.submit();
+    });
+    
+    // フォーカス時に検索フィールドの内容を全選択
+    searchInput.addEventListener('focus', function() {
+        this.select();
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,600 @@
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+
+{% block title %}限度額試算詳細 | {{ block.super }}{% endblock %}
+
+{% block content %}
+<!-- 権限情報（開発用） -->
+<div class="permission-label">
+    居宅、ヘルパー、ヘルパー庶務、デイ、デイ庶務、訪看、訪看庶務、事務所
+</div>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-calculator"></i> 限度額試算詳細</h2>
+    <div>
+        <a href="{% url 'limit_calculation_list' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> 一覧に戻る
+        </a>
+    </div>
+</div>
+
+<!-- 利用者情報・試算概要 -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-user"></i> 利用者情報</h5>
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-5">氏名:</dt>
+                    <dd class="col-sm-7">{{ calculation.client.name }}</dd>
+                    
+                    <dt class="col-sm-5">被保険者番号:</dt>
+                    <dd class="col-sm-7">{{ calculation.client.insurance_number }}</dd>
+                    
+                    <dt class="col-sm-5">要介護度:</dt>
+                    <dd class="col-sm-7">
+                        {% for choice in calculation.client.CARE_LEVEL_CHOICES %}
+                            {% if choice.0 == calculation.client.care_level %}
+                                <span class="badge bg-info">{{ choice.1 }}</span>
+                            {% endif %}
+                        {% endfor %}
+                    </dd>
+                    
+                    <dt class="col-sm-5">対象月:</dt>
+                    <dd class="col-sm-7">{{ calculation.year }}年{{ calculation.month }}月</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-chart-bar"></i> 単位数サマリー</h5>
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-6">限度単位数:</dt>
+                    <dd class="col-sm-6"><strong>{{ calculation.client.care_limit_units|floatformat:0 }}</strong>単位</dd>
+                    
+                    <dt class="col-sm-6">ケアマネ設定:</dt>
+                    <dd class="col-sm-6">{{ calculation.care_manager_units|floatformat:0 }}単位</dd>
+                    
+                    <dt class="col-sm-6">追加サービス:</dt>
+                    <dd class="col-sm-6">{{ additional_services_total|floatformat:0 }}単位</dd>
+                    
+                    <dt class="col-sm-6">使用済み合計:</dt>
+                    <dd class="col-sm-6"><strong>{{ calculation.total_used_units|floatformat:0 }}</strong>単位</dd>
+                    
+                    <dt class="col-sm-6">残り単位数:</dt>
+                    <dd class="col-sm-6">
+                        {% if calculation.remaining_units >= 0 %}
+                            <span class="text-success fw-bold">{{ calculation.remaining_units|floatformat:0 }}単位</span>
+                        {% else %}
+                            <span class="text-danger fw-bold">{{ calculation.remaining_units|floatformat:0 }}単位</span>
+                        {% endif %}
+                    </dd>
+                    
+                    <dt class="col-sm-6">状況:</dt>
+                    <dd class="col-sm-6">
+                        {% if calculation.is_over_limit %}
+                            <span class="badge bg-danger">限度額超過</span>
+                        {% else %}
+                            <span class="badge bg-success">範囲内</span>
+                        {% endif %}
+                    </dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ケアマネ設定単位の編集 -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="fas fa-edit"></i> ケアマネ設定単位</h5>
+    </div>
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="update_care_manager_units">
+            <div class="row align-items-end">
+                <div class="col-md-4">
+                    <label for="care_manager_units" class="form-label">設定単位数</label>
+                    <input type="number" 
+                           class="form-control" 
+                           id="care_manager_units" 
+                           name="care_manager_units" 
+                           value="{{ calculation.care_manager_units|floatformat:0 }}"
+                           step="0.1" 
+                           min="0" 
+                           required>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-save"></i> 更新
+                    </button>
+                </div>
+                <div class="col-md-4 d-flex justify-content-end align-items-end">
+                    <a href="{% url 'provider_settings' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-building"></i> 事業所設定
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 追加サービス一覧 -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="fas fa-plus-circle"></i> 追加サービス</h5>
+    </div>
+    <div class="card-body">
+        <!-- 新しいサービス追加フォーム -->
+        <div class="border-bottom pb-3 mb-3">
+            <h6>新しいサービスを追加</h6>
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="add_service">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label for="service_category" class="form-label">
+                            <i class="fas fa-tags"></i> サービスカテゴリ
+                        </label>
+                        <select class="form-select" id="service_category" onchange="filterServiceTypes()">
+                            <option value="">選択してください</option>
+                            {% for category, services in service_categories.items %}
+                                <option value="{{ category }}">
+                                    {{ category }} ({{ services|length }}件)
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="service_type" class="form-label">
+                            <i class="fas fa-list"></i> サービス種別
+                        </label>
+                        <select class="form-select" id="service_type" name="service_type" required onchange="updateServiceInfo()">
+                            <option value="">まずカテゴリを選択してください</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2" id="minutes_container" style="display: none;">
+                        <label for="minutes" class="form-label">実施時間（分）</label>
+                        <input type="number" class="form-control" id="minutes" name="minutes" min="1">
+                    </div>
+                    <div class="col-md-2">
+                        <label for="date_provided" class="form-label">実施日</label>
+                        <input type="date" class="form-control" id="date_provided" name="date_provided" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="provider_name" class="form-label">事業所名</label>
+                        <input type="text" class="form-control" id="provider_name" name="provider_name">
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <div class="btn-group w-100">
+                            <button type="submit" class="btn btn-success" id="add_service_btn" disabled>
+                                <i class="fas fa-plus"></i> 追加
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" onclick="resetServiceForm()" title="フォームをリセット">
+                                <i class="fas fa-undo"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-12">
+                        <div id="service_info" class="alert alert-info" style="display: none;">
+                            <small id="service_info_text"></small>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- デイサービス用加算チェックボックス -->
+                <div class="row mt-3" id="day_service_addons" style="display: none;">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0"><i class="fas fa-plus-circle text-primary"></i> デイサービス加算オプション</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="has_functional_training" name="has_functional_training" onchange="updateAddonCalculation()">
+                                            <label class="form-check-label" for="has_functional_training">
+                                                <i class="fas fa-dumbbell text-success"></i> 機能訓練加算 (+12単位)
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="has_bathing" name="has_bathing" onchange="updateAddonCalculation()">
+                                            <label class="form-check-label" for="has_bathing">
+                                                <i class="fas fa-bath text-info"></i> 入浴加算 (+40単位)
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="has_cognitive_function" name="has_cognitive_function" onchange="updateAddonCalculation()">
+                                            <label class="form-check-label" for="has_cognitive_function">
+                                                <i class="fas fa-brain text-warning"></i> 認知機能加算 (+60単位)
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mt-2">
+                                    <small class="text-muted">
+                                        <i class="fas fa-info-circle"></i> 
+                                        チェックした加算分が自動で計算に含まれます
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- 追加済みサービス一覧 -->
+        {% if additional_services %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>サービス種別</th>
+                        <th>実施時間</th>
+                        <th>単位数</th>
+                        <th>実施日</th>
+                        <th>事業所名</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for service in additional_services %}
+                    <tr>
+                        <td>
+                            <span class="badge bg-secondary me-1">{{ service.service_type.get_category_display }}</span>
+                            {{ service.service_type.name }}
+                            {% if service.service_type.category == 'day_service' %}
+                                {% if service.has_functional_training or service.has_bathing or service.has_cognitive_function %}
+                                    <br>
+                                    <small class="text-muted">
+                                        {% if service.has_functional_training %}
+                                            <span class="badge bg-success me-1">機能訓練</span>
+                                        {% endif %}
+                                        {% if service.has_bathing %}
+                                            <span class="badge bg-info me-1">入浴</span>
+                                        {% endif %}
+                                        {% if service.has_cognitive_function %}
+                                            <span class="badge bg-warning me-1">認知機能</span>
+                                        {% endif %}
+                                    </small>
+                                {% endif %}
+                            {% endif %}
+                        </td>
+                        <td>{{ service.display_minutes }}分</td>
+                        <td>
+                            <strong>{{ service.total_units|floatformat:1 }}単位</strong>
+                            {% if service.service_type.category == 'day_service' and service.has_functional_training or service.has_bathing or service.has_cognitive_function %}
+                                <br>
+                                <small class="text-muted">
+                                    {% if service.service_type.total_units %}
+                                        基本: {{ service.service_type.total_units|floatformat:1 }}
+                                    {% elif service.service_type.duration_minutes %}
+                                        基本: {{ service.service_type.unit_per_minute|floatformat:1 }}×{{ service.service_type.duration_minutes }}分
+                                    {% endif %}
+                                    {% if service.has_functional_training %}
+                                        +12
+                                    {% endif %}
+                                    {% if service.has_bathing %}
+                                        +40
+                                    {% endif %}
+                                    {% if service.has_cognitive_function %}
+                                        +60
+                                    {% endif %}
+                                </small>
+                            {% endif %}
+                        </td>
+                        <td>{{ service.date_provided|date:"n月j日" }}</td>
+                        <td>{{ service.provider_name|default:"-" }}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-danger delete-service" 
+                                    data-service-id="{{ service.pk }}"
+                                    data-service-name="{{ service.service_type.name }}">
+                                <i class="fas fa-trash"></i> 削除
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot class="table-light">
+                    <tr>
+                        <th colspan="2">追加サービス合計</th>
+                        <th>{{ additional_services_total|floatformat:0 }}単位</th>
+                        <th colspan="3"></th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        {% else %}
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i> 追加サービスはまだ登録されていません。
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- サービス削除用モーダル -->
+<div class="modal fade" id="deleteServiceModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">サービス削除確認</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p id="deleteServiceMessage"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteService">削除する</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // サービス種別データ（JSON形式で埋め込み）
+    const serviceData = {
+        {% for category, services in service_categories.items %}
+        "{{ category }}": [
+            {% for service in services %}
+            {
+                "id": {{ service.pk }},
+                "name": "{{ service.name|escapejs }}",
+                "unitPerMinute": {{ service.unit_per_minute }},
+                "totalUnits": {% if service.total_units %}{{ service.total_units }}{% else %}null{% endif %},
+                "durationMinutes": {% if service.duration_minutes %}{{ service.duration_minutes }}{% else %}null{% endif %}
+            }{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ]{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    };
+    
+    // カテゴリ選択時の処理
+    window.filterServiceTypes = function() {
+        const categorySelect = document.getElementById('service_category');
+        const serviceTypeSelect = document.getElementById('service_type');
+        const selectedCategory = categorySelect.value;
+        
+        // サービス種別をクリア
+        serviceTypeSelect.innerHTML = '<option value="">選択してください</option>';
+        
+        if (selectedCategory && serviceData[selectedCategory]) {
+            // ローディング効果
+            serviceTypeSelect.innerHTML = '<option value="">読み込み中...</option>';
+            
+            // 少し遅延を追加してスムーズに見せる
+            setTimeout(() => {
+                serviceTypeSelect.innerHTML = '<option value="">選択してください</option>';
+                serviceData[selectedCategory].forEach(service => {
+                    const option = document.createElement('option');
+                    option.value = service.id;
+                    option.textContent = service.name;
+                    option.setAttribute('data-unit-per-minute', service.unitPerMinute);
+                    option.setAttribute('data-total-units', service.totalUnits);
+                    option.setAttribute('data-duration-minutes', service.durationMinutes);
+                    serviceTypeSelect.appendChild(option);
+                });
+                serviceTypeSelect.disabled = false;
+            }, 200);
+        } else {
+            serviceTypeSelect.innerHTML = '<option value="">まずカテゴリを選択してください</option>';
+            serviceTypeSelect.disabled = true;
+        }
+        
+        // 追加ボタンを無効にする
+        document.getElementById('add_service_btn').disabled = true;
+        // サービス情報を非表示にする
+        document.getElementById('service_info').style.display = 'none';
+    };
+    
+    // サービス種別選択時の処理
+    window.updateServiceInfo = function() {
+        const serviceTypeSelect = document.getElementById('service_type');
+        const selectedOption = serviceTypeSelect.options[serviceTypeSelect.selectedIndex];
+        const categorySelect = document.getElementById('service_category');
+        const selectedCategory = categorySelect.value;
+        const minutesContainer = document.getElementById('minutes_container');
+        const minutesInput = document.getElementById('minutes');
+        const serviceInfo = document.getElementById('service_info');
+        const serviceInfoText = document.getElementById('service_info_text');
+        const addBtn = document.getElementById('add_service_btn');
+        const dayServiceAddons = document.getElementById('day_service_addons');
+        
+        // デイサービス加算チェックボックスの表示・非表示
+        if (selectedCategory === 'デイサービス' && selectedOption.value) {
+            dayServiceAddons.style.display = 'block';
+        } else {
+            dayServiceAddons.style.display = 'none';
+            // チェックボックスをリセット
+            document.getElementById('has_functional_training').checked = false;
+            document.getElementById('has_bathing').checked = false;
+            document.getElementById('has_cognitive_function').checked = false;
+        }
+        
+        if (selectedOption.value) {
+            const durationMinutes = selectedOption.getAttribute('data-duration-minutes');
+            const totalUnits = selectedOption.getAttribute('data-total-units');
+            const unitPerMinute = selectedOption.getAttribute('data-unit-per-minute');
+            
+            if (durationMinutes && durationMinutes !== 'null') {
+                // 固定時間のサービス
+                minutesContainer.style.display = 'none';
+                minutesInput.required = false;
+                
+                const units = totalUnits && totalUnits !== 'null' ? totalUnits : (parseFloat(unitPerMinute) * parseInt(durationMinutes));
+                serviceInfoText.innerHTML = `
+                    <i class="fas fa-info-circle text-primary"></i> 
+                    <strong>実施時間:</strong> ${durationMinutes}分、
+                    <strong>基本単位数:</strong> ${parseFloat(units).toFixed(1)}単位
+                    <small class="text-muted d-block mt-1">※ この時間は変更できません</small>
+                    ${selectedCategory === 'デイサービス' ? '<small class="text-info d-block">加算オプションで単位数が追加されます</small>' : ''}
+                `;
+                serviceInfo.className = 'alert alert-info';
+                serviceInfo.style.display = 'block';
+            } else {
+                // 時間入力が必要なサービス
+                minutesContainer.style.display = 'block';
+                minutesInput.required = true;
+                
+                serviceInfoText.innerHTML = `
+                    <i class="fas fa-clock text-warning"></i>
+                    <strong>単価:</strong> ${unitPerMinute}単位/分
+                    <small class="text-muted d-block mt-1">実施時間を入力してください</small>
+                `;
+                serviceInfo.className = 'alert alert-warning';
+                serviceInfo.style.display = 'block';
+            }
+            
+            // 加算計算を初回実行
+            updateAddonCalculation();
+            addBtn.disabled = false;
+        } else {
+            minutesContainer.style.display = 'none';
+            minutesInput.required = false;
+            serviceInfo.style.display = 'none';
+            dayServiceAddons.style.display = 'none';
+            addBtn.disabled = true;
+        }
+    };
+    
+    // 加算計算更新処理
+    window.updateAddonCalculation = function() {
+        const serviceTypeSelect = document.getElementById('service_type');
+        const selectedOption = serviceTypeSelect.options[serviceTypeSelect.selectedIndex];
+        const categorySelect = document.getElementById('service_category');
+        const selectedCategory = categorySelect.value;
+        
+        if (selectedCategory === 'デイサービス' && selectedOption.value) {
+            const durationMinutes = selectedOption.getAttribute('data-duration-minutes');
+            const totalUnits = selectedOption.getAttribute('data-total-units');
+            const unitPerMinute = selectedOption.getAttribute('data-unit-per-minute');
+            
+            let baseUnits = 0;
+            if (totalUnits && totalUnits !== 'null') {
+                baseUnits = parseFloat(totalUnits);
+            } else if (durationMinutes && durationMinutes !== 'null') {
+                baseUnits = parseFloat(unitPerMinute) * parseInt(durationMinutes);
+            }
+            
+            // 加算単位を計算
+            let addonUnits = 0;
+            if (document.getElementById('has_functional_training').checked) {
+                addonUnits += 12; // 機能訓練加算
+            }
+            if (document.getElementById('has_bathing').checked) {
+                addonUnits += 40; // 入浴加算
+            }
+            if (document.getElementById('has_cognitive_function').checked) {
+                addonUnits += 60; // 認知機能加算
+            }
+            
+            const totalUnitsWithAddon = baseUnits + addonUnits;
+            
+            // 表示を更新
+            const serviceInfoText = document.getElementById('service_info_text');
+            serviceInfoText.innerHTML = `
+                <i class="fas fa-info-circle text-primary"></i> 
+                <strong>実施時間:</strong> ${durationMinutes}分<br>
+                <strong>基本単位:</strong> ${baseUnits.toFixed(1)}単位
+                ${addonUnits > 0 ? `<br><strong>加算単位:</strong> +${addonUnits}単位` : ''}
+                <br><strong class="text-success">合計単位:</strong> ${totalUnitsWithAddon.toFixed(1)}単位
+                <small class="text-muted d-block mt-1">※ この時間は変更できません</small>
+            `;
+        }
+    };
+    
+    // フォームリセット処理
+    window.resetServiceForm = function() {
+        // フォーム要素をリセット
+        document.getElementById('service_category').value = '';
+        document.getElementById('service_type').innerHTML = '<option value="">まずカテゴリを選択してください</option>';
+        document.getElementById('service_type').disabled = true;
+        document.getElementById('minutes').value = '';
+        document.getElementById('date_provided').value = '';
+        document.getElementById('provider_name').value = '';
+        
+        // 加算チェックボックスをリセット
+        document.getElementById('has_functional_training').checked = false;
+        document.getElementById('has_bathing').checked = false;
+        document.getElementById('has_cognitive_function').checked = false;
+        
+        // UI要素を初期状態に戻す
+        document.getElementById('minutes_container').style.display = 'none';
+        document.getElementById('minutes').required = false;
+        document.getElementById('service_info').style.display = 'none';
+        document.getElementById('day_service_addons').style.display = 'none';
+        document.getElementById('add_service_btn').disabled = true;
+        
+        // 今日の日付を再設定
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('date_provided').value = today;
+    };
+    
+    // ページ読み込み時の初期設定
+    document.addEventListener('DOMContentLoaded', function() {
+        // 今日の日付を初期値として設定
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('date_provided').value = today;
+        
+        // サービス種別を無効状態にする
+        document.getElementById('service_type').disabled = true;
+    });
+    
+    // サービス削除処理
+    let serviceIdToDelete = null;
+    
+    document.querySelectorAll('.delete-service').forEach(button => {
+        button.addEventListener('click', function() {
+            serviceIdToDelete = this.getAttribute('data-service-id');
+            const serviceName = this.getAttribute('data-service-name');
+            
+            document.getElementById('deleteServiceMessage').textContent = 
+                `「${serviceName}」を削除してもよろしいですか？`;
+            
+            const modal = new bootstrap.Modal(document.getElementById('deleteServiceModal'));
+            modal.show();
+        });
+    });
+    
+    document.getElementById('confirmDeleteService').addEventListener('click', function() {
+        if (serviceIdToDelete) {
+            fetch(`/clients/services/${serviceIdToDelete}/delete/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/json',
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('削除に失敗しました: ' + data.error);
+                }
+            })
+            .catch(error => {
+                alert('削除に失敗しました');
+            });
+        }
+    });
+});
+</script>
+{% endblock %}

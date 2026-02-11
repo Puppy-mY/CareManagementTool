@@ -1,0 +1,247 @@
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+
+{% block title %}居宅介護支援事業所一覧 - {{ block.super }}{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+
+<style>
+/* 新規登録ボタン */
+.btn-new-pastel {
+    background-color: #ffffff;
+    border: 1px solid #6c757d;
+    color: #6c757d;
+}
+.btn-new-pastel:hover, .btn-new-pastel:focus {
+    background-color: #e3f2fd;
+    border: 1px solid #0d6efd;
+    color: #0d6efd;
+}
+
+/* 編集ボタン */
+.btn-edit-pastel {
+    background-color: #ffffff;
+    border: 1px solid #6c757d;
+    color: #6c757d;
+}
+.btn-edit-pastel:hover, .btn-edit-pastel:focus {
+    background-color: #ffe5cc;
+    border: 1px solid #fd7e14;
+    color: #fd7e14;
+}
+
+/* 削除ボタン */
+.btn-delete-pastel {
+    background-color: #ffffff;
+    border: 1px solid #6c757d;
+    color: #6c757d;
+}
+.btn-delete-pastel:hover, .btn-delete-pastel:focus {
+    background-color: #f8d7da;
+    border: 1px solid #dc3545;
+    color: #dc3545;
+}
+</style>
+
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><i class="fas fa-hospital"></i> 居宅介護支援事業所一覧</h1>
+            <a href="{% url 'home_care_office_create' %}" class="btn btn-new-pastel">
+                <i class="fas fa-plus"></i> 新規登録
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- 検索 -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div id="filterForm" class="row g-3">
+                    <div class="col-md-11">
+                        <label for="search" class="form-label">
+                            <i class="fas fa-search"></i> 検索
+                        </label>
+                        <input type="text" class="form-control" id="search"
+                               placeholder="事業所名、事業所番号、住所、管理者名で検索" autocomplete="off">
+                    </div>
+
+                    <div class="col-md-1 d-flex align-items-end">
+                        <button type="button" id="clearFilters" class="btn btn-outline-secondary w-100" title="クリア">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 一覧（アコーディオン形式） -->
+<div class="row">
+    <div class="col-12">
+        {% if offices %}
+        <div class="accordion" id="officeAccordion">
+            {% for office in offices %}
+            <div class="accordion-item" data-office-number="{{ office.office_number }}" data-address="{{ office.address }}" data-manager="{{ office.manager_name }}">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed py-2" type="button"
+                            data-bs-toggle="collapse" data-bs-target="#office{{ office.pk }}">
+                        <span class="fw-bold">{{ office.name }}</span>
+                        {% if not office.is_active %}
+                        <span class="badge bg-secondary ms-2">無効</span>
+                        {% endif %}
+                    </button>
+                </h2>
+                <div id="office{{ office.pk }}" class="accordion-collapse collapse" data-bs-parent="#officeAccordion">
+                    <div class="accordion-body py-3">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <table class="table table-sm table-bordered mb-0">
+                                    <tr>
+                                        <th style="width: 120px;" class="table-light">事業所番号</th>
+                                        <td>{{ office.office_number }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th class="table-light">郵便番号</th>
+                                        <td>{{ office.postal_code|default:"-" }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th class="table-light">住所</th>
+                                        <td>{{ office.address|default:"-" }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th class="table-light">電話番号</th>
+                                        <td>{{ office.phone|default:"-" }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th class="table-light">FAX</th>
+                                        <td>{{ office.fax|default:"-" }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th class="table-light">管理者名</th>
+                                        <td>{{ office.manager_name|default:"-" }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th class="table-light">状態</th>
+                                        <td>
+                                            {% if office.is_active %}
+                                            <span class="badge bg-success">有効</span>
+                                            {% else %}
+                                            <span class="badge bg-secondary">無効</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <a href="{% url 'home_care_office_edit' office.pk %}" class="btn btn-sm btn-edit-pastel">
+                                    <i class="fas fa-edit"></i> 編集
+                                </a>
+                                <button type="button" class="btn btn-sm btn-delete-pastel"
+                                        onclick="confirmDelete({{ office.pk }}, '{{ office.name }}')">
+                                    <i class="fas fa-trash"></i> 削除
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <i class="fas fa-hospital fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">居宅介護支援事業所が登録されていません</h5>
+                <a href="{% url 'home_care_office_create' %}" class="btn btn-primary mt-3">
+                    <i class="fas fa-plus"></i> 新規登録
+                </a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- 削除確認モーダル -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h6 class="modal-title"><i class="fas fa-exclamation-triangle text-danger"></i> 削除確認</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0"><strong id="deleteOfficeName"></strong>を削除しますか？</p>
+            </div>
+            <div class="modal-footer py-2">
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                <form id="deleteForm" method="post" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-danger">削除</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function confirmDelete(pk, name) {
+    document.getElementById('deleteOfficeName').textContent = name;
+    document.getElementById('deleteForm').action = '/clients/home-care-offices/' + pk + '/delete/';
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('search');
+    const clearButton = document.getElementById('clearFilters');
+    const accordionItems = document.querySelectorAll('.accordion-item');
+
+    // フィルタリング関数
+    function filterOffices() {
+        const searchText = searchInput.value.toLowerCase();
+
+        accordionItems.forEach(function(item) {
+            const name = item.querySelector('.fw-bold').textContent.toLowerCase();
+            const officeNumber = item.getAttribute('data-office-number') || '';
+            const address = item.getAttribute('data-address') || '';
+            const manager = item.getAttribute('data-manager') || '';
+
+            const matchesSearch = !searchText ||
+                name.includes(searchText) ||
+                officeNumber.includes(searchText) ||
+                address.toLowerCase().includes(searchText) ||
+                manager.toLowerCase().includes(searchText);
+
+            if (matchesSearch) {
+                item.style.display = '';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    }
+
+    // リアルタイム検索
+    if (searchInput) {
+        searchInput.addEventListener('input', filterOffices);
+        searchInput.addEventListener('focus', function() {
+            this.select();
+        });
+    }
+
+    // クリアボタン
+    if (clearButton) {
+        clearButton.addEventListener('click', function() {
+            searchInput.value = '';
+            filterOffices();
+        });
+    }
+});
+</script>
+{% endblock %}

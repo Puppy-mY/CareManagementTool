@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+
+{% block title %}私のフィードバック - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1><i class="fas fa-comments"></i> 私のフィードバック</h1>
+        <p class="text-muted">あなたが投稿したフィードバックの一覧です。</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-list"></i> フィードバック一覧
+                    <span class="badge" style="background-color: #f5f5f5; color: #000000; border: 1px solid #999999;">{{ feedbacks.count }}件</span>
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                {% if feedbacks %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 50%; min-width: 300px;">タイトル</th>
+                                    <th style="width: 15%; white-space: nowrap;">カテゴリ</th>
+                                    <th style="width: 15%; white-space: nowrap;">ステータス</th>
+                                    <th style="width: 20%; white-space: nowrap;">投稿日時</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for feedback in feedbacks %}
+                                <tr style="cursor: pointer;" onclick="window.location='{% url 'my_feedback_detail' feedback.pk %}';">
+                                    <td style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 0;">
+                                        <a href="{% url 'my_feedback_detail' feedback.pk %}" class="text-decoration-none text-dark">
+                                            {{ feedback.title }}
+                                        </a>
+                                    </td>
+                                    <td style="white-space: nowrap;">
+                                        {% if feedback.category == 'bug' %}
+                                            <span class="badge" style="background-color: #fff3e0; color: #000000; border: 1px solid #999999; font-weight: normal;">{{ feedback.get_category_display }}</span>
+                                        {% elif feedback.category == 'feature' %}
+                                            <span class="badge" style="background-color: #e8f5e8; color: #000000; border: 1px solid #999999; font-weight: normal;">{{ feedback.get_category_display }}</span>
+                                        {% elif feedback.category == 'improvement' %}
+                                            <span class="badge" style="background-color: #fff9c4; color: #000000; border: 1px solid #999999; font-weight: normal;">{{ feedback.get_category_display }}</span>
+                                        {% else %}
+                                            <span class="badge" style="background-color: #f5f5f5; color: #000000; border: 1px solid #999999; font-weight: normal;">{{ feedback.get_category_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td style="white-space: nowrap;">
+                                        {% if feedback.status == 'new' %}
+                                            <span class="badge" style="background-color: #ffffff; color: #6c757d; border: 1px solid #6c757d; font-weight: normal;">{{ feedback.get_status_display }}</span>
+                                        {% elif feedback.status == 'in_progress' %}
+                                            <span class="badge" style="background-color: #e3f2fd; color: #000000; border: 1px solid #999999; font-weight: normal;">{{ feedback.get_status_display }}</span>
+                                        {% elif feedback.status == 'completed' %}
+                                            <span class="badge" style="background-color: #ffebee; color: #000000; border: 1px solid #999999; font-weight: normal;">{{ feedback.get_status_display }}</span>
+                                        {% else %}
+                                            <span class="badge" style="background-color: #f5f0e8; color: #000000; border: 1px solid #999999; font-weight: normal;">{{ feedback.get_status_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td style="white-space: nowrap;">{{ feedback.created_at|date:"Y/m/d H:i" }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-comments fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">まだフィードバックを投稿していません</h5>
+                        <p class="text-muted">ヘッダーの「💬 開発者への要望」ボタンからフィードバックを投稿できます。</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

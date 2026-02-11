@@ -1,0 +1,1320 @@
+{% extends 'base.html' %}
+
+{% block title %}ã«ã©ã¼å（ - {{ block.super }}{% endblock %}
+
+{% block content %}
+<style>
+    /* ã¡ã¤ã³ã¿ã（ã¹ã¿ã¤ã«（å©ç¨èEç´°ã¨åã（（*/
+    #colorRefMainTabs {
+        border-bottom: none;
+        background-color: transparent;
+        padding: 0;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        overflow-y: hidden;
+        white-space: nowrap;
+        justify-content: space-between;
+    }
+
+    #colorRefMainTabs .nav-item {
+        flex: 1;
+        text-align: center;
+        position: relative;
+    }
+
+    #colorRefMainTabs .nav-item:not(:last-child)::after {
+        content: '';
+        position: absolute;
+        right: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 1px;
+        height: 60%;
+        background-color: #dee2e6;
+    }
+
+    #colorRefMainTabs .nav-link {
+        border: none;
+        border-bottom: 3px solid transparent;
+        border-radius: 0;
+        padding: 0.75rem 1rem;
+        font-weight: 500;
+        color: #6c757d;
+        background-color: transparent;
+        margin-right: 0;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+        width: 100%;
+    }
+
+    #colorRefMainTabs .nav-link:hover {
+        color: #495057;
+        border-bottom-color: #dee2e6;
+        background-color: transparent;
+    }
+
+    #colorRefMainTabs .nav-link.active {
+        color: #495057;
+        background-color: transparent;
+        border-bottom: 3px solid #6c757d !important;
+    }
+
+    /* ãµãã¿ã（ã¹ã¿ã¤ã« */
+    #colorRefSubTabs {
+        border-bottom: none !important;
+        display: flex !important;
+        margin-bottom: 0 !important;
+    }
+
+    #colorRefSubTabs .nav-item {
+        flex: 1 !important;
+        margin: 0 !important;
+    }
+
+    #colorRefSubTabs .nav-link {
+        transition: all 0.2s ease;
+        border: 1px solid #dee2e6 !important;
+        border-bottom: none !important;
+        border-top-left-radius: 0.375rem !important;
+        border-top-right-radius: 0.375rem !important;
+        width: 100% !important;
+        margin: 0 !important;
+    }
+
+    #colorRefSubTabs .nav-link:not(.active) {
+        background-color: #ffffff !important;
+        color: #6c757d !important;
+    }
+
+    #colorRefSubTabs .nav-link.active {
+        background-color: #f5f5f5 !important;
+        border-color: #999 !important;
+        color: #333 !important;
+        border-bottom: none !important;
+    }
+
+    #colorRefSubTabs .nav-link:not(.active):hover {
+        background-color: #e9ecef !important;
+        color: #495057 !important;
+    }
+
+    .tab-pane-bordered {
+        border: 1px solid #6c757d;
+        border-radius: 0 0 0.375rem 0.375rem;
+        background-color: white;
+        padding: 1.5rem;
+    }
+</style>
+
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><i class="fas fa-palette"></i> ã«ã©ã¼å（</h1>
+            <a href="{% url 'client_list' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> æ»ãE
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- ã¡ã¤ã³ã¿ãããã²ã¼ã·ã§ã³ -->
+<div class="bg-white border-bottom mb-0 pb-0">
+    <div class="container-fluid px-4">
+        <div class="row">
+            <ul class="nav nav-tabs" id="colorRefMainTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="color-list-main-tab" data-bs-toggle="tab" data-bs-target="#color-list-main" type="button" role="tab">
+                        ã«ã©ã¼ä¸è¦§
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="color-pattern-main-tab" data-bs-toggle="tab" data-bs-target="#color-pattern-main" type="button" role="tab">
+                        ã«ã©ã¼ãã¿ã¼ã³
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="animation-pattern-main-tab" data-bs-toggle="tab" data-bs-target="#animation-pattern-main" type="button" role="tab">
+                        ã¢ãã¡ã¼ã·ã§ã³ãã¿ã¼ã³
+                    </button>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- ã¿ãã³ã³ãEãE-->
+<div class="container-fluid px-4">
+    <div class="tab-content" id="colorRefMainTabContent">
+        <!-- ã«ã©ã¼ä¸è¦§ã¿ãE-->
+        <div class="tab-pane fade show active" id="color-list-main" role="tabpanel">
+            <div class="pt-4 pb-3">
+                <div class="mb-0">
+                    <ul class="nav nav-tabs" id="colorRefSubTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="client-list-sub-tab" data-bs-toggle="tab" data-bs-target="#client-list-sub" type="button" role="tab">
+                                å©ç¨èEè¦§
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="assessment-sub-tab" data-bs-toggle="tab" data-bs-target="#assessment-sub" type="button" role="tab">
+                                ã¢ã»ã¹ã¡ã³ãä½（
+                            </button>
+                        </li>
+                    </ul>
+                    <div class="tab-content" id="colorRefSubTabContent">
+                        <!-- å©ç¨èEè¦§ãµãã¿ãE-->
+                        <div class="tab-pane fade show active tab-pane-bordered" id="client-list-sub" role="tabpanel">
+                            <p class="text-muted mb-4">
+                                å©ç¨èEè¦§ç»é¢ã§ä½¿ç¨ããã¦ãEã«ã©ã¼ã®ä¸è¦§ã§ããE
+                            </p>
+
+                            {% for category_data in client_list_colors %}
+                            <div class="mb-4">
+                                <h6 class="mb-3 fw-bold">{{ category_data.category }}</h6>
+                                <div class="table-responsive">
+                                    <table class="table table-bordered">
+                                        <thead>
+                                            <tr>
+                                                <th style="width: 35%;">é EåE/th>
+                                                <th style="width: 20%;">ãã¹ãE<br><small>（ããã©ã«ãï¼E/small></th>
+                                                <th style="width: 15%;">èæ¯è²</th>
+                                                <th style="width: 15%;">æ ç·E/th>
+                                                <th style="width: 15%;">æEè²</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for item in category_data.items %}
+                                            <tr>
+                                                <td>{{ item.name }}</td>
+                                                <td>
+                                                    {% if 'æ°è¦ç»é²' in category_data.category %}
+                                                        <button class="btn btn-outline-secondary btn-sm" style="
+                                                            background-color: {{ item.bg_color }};
+                                                            border-color: {{ item.border_color }};
+                                                            color: {{ item.text_color }};
+                                                            font-size: 0.875rem;
+                                                            padding: 0.25rem 0.5rem;
+                                                            pointer-events: none;
+                                                        ">æ°è¦ç»é²</button>
+                                                    {% elif 'ä»¶æ°è¡¨ç¤º' in category_data.category %}
+                                                        <span class="badge" style="
+                                                            background-color: {{ item.bg_color }};
+                                                            color: {{ item.text_color }};
+                                                            border: 1px solid {{ item.border_color }};
+                                                            font-size: 13px;
+                                                            padding: 4px 8px;
+                                                        ">50ä»¶</span>
+                                                    {% elif 'ãE（ãã«ãããã¼' in category_data.category %}
+                                                        <div style="
+                                                            background-color: {{ item.bg_color }};
+                                                            border: 1px solid {{ item.border_color }};
+                                                            color: {{ item.text_color }};
+                                                            padding: 8px;
+                                                            font-weight: 600;
+                                                        ">ãããã¼</div>
+                                                    {% elif 'ãE（ãã«è¡E in category_data.category %}
+                                                        <div style="
+                                                            background-color: {{ item.bg_color }};
+                                                            border: 1px solid {{ item.border_color }};
+                                                            color: {{ item.text_color }};
+                                                            padding: 8px;
+                                                        ">è¡ãã¼ã¿</div>
+                                                    {% elif 'ä»è­·åº¦' in category_data.category %}
+                                                        <span style="
+                                                            background-color: {{ item.bg_color }};
+                                                            border: 1px solid {{ item.border_color }};
+                                                            color: {{ item.text_color }};
+                                                            padding: 4px 8px;
+                                                            border-radius: 4px;
+                                                            font-size: 13px;
+                                                        ">{{ item.name }}</span>
+                                                    {% elif 'ã«ã¦ã³ããã¦ã³' in category_data.category %}
+                                                        {% if 'æéåE' in item.name %}
+                                                            <span style="
+                                                                display: inline-flex;
+                                                                align-items: center;
+                                                                justify-content: center;
+                                                                width: 18px;
+                                                                height: 18px;
+                                                                border: 1px solid {{ item.border_color }};
+                                                                border-radius: 50%;
+                                                                background-color: {{ item.bg_color }};
+                                                                font-size: 14px;
+                                                                font-weight: bold;
+                                                                color: {{ item.text_color }};
+                                                            ">ÃE/span>
+                                                        {% elif '30æ¥' in item.name %}
+                                                            <span style="
+                                                                display: inline-flex;
+                                                                align-items: center;
+                                                                justify-content: center;
+                                                                width: 18px;
+                                                                height: 18px;
+                                                                border: 1px solid {{ item.border_color }};
+                                                                border-radius: 50%;
+                                                                background-color: {{ item.bg_color }};
+                                                                font-size: 8px;
+                                                                font-weight: bold;
+                                                                color: {{ item.text_color }};
+                                                            ">15</span>
+                                                        {% else %}
+                                                            <span style="
+                                                                display: inline-flex;
+                                                                align-items: center;
+                                                                justify-content: center;
+                                                                width: 18px;
+                                                                height: 18px;
+                                                                border: 1px solid {{ item.border_color }};
+                                                                border-radius: 50%;
+                                                                background-color: {{ item.bg_color }};
+                                                                font-size: 8px;
+                                                                font-weight: bold;
+                                                                color: {{ item.text_color }};
+                                                            ">60</span>
+                                                        {% endif %}
+                                                    {% elif 'æä½（ã¿ã³' in category_data.category %}
+                                                        <button class="btn btn-outline-secondary btn-sm" style="
+                                                            background-color: {{ item.bg_color }};
+                                                            border-color: {{ item.border_color }};
+                                                            color: {{ item.text_color }};
+                                                            font-size: 11px;
+                                                            padding: 2px 8px;
+                                                            pointer-events: none;
+                                                        ">æä½E/button>
+                                                    {% elif 'æä½ã¢ã¤ã³ã³' in category_data.category %}
+                                                        <i class="fas
+                                                            {% if 'è©³ç´°è¡¨ç¤º' in item.name %}fa-eye
+                                                            {% elif 'æEç·¨éE in item.name %}fa-edit
+                                                            {% elif 'éåº¦é¡è©¦ç®E in item.name %}fa-calculator
+                                                            {% elif 'ã¢ã»ã¹ã¡ã³ãE in item.name %}fa-clipboard-list
+                                                            {% elif 'æ¸é¡ä½（' in item.name %}fa-file-alt
+                                                            {% elif 'äºå®ç®¡çE in item.name %}fa-calendar-check
+                                                            {% elif 'å±¥æ­´ã»è¨é²' in item.name %}fa-chart-line
+                                                            {% elif 'å°å·ã»åºåE in item.name %}fa-print
+                                                            {% endif %}"
+                                                        style="
+                                                            font-size: 18px;
+                                                            color: {{ item.text_color }};
+                                                        "></i>
+                                                    {% elif 'æä½ã¡ãã¥ã¼' in category_data.category %}
+                                                        <button class="btn btn-sm" style="
+                                                            background-color: {{ item.bg_color }};
+                                                            border: 1px solid {{ item.border_color }};
+                                                            color: {{ item.text_color }};
+                                                            font-size: 0.75rem;
+                                                            padding: 0.25rem 0.5rem;
+                                                            pointer-events: none;
+                                                        ">{{ item.name }}</button>
+                                                    {% else %}
+                                                        <div style="
+                                                            background-color: {{ item.bg_color }};
+                                                            border: 2px solid {{ item.border_color }};
+                                                            color: {{ item.text_color }};
+                                                            padding: 8px;
+                                                            border-radius: 4px;
+                                                        ">ãµã³ãã«</div>
+                                                    {% endif %}
+                                                </td>
+                                                <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                                <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                                <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- ã¢ã»ã¹ã¡ã³ãä½（ãµãã¿ãE-->
+                        <div class="tab-pane fade tab-pane-bordered" id="assessment-sub" role="tabpanel">
+                            <p class="text-muted mb-4">
+                                ã¢ã»ã¹ã¡ã³ãä½（ç»é¢ã§ä½¿ç¨ããã¦ãEã«ã©ã¼ã®ä¸è¦§ã§ããE
+                            </p>
+
+                            {% for category_data in assessment_colors %}
+                            <div class="mb-4">
+                                <h6 class="mb-3 fw-bold">{{ category_data.category }}</h6>
+                                <div class="table-responsive">
+                                    <table class="table table-bordered">
+                                        <thead>
+                                            <tr>
+                                                <th style="width: 35%;">é EåE/th>
+                                                <th style="width: 20%;">ãã¹ãE<br><small>（ããã©ã«ãï¼E/small></th>
+                                                <th style="width: 15%;">èæ¯è²</th>
+                                                <th style="width: 15%;">æ ç·E/th>
+                                                <th style="width: 15%;">æEè²</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for item in category_data.items %}
+                                            <tr>
+                                                <td>{{ item.name }}</td>
+                                                <td>
+                                                    {% if 'æä½（ã¿ã³' in category_data.category %}
+                                                        <button class="btn btn-sm" style="
+                                                            background-color: {{ item.bg_color }};
+                                                            border: 1px solid {{ item.border_color }};
+                                                            color: {{ item.text_color }};
+                                                            font-size: 0.875rem;
+                                                            padding: 0.25rem 0.5rem;
+                                                            pointer-events: none;
+                                                        ">{{ item.name }}</button>
+                                                    {% elif 'é¸æ（ã¿ã³' in category_data.category %}
+                                                        <button class="btn btn-outline-secondary btn-sm" style="
+                                                            background-color: {{ item.bg_color }};
+                                                            border-color: {{ item.border_color }};
+                                                            color: {{ item.text_color }};
+                                                            font-size: 0.875rem;
+                                                            padding: 0.25rem 0.5rem;
+                                                            pointer-events: none;
+                                                        ">é¸æE/button>
+                                                    {% elif 'ã«ã¼ã½ã«' in category_data.category %}
+                                                        <button class="btn btn-outline-secondary btn-sm" style="
+                                                            background-color: {{ item.bg_color }};
+                                                            border-color: {{ item.border_color }};
+                                                            color: {{ item.text_color }};
+                                                            font-size: 0.875rem;
+                                                            padding: 0.25rem 0.5rem;
+                                                            pointer-events: none;
+                                                        ">æªé¸æE/button>
+                                                    {% elif 'ã¡ã¤ã³ã¿ãE in category_data.category %}
+                                                        <div style="
+                                                            display: inline-block;
+                                                            padding: 8px 16px;
+                                                            border-bottom: 3px solid {{ item.bg_color }};
+                                                            font-size: 0.875rem;
+                                                        ">ã¿ãE/div>
+                                                    {% elif 'ãµãã¿ãE in category_data.category %}
+                                                        <a class="nav-link" style="
+                                                            background-color: {{ item.bg_color }};
+                                                            border: 1px solid {{ item.border_color }};
+                                                            color: {{ item.text_color }};
+                                                            padding: 0.5rem 1rem;
+                                                            border-radius: 0.25rem;
+                                                            display: inline-block;
+                                                            font-size: 0.875rem;
+                                                        ">ãµãã¿ãE/a>
+                                                    {% elif 'ãã§ãEããã¯ã¹' in category_data.category %}
+                                                        <input type="checkbox" class="form-check-input" checked style="
+                                                            background-color: {{ item.bg_color }};
+                                                            border-color: {{ item.border_color }};
+                                                            width: 1.25rem;
+                                                            height: 1.25rem;
+                                                            pointer-events: none;
+                                                        ">
+                                                    {% else %}
+                                                        <div style="
+                                                            background-color: {{ item.bg_color }};
+                                                            border: 2px solid {{ item.border_color }};
+                                                            color: {{ item.text_color }};
+                                                            padding: 8px;
+                                                            border-radius: 4px;
+                                                        ">ãµã³ãã«</div>
+                                                    {% endif %}
+                                                </td>
+                                                <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                                <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                                <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ã«ã©ã¼ãã¿ã¼ã³ã¿ãE-->
+        <div class="tab-pane fade" id="color-pattern-main" role="tabpanel">
+            <div class="pt-4 pb-3">
+                <div class="card">
+                    <div class="card-body">
+                        <p class="text-muted mb-4">
+                            ã«ã©ã¼ãã¿ã¼ã³ã®çµEåããä¸è¦§ã§ããçªå·ã§æEãããã¨ã§ãçµ±ä¸çEã«ã©ã¼ãä½¿ç¨ã§ãã¾ããE
+                        </p>
+
+                        <h6 class="mb-3 fw-bold">ãã¿ã¼ã³0（éå¸¸æ（ãã¿ã³（（/h6>
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 10%;">çªå·</th>
+                                        <th style="width: 20%;">ãã¹ãE<br><small>（ããã©ã«ãï¼E/small></th>
+                                        <th style="width: 23%;">æEè²</th>
+                                        <th style="width: 23%;">æ ç·E/th>
+                                        <th style="width: 24%;">èæ¯è²</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="fw-bold">0</td>
+                                        <td>
+                                            <span style="
+                                                background-color: #ffffff;
+                                                padding: 4px 8px;
+                                                border: 1px solid #6c757d;
+                                                border-radius: 4px;
+                                                font-size: 13px;
+                                                color: #6c757d;
+                                            ">ãµã³ãã«</span>
+                                        </td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <h6 class="mb-3 fw-bold mt-5">ãã¿ã¼ã³1（（（æ ç·E ã°ã¬ã¼åºå®E+ èæ¯è²: 8è²（（/h6>
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 10%;">çªå·</th>
+                                        <th style="width: 20%;">ãã¹ãE<br><small>（ããã©ã«ãï¼E/small></th>
+                                        <th style="width: 23%;">æEè²</th>
+                                        <th style="width: 23%;">æ ç·E/th>
+                                        <th style="width: 24%;">èæ¯è²</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="fw-bold">1</td>
+                                        <td>
+                                            <span style="
+                                                background-color: #f5f5f5;
+                                                padding: 4px 8px;
+                                                border: 1px solid #999999;
+                                                border-radius: 4px;
+                                                font-size: 13px;
+                                                color: #000000;
+                                            ">ãµã³ãã«</span>
+                                        </td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">2</td>
+                                        <td>
+                                            <span style="
+                                                background-color: #e3f2fd;
+                                                padding: 4px 8px;
+                                                border: 1px solid #999999;
+                                                border-radius: 4px;
+                                                font-size: 13px;
+                                                color: #000000;
+                                            ">ãµã³ãã«</span>
+                                        </td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">3</td>
+                                        <td>
+                                            <span style="
+                                                background-color: #e8f5e8;
+                                                padding: 4px 8px;
+                                                border: 1px solid #999999;
+                                                border-radius: 4px;
+                                                font-size: 13px;
+                                                color: #000000;
+                                            ">ãµã³ãã«</span>
+                                        </td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">4</td>
+                                        <td>
+                                            <span style="
+                                                background-color: #fff3e0;
+                                                padding: 4px 8px;
+                                                border: 1px solid #999999;
+                                                border-radius: 4px;
+                                                font-size: 13px;
+                                                color: #000000;
+                                            ">ãµã³ãã«</span>
+                                        </td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">5</td>
+                                        <td>
+                                            <span style="
+                                                background-color: #f3e5f5;
+                                                padding: 4px 8px;
+                                                border: 1px solid #999999;
+                                                border-radius: 4px;
+                                                font-size: 13px;
+                                                color: #000000;
+                                            ">ãµã³ãã«</span>
+                                        </td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">6</td>
+                                        <td>
+                                            <span style="
+                                                background-color: #ffebee;
+                                                padding: 4px 8px;
+                                                border: 1px solid #999999;
+                                                border-radius: 4px;
+                                                font-size: 13px;
+                                                color: #000000;
+                                            ">ãµã³ãã«</span>
+                                        </td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">7</td>
+                                        <td>
+                                            <span style="
+                                                background-color: #fff9c4;
+                                                padding: 4px 8px;
+                                                border: 1px solid #999999;
+                                                border-radius: 4px;
+                                                font-size: 13px;
+                                                color: #000000;
+                                            ">ãµã³ãã«</span>
+                                        </td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">8</td>
+                                        <td>
+                                            <span style="
+                                                background-color: #f5f0e8;
+                                                padding: 4px 8px;
+                                                border: 1px solid #999999;
+                                                border-radius: 4px;
+                                                font-size: 13px;
+                                                color: #000000;
+                                            ">ãµã³ãã«</span>
+                                        </td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <h6 class="mb-3 fw-bold mt-5">ãã¿ã¼ã³9（（6（æ ç·è² + èæ¯è²: 8è²ã»ãE（（/h6>
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 10%;">çªå·</th>
+                                        <th style="width: 20%;">ãã¹ãE<br><small>（ããã©ã«ãï¼E/small></th>
+                                        <th style="width: 23%;">æEè²</th>
+                                        <th style="width: 23%;">æ ç·E/th>
+                                        <th style="width: 24%;">èæ¯è²</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="fw-bold">9</td>
+                                        <td>
+                                            <span style="
+                                                background-color: #f5f5f5;
+                                                padding: 4px 8px;
+                                                border: 1px solid #6c757d;
+                                                border-radius: 4px;
+                                                font-size: 13px;
+                                                color: #6c757d;
+                                            ">ãµã³ãã«</span>
+                                        </td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">10</td>
+                                        <td>
+                                            <span style="
+                                                background-color: #e3f2fd;
+                                                padding: 4px 8px;
+                                                border: 1px solid #0d6efd;
+                                                border-radius: 4px;
+                                                font-size: 13px;
+                                                color: #0d6efd;
+                                            ">ãµã³ãã«</span>
+                                        </td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">11</td>
+                                        <td>
+                                            <span style="
+                                                background-color: #e8f5e8;
+                                                padding: 4px 8px;
+                                                border: 1px solid #198754;
+                                                border-radius: 4px;
+                                                font-size: 13px;
+                                                color: #198754;
+                                            ">ãµã³ãã«</span>
+                                        </td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">12</td>
+                                        <td>
+                                            <span style="
+                                                background-color: #fff3e0;
+                                                padding: 4px 8px;
+                                                border: 1px solid #fd7e14;
+                                                border-radius: 4px;
+                                                font-size: 13px;
+                                                color: #fd7e14;
+                                            ">ãµã³ãã«</span>
+                                        </td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">13</td>
+                                        <td>
+                                            <span style="
+                                                background-color: #f3e5f5;
+                                                padding: 4px 8px;
+                                                border: 1px solid #6f42c1;
+                                                border-radius: 4px;
+                                                font-size: 13px;
+                                                color: #6f42c1;
+                                            ">ãµã³ãã«</span>
+                                        </td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">14</td>
+                                        <td>
+                                            <span style="
+                                                background-color: #ffebee;
+                                                padding: 4px 8px;
+                                                border: 1px solid #d63384;
+                                                border-radius: 4px;
+                                                font-size: 13px;
+                                                color: #d63384;
+                                            ">ãµã³ãã«</span>
+                                        </td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">15</td>
+                                        <td>
+                                            <span style="
+                                                background-color: #fff9c4;
+                                                padding: 4px 8px;
+                                                border: 1px solid #ffc107;
+                                                border-radius: 4px;
+                                                font-size: 13px;
+                                                color: #ffc107;
+                                            ">ãµã³ãã«</span>
+                                        </td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">16</td>
+                                        <td>
+                                            <span style="
+                                                background-color: #f5f0e8;
+                                                padding: 4px 8px;
+                                                border: 1px solid #d2b48c;
+                                                border-radius: 4px;
+                                                font-size: 13px;
+                                                color: #d2b48c;
+                                            ">ãµã³ãã«</span>
+                                        </td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <h6 class="mb-3 fw-bold mt-5">ãã¿ã¼ã³17（（4（èæ¯è²ã®ã¿: 8è²（（/h6>
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 10%;">çªå·</th>
+                                        <th style="width: 20%;">ãã¹ãE<br><small>（ããã©ã«ãï¼E/small></th>
+                                        <th style="width: 23%;">æEè²</th>
+                                        <th style="width: 23%;">æ ç·E/th>
+                                        <th style="width: 24%;">èæ¯è²</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="fw-bold">17</td>
+                                        <td>
+                                            <span style="
+                                                background-color: #f5f5f5;
+                                                padding: 4px 8px;
+                                                border: none;
+                                                border-radius: 4px;
+                                                font-size: 13px;
+                                                color: #000000;
+                                                display: inline-block;
+                                                min-width: 60px;
+                                            ">&nbsp;</span>
+                                        </td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">18</td>
+                                        <td>
+                                            <span style="
+                                                background-color: #e3f2fd;
+                                                padding: 4px 8px;
+                                                border: none;
+                                                border-radius: 4px;
+                                                font-size: 13px;
+                                                color: #000000;
+                                                display: inline-block;
+                                                min-width: 60px;
+                                            ">&nbsp;</span>
+                                        </td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">19</td>
+                                        <td>
+                                            <span style="
+                                                background-color: #e8f5e8;
+                                                padding: 4px 8px;
+                                                border: none;
+                                                border-radius: 4px;
+                                                font-size: 13px;
+                                                color: #000000;
+                                                display: inline-block;
+                                                min-width: 60px;
+                                            ">&nbsp;</span>
+                                        </td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">20</td>
+                                        <td>
+                                            <span style="
+                                                background-color: #fff3e0;
+                                                padding: 4px 8px;
+                                                border: none;
+                                                border-radius: 4px;
+                                                font-size: 13px;
+                                                color: #000000;
+                                                display: inline-block;
+                                                min-width: 60px;
+                                            ">&nbsp;</span>
+                                        </td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">21</td>
+                                        <td>
+                                            <span style="
+                                                background-color: #f3e5f5;
+                                                padding: 4px 8px;
+                                                border: none;
+                                                border-radius: 4px;
+                                                font-size: 13px;
+                                                color: #000000;
+                                                display: inline-block;
+                                                min-width: 60px;
+                                            ">&nbsp;</span>
+                                        </td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">22</td>
+                                        <td>
+                                            <span style="
+                                                background-color: #ffebee;
+                                                padding: 4px 8px;
+                                                border: none;
+                                                border-radius: 4px;
+                                                font-size: 13px;
+                                                color: #000000;
+                                                display: inline-block;
+                                                min-width: 60px;
+                                            ">&nbsp;</span>
+                                        </td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">23</td>
+                                        <td>
+                                            <span style="
+                                                background-color: #fff9c4;
+                                                padding: 4px 8px;
+                                                border: none;
+                                                border-radius: 4px;
+                                                font-size: 13px;
+                                                color: #000000;
+                                                display: inline-block;
+                                                min-width: 60px;
+                                            ">&nbsp;</span>
+                                        </td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">24</td>
+                                        <td>
+                                            <span style="
+                                                background-color: #f5f0e8;
+                                                padding: 4px 8px;
+                                                border: none;
+                                                border-radius: 4px;
+                                                font-size: 13px;
+                                                color: #000000;
+                                                display: inline-block;
+                                                min-width: 60px;
+                                            ">&nbsp;</span>
+                                        </td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <h6 class="mb-3 fw-bold mt-5">ãã¿ã¼ã³25（ãã¼ãã«ãããã¼ã®èæ¯è²（（/h6>
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 10%;">çªå·</th>
+                                        <th style="width: 20%;">ãã¹ãE<br><small>（ããã©ã«ãï¼E/small></th>
+                                        <th style="width: 23%;">æEè²</th>
+                                        <th style="width: 23%;">æ ç·E/th>
+                                        <th style="width: 24%;">èæ¯è²</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="fw-bold">25</td>
+                                        <td>
+                                            <span style="
+                                                background-color: #f8f9fa;
+                                                padding: 4px 8px;
+                                                border: none;
+                                                border-radius: 4px;
+                                                font-size: 13px;
+                                                color: #000000;
+                                                display: inline-block;
+                                                min-width: 60px;
+                                            ">&nbsp;</span>
+                                        </td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                        <td><button class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">&nbsp;</button></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ã¢ãã¡ã¼ã·ã§ã³ãã¿ã¼ã³ã¿ãE-->
+        <div class="tab-pane fade" id="animation-pattern-main" role="tabpanel">
+            <div class="pt-4 pb-3">
+                <div class="card">
+                    <div class="card-body">
+                        <p class="text-muted mb-4">
+                            ããã¼æã«ã¢ãã¡ã¼ã·ã§ã³å¹æãæã¤ãã¿ã³ã®ãã¿ã¼ã³ã§ããã«ã¼ã½ã«ãåãããã¨è²ãå¤åããæµ®ãä¸ããå¹æãããã¾ããã¯ãªãEããã¨ã¢ãã¡ã¼ã·ã§ã³ã³ã¼ããã³ã（ã§ãã¾ããE
+                        </p>
+
+                        <h6 class="mb-3 fw-bold">ã¢ãã¡ã¼ã·ã§ã³ãã¿ã¼ã³0</h6>
+                        <p class="text-muted mb-3">
+                            ã«ã¼ã½ã«ãåãããã¨æµ®ãä¸ãããè²ãæ»ããã«å¤åããã¢ãã¡ã¼ã·ã§ã³å¹æä»ãã®ãã¿ã³ã§ããE
+                        </p>
+                        <div class="table-responsive">
+                            <table class="table table-bordered animation-pattern-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 10%;">çªå·</th>
+                                        <th style="width: 30%;">ãã¬ãã¥ã¼</th>
+                                        <th style="width: 60%;">ã¢ãã¡ã¼ã·ã§ã³å¹æE/th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr class="animation-pattern-row" data-pattern="0">
+                                        <td class="fw-bold">0</td>
+                                        <td>
+                                            <button class="btn-animation-demo" style="
+                                                background-color: #ffffff;
+                                                padding: 4px 8px;
+                                                border: 1px solid #6c757d;
+                                                border-radius: 4px;
+                                                font-size: 13px;
+                                                color: #6c757d;
+                                                cursor: pointer;
+                                                transition: all 0.2s ease;
+                                            ">ãµã³ãã«</button>
+                                        </td>
+                                        <td>
+                                            <ul class="mb-0">
+                                                <li>ãã©ã³ã¸ã·ã§ã³æé: 0.2ç§E(ease)</li>
+                                                <li>ããã¼æã«1pxä¸ã«æµ®ãä¸ããE(translateY(-1px))</li>
+                                            </ul>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <h6 class="mb-3 fw-bold mt-5">ã¢ãã¡ã¼ã·ã§ã³ãã¿ã¼ã³1</h6>
+                        <p class="text-muted mb-3">
+                            ã«ã¼ã½ã«ãåãããã¨ãã¿ã³ãæ¡å¤§ããã¢ãã¡ã¼ã·ã§ã³å¹æã§ããE
+                        </p>
+                        <div class="table-responsive">
+                            <table class="table table-bordered animation-pattern-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 10%;">çªå·</th>
+                                        <th style="width: 30%;">ãã¬ãã¥ã¼</th>
+                                        <th style="width: 60%;">ã¢ãã¡ã¼ã·ã§ã³å¹æE/th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr class="animation-pattern-row" data-pattern="1">
+                                        <td class="fw-bold">1</td>
+                                        <td>
+                                            <button class="btn-animation-demo-1" style="
+                                                background-color: #ffffff;
+                                                padding: 4px 8px;
+                                                border: 1px solid #6c757d;
+                                                border-radius: 4px;
+                                                font-size: 13px;
+                                                color: #6c757d;
+                                                cursor: pointer;
+                                                transition: all 0.2s ease;
+                                            ">ãµã³ãã«</button>
+                                        </td>
+                                        <td>
+                                            <ul class="mb-0">
+                                                <li>ãã©ã³ã¸ã·ã§ã³æé: 0.2ç§E(ease)</li>
+                                                <li>ããã¼æã«1.05åã«æ¡å¤§ (scale(1.05))</li>
+                                            </ul>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <h6 class="mb-3 fw-bold mt-5">ã¢ãã¡ã¼ã·ã§ã³ãã¿ã¼ã³2</h6>
+                        <p class="text-muted mb-3">
+                            ã«ã¼ã½ã«ãåãããã¨å½±ãå¼·èª¿ãããã¢ãã¡ã¼ã·ã§ã³å¹æã§ããE
+                        </p>
+                        <div class="table-responsive">
+                            <table class="table table-bordered animation-pattern-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 10%;">çªå·</th>
+                                        <th style="width: 30%;">ãã¬ãã¥ã¼</th>
+                                        <th style="width: 60%;">ã¢ãã¡ã¼ã·ã§ã³å¹æE/th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr class="animation-pattern-row" data-pattern="2">
+                                        <td class="fw-bold">2</td>
+                                        <td>
+                                            <button class="btn-animation-demo-2" style="
+                                                background-color: #ffffff;
+                                                padding: 4px 8px;
+                                                border: 1px solid #6c757d;
+                                                border-radius: 4px;
+                                                font-size: 13px;
+                                                color: #6c757d;
+                                                cursor: pointer;
+                                                transition: all 0.2s ease;
+                                                box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+                                            ">ãµã³ãã«</button>
+                                        </td>
+                                        <td>
+                                            <ul class="mb-0">
+                                                <li>ãã©ã³ã¸ã·ã§ã³æé: 0.2ç§E(ease)</li>
+                                                <li>ããã¼æã«å½±ãå¼·èª¿ãããE(box-shadow: 0 4px 8px)</li>
+                                            </ul>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <h6 class="mb-3 fw-bold mt-5">ã¢ãã¡ã¼ã·ã§ã³ãã¿ã¼ã³3</h6>
+                        <p class="text-muted mb-3">
+                            ã«ã¼ã½ã«ãåãããã¨ãã¿ã³ãå³ã«ã¹ã©ã¤ãããã¢ãã¡ã¼ã·ã§ã³å¹æã§ããE
+                        </p>
+                        <div class="table-responsive">
+                            <table class="table table-bordered animation-pattern-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 10%;">çªå·</th>
+                                        <th style="width: 30%;">ãã¬ãã¥ã¼</th>
+                                        <th style="width: 60%;">ã¢ãã¡ã¼ã·ã§ã³å¹æE/th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr class="animation-pattern-row" data-pattern="3">
+                                        <td class="fw-bold">3</td>
+                                        <td>
+                                            <button class="btn-animation-demo-3" style="
+                                                background-color: #ffffff;
+                                                padding: 4px 8px;
+                                                border: 1px solid #6c757d;
+                                                border-radius: 4px;
+                                                font-size: 13px;
+                                                color: #6c757d;
+                                                cursor: pointer;
+                                                transition: all 0.2s ease;
+                                            ">ãµã³ãã«</button>
+                                        </td>
+                                        <td>
+                                            <ul class="mb-0">
+                                                <li>ãã©ã³ã¸ã·ã§ã³æé: 0.2ç§E(ease)</li>
+                                                <li>ããã¼æã«å³ã«3pxã¹ã©ã¤ãE(translateX(3px))</li>
+                                            </ul>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <h6 class="mb-3 fw-bold mt-5">ã¢ãã¡ã¼ã·ã§ã³ãã¿ã¼ã³4</h6>
+                        <p class="text-muted mb-3">
+                            ã«ã¼ã½ã«ãåãããã¨æ ç·ãå¼·èª¿ãããã¢ãã¡ã¼ã·ã§ã³å¹æã§ããE
+                        </p>
+                        <div class="table-responsive">
+                            <table class="table table-bordered animation-pattern-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 10%;">çªå·</th>
+                                        <th style="width: 30%;">ãã¬ãã¥ã¼</th>
+                                        <th style="width: 60%;">ã¢ãã¡ã¼ã·ã§ã³å¹æE/th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr class="animation-pattern-row" data-pattern="4">
+                                        <td class="fw-bold">4</td>
+                                        <td>
+                                            <button class="btn-animation-demo-4" style="
+                                                background-color: #ffffff;
+                                                padding: 4px 8px;
+                                                border: 1px solid #6c757d;
+                                                border-radius: 4px;
+                                                font-size: 13px;
+                                                color: #6c757d;
+                                                cursor: pointer;
+                                                transition: all 0.2s ease;
+                                            ">ãµã³ãã«</button>
+                                        </td>
+                                        <td>
+                                            <ul class="mb-0">
+                                                <li>ãã©ã³ã¸ã·ã§ã³æé: 0.2ç§E(ease)</li>
+                                                <li>ããã¼æã«æ ç·ãå¤ªããªãE(border: 2px solid)</li>
+                                            </ul>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.table code {
+    background-color: #f8f9fa;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 0.875rem;
+}
+
+.table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+/* ã¢ãã¡ã¼ã·ã§ã³ãã¿ã¼ã³ã®ãEãã¿ã³ */
+.btn-animation-demo:hover {
+    background-color: #f5f5f5 !important;
+    color: #000000 !important;
+    border-color: #999999 !important;
+    transform: translateY(-1px);
+}
+
+.btn-animation-demo-1:hover {
+    background-color: #f5f5f5 !important;
+    color: #000000 !important;
+    border-color: #999999 !important;
+    transform: scale(1.05);
+}
+
+.btn-animation-demo-2:hover {
+    background-color: #f5f5f5 !important;
+    color: #000000 !important;
+    border-color: #999999 !important;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2) !important;
+}
+
+.btn-animation-demo-3:hover {
+    background-color: #f5f5f5 !important;
+    color: #000000 !important;
+    border-color: #999999 !important;
+    transform: translateX(3px);
+}
+
+.btn-animation-demo-4:hover {
+    background-color: #f5f5f5 !important;
+    color: #000000 !important;
+    border: 2px solid #999999 !important;
+    padding: 3px 7px;
+}
+
+.animation-pattern-table tbody tr {
+    cursor: pointer;
+}
+
+.copy-toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background-color: #e8f5e8;
+    color: #198754;
+    border: 1px solid #198754;
+    padding: 12px 24px;
+    border-radius: 4px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    z-index: 9999;
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // ã¢ãã¡ã¼ã·ã§ã³ãã¿ã¼ã³è¡（ã¯ãªãEã¤ãã³ãE
+    const animationPatternRows = document.querySelectorAll('.animation-pattern-row');
+
+    animationPatternRows.forEach(row => {
+        row.addEventListener('click', function(e) {
+            // ãã¿ã³ã®ããã¼ã¤ãã³ããå¦¨ããªãEãEã（ã¿ã³ã¯ãªãEæ（å¦çEã¹ã­ãE（
+            if (e.target.tagName === 'BUTTON') {
+                return;
+            }
+
+            const patternNumber = this.getAttribute('data-pattern');
+            let copyText = `/* ã¢ãã¡ã¼ã·ã§ã³ãã¿ã¼ã³${patternNumber} */\n`;
+            copyText += `transition: all 0.2s ease;\n\n`;
+            copyText += `/* ããã¼æE*/\n`;
+            copyText += `.btn:hover {\n`;
+
+            // ãã¿ã¼ã³ãã¨ã«ã³ã¼ããç（
+            if (patternNumber === '0') {
+                copyText += `    transform: translateY(-1px);\n`;
+            } else if (patternNumber === '1') {
+                copyText += `    transform: scale(1.05);\n`;
+            } else if (patternNumber === '2') {
+                copyText += `    box-shadow: 0 4px 8px rgba(0,0,0,0.2);\n`;
+            } else if (patternNumber === '3') {
+                copyText += `    transform: translateX(3px);\n`;
+            } else if (patternNumber === '4') {
+                copyText += `    border: 2px solid #999999;\n`;
+                copyText += `    padding: 3px 7px; /* æ ç·ãå¤ªããªã（ãpaddingãèª¿æ´ */\n`;
+            }
+
+            copyText += `}`;
+
+            // ã¯ãªãE（ã（ãã«ã³ã（
+            navigator.clipboard.writeText(copyText).then(() => {
+                showCopyToast(`ã¢ãã¡ã¼ã·ã§ã³ãã¿ã¼ã³${patternNumber}ã®ã³ã¼ããã³ã（ãã¾ãã`);
+            }).catch(err => {
+                console.error('ã³ã（ã«å¤±æãã¾ãã:', err);
+                alert('ã¯ãªãE（ã（ãã¸ã®ã³ã（ã«å¤±æãã¾ãã');
+            });
+        });
+    });
+
+    // ã³ã（å®äºEã¼ã¹ãè¡¨ç¤º
+    function showCopyToast(message) {
+        const toast = document.createElement('div');
+        toast.className = 'copy-toast';
+        toast.innerHTML = '<i class="fas fa-check-circle me-2"></i>' + message;
+        document.body.appendChild(toast);
+
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateX(400px)';
+            setTimeout(() => {
+                document.body.removeChild(toast);
+            }, 300);
+        }, 2000);
+    }
+});
+</script>
+{% endblock %}

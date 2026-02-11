@@ -1,0 +1,232 @@
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+
+{% block title %}{{ document_name }} - {{ client.name }}様 - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="mb-4">
+            <!-- タイトル行 -->
+            <div style="margin-bottom: 2rem;">
+                <h1 style="font-size: clamp(1.2rem, 3vw, 2rem); margin: 0; word-break: keep-all; overflow-wrap: break-word;"><i class="fas fa-file-alt"></i> {{ document_name }}</h1>
+            </div>
+            <!-- 利用者名とボタンの行 -->
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="text-muted" style="font-size: 1.2rem; font-weight: 500;">
+                    <i class="fas fa-user"></i> {{ client.name }}様
+                </div>
+                <div>
+                    <button id="coordinateSettingBtn" class="btn btn-outline-secondary btn-sm setting-btn me-2">
+                        <i class="fas fa-cog"></i> 配置設定
+                    </button>
+                    <button type="button" class="btn btn-primary save-btn me-2" onclick="saveDocument()">
+                        <i class="fas fa-save"></i> 保存して戻る
+                    </button>
+                    <button type="button" class="btn btn-success preview-btn me-2" onclick="previewDocument()">
+                        <i class="fas fa-eye"></i> プレビュー
+                    </button>
+                    <button type="button" class="btn btn-info print-btn me-2" onclick="printDocument()">
+                        <i class="fas fa-print"></i> 印刷
+                    </button>
+                    <a href="{% url 'client_list' %}" class="btn btn-outline-secondary back-btn">
+                        <i class="fas fa-arrow-left"></i> 戻る
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- フォームコンテンツ -->
+<form id="documentForm" method="post" action="{% url 'document_create' client.id document_type %}">
+    {% csrf_token %}
+
+    <!-- 基本フォーム内容 -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">届出区分</label>
+                        <div class="d-flex gap-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="notification_type" value="new" id="new">
+                                <label class="form-check-label" for="new">新規</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="notification_type" value="change" id="change">
+                                <label class="form-check-label" for="change">変更</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="effective_start_date" class="form-label">有効開始（変更）日</label>
+                        <input type="date" class="form-control" name="effective_start_date" id="effective_start_date">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="user_situation" class="form-label">利用者の状況</label>
+                        <textarea class="form-control" name="user_situation" id="user_situation" rows="4"></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="family_requests" class="form-label">本人・家族の要望</label>
+                        <textarea class="form-control" name="family_requests" id="family_requests" rows="3"></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="other_reason_detail" class="form-label">その他の事由詳細</label>
+                        <textarea class="form-control" name="other_reason_detail" id="other_reason_detail" rows="2"></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+<!-- 座標設定モーダル -->
+<div id="coordinateModal" class="modal" style="display: none;">
+    <div class="modal-content" style="width: 90%; max-width: 1000px;">
+        <div class="modal-header">
+            <h5>PDF座標設定 - {{ document_type }}</h5>
+            <span class="close">&times;</span>
+        </div>
+        <div class="modal-body">
+            <p>座標設定機能は現在開発中です。</p>
+        </div>
+    </div>
+</div>
+
+<script>
+// 基本的なJavaScript
+console.log('ページ読み込み開始');
+
+// DOMContentLoadedイベント
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM読み込み完了');
+
+    // ホバー効果のCSS
+    const style = document.createElement('style');
+    style.textContent = `
+        .save-btn:hover {
+            background-color: #f8d7da !important;
+            border-color: #dc3545 !important;
+            color: #dc3545 !important;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .preview-btn:hover {
+            background-color: #d1f2d1 !important;
+            border-color: #198754 !important;
+            color: #198754 !important;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .print-btn:hover {
+            background-color: #e6f3ff !important;
+            border-color: #007bff !important;
+            color: #007bff !important;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .setting-btn:hover, .back-btn:hover {
+            background-color: #f5f5f5 !important;
+            border-color: #999 !important;
+            color: #333 !important;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            border-radius: 5px;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .close {
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close:hover {
+            color: black;
+        }
+    `;
+    document.head.appendChild(style);
+
+    // 座標設定ボタン
+    const settingBtn = document.getElementById('coordinateSettingBtn');
+    if (settingBtn) {
+        settingBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const modal = document.getElementById('coordinateModal');
+            if (modal) {
+                modal.style.display = 'block';
+                console.log('座標設定モーダル表示');
+            }
+        });
+        console.log('座標設定ボタンのイベントリスナー設定完了');
+    }
+
+    // モーダルを閉じる
+    const closeBtn = document.querySelector('#coordinateModal .close');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', function() {
+            document.getElementById('coordinateModal').style.display = 'none';
+        });
+    }
+
+    console.log('JavaScript初期化完了');
+});
+
+// ボタン関数
+function saveDocument() {
+    console.log('保存ボタンクリック');
+    const form = document.getElementById('documentForm');
+    if (form) {
+        form.submit();
+    }
+}
+
+function previewDocument() {
+    console.log('プレビューボタンクリック');
+    const form = document.getElementById('documentForm');
+    if (form) {
+        const originalAction = form.action;
+        form.action = originalAction.replace('/create/', '/pdf/');
+        form.target = '_blank';
+        form.submit();
+        form.action = originalAction;
+        form.target = '';
+    }
+}
+
+function printDocument() {
+    console.log('印刷ボタンクリック');
+    previewDocument();
+}
+
+console.log('JavaScript読み込み完了');
+</script>
+{% endblock %}

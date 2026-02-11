@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+
+{% block title %}アセスメント削除 - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-exclamation-triangle"></i> アセスメント削除の確認
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-danger">
+                    <h6><i class="fas fa-exclamation-circle"></i> 重要な警告</h6>
+                    <p class="mb-0">以下のアセスメントを削除しようとしています。この操作は取り消すことができません。</p>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>利用者情報</h6>
+                        <table class="table table-sm table-bordered">
+                            <tr>
+                                <th style="width: 35%;">利用者名</th>
+                                <td>{{ assessment.client.name }}</td>
+                            </tr>
+                            <tr>
+                                <th>利用者ID</th>
+                                <td>{{ assessment.client.client_id }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>アセスメント情報</h6>
+                        <table class="table table-sm table-bordered">
+                            <tr>
+                                <th style="width: 35%;">実施日</th>
+                                <td>{{ assessment.assessment_date }}</td>
+                            </tr>
+                            <tr>
+                                <th>種別</th>
+                                <td>{{ assessment.get_assessment_type_display }}</td>
+                            </tr>
+                            <tr>
+                                <th>作成者</th>
+                                <td>{{ assessment.assessor.username }}</td>
+                            </tr>
+                            <tr>
+                                <th>ステータス</th>
+                                <td>
+                                    {% if assessment.status == 'completed' %}
+                                        <span class="badge bg-success">完了</span>
+                                    {% else %}
+                                        <span class="badge bg-warning">下書き</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
+                <hr>
+
+                <div class="d-flex justify-content-between">
+                    <a href="{% url 'assessment_list' %}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> キャンセル
+                    </a>
+                    <form method="post" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger" onclick="return confirm('本当に削除しますか？この操作は取り消すことができません。')">
+                            <i class="fas fa-trash"></i> 削除する
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

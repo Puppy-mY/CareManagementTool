@@ -1,0 +1,1709 @@
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+
+{% block title %}利用者一覧 - {{ block.super }}{% endblock %}
+
+{% block content %}
+<!-- 権限情報（開発用） -->
+<div class="permission-label">
+    居宅、ヘルパー、ヘルパー庶務、デイ、デイ庶務、訪看、訪看庶務、事務所
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><i class="fas fa-users"></i> 利用者一覧</h1>
+            <a href="{% url 'client_create' %}" class="btn btn-outline-secondary btn-new-register">
+                <i class="fas fa-plus"></i> 新規登録
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- 検索・フィルタ -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div id="filterForm" class="row g-3">
+                    <div class="col-md-4">
+                        <label for="search" class="form-label">
+                            <i class="fas fa-search"></i> 検索
+                        </label>
+                        <input type="text" class="form-control" id="search"
+                               placeholder="氏名、被保険者番号、ふりがなで検索" autocomplete="off">
+                    </div>
+
+                    <div class="col-md-3">
+                        <label for="care_level" class="form-label">
+                            <i class="fas fa-user-nurse"></i> 要介護度
+                        </label>
+                        <select class="form-select" id="care_level">
+                            <option value="">全て</option>
+                            {% for value, label in care_level_choices %}
+                                <option value="{{ value }}">{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-2">
+                        <label for="status" class="form-label">
+                            <i class="fas fa-exclamation-triangle"></i> 状況
+                        </label>
+                        <select class="form-select" id="status">
+                            {% for value, label in status_choices %}
+                                <option value="{{ value }}">{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-2">
+                        <label for="care_manager" class="form-label">
+                            <i class="fas fa-user-tie"></i> ケアマネ
+                        </label>
+                        <select class="form-select" id="care_manager">
+                            <option value="">全て</option>
+                            {% for manager in care_managers %}
+                                <option value="{{ manager.id }}">{{ manager.profile.get_full_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-1 d-flex align-items-end">
+                        <button type="button" id="clearFilters" class="btn btn-outline-secondary w-100" title="クリア">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 利用者リスト -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-list"></i> 利用者一覧
+                    <span id="countBadge" class="badge" style="background-color: #f5f5f5; color: #000000; border: 1px solid #999999;">{{ clients|length }}件</span>
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                {% if clients %}
+                    <div class="table-responsive">
+                        <table class="table mb-0" id="clientTable" style="border-collapse: collapse;">
+                            <thead class="table-light" id="tableHeader">
+                                <!-- 動的に生成される -->
+                            </thead>
+                            <tbody id="tableBody">
+                                <!-- 動的に生成される -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <style>
+                        /* 新規登録ボタンのスタイル */
+                        .btn.btn-outline-secondary.btn-new-register {
+                            background-color: #ffffff !important;
+                            color: #6c757d !important;
+                            border: 1px solid #6c757d !important;
+                            transition: all 0.2s ease !important;
+                        }
+                        .btn.btn-outline-secondary.btn-new-register:hover,
+                        .btn.btn-outline-secondary.btn-new-register:active,
+                        .btn.btn-outline-secondary.btn-new-register:focus,
+                        .btn.btn-outline-secondary.btn-new-register:focus-visible,
+                        .btn.btn-outline-secondary.btn-new-register:not(:disabled):not(.disabled):hover,
+                        .btn.btn-outline-secondary.btn-new-register:not(:disabled):not(.disabled):active {
+                            /* カラーパターンのパターン10 */
+                            background-color: #e3f2fd !important;
+                            color: #0d6efd !important;
+                            border-color: #0d6efd !important;
+                            box-shadow: none !important;
+                            transform: translateY(-1px);
+                        }
+
+                        #clientTable {
+                            table-layout: auto;
+                            width: 100%;
+                        }
+                        #clientTable th, #clientTable td {
+                            border-right: 1px solid #dee2e6;
+                            vertical-align: middle;
+                            padding: 12px;
+                            white-space: nowrap;
+                            font-size: 14px;
+                        }
+                        #clientTable th:last-child, #clientTable td:last-child {
+                            border-right: none;
+                        }
+                        #clientTable th {
+                            border-bottom: 2px solid #dee2e6;
+                            font-weight: 600;
+                            font-size: 13px;
+                        }
+                        /* 氏名カラムは改行を許可 */
+                        #clientTable td:first-child {
+                            white-space: normal;
+                            min-width: 120px;
+                        }
+                        /* 長いテキストのカラムは最小幅を設定 */
+                        #clientTable th, #clientTable td {
+                            min-width: 90px;
+                        }
+                        /* 使用状況カラムは改行を許可 */
+                        #clientTable td.usage-column {
+                            white-space: normal;
+                            min-width: 150px;
+                        }
+                        /* 操作ボタンのデフォルトスタイル（行ホバー時も白背景を保つ） */
+                        #clientTable .btn-outline-secondary.action-toggle {
+                            background-color: #ffffff !important;
+                        }
+                        /* 操作ボタン自体のホバー・アクティブスタイル */
+                        #clientTable .btn-outline-secondary.action-toggle:hover,
+                        #clientTable .btn-outline-secondary.action-toggle:active,
+                        #clientTable .btn-outline-secondary.action-toggle:focus,
+                        #clientTable .btn-outline-secondary.action-toggle.active,
+                        #clientTable .btn-outline-secondary.action-toggle:focus-visible,
+                        #clientTable .btn.btn-outline-secondary.action-toggle:not(:disabled):not(.disabled):hover,
+                        #clientTable .btn.btn-outline-secondary.action-toggle:not(:disabled):not(.disabled):active {
+                            background-color: #f5f5f5 !important;
+                            color: #000000 !important;
+                            border-color: #999999 !important;
+                            box-shadow: none !important;
+                        }
+                        /* 操作メニューのホバー効果 */
+                        .action-menu a:hover {
+                            background-color: #f5f5f5 !important;
+                        }
+                        /* 利用者行のみホバー効果を有効化（展開行は除外） */
+                        #clientTable tbody tr:hover:not(.action-expand-row) {
+                            background-color: #f5f5f5;
+                        }
+                        /* 操作展開行のホバー効果のみ無効化 */
+                        #clientTable tbody .action-expand-row:hover {
+                            background-color: #f5f5f5 !important;
+                        }
+                        #clientTable tbody .action-expand-row td {
+                            background-color: transparent !important;
+                        }
+                        #clientTable tbody .action-expand-row:hover td {
+                            background-color: transparent !important;
+                        }
+                        /* カード部分の背景は白のまま */
+                        #clientTable .action-expand-row .card {
+                            background-color: white !important;
+                        }
+                        /* 展開エリアのアニメーション */
+                        .action-expand-row {
+                            transition: all 0.15s ease;
+                            overflow: hidden;
+                        }
+                        .action-expand-row.closing {
+                            animation: slideUp 0.15s ease forwards;
+                        }
+                        @keyframes slideUp {
+                            from {
+                                max-height: 300px;
+                                opacity: 1;
+                            }
+                            to {
+                                max-height: 0px;
+                                opacity: 0;
+                                padding-top: 0;
+                                padding-bottom: 0;
+                            }
+                        }
+                        /* 書類作成ツールチップ */
+                        .document-create-btn {
+                            position: relative;
+                        }
+                        .document-modal {
+                            position: fixed;
+                            top: 0;
+                            left: 0;
+                            width: 100%;
+                            height: 100%;
+                            background: rgba(0, 0, 0, 0.5);
+                            z-index: 1000;
+                            display: none;
+                            align-items: center;
+                            justify-content: center;
+                        }
+
+                        .document-modal.show {
+                            display: flex !important;
+                        }
+
+                        .document-modal-content {
+                            background: white;
+                            border-radius: 8px;
+                            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+                            width: 90%;
+                            max-width: 600px;
+                            position: relative;
+                            transform: scale(0.9) translateY(10px);
+                            transition: all 0.2s ease;
+                        }
+
+                        .document-modal.show .document-modal-content {
+                            transform: scale(1) translateY(0);
+                        }
+
+                        .document-modal-header {
+                            background: #f8f9fa;
+                            border-bottom: 1px solid #e9ecef;
+                            color: #495057;
+                            padding: 16px 20px;
+                            position: relative;
+                        }
+
+                        .document-modal-title {
+                            font-size: 18px;
+                            font-weight: 600;
+                            margin: 0;
+                            display: flex;
+                            align-items: center;
+                            color: #495057;
+                        }
+
+                        .document-modal-title i {
+                            margin-right: 8px;
+                            font-size: 16px;
+                            color: #6c757d;
+                        }
+
+                        .document-modal-close {
+                            position: absolute;
+                            top: 12px;
+                            right: 16px;
+                            background: #e9ecef;
+                            border: none;
+                            color: #6c757d;
+                            width: 28px;
+                            height: 28px;
+                            border-radius: 4px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            cursor: pointer;
+                            transition: all 0.2s ease;
+                            font-size: 12px;
+                        }
+
+                        .document-modal-close:hover {
+                            background: #dee2e6;
+                            color: #495057;
+                        }
+
+                        .document-modal-body {
+                            padding: 20px;
+                            display: grid;
+                            grid-template-columns: 1fr 1px 1fr;
+                            gap: 30px;
+                            align-items: start;
+                        }
+
+                        .modal-divider {
+                            width: 1px;
+                            background: #dee2e6;
+                            align-self: stretch;
+                        }
+                        .document-create-btn:hover .document-tooltip,
+                        .document-tooltip:hover {
+                            opacity: 1;
+                            visibility: visible;
+                            pointer-events: auto;
+                        }
+                        .document-section {
+                            margin-bottom: 24px;
+                        }
+
+                        .document-section:last-child {
+                            margin-bottom: 0;
+                        }
+
+                        .document-section-title {
+                            font-size: 14px;
+                            font-weight: 600;
+                            color: #495057;
+                            margin-bottom: 8px;
+                            padding-bottom: 4px;
+                            border-bottom: 1px solid #dee2e6;
+                            width: 50%;
+                        }
+
+                        .document-list {
+                            list-style: none;
+                            margin: 0;
+                            padding: 0;
+                        }
+
+                        .document-item {
+                            padding: 4px 0;
+                            cursor: pointer;
+                            color: #495057;
+                            transition: color 0.1s ease;
+                        }
+
+                        .document-item:hover {
+                            color: #007bff;
+                        }
+
+                        .document-item::before {
+                            content: '•';
+                            margin-right: 8px;
+                            color: #6c757d;
+                        }
+
+                        .document-item:last-child::after {
+                            display: none;
+                        }
+
+                        /* 謎の線を削除 */
+                        .document-list li:after,
+                        .document-item:after {
+                            display: none !important;
+                        }
+
+                        .document-list {
+                            border: none !important;
+                            outline: none !important;
+                        }
+
+                        .document-item {
+                            border: none !important;
+                            outline: none !important;
+                            position: relative;
+                        }
+
+
+                        /* モーダル位置アニメーション */
+                        .document-modal-anchor {
+                            position: absolute;
+                            pointer-events: none;
+                            z-index: 999;
+                        }
+
+                        .document-modal-connector {
+                            position: absolute;
+                            width: 1px;
+                            background: linear-gradient(to bottom, #6c757d, transparent);
+                            opacity: 0;
+                            transition: all 0.3s ease;
+                            transform-origin: top;
+                            z-index: 999;
+                            display: none; /* 一時的に非表示 */
+                        }
+
+                        .document-modal.show .document-modal-connector {
+                            opacity: 1;
+                            transform: scaleY(1);
+                        }
+                        /* カスタムスクロールバー */
+                        .document-tooltip::-webkit-scrollbar {
+                            width: 4px;
+                        }
+                        .document-tooltip::-webkit-scrollbar-track {
+                            background: #f9fafb;
+                            border-radius: 2px;
+                        }
+                        .document-tooltip::-webkit-scrollbar-thumb {
+                            background: #d1d5db;
+                            border-radius: 2px;
+                        }
+                        .document-tooltip::-webkit-scrollbar-thumb:hover {
+                            background: #9ca3af;
+                        }
+                        /* 書類作成からの接続を明確にする三角形 */
+                        .document-tooltip {
+                            --triangle-left: 50%;
+                        }
+                        .document-tooltip:before {
+                            content: '';
+                            position: absolute;
+                            top: -6px;
+                            left: var(--triangle-left);
+                            transform: translateX(-50%);
+                            width: 0;
+                            height: 0;
+                            border-left: 6px solid transparent;
+                            border-right: 6px solid transparent;
+                            border-bottom: 6px solid #e5e7eb;
+                        }
+                        .document-tooltip:after {
+                            content: '';
+                            position: absolute;
+                            top: -5px;
+                            left: var(--triangle-left);
+                            transform: translateX(-50%);
+                            width: 0;
+                            height: 0;
+                            border-left: 5px solid transparent;
+                            border-right: 5px solid transparent;
+                            border-bottom: 5px solid #ffffff;
+                        }
+                        /* ボタンホバー効果 */
+                        .action-expand-row .btn:hover {
+                            transform: translateY(-1px);
+                            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                            transition: all 0.2s ease;
+                        }
+                        /* 各ボタンのホバー時薄いカラー（ボタンのIDで個別指定） */
+                        .action-expand-row .col-md-3:nth-child(1) .btn-outline-secondary:hover {
+                            background-color: #f5f5f5 !important;
+                            border-color: #999 !important;
+                            color: #333 !important;
+                        }
+                        .action-expand-row .col-md-3:nth-child(2) .btn-outline-secondary:hover {
+                            background-color: #e3f2fd !important;
+                            border-color: #0d6efd !important;
+                            color: #0d6efd !important;
+                        }
+                        .action-expand-row .col-md-3:nth-child(3) .btn-outline-secondary:hover {
+                            background-color: #e8f5e8 !important;
+                            border-color: #198754 !important;
+                            color: #198754 !important;
+                        }
+                        .action-expand-row .col-md-3:nth-child(4) .btn-outline-secondary:hover {
+                            background-color: #fff3e0 !important;
+                            border-color: #fd7e14 !important;
+                            color: #fd7e14 !important;
+                        }
+                        .action-expand-row .row:nth-child(2) .col-md-3:nth-child(1) .btn-outline-secondary:hover {
+                            background-color: #f3e5f5 !important;
+                            border-color: #6f42c1 !important;
+                            color: #6f42c1 !important;
+                        }
+                        .action-expand-row .row:nth-child(2) .col-md-3:nth-child(2) .btn-outline-secondary:hover {
+                            background-color: #ffebee !important;
+                            border-color: #d63384 !important;
+                            color: #d63384 !important;
+                        }
+                        .action-expand-row .row:nth-child(2) .col-md-3:nth-child(3) .btn-outline-secondary:hover {
+                            background-color: #fff9c4 !important;
+                            border-color: #ffc107 !important;
+                            color: #856404 !important;
+                        }
+                        .action-expand-row .row:nth-child(2) .col-md-3:nth-child(4) .btn-outline-secondary:hover {
+                            background-color: #f5f0e8 !important;
+                            border-color: #d2b48c !important;
+                            color: #8b7355 !important;
+                        }
+                    </style>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">利用者が登録されていません</h5>
+                        <p class="text-muted">最初の利用者を登録してください。</p>
+                        <a href="{% url 'client_create' %}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> 新規利用者登録
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- 書類選択モーダル -->
+<div class="document-modal" id="documentModal">
+    <div class="document-modal-connector"></div>
+    <div class="document-modal-content">
+        <div class="document-modal-header">
+            <h5 class="document-modal-title">
+                <i class="fas fa-file-alt"></i>
+                書類作成
+            </h5>
+            <button class="document-modal-close" onclick="hideDocumentModal(event);">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="document-modal-body">
+            <div>
+                <div class="document-section">
+                    <h6 class="document-section-title">介護保険関係</h6>
+                    <ul class="document-list">
+                        <li class="document-item" onclick="selectDocument('居宅サービス計画作成依頼（変更）届出書', '利用可能', event)">居宅サービス計画作成依頼（変更）届出書</li>
+                        <li class="document-item" onclick="selectDocument('介護予防サービス計画作成・介護予防ケアマネジメント依頼（変更）届出書', '利用可能', event)">介護予防サービス計画作成・介護予防ケアマネジメント依頼（変更）届出書</li>
+                        <li class="document-item" onclick="selectDocument('介護保険 要介護・要支援 [認定区分変更]申請書', '開発中', event)">介護保険 要介護・要支援 [認定区分変更]申請書</li>
+                        <li class="document-item" onclick="selectDocument('介護保険　要介護・要支援　（更新）認定申請書', '開発中', event)">介護保険　要介護・要支援　（更新）認定申請書</li>
+                        <li class="document-item" onclick="selectDocument('介護保険関係・再交付申請書', '開発中', event)">介護保険関係・再交付申請書</li>
+                        <li class="document-item" onclick="selectDocument('居宅サービス事業所の選択に関する説明に係る確認書', '開発中', event)">居宅サービス事業所の選択に関する説明に係る確認書</li>
+                    </ul>
+                </div>
+
+                <div class="document-section">
+                    <h6 class="document-section-title">ケアプラン・サービス関係</h6>
+                    <ul class="document-list">
+                        <li class="document-item" onclick="selectDocument('介護サービス計画作成に係る資料提供申請書', '開発中', event)">介護サービス計画作成に係る資料提供申請書</li>
+                        <li class="document-item" onclick="selectDocument('サービス担当者会議開催のご案内', '開発中', event)">サービス担当者会議開催のご案内</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="modal-divider"></div>
+
+            <div>
+                <div class="document-section">
+                    <h6 class="document-section-title">基本情報・医療連携</h6>
+                    <ul class="document-list">
+                        <li class="document-item" onclick="selectDocument('フェースシート', '開発中', event)">フェースシート</li>
+                        <li class="document-item" onclick="selectDocument('入院時情報提供書', '開発中', event)">入院時情報提供書</li>
+                        <li class="document-item" onclick="selectDocument('医療・介護連携シート', '開発中', event)">医療・介護連携シート</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 表示項目設定モーダル -->
+<div class="modal fade" id="columnSettingsModal" tabindex="-1" aria-labelledby="columnSettingsModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="columnSettingsModalLabel">
+                    <i class="fas fa-cog"></i> 表示項目設定
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="閉じる"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-12">
+                        <p class="text-muted mb-3">
+                            <i class="fas fa-arrows-alt"></i> 
+                            項目をドラッグして表示順序を変更できます
+                        </p>
+                        <div id="columnOrderList" class="list-group">
+                            <!-- ドラッグ&ドロップで順序変更可能な項目リスト -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="resetToDefault">デフォルトに戻す</button>
+                <button type="button" class="btn btn-primary" id="applySettings">適用</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 利用者データ（テンプレートから渡される）
+    const allClientsData = [
+        {% for client in clients %}
+        {
+            pk: {{ client.pk }},
+            name: "{{ client.name|escapejs }}",
+            furigana: "{{ client.furigana|escapejs }}",
+            insurance_number: "{{ client.insurance_number|escapejs }}",
+            age: {{ client.age }},
+            care_level: "{{ client.get_care_level_display|escapejs }}",
+            care_level_value: "{{ client.care_level|escapejs }}",
+            care_limit_units: {{ client.care_limit_units|default:0 }},
+            certification_period_end: "{{ client.certification_period_end|date:'Y/m/d'|default:'' }}",
+            care_burden: "{{ client.get_care_burden_display|default:''|escapejs }}",
+            medical_insurance_type: "{{ client.medical_insurance_type|default:''|escapejs }}",
+            address: "{{ client.address|default:''|escapejs }}",
+            phone: "{{ client.phone|default:''|escapejs }}",
+            gender: "{{ client.get_gender_display|default:''|escapejs }}",
+            birth_date: "{{ client.birth_date|date:'Y/m/d' }}",
+            created_at: "{{ client.created_at|date:'Y/m/d' }}",
+            created_by_id: {{ client.created_by_id|default:"null" }},
+            current_calculation: {% if client.current_calculation %}
+            {
+                total_used_units: {{ client.current_calculation.total_used_units|floatformat:0 }},
+                remaining_units: {{ client.current_calculation.remaining_units|floatformat:0 }},
+                is_over_limit: {{ client.current_calculation.is_over_limit|yesno:"true,false" }}
+            }
+            {% else %}null{% endif %},
+            detail_url: "{% url 'client_detail' client.pk %}",
+            edit_url: "{% url 'client_edit' client.pk %}",
+            calculation_url: "{% url 'limit_calculation_create' client.insurance_number %}",
+            assessment_url: "{% url 'assessment_create' %}?client={{ client.pk }}"
+        }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ];
+
+    // 表示項目設定（順序も管理）
+    // 現在の月を取得
+    const currentMonth = new Date().getMonth() + 1; // 0-11なので+1
+
+    const columnConfig = {
+        name: { label: '氏名', required: true, default: true, order: 1 },
+        care_level: { label: '介護度', required: false, default: true, order: 2 },
+        certification_period_end: { label: '認定期間（終了）', required: false, default: true, order: 3 },
+        current_usage: { label: `${currentMonth}月単位使用状況`, required: false, default: true, order: 4 },
+        age: { label: '年齢', required: false, default: false, order: 5 },
+        care_burden: { label: '負担割合', required: false, default: false, order: 6 },
+        medical_insurance_type: { label: '医療保険種別', required: false, default: false, order: 7 },
+        address: { label: '住所', required: false, default: false, order: 8 },
+        phone: { label: '電話番号', required: false, default: false, order: 9 },
+        gender: { label: '性別', required: false, default: false, order: 10 },
+        birth_date: { label: '生年月日', required: false, default: false, order: 11 }
+    };
+
+    // LocalStorageキー
+    const STORAGE_KEY = 'client_list_columns';
+    const STORAGE_ORDER_KEY = 'client_list_column_order';
+
+    // 現在の表示設定を取得
+    function getCurrentSettings() {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+            return JSON.parse(saved);
+        }
+        // デフォルト設定
+        const defaults = {};
+        Object.keys(columnConfig).forEach(key => {
+            defaults[key] = columnConfig[key].default;
+        });
+        return defaults;
+    }
+
+    // 現在の順序設定を取得
+    function getCurrentOrder() {
+        const saved = localStorage.getItem(STORAGE_ORDER_KEY);
+        if (saved) {
+            return JSON.parse(saved);
+        }
+        // デフォルト順序
+        return Object.keys(columnConfig).sort((a, b) => columnConfig[a].order - columnConfig[b].order);
+    }
+
+    // 設定を保存
+    function saveSettings(settings) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+    }
+
+    // 順序を保存
+    function saveOrder(order) {
+        localStorage.setItem(STORAGE_ORDER_KEY, JSON.stringify(order));
+    }
+
+    // テーブルヘッダーを生成
+    function generateTableHeader(settings) {
+        const headerRow = document.createElement('tr');
+        const order = getCurrentOrder();
+
+        order.forEach(column => {
+            if (settings[column]) {
+                const th = document.createElement('th');
+
+                // 単位使用状況の列には「開発中」を追加
+                if (column === 'current_usage') {
+                    th.textContent = columnConfig[column].label + '（開発中）';
+                } else {
+                    th.textContent = columnConfig[column].label;
+                }
+
+                headerRow.appendChild(th);
+            }
+        });
+
+        // 操作カラムは常に表示
+        const actionTh = document.createElement('th');
+        actionTh.textContent = '操作';
+        headerRow.appendChild(actionTh);
+
+        return headerRow;
+    }
+
+    // テーブル行を生成
+    function generateTableRow(client, settings) {
+        const row = document.createElement('tr');
+        const order = getCurrentOrder();
+        
+        order.forEach(column => {
+            if (settings[column]) {
+                const td = document.createElement('td');
+                td.innerHTML = getCellContent(client, column);
+                
+                // 使用状況カラムにクラスを追加
+                if (column === 'current_usage') {
+                    td.className = 'usage-column';
+                }
+                
+                row.appendChild(td);
+            }
+        });
+        
+        // 操作カラム
+        const actionTd = document.createElement('td');
+        actionTd.innerHTML = `
+            <button class="btn btn-outline-secondary btn-sm action-toggle" type="button" style="padding: 4px 8px;" data-client-id="${client.pk}">
+                <i class="fas fa-chevron-down"></i> 操作
+            </button>
+        `;
+        row.appendChild(actionTd);
+        
+        // 操作展開行を作成（最初は非表示）
+        const expandRow = document.createElement('tr');
+        expandRow.className = 'action-expand-row';
+        expandRow.style.display = 'none';
+        expandRow.style.backgroundColor = '#f5f5f5';
+
+        // ホバー時の背景色固定のためのイベントリスナー
+        expandRow.addEventListener('mouseenter', function() {
+            this.style.backgroundColor = '#f5f5f5';
+        });
+        expandRow.addEventListener('mouseleave', function() {
+            this.style.backgroundColor = '#f5f5f5';
+        });
+
+        const expandTd = document.createElement('td');
+        expandTd.setAttribute('colspan', order.filter(col => settings[col]).length + 1);
+        expandTd.style.cssText = 'background-color: #f5f5f5 !important; border-top: none; padding: 8px 15px;';
+        expandTd.innerHTML = generateExpandContent(client);
+        expandRow.appendChild(expandTd);
+        
+        return [row, expandRow];
+    }
+
+    // 操作展開エリアの内容を生成
+    function generateExpandContent(client) {
+        return `
+            <div class="row g-2">
+                <div class="col-md-3">
+                    <div class="card h-100">
+                        <div class="card-body text-center p-2" style="min-height: 110px; display: flex; flex-direction: column; justify-content: space-between;">
+                            <div>
+                                <i class="fas fa-eye mb-1" style="font-size: 18px; color: #999999; opacity: 0.5;"></i>
+                                <div class="card-title mb-1" style="font-size: clamp(10px, 2.5vw, 14px); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">詳細表示</div>
+                                <div class="card-text text-muted" style="font-size: clamp(8px, 2vw, 11px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 8px;">利用者の詳細情報を確認</div>
+                            </div>
+                            <a href="${client.detail_url}" class="btn btn-outline-secondary btn-sm" style="font-size: 11px; padding: 2px 8px;">詳細を見る</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card h-100">
+                        <div class="card-body text-center p-2" style="min-height: 110px; display: flex; flex-direction: column; justify-content: space-between;">
+                            <div>
+                                <i class="fas fa-edit mb-1" style="font-size: 18px; color: #0d6efd; opacity: 0.5;"></i>
+                                <div class="card-title mb-1" style="font-size: clamp(10px, 2.5vw, 14px); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">情報編集</div>
+                                <div class="card-text text-muted" style="font-size: clamp(8px, 2vw, 11px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 8px;">基本情報の編集・更新</div>
+                            </div>
+                            <a href="${client.edit_url}" class="btn btn-outline-secondary btn-sm" style="font-size: 11px; padding: 2px 8px;">編集する</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card h-100">
+                        <div class="card-body text-center p-2" style="min-height: 110px; display: flex; flex-direction: column; justify-content: space-between;">
+                            <div>
+                                <i class="fas fa-clipboard-list mb-1" style="font-size: 18px; color: #198754; opacity: 0.5;"></i>
+                                <div class="card-title mb-1" style="font-size: clamp(10px, 2.5vw, 14px); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">アセスメント作成</div>
+                                <div class="card-text text-muted" style="font-size: clamp(8px, 2vw, 11px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 8px;">評価・アセスメント作成</div>
+                            </div>
+                            <a href="${client.assessment_url}" class="btn btn-outline-secondary btn-sm" style="font-size: 11px; padding: 2px 8px;">作成する</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card h-100">
+                        <div class="card-body text-center p-2" style="min-height: 110px; display: flex; flex-direction: column; justify-content: space-between;">
+                            <div>
+                                <i class="fas fa-file-alt mb-1" style="font-size: 18px; color: #fd7e14; opacity: 0.5;"></i>
+                                <div class="card-title mb-1" style="font-size: clamp(10px, 2.5vw, 14px); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">書類作成</div>
+                                <div class="card-text text-muted" style="font-size: clamp(8px, 2vw, 11px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 8px;">各種書類の作成・印刷</div>
+                            </div>
+                            <button class="btn btn-outline-secondary btn-sm document-create-btn" style="font-size: 11px; padding: 2px 8px;" data-client-id="${client.pk}" onclick="showDocumentModal(this, event);">
+                                作成する
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row g-2 mt-1">
+                <div class="col-12 mb-1">
+                    <small class="text-muted" style="font-size: 10px;"><i class="fas fa-info-circle me-1"></i>以下の機能は今後の開発予定です</small>
+                </div>
+                <div class="col-md-3">
+                    <div class="card h-100" style="opacity: 0.6;">
+                        <div class="card-body text-center p-2" style="min-height: 110px; display: flex; flex-direction: column; justify-content: space-between;">
+                            <div>
+                                <span class="badge bg-secondary" style="font-size: 8px; position: absolute; top: 5px; right: 5px;">開発予定</span>
+                                <i class="fas fa-calendar-check mb-1" style="font-size: 18px; color: #6f42c1; opacity: 0.5;"></i>
+                                <div class="card-title mb-1" style="font-size: clamp(10px, 2.5vw, 14px); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">予定管理</div>
+                                <div class="card-text text-muted" style="font-size: clamp(8px, 2vw, 11px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 8px;">訪問予定・スケジュール</div>
+                            </div>
+                            <button class="btn btn-outline-secondary btn-sm" style="font-size: 11px; padding: 2px 8px;" disabled>管理する</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card h-100" style="opacity: 0.6;">
+                        <div class="card-body text-center p-2" style="min-height: 110px; display: flex; flex-direction: column; justify-content: space-between;">
+                            <div>
+                                <span class="badge bg-secondary" style="font-size: 8px; position: absolute; top: 5px; right: 5px;">開発予定</span>
+                                <i class="fas fa-calculator mb-1" style="font-size: 18px; color: #d63384; opacity: 0.5;"></i>
+                                <div class="card-title mb-1" style="font-size: clamp(10px, 2.5vw, 14px); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">限度額試算</div>
+                                <div class="card-text text-muted" style="font-size: clamp(8px, 2vw, 11px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 8px;">月の限度額と使用状況</div>
+                            </div>
+                            <button class="btn btn-outline-secondary btn-sm" style="font-size: 11px; padding: 2px 8px;" disabled>試算する</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card h-100" style="opacity: 0.6;">
+                        <div class="card-body text-center p-2" style="min-height: 110px; display: flex; flex-direction: column; justify-content: space-between;">
+                            <div>
+                                <span class="badge bg-secondary" style="font-size: 8px; position: absolute; top: 5px; right: 5px;">開発予定</span>
+                                <i class="fas fa-chart-line mb-1" style="font-size: 18px; color: #ffc107; opacity: 0.5;"></i>
+                                <div class="card-title mb-1" style="font-size: clamp(10px, 2.5vw, 14px); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">履歴・記録</div>
+                                <div class="card-text text-muted" style="font-size: clamp(8px, 2vw, 11px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 8px;">過去の記録・履歴確認</div>
+                            </div>
+                            <button class="btn btn-outline-secondary btn-sm" style="font-size: 11px; padding: 2px 8px;" disabled>確認する</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card h-100" style="opacity: 0.6;">
+                        <div class="card-body text-center p-2" style="min-height: 110px; display: flex; flex-direction: column; justify-content: space-between;">
+                            <div>
+                                <span class="badge bg-secondary" style="font-size: 8px; position: absolute; top: 5px; right: 5px;">開発予定</span>
+                                <i class="fas fa-print mb-1" style="font-size: 18px; color: #d2b48c; opacity: 0.5;"></i>
+                                <div class="card-title mb-1" style="font-size: clamp(10px, 2.5vw, 14px); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">印刷・出力</div>
+                                <div class="card-text text-muted" style="font-size: clamp(8px, 2vw, 11px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 8px;">各種帳票の印刷</div>
+                            </div>
+                            <button class="btn btn-outline-secondary btn-sm" style="font-size: 11px; padding: 2px 8px;" disabled>印刷する</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // セルの内容を生成
+    function getCellContent(client, column) {
+        switch (column) {
+            case 'name':
+                return `<div><strong>${client.name}</strong><br><small class="text-muted">${client.furigana}</small></div>`;
+            case 'age':
+                return `${client.age}歳`;
+            case 'care_level':
+                if (client.care_level_value) {
+                    // 介護度に応じて背景色を設定
+                    let bgColor = '';
+                    if (client.care_level_value === 'support1') {
+                        bgColor = '#f5f5f5'; // パターン1（要支援1）
+                    } else if (client.care_level_value === 'support2') {
+                        bgColor = '#f5f0e8'; // パターン8（要支援2）
+                    } else if (client.care_level_value === 'care1') {
+                        bgColor = '#e3f2fd'; // パターン2（要介護1）
+                    } else if (client.care_level_value === 'care2') {
+                        bgColor = '#e8f5e8'; // パターン3（要介護2）
+                    } else if (client.care_level_value === 'care3') {
+                        bgColor = '#fff3e0'; // パターン4（要介護3）
+                    } else if (client.care_level_value === 'care4') {
+                        bgColor = '#f3e5f5'; // パターン5（要介護4）
+                    } else if (client.care_level_value === 'care5') {
+                        bgColor = '#ffebee'; // パターン6（要介護5）
+                    } else {
+                        bgColor = '#f8f9fa'; // グレー（その他）
+                    }
+                    return `<span style="background-color: ${bgColor}; padding: 4px 8px; border: 1px solid #999; border-radius: 4px; font-size: 13px;">${client.care_level}</span>`;
+                } else {
+                    return '<span class="text-muted">未設定</span>';
+                }
+            case 'certification_period_end':
+                if (client.certification_period_end) {
+                    // 今日の日付を取得
+                    const today = new Date();
+                    const endDate = new Date(client.certification_period_end);
+                    
+                    // 前月1日と翌月末を計算（カウントダウン表示期間）
+                    const prevMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+                    const nextMonthEnd = new Date(today.getFullYear(), today.getMonth() + 2, 0); // 翌月末
+                    
+                    let statusIcon = '';
+                    if (endDate < today) {
+                        // 期限が過ぎた場合（パターン6）
+                        statusIcon = '<span style="display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; min-width: 18px; border: 1px solid #999; border-radius: 50%; background-color: #ffebee; font-size: 14px; font-weight: bold; color: #000; line-height: 1; text-align: center; overflow: hidden;">×</span>';
+                    } else if (today >= prevMonth && endDate >= today && endDate <= nextMonthEnd) {
+                        // 今日が前月1日以降で、終了日が今日から翌月末までの範囲内の場合のみカウントダウン表示
+                        const diffTime = endDate - today;
+                        const remainingDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                        let bgColor = '';
+                        if (remainingDays <= 30) {
+                            // 30日以下（パターン4）
+                            bgColor = '#fff3e0';
+                        } else {
+                            // 31日以上（パターン7）
+                            bgColor = '#fff9c4';
+                        }
+
+                        // 文字数に応じてフォントサイズを自動調整
+                        let fontSize = '10px';
+                        if (remainingDays >= 10) {
+                            fontSize = '8px';
+                        }
+
+                        statusIcon = `<span style="display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; min-width: 18px; border: 1px solid #999; border-radius: 50%; background-color: ${bgColor}; font-size: ${fontSize}; font-weight: bold; color: #000; line-height: 1; text-align: center; overflow: hidden;">${remainingDays}</span>`;
+                    }
+                    
+                    if (statusIcon) {
+                        return `${client.certification_period_end} <span style="margin-left: 6px;">${statusIcon}</span>`;
+                    } else {
+                        return client.certification_period_end;
+                    }
+                } else {
+                    return '<small class="text-muted">未設定</small>';
+                }
+            case 'care_burden':
+                return client.care_burden || '<small class="text-muted">未設定</small>';
+            case 'medical_insurance_type':
+                return client.medical_insurance_type || '<small class="text-muted">未設定</small>';
+            case 'address':
+                return client.address || '<small class="text-muted">未設定</small>';
+            case 'phone':
+                return client.phone || '<small class="text-muted">未設定</small>';
+            case 'gender':
+                return client.gender || '<small class="text-muted">未設定</small>';
+            case 'birth_date':
+                return client.birth_date;
+            case 'current_usage':
+                return '<small class="text-muted">開発中</small>';
+            default:
+                return '';
+        }
+    }
+
+    // テーブルを更新
+    function updateTable() {
+        const settings = getCurrentSettings();
+        const headerElement = document.getElementById('tableHeader');
+        const bodyElement = document.getElementById('tableBody');
+        
+        // ヘッダーを更新
+        headerElement.innerHTML = '';
+        headerElement.appendChild(generateTableHeader(settings));
+        
+        // ボディを更新
+        bodyElement.innerHTML = '';
+        filteredClientsData.forEach(client => {
+            bodyElement.appendChild(generateTableRow(client, settings));
+        });
+    }
+
+    // モーダルの項目リストを生成
+    function generateColumnOrderList() {
+        try {
+            const settings = getCurrentSettings();
+            const order = getCurrentOrder();
+            const listContainer = document.getElementById('columnOrderList');
+            
+            if (!listContainer) {
+                console.error('columnOrderList element not found');
+                return;
+            }
+            
+            listContainer.innerHTML = '';
+        
+        order.forEach((column, index) => {
+            const listItem = document.createElement('div');
+            listItem.className = 'list-group-item d-flex align-items-center';
+            listItem.draggable = true;
+            listItem.dataset.column = column;
+            listItem.style.cursor = 'grab';
+            listItem.style.userSelect = 'none';
+            listItem.style.padding = '12px 16px';
+            listItem.style.borderBottom = '1px solid #f1f3f4';
+            
+            // ドラッグハンドルを大きく目立つように
+            const dragHandle = document.createElement('div');
+            dragHandle.className = 'd-flex align-items-center justify-content-center me-3';
+            dragHandle.style.width = '24px';
+            dragHandle.style.height = '24px';
+            dragHandle.style.backgroundColor = '#f8f9fa';
+            dragHandle.style.borderRadius = '4px';
+            dragHandle.style.border = '1px solid #dee2e6';
+            dragHandle.innerHTML = '<i class="fas fa-grip-vertical text-secondary"></i>';
+            
+            // チェックボックス
+            const checkbox = document.createElement('input');
+            checkbox.className = 'form-check-input me-3';
+            checkbox.type = 'checkbox';
+            checkbox.checked = settings[column];
+            checkbox.disabled = columnConfig[column].required;
+            checkbox.style.transform = 'scale(1.2)';
+            
+            // ラベル
+            const label = document.createElement('span');
+            label.className = 'flex-grow-1';
+            label.style.fontSize = '14px';
+            label.style.fontWeight = settings[column] ? '500' : '400';
+            label.textContent = columnConfig[column].label;
+            
+            if (columnConfig[column].required) {
+                const requiredBadge = document.createElement('span');
+                requiredBadge.className = 'badge bg-primary ms-2';
+                requiredBadge.style.fontSize = '10px';
+                requiredBadge.textContent = '必須';
+                label.appendChild(requiredBadge);
+            }
+            
+            listItem.appendChild(dragHandle);
+            listItem.appendChild(checkbox);
+            listItem.appendChild(label);
+            
+            // ホバー効果を追加
+            listItem.addEventListener('mouseenter', function() {
+                this.style.backgroundColor = '#f8f9fa';
+                dragHandle.style.backgroundColor = '#e9ecef';
+            });
+            
+            listItem.addEventListener('mouseleave', function() {
+                this.style.backgroundColor = '';
+                dragHandle.style.backgroundColor = '#f8f9fa';
+            });
+            
+            // チェックボックス変更時の視覚効果
+            checkbox.addEventListener('change', function() {
+                label.style.fontWeight = this.checked ? '500' : '400';
+            });
+            
+            listContainer.appendChild(listItem);
+            
+            // 最後の項目は区切り線を削除
+            if (index === order.length - 1) {
+                listItem.style.borderBottom = 'none';
+            }
+        });
+        
+            // ドラッグ&ドロップイベントを設定
+            setupDragAndDrop();
+        } catch (error) {
+            console.error('generateColumnOrderList error:', error);
+        }
+    }
+
+
+    // ドラッグ&ドロップ機能を設定
+    function setupDragAndDrop() {
+        const listContainer = document.getElementById('columnOrderList');
+        let draggedItem = null;
+        let dropIndicator = null;
+
+        // ドロップインジケーターを作成
+        function createDropIndicator() {
+            const indicator = document.createElement('div');
+            indicator.style.height = '3px';
+            indicator.style.backgroundColor = '#007bff';
+            indicator.style.borderRadius = '2px';
+            indicator.style.margin = '2px 0';
+            indicator.style.opacity = '0.8';
+            indicator.style.boxShadow = '0 0 6px rgba(0, 123, 255, 0.5)';
+            return indicator;
+        }
+
+        // ドロップインジケーターを削除
+        function removeDropIndicator() {
+            if (dropIndicator) {
+                dropIndicator.remove();
+                dropIndicator = null;
+            }
+        }
+
+        listContainer.addEventListener('dragstart', function(e) {
+            let targetItem = e.target;
+            while (targetItem && !targetItem.classList.contains('list-group-item')) {
+                targetItem = targetItem.parentElement;
+            }
+            
+            if (targetItem && targetItem.classList.contains('list-group-item')) {
+                draggedItem = targetItem;
+                targetItem.style.opacity = '0.4';
+                targetItem.style.transform = 'scale(0.98)';
+                targetItem.style.cursor = 'grabbing';
+                targetItem.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
+            }
+        });
+
+        listContainer.addEventListener('dragend', function(e) {
+            if (draggedItem) {
+                draggedItem.style.opacity = '';
+                draggedItem.style.transform = '';
+                draggedItem.style.cursor = 'grab';
+                draggedItem.style.boxShadow = '';
+                draggedItem = null;
+            }
+            removeDropIndicator();
+        });
+
+        listContainer.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            
+            if (!draggedItem) return;
+            
+            const items = Array.from(listContainer.children);
+            const afterElement = getDragAfterElement(listContainer, e.clientY);
+            
+            removeDropIndicator();
+            dropIndicator = createDropIndicator();
+            
+            if (afterElement == null) {
+                listContainer.appendChild(dropIndicator);
+            } else {
+                listContainer.insertBefore(dropIndicator, afterElement);
+            }
+        });
+
+        listContainer.addEventListener('drop', function(e) {
+            e.preventDefault();
+            
+            if (!draggedItem) return;
+            
+            const afterElement = getDragAfterElement(listContainer, e.clientY);
+            
+            if (afterElement == null) {
+                listContainer.appendChild(draggedItem);
+            } else {
+                listContainer.insertBefore(draggedItem, afterElement);
+            }
+            
+            removeDropIndicator();
+        });
+
+        // ドラッグ位置を計算する関数
+        function getDragAfterElement(container, y) {
+            const draggableElements = [...container.querySelectorAll('.list-group-item:not([style*="opacity: 0.4"])')];
+            
+            return draggableElements.reduce((closest, child) => {
+                const box = child.getBoundingClientRect();
+                const offset = y - box.top - box.height / 2;
+                
+                if (offset < 0 && offset > closest.offset) {
+                    return { offset: offset, element: child };
+                } else {
+                    return closest;
+                }
+            }, { offset: Number.NEGATIVE_INFINITY }).element;
+        }
+    }
+
+
+    // 検索・フィルタ機能（クライアントサイド）
+    const searchInput = document.getElementById('search');
+    const careLevelSelect = document.getElementById('care_level');
+    const statusSelect = document.getElementById('status');
+    const careManagerSelect = document.getElementById('care_manager');
+    const clearButton = document.getElementById('clearFilters');
+    const countBadge = document.getElementById('countBadge');
+
+    // フィルタリングされたデータを保持
+    let filteredClientsData = [...allClientsData];
+
+    // フィルタリング関数
+    function filterClients() {
+        const searchText = searchInput.value.toLowerCase();
+        const selectedCareLevel = careLevelSelect.value;
+        const selectedStatus = statusSelect.value;
+        const selectedCareManager = careManagerSelect.value;
+
+        filteredClientsData = allClientsData.filter(function(client) {
+            // 検索条件
+            const matchesSearch = !searchText ||
+                client.name.toLowerCase().includes(searchText) ||
+                client.furigana.toLowerCase().includes(searchText) ||
+                client.insurance_number.toLowerCase().includes(searchText);
+
+            // 要介護度フィルター
+            const matchesCareLevel = !selectedCareLevel || client.care_level_value === selectedCareLevel;
+
+            // 状況フィルター
+            let matchesStatus = true;
+            if (selectedStatus === 'over_limit') {
+                matchesStatus = client.current_calculation && client.current_calculation.is_over_limit;
+            } else if (selectedStatus === 'within_limit') {
+                matchesStatus = client.current_calculation && !client.current_calculation.is_over_limit;
+            } else if (selectedStatus === 'no_calculation') {
+                matchesStatus = !client.current_calculation;
+            }
+
+            // ケアマネフィルター
+            const matchesCareManager = !selectedCareManager || client.created_by_id == selectedCareManager;
+
+            return matchesSearch && matchesCareLevel && matchesStatus && matchesCareManager;
+        });
+
+        // 件数バッジを更新
+        countBadge.textContent = filteredClientsData.length + '件';
+
+        // テーブルを再描画
+        updateTableWithFilteredData();
+    }
+
+    // フィルタリングされたデータでテーブルを更新
+    function updateTableWithFilteredData() {
+        const settings = getCurrentSettings();
+        const bodyElement = document.getElementById('tableBody');
+
+        // ボディを更新
+        bodyElement.innerHTML = '';
+        filteredClientsData.forEach(client => {
+            const rows = generateTableRow(client, settings);
+            if (Array.isArray(rows)) {
+                rows.forEach(row => bodyElement.appendChild(row));
+            } else {
+                bodyElement.appendChild(rows);
+            }
+        });
+
+        // ドロップダウン機能を設定
+        setupActionDropdowns();
+    }
+
+    // 検索入力イベント
+    if (searchInput) {
+        searchInput.addEventListener('input', filterClients);
+        searchInput.addEventListener('focus', function() {
+            this.select();
+        });
+    }
+
+    // プルダウン変更イベント
+    if (careLevelSelect) {
+        careLevelSelect.addEventListener('change', filterClients);
+    }
+    if (statusSelect) {
+        statusSelect.addEventListener('change', filterClients);
+    }
+    if (careManagerSelect) {
+        careManagerSelect.addEventListener('change', filterClients);
+    }
+
+    // クリアボタン
+    if (clearButton) {
+        clearButton.addEventListener('click', function() {
+            searchInput.value = '';
+            careLevelSelect.value = '';
+            statusSelect.value = '';
+            careManagerSelect.value = '';
+            filterClients();
+        });
+    }
+
+    // イベントリスナーが一度だけ設定されるようにフラグを使用
+    let actionDropdownsInitialized = false;
+
+    // 操作ドロップダウンの制御
+    function setupActionDropdowns() {
+        // 既に初期化済みの場合はスキップ
+        if (actionDropdownsInitialized) {
+            console.log('Action dropdowns already initialized, skipping');
+            return;
+        }
+
+        console.log('Setting up action dropdowns');
+        actionDropdownsInitialized = true;
+
+        // テーブル内のクリックイベントを処理
+        const tableBody = document.getElementById('tableBody');
+        if (tableBody) {
+            tableBody.addEventListener('click', function(e) {
+                console.log('Table click event:', e.target);
+
+                if (e.target.closest('.action-toggle')) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.stopImmediatePropagation();
+                    console.log('Action toggle clicked');
+
+                    const button = e.target.closest('.action-toggle');
+                    const currentRow = button.closest('tr');
+                    const expandRow = currentRow.nextElementSibling;
+                    const chevron = button.querySelector('i');
+
+                    console.log('Button:', button, 'Current row:', currentRow, 'Expand row:', expandRow);
+
+                    // 他の開いている展開行をアニメーション付きで閉じる
+                    document.querySelectorAll('.action-expand-row').forEach(row => {
+                        if (row !== expandRow && row.style.display !== 'none') {
+                            closeExpandRowWithAnimation(row);
+                        }
+                    });
+
+                    // 他の操作ボタンのactiveクラスを削除
+                    document.querySelectorAll('.action-toggle').forEach(btn => {
+                        if (btn !== button) {
+                            btn.classList.remove('active');
+                        }
+                    });
+
+                    // 現在の展開行を開閉
+                    if (expandRow && (expandRow.style.display === 'none' || expandRow.style.display === '')) {
+                        expandRow.style.display = 'table-row';
+                        if (chevron) chevron.className = 'fas fa-chevron-up';
+                        // 利用者行をグレーに変更（ホバー色と同じ）
+                        currentRow.style.backgroundColor = '#f5f5f5';
+                        // 操作ボタンにactiveクラスを追加
+                        button.classList.add('active');
+                        console.log('Expand row opened');
+                    } else if (expandRow) {
+                        closeExpandRowWithAnimation(expandRow);
+                        // 操作ボタンのactiveクラスを削除
+                        button.classList.remove('active');
+                        console.log('Expand row closed');
+                    }
+                }
+            });
+        }
+
+        // ドキュメントクリックで展開エリアを閉じる
+        document.addEventListener('click', function(e) {
+            // 操作ボタンや展開エリア内のクリックは除外
+            const isActionButton = e.target.closest('.action-toggle');
+            const isExpandArea = e.target.closest('.action-expand-row');
+
+            // 操作ボタンやその内部要素、展開エリアのクリックでなければ閉じる
+            if (!isActionButton && !isExpandArea) {
+                document.querySelectorAll('.action-expand-row').forEach(row => {
+                    if (row.style.display !== 'none') {
+                        closeExpandRowWithAnimation(row);
+                    }
+                });
+            }
+        });
+
+        // アニメーション付きで展開行を閉じる関数
+        function closeExpandRowWithAnimation(expandRow) {
+            const prevRow = expandRow.previousElementSibling;
+            const prevButtonIcon = prevRow.querySelector('.action-toggle i');
+            const prevButton = prevRow.querySelector('.action-toggle');
+
+            // 展開エリアの高さを取得
+            const expandHeight = expandRow.offsetHeight;
+
+            // 現在のスクロール位置を保存
+            const currentScrollTop = window.pageYOffset || document.documentElement.scrollTop;
+
+            // 展開エリアが現在の表示領域より上にある場合の調整
+            const expandRowTop = expandRow.getBoundingClientRect().top + currentScrollTop;
+            const viewportTop = currentScrollTop;
+
+            // アニメーションクラスを追加
+            expandRow.classList.add('closing');
+
+            // 矢印を下向きに変更
+            if (prevButtonIcon) prevButtonIcon.className = 'fas fa-chevron-down';
+
+            // 操作ボタンのactiveクラスを削除
+            if (prevButton) prevButton.classList.remove('active');
+
+            // 利用者行の背景色を元に戻す
+            prevRow.style.backgroundColor = '';
+            
+            // アニメーション終了後に非表示にする
+            setTimeout(() => {
+                expandRow.style.display = 'none';
+                expandRow.classList.remove('closing');
+                
+                // 展開エリアが画面より上にあった場合、スクロール位置を上に調整
+                if (expandRowTop < viewportTop) {
+                    const newScrollTop = Math.max(0, currentScrollTop - expandHeight);
+                    window.scrollTo(0, newScrollTop);
+                }
+            }, 150); // アニメーション時間と同じ
+        }
+    }
+
+
+    // ツールチップ位置調整
+    function setupDocumentTooltips() {
+        const tooltipButtons = document.querySelectorAll('.document-create-btn');
+        
+        tooltipButtons.forEach(button => {
+            const tooltip = button.querySelector('.document-tooltip');
+            if (!tooltip) return;
+            
+            let hideTimeout;
+            
+            function showTooltip() {
+                clearTimeout(hideTimeout);
+                
+                // テーブル要素を取得
+                const table = document.getElementById('clientTable');
+                const tableRect = table.getBoundingClientRect();
+                const buttonRect = button.getBoundingClientRect();
+                
+                // ツールチップの幅を固定
+                const tooltipWidth = 260;
+                
+                // ツールチップの位置を計算（ボタンの中央下、ツールチップは中央配置）
+                const tooltipLeft = buttonRect.left + (buttonRect.width / 2) - (tooltipWidth / 2);
+                const tooltipTop = buttonRect.bottom + 8;
+                
+                // 左側に余白を追加（20px程度）
+                const leftMargin = 20;
+                
+                // テーブル範囲内に収まるように調整（左側に余白を考慮）
+                const adjustedLeft = Math.max(tableRect.left + leftMargin, Math.min(tooltipLeft, tableRect.right - tooltipWidth - leftMargin));
+                
+                tooltip.style.left = adjustedLeft + 'px';
+                tooltip.style.top = tooltipTop + 'px';
+                
+                // 三角形の位置をボタンに合わせて調整
+                const triangleOffset = buttonRect.left + (buttonRect.width / 2) - adjustedLeft;
+                const triangleOffsetPercent = (triangleOffset / tooltipWidth) * 100;
+                
+                // 三角形の位置をCSSカスタムプロパティで調整
+                tooltip.style.setProperty('--triangle-left', Math.min(Math.max(triangleOffsetPercent, 10), 90) + '%');
+                
+                tooltip.style.opacity = '1';
+                tooltip.style.visibility = 'visible';
+                tooltip.style.pointerEvents = 'auto';
+            }
+            
+            function hideTooltip() {
+                hideTimeout = setTimeout(() => {
+                    tooltip.style.opacity = '0';
+                    tooltip.style.visibility = 'hidden';
+                    tooltip.style.pointerEvents = 'none';
+                }, 100);
+            }
+            
+            // ボタンのイベント
+            button.addEventListener('mouseenter', showTooltip);
+            button.addEventListener('mouseleave', hideTooltip);
+            
+            // ツールチップのイベント
+            tooltip.addEventListener('mouseenter', function() {
+                clearTimeout(hideTimeout);
+            });
+            tooltip.addEventListener('mouseleave', hideTooltip);
+        });
+    }
+    
+    // テーブル更新後にツールチップを設定
+    function updateTable() {
+        const settings = getCurrentSettings();
+        const headerElement = document.getElementById('tableHeader');
+        const bodyElement = document.getElementById('tableBody');
+        
+        // ヘッダーを更新
+        headerElement.innerHTML = '';
+        headerElement.appendChild(generateTableHeader(settings));
+        
+        // ボディを更新
+        bodyElement.innerHTML = '';
+        filteredClientsData.forEach(client => {
+            const rows = generateTableRow(client, settings);
+            if (Array.isArray(rows)) {
+                rows.forEach(row => bodyElement.appendChild(row));
+            } else {
+                bodyElement.appendChild(rows);
+            }
+        });
+        
+        // ドロップダウン機能を設定
+        setupActionDropdowns();
+        
+    }
+
+    // 初期表示
+    updateTable();
+});
+
+// シンプル：モーダルなしで直接書類作成画面に遷移
+function goDirectToDocument(button) {
+    // ボタンから利用者IDを取得
+    const expandRow = button.closest('.action-expand-row');
+    const prevRow = expandRow ? expandRow.previousElementSibling : null;
+    const actionButton = prevRow ? prevRow.querySelector('.action-toggle') : null;
+    const clientId = actionButton ? actionButton.dataset.clientId : null;
+    
+    if (clientId) {
+        const url = `/clients/${clientId}/documents/create/kyotaku_service_plan_request/`;
+        window.location.href = url;
+    } else {
+        alert('利用者情報が取得できませんでした。');
+    }
+}
+
+function closeModal() {
+    const modal = document.getElementById('documentModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+function selectDocumentType(documentName) {
+    const modal = document.getElementById('documentModal');
+    const clientId = modal ? modal.dataset.currentClientId : null;
+    
+    if (!clientId) {
+        alert('利用者情報が取得できませんでした。');
+        return;
+    }
+    
+    if (documentName === '居宅サービス計画作成依頼（変更）届出書') {
+        const url = `/clients/${clientId}/documents/create/kyotaku_service_plan_request/`;
+        window.location.href = url;
+    } else {
+        alert(`${documentName}の作成機能（開発中）`);
+        closeModal();
+    }
+}
+
+// モーダル関連の関数
+function showDocumentModal(button, event) {
+    console.log('=== showDocumentModal CALLED ==='); // デバッグ用
+    console.log('Button:', button); // デバッグ用
+    console.log('Event:', event); // デバッグ用
+
+    // イベントの伝播を止める
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+    }
+
+    console.log('showDocumentModal called'); // デバッグ用
+
+    const modal = document.getElementById('documentModal');
+    if (!modal) {
+        console.error('Modal element not found');
+        alert('モーダルが見つかりません');
+        return;
+    }
+
+    console.log('Modal element found:', modal); // デバッグ用
+    
+    // 利用者IDを取得（ボタンのdata-client-id属性から）
+    let clientId = button.dataset.clientId;
+    console.log('Button client ID:', clientId); // デバッグ用
+
+    console.log('Final client ID:', clientId); // デバッグ用
+
+    if (clientId) {
+        modal.dataset.currentClientId = clientId;
+        console.log('Client ID set:', clientId); // デバッグ用
+    } else {
+        console.error('Client ID not found!'); // デバッグ用
+        alert('利用者情報が取得できませんでした。');
+        return;
+    }
+
+    // モーダル表示（すべてのスタイルをリセット）
+    modal.style.display = 'flex';
+    modal.style.opacity = '1';
+    modal.style.visibility = 'visible';
+    modal.classList.add('show');
+
+    console.log('Modal should be visible now'); // デバッグ用
+}
+
+function hideDocumentModal(event) {
+    // イベントが渡された場合（×ボタンなど）は伝播を止める
+    if (event) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+    }
+    
+    console.log('hideDocumentModal called');
+    
+    const modal = document.getElementById('documentModal');
+    if (modal) {
+        modal.style.display = 'none';
+        modal.style.opacity = '0';
+        modal.style.visibility = 'hidden';
+        modal.classList.remove('show');
+        console.log('Modal hidden');
+    }
+}
+
+function selectDocument(documentName, status, event) {
+    // 書類選択時はイベント伝播を止める
+    if (event) {
+        event.stopPropagation();
+    }
+    
+    console.log('selectDocument called:', documentName, status);
+    
+    // 現在選択されている利用者のIDを取得
+    const modal = document.getElementById('documentModal');
+    const currentClientId = modal ? modal.dataset.currentClientId : null;
+
+    console.log('Current client ID:', currentClientId);
+    console.log('Modal element:', modal);
+    console.log('Modal dataset:', modal ? modal.dataset : 'なし');
+
+    if (!currentClientId) {
+        alert('利用者情報が取得できませんでした。（selectDocument）');
+        hideDocumentModal();
+        return;
+    }
+    
+    if (status === '未開発') {
+        alert(`${documentName}の作成機能（未開発）`);
+    } else if (status === '開発中' || status === '利用可能') {
+        // 書類名からdocument_typeへのマッピング
+        const documentTypeMap = {
+            '居宅サービス計画作成依頼（変更）届出書': 'kyotaku_service_plan_request',
+            '介護予防サービス計画作成・介護予防ケアマネジメント依頼（変更）届出書': 'kyotaku_preventive_service_plan_request',
+        };
+
+        const documentType = documentTypeMap[documentName];
+        if (documentType) {
+            const url = `/clients/${currentClientId}/documents/create/${documentType}/`;
+            console.log('Navigating to:', url);
+            window.location.href = url;
+            return;
+        } else {
+            alert(`${documentName}の作成機能（開発中）`);
+        }
+    } else {
+        alert(`${documentName}の作成機能（利用可能）`);
+    }
+    hideDocumentModal();
+}
+
+// 現在選択されている利用者のIDを取得する関数
+function getCurrentClientId() {
+    // モーダルを開いたボタンから利用者IDを取得
+    const modal = document.getElementById('documentModal');
+    const clientId = modal.dataset.currentClientId;
+    return clientId;
+}
+
+// モーダル外クリックで閉じる（ドロップダウンの状態を保持）
+document.addEventListener('click', function(event) {
+    const modal = document.getElementById('documentModal');
+    if (event.target === modal) {
+        // hideDocumentModal関数を使用してモーダルを完全に閉じる
+        hideDocumentModal(event);
+    }
+}, true); // キャプチャフェーズで実行
+
+// ESCキーで閉じる（ドロップダウンの状態を保持）
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        const modal = document.getElementById('documentModal');
+        if (modal.classList.contains('show')) {
+            // hideDocumentModal関数を使用してモーダルを完全に閉じる
+            hideDocumentModal(event);
+        }
+    }
+}, true); // キャプチャフェーズで実行
+
+// モーダルコンテンツ内のクリックを処理（背景要素に影響させない）
+document.addEventListener('DOMContentLoaded', function() {
+    const modalContent = document.querySelector('.document-modal-content');
+    if (modalContent) {
+        modalContent.addEventListener('click', function(event) {
+            // モーダルコンテンツ内のクリックは伝播を止める
+            event.stopPropagation();
+        });
+    }
+});
+
+</script>
+{% endblock %}

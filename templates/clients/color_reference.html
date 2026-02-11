@@ -1,0 +1,2597 @@
+{% extends "base.html" %}
+
+{% block title %}カラー参照 - ケア管理ツール{% endblock %}
+
+{% block content %}
+<style>
+    /* メインタブスタイル（利用者詳細と同じ） */
+    #colorRefMainTabs {
+        border-bottom: none;
+        background-color: transparent;
+        padding: 0;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        overflow-y: hidden;
+        white-space: nowrap;
+        justify-content: space-between;
+    }
+
+    #colorRefMainTabs .nav-item {
+        flex: 1;
+        text-align: center;
+        position: relative;
+    }
+
+    #colorRefMainTabs .nav-item:not(:last-child)::after {
+        content: '';
+        position: absolute;
+        right: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 1px;
+        height: 60%;
+        background-color: #dee2e6;
+    }
+
+    #colorRefMainTabs .nav-link {
+        border: none;
+        border-bottom: 3px solid transparent;
+        border-radius: 0;
+        padding: 0.75rem 1rem;
+        font-weight: 500;
+        color: #6c757d;
+        background-color: transparent;
+        margin-right: 0;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+        width: 100%;
+    }
+
+    #colorRefMainTabs .nav-link:hover {
+        color: #495057;
+        border-bottom-color: #dee2e6;
+        background-color: transparent;
+    }
+
+    #colorRefMainTabs .nav-link.active {
+        color: #495057;
+        background-color: transparent;
+        border-bottom: 3px solid #6c757d !important;
+    }
+
+    /* サブタブ */
+    #colorRefSubTabs {
+        border-bottom: none !important;
+        display: flex !important;
+        margin-bottom: 0 !important;
+    }
+
+    #colorRefSubTabs .nav-item {
+        flex: 1 !important;
+        margin: 0 !important;
+    }
+
+    #colorRefSubTabs .nav-link {
+        transition: all 0.2s ease;
+        border: 1px solid #dee2e6 !important;
+        border-bottom: none !important;
+        border-top-left-radius: 0.375rem !important;
+        border-top-right-radius: 0.375rem !important;
+        width: 100% !important;
+        margin: 0 !important;
+    }
+
+    #colorRefSubTabs .nav-link:not(.active) {
+        background-color: #ffffff !important;
+        color: #6c757d !important;
+    }
+
+    #colorRefSubTabs .nav-link.active {
+        background-color: #f5f5f5 !important;
+        border-color: #999 !important;
+        color: #333 !important;
+        border-bottom: none !important;
+    }
+
+    #colorRefSubTabs .nav-link:not(.active):hover {
+        background-color: #e9ecef !important;
+        color: #495057 !important;
+    }
+
+    /* カラーパターンのサブタブ */
+    #colorPatternSubTabs {
+        border-bottom: none !important;
+        display: flex !important;
+        margin-bottom: 0 !important;
+    }
+
+    #colorPatternSubTabs .nav-item {
+        flex: 1 !important;
+        margin: 0 !important;
+    }
+
+    #colorPatternSubTabs .nav-link {
+        transition: all 0.2s ease;
+        border: 1px solid #dee2e6 !important;
+        border-bottom: none !important;
+        border-top-left-radius: 0.375rem !important;
+        border-top-right-radius: 0.375rem !important;
+        width: 100% !important;
+        margin: 0 !important;
+    }
+
+    #colorPatternSubTabs .nav-link:not(.active) {
+        background-color: #ffffff !important;
+        color: #6c757d !important;
+    }
+
+    #colorPatternSubTabs .nav-link.active {
+        background-color: #f5f5f5 !important;
+        border-color: #999 !important;
+        color: #333 !important;
+        border-bottom: none !important;
+    }
+
+    #colorPatternSubTabs .nav-link:not(.active):hover {
+        background-color: #e9ecef !important;
+        color: #495057 !important;
+    }
+
+    .tab-pane-bordered {
+        border: 1px solid #6c757d;
+        border-radius: 0 0 0.375rem 0.375rem;
+        background-color: white;
+        padding: 1.5rem;
+    }
+
+    /* カラーパターンの表を中央寄せ */
+    #color-pattern-main table td,
+    #color-pattern-main table th {
+        text-align: center;
+        vertical-align: middle;
+    }
+
+    /* カラー一覧の表を中央寄せ */
+    #client-list-sub table td,
+    #client-list-sub table th,
+    #assessment-sub table td,
+    #assessment-sub table th {
+        text-align: center;
+        vertical-align: middle;
+    }
+</style>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-palette"></i> カラー参照</h2>
+            </div>
+
+            <!-- メインタブ -->
+            <ul class="nav nav-tabs" id="colorRefMainTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="color-list-main-tab" data-bs-toggle="tab" data-bs-target="#color-list-main" type="button" role="tab">
+                        カラー一覧
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="color-pattern-main-tab" data-bs-toggle="tab" data-bs-target="#color-pattern-main" type="button" role="tab">
+                        カラーパターン
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="animation-pattern-tab" data-bs-toggle="tab" data-bs-target="#animation-pattern" type="button" role="tab">
+                        アニメーションパターン
+                    </button>
+                </li>
+            </ul>
+
+            <!-- タブコンテンツ -->
+            <div class="tab-content" id="colorRefMainTabContent" style="border: 1px solid #dee2e6; border-top: none; padding: 20px; background-color: white;">
+
+                <!-- カラー一覧タブ -->
+                <div class="tab-pane show active" id="color-list-main" role="tabpanel">
+
+                    <!-- サブタブ -->
+                    <ul class="nav nav-tabs mb-3" id="colorRefSubTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="base-sub-tab" data-bs-toggle="tab" data-bs-target="#base-sub" type="button" role="tab">
+                                ベース
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="client-list-sub-tab" data-bs-toggle="tab" data-bs-target="#client-list-sub" type="button" role="tab">
+                                利用者一覧
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="client-detail-sub-tab" data-bs-toggle="tab" data-bs-target="#client-detail-sub" type="button" role="tab">
+                                利用者詳細
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="assessment-sub-tab" data-bs-toggle="tab" data-bs-target="#assessment-sub" type="button" role="tab">
+                                アセスメント作成
+                            </button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content" id="colorRefSubTabContent">
+
+                        <!-- ベースサブタブ -->
+                        <div class="tab-pane show active tab-pane-bordered" id="base-sub" role="tabpanel">
+                            <p class="text-muted mb-4">
+                                システム全体で使用される基本的なカラーの一覧です。
+                            </p>
+
+                            {% for category_data in base_colors %}
+                            <div class="mb-4">
+                                <h6 class="mb-3 fw-bold">{{ category_data.category }}</h6>
+                                <div class="table-responsive">
+                                    <table class="table table-bordered">
+                                        <thead>
+                                            <tr>
+                                                <th style="width: 20%;">項目名</th>
+                                                <th style="width: 16%;">パステル</th>
+                                                <th style="width: 16%;">くすみ色</th>
+                                                <th style="width: 16%;">暖色</th>
+                                                <th style="width: 16%;">寒色</th>
+                                                <th style="width: 16%;">単色</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for item in category_data.items %}
+                                            <tr>
+                                                <td {% if '限度額試算' == item.name or '基本情報タブ' == item.name or '健康状態タブ' == item.name or '身体機能タブ' == item.name or '認知機能タブ' == item.name or '住宅環境タブ' == item.name or '非アクティブ時' == item.name %}style="font-size: 0.875rem;"{% endif %}>{{ item.name }}</td>
+                                                <td class="color-preview-cell" style="cursor: pointer;"
+                                                    data-name="{{ item.name }}"
+                                                    data-color-type="pastel"
+                                                    data-bg-color="{{ item.bg_color }}"
+                                                    data-border-color="{{ item.border_color }}"
+                                                    data-text-color="{{ item.text_color }}">
+                                                    <button class="btn btn-sm" style="
+                                                        background-color: {{ item.bg_color }};
+                                                        border: 1px solid {{ item.border_color }};
+                                                        color: {{ item.text_color }};
+                                                        font-size: 0.75rem;
+                                                        padding: 0.25rem 0.5rem;
+                                                        pointer-events: none;
+                                                    ">{{ item.name }}</button>
+                                                </td>
+                                                <td class="color-preview-cell" style="cursor: pointer;"
+                                                    {% if item.muted_bg_color %}
+                                                    data-name="{{ item.name }}"
+                                                    data-color-type="muted"
+                                                    data-bg-color="{{ item.muted_bg_color }}"
+                                                    data-border-color="{{ item.muted_border_color }}"
+                                                    data-text-color="{{ item.muted_text_color }}"
+                                                    {% endif %}>
+                                                    {% if item.muted_bg_color %}
+                                                    <button class="btn btn-sm" style="
+                                                        background-color: {{ item.muted_bg_color }};
+                                                        border: 1px solid {{ item.muted_border_color }};
+                                                        color: {{ item.muted_text_color }};
+                                                        font-size: 0.75rem;
+                                                        padding: 0.25rem 0.5rem;
+                                                        pointer-events: none;
+                                                    ">{{ item.name }}</button>
+                                                    {% endif %}
+                                                </td>
+                                                <td></td>
+                                                <td></td>
+                                                <td></td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- 利用者一覧サブタブ -->
+                        <div class="tab-pane tab-pane-bordered" id="client-list-sub" role="tabpanel">
+                            <p class="text-muted mb-4">
+                                利用者一覧画面で使用されているカラーの一覧です。
+                            </p>
+
+                            {% for category_data in client_list_colors %}
+                            <div class="mb-4">
+                                <h6 class="mb-3 fw-bold">{{ category_data.category }}</h6>
+                                <div class="table-responsive">
+                                    <table class="table table-bordered">
+                                        <thead>
+                                            <tr>
+                                                <th style="width: 20%;">項目名</th>
+                                                <th style="width: 16%;">パステル</th>
+                                                <th style="width: 16%;">くすみ色</th>
+                                                <th style="width: 16%;">暖色</th>
+                                                <th style="width: 16%;">寒色</th>
+                                                <th style="width: 16%;">単色</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for item in category_data.items %}
+                                            <tr>
+                                                <td {% if '限度額試算' == item.name or '基本情報タブ' == item.name or '健康状態タブ' == item.name or '身体機能タブ' == item.name or '認知機能タブ' == item.name or '住宅環境タブ' == item.name or '非アクティブ時' == item.name %}style="font-size: 0.875rem;"{% endif %}>{{ item.name }}</td>
+                                                <td class="color-preview-cell" style="cursor: pointer;"
+                                                    data-name="{{ item.name }}"
+                                                    data-color-type="pastel"
+                                                    data-bg-color="{{ item.bg_color }}"
+                                                    data-border-color="{{ item.border_color }}"
+                                                    data-text-color="{{ item.text_color }}">
+                                                    {% if '新規登録' in category_data.category %}
+                                                        <button class="btn btn-outline-secondary btn-sm" style="
+                                                            background-color: {{ item.bg_color }};
+                                                            border-color: {{ item.border_color }};
+                                                            color: {{ item.text_color }};
+                                                            font-size: 0.875rem;
+                                                            padding: 0.25rem 0.5rem;
+                                                            pointer-events: none;
+                                                        ">新規登録</button>
+                                                    {% elif '件数表示' in category_data.category %}
+                                                        <span class="badge" style="
+                                                            background-color: {{ item.bg_color }};
+                                                            color: {{ item.text_color }};
+                                                            border: 1px solid {{ item.border_color }};
+                                                            font-size: 13px;
+                                                            padding: 4px 8px;
+                                                        ">50件</span>
+                                                    {% elif 'テーブルヘッダー' in category_data.category %}
+                                                        <div style="
+                                                            background-color: {{ item.bg_color }};
+                                                            border: 1px solid {{ item.border_color }};
+                                                            color: {{ item.text_color }};
+                                                            padding: 8px;
+                                                            font-weight: 600;
+                                                        ">ヘッダー</div>
+                                                    {% elif 'テーブル行' in category_data.category %}
+                                                        <div style="
+                                                            background-color: {{ item.bg_color }};
+                                                            border: 1px solid {{ item.border_color }};
+                                                            color: {{ item.text_color }};
+                                                            padding: 8px;
+                                                        ">行データ</div>
+                                                    {% elif '介護度' in category_data.category %}
+                                                        <span style="
+                                                            background-color: {{ item.bg_color }};
+                                                            border: 1px solid {{ item.border_color }};
+                                                            color: {{ item.text_color }};
+                                                            padding: 4px 8px;
+                                                            border-radius: 4px;
+                                                            font-size: 13px;
+                                                        ">{{ item.name }}</span>
+                                                    {% elif 'カウントダウン' in category_data.category %}
+                                                        {% if '期限切れ' in item.name %}
+                                                            <span style="
+                                                                display: inline-flex;
+                                                                align-items: center;
+                                                                justify-content: center;
+                                                                width: 18px;
+                                                                height: 18px;
+                                                                border: 1px solid {{ item.border_color }};
+                                                                border-radius: 50%;
+                                                                background-color: {{ item.bg_color }};
+                                                                font-size: 14px;
+                                                                font-weight: bold;
+                                                                color: {{ item.text_color }};
+                                                            ">×</span>
+                                                        {% elif '30日' in item.name %}
+                                                            <span style="
+                                                                display: inline-flex;
+                                                                align-items: center;
+                                                                justify-content: center;
+                                                                width: 18px;
+                                                                height: 18px;
+                                                                border: 1px solid {{ item.border_color }};
+                                                                border-radius: 50%;
+                                                                background-color: {{ item.bg_color }};
+                                                                font-size: 8px;
+                                                                font-weight: bold;
+                                                                color: {{ item.text_color }};
+                                                            ">15</span>
+                                                        {% else %}
+                                                            <span style="
+                                                                display: inline-flex;
+                                                                align-items: center;
+                                                                justify-content: center;
+                                                                width: 18px;
+                                                                height: 18px;
+                                                                border: 1px solid {{ item.border_color }};
+                                                                border-radius: 50%;
+                                                                background-color: {{ item.bg_color }};
+                                                                font-size: 8px;
+                                                                font-weight: bold;
+                                                                color: {{ item.text_color }};
+                                                            ">45</span>
+                                                        {% endif %}
+                                                    {% elif '操作ボタン' in category_data.category %}
+                                                        <button class="btn btn-sm" style="
+                                                            background-color: {{ item.bg_color }};
+                                                            border: 1px solid {{ item.border_color }};
+                                                            color: {{ item.text_color }};
+                                                            font-size: 11px;
+                                                            padding: 2px 8px;
+                                                            pointer-events: none;
+                                                        ">操作</button>
+                                                    {% elif '操作アイコン' in category_data.category %}
+                                                        <i class="fas
+                                                            {% if '詳細表示' in item.name %}fa-eye
+                                                            {% elif '情報編集' in item.name %}fa-edit
+                                                            {% elif '限度額試算' in item.name %}fa-calculator
+                                                            {% elif 'アセスメント' in item.name %}fa-clipboard-list
+                                                            {% elif '書類作成' in item.name %}fa-file-alt
+                                                            {% elif '予定管理' in item.name %}fa-calendar-check
+                                                            {% elif '履歴・記録' in item.name %}fa-chart-line
+                                                            {% elif '印刷・出力' in item.name %}fa-print
+                                                            {% endif %}"
+                                                        style="
+                                                            font-size: 18px;
+                                                            color: {{ item.text_color }};
+                                                        "></i>
+                                                    {% elif '操作メニュー' in category_data.category %}
+                                                        <button class="btn btn-sm" style="
+                                                            background-color: {{ item.bg_color }};
+                                                            border: 1px solid {{ item.border_color }};
+                                                            color: {{ item.text_color }};
+                                                            font-size: 0.75rem;
+                                                            padding: 0.25rem 0.5rem;
+                                                            pointer-events: none;
+                                                        ">{{ item.name }}</button>
+                                                    {% else %}
+                                                        <div style="
+                                                            background-color: {{ item.bg_color }};
+                                                            border: 2px solid {{ item.border_color }};
+                                                            color: {{ item.text_color }};
+                                                            padding: 8px;
+                                                            border-radius: 4px;
+                                                        ">サンプル</div>
+                                                    {% endif %}
+                                                </td>
+                                                <td class="color-preview-cell" style="cursor: pointer;">
+                                                    {% if item.muted_bg_color %}
+                                                        {% if '操作メニュー' in category_data.category %}
+                                                            <button class="btn btn-sm" style="
+                                                                background-color: {{ item.muted_bg_color }};
+                                                                border: 1px solid {{ item.muted_border_color }};
+                                                                color: {{ item.muted_text_color }};
+                                                                font-size: 0.75rem;
+                                                                padding: 0.25rem 0.5rem;
+                                                                pointer-events: none;
+                                                            ">{{ item.name }}</button>
+                                                        {% endif %}
+                                                    {% endif %}
+                                                </td>
+                                                <td></td>
+                                                <td></td>
+                                                <td></td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- アセスメント作成サブタブ -->
+                        <div class="tab-pane tab-pane-bordered" id="assessment-sub" role="tabpanel">
+                            <p class="text-muted mb-4">
+                                アセスメント作成画面で使用されているカラーの一覧です。
+                            </p>
+
+                            {% for category_data in assessment_colors %}
+                            <div class="mb-4">
+                                <h6 class="mb-3 fw-bold">{{ category_data.category }}</h6>
+                                <div class="table-responsive">
+                                    <table class="table table-bordered">
+                                        <thead>
+                                            <tr>
+                                                <th style="width: 20%;">項目名</th>
+                                                <th style="width: 16%;">パステル</th>
+                                                <th style="width: 16%;">くすみ色</th>
+                                                <th style="width: 16%;">暖色</th>
+                                                <th style="width: 16%;">寒色</th>
+                                                <th style="width: 16%;">単色</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for item in category_data.items %}
+                                            <tr>
+                                                <td {% if '限度額試算' == item.name or '基本情報タブ' == item.name or '健康状態タブ' == item.name or '身体機能タブ' == item.name or '認知機能タブ' == item.name or '住宅環境タブ' == item.name or '非アクティブ時' == item.name %}style="font-size: 0.875rem;"{% endif %}>{{ item.name }}</td>
+                                                <td class="color-preview-cell" style="cursor: pointer;"
+                                                    data-name="{{ item.name }}"
+                                                    data-color-type="pastel"
+                                                    data-bg-color="{{ item.bg_color }}"
+                                                    data-border-color="{{ item.border_color }}"
+                                                    data-text-color="{{ item.text_color }}">
+                                                    <button class="btn btn-sm" style="
+                                                        background-color: {{ item.bg_color }};
+                                                        border: 1px solid {{ item.border_color }};
+                                                        color: {{ item.text_color }};
+                                                        font-size: {% if '保存して戻る' in item.name %}0.65rem{% else %}0.75rem{% endif %};
+                                                        padding: 0.25rem 0.5rem;
+                                                        pointer-events: none;
+                                                    ">{{ item.name }}</button>
+                                                </td>
+                                                <td class="color-preview-cell" style="cursor: pointer;"
+                                                    {% if item.muted_bg_color %}
+                                                    data-name="{{ item.name }}"
+                                                    data-color-type="muted"
+                                                    data-bg-color="{{ item.muted_bg_color }}"
+                                                    data-border-color="{{ item.muted_border_color }}"
+                                                    data-text-color="{{ item.muted_text_color }}"
+                                                    {% endif %}>
+                                                    {% if item.muted_bg_color %}
+                                                    <button class="btn btn-sm" style="
+                                                        background-color: {{ item.muted_bg_color }};
+                                                        border: 1px solid {{ item.muted_border_color }};
+                                                        color: {{ item.muted_text_color }};
+                                                        font-size: 0.75rem;
+                                                        padding: 0.25rem 0.5rem;
+                                                        pointer-events: none;
+                                                    ">{{ item.name }}</button>
+                                                    {% endif %}
+                                                </td>
+                                                <td></td>
+                                                <td></td>
+                                                <td></td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- 利用者詳細サブタブ -->
+                        <div class="tab-pane tab-pane-bordered" id="client-detail-sub" role="tabpanel">
+                            <p class="text-muted mb-4">
+                                利用者詳細画面で使用されているカラーの一覧です。
+                            </p>
+
+                            {% for category_data in client_detail_colors %}
+                            <div class="mb-4">
+                                <h6 class="mb-3 fw-bold">{{ category_data.category }}</h6>
+                                <div class="table-responsive">
+                                    <table class="table table-bordered">
+                                        <thead>
+                                            <tr>
+                                                <th style="width: 20%;">項目名</th>
+                                                <th style="width: 16%;">パステル</th>
+                                                <th style="width: 16%;">くすみ色</th>
+                                                <th style="width: 16%;">暖色</th>
+                                                <th style="width: 16%;">寒色</th>
+                                                <th style="width: 16%;">単色</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for item in category_data.items %}
+                                            <tr>
+                                                <td style="font-size: 0.875rem;">{{ item.name }}</td>
+                                                <td class="color-preview-cell" style="cursor: pointer;"
+                                                    data-name="{{ item.name }}"
+                                                    data-color-type="pastel"
+                                                    data-bg-color="{{ item.bg_color }}"
+                                                    data-border-color="{{ item.border_color }}"
+                                                    data-text-color="{{ item.text_color }}">
+                                                    <button class="btn btn-sm" style="
+                                                        background-color: {{ item.bg_color }};
+                                                        border: 1px solid {{ item.border_color }};
+                                                        color: {{ item.text_color }};
+                                                        font-size: 0.75rem;
+                                                        padding: 0.25rem 0.5rem;
+                                                        pointer-events: none;
+                                                    ">{{ item.name }}</button>
+                                                </td>
+                                                <td class="color-preview-cell" style="cursor: pointer;"
+                                                    {% if item.muted_bg_color %}
+                                                    data-name="{{ item.name }}"
+                                                    data-color-type="muted"
+                                                    data-bg-color="{{ item.muted_bg_color }}"
+                                                    data-border-color="{{ item.muted_border_color }}"
+                                                    data-text-color="{{ item.muted_text_color }}"
+                                                    {% endif %}>
+                                                    {% if item.muted_bg_color %}
+                                                    <button class="btn btn-sm" style="
+                                                        background-color: {{ item.muted_bg_color }};
+                                                        border: 1px solid {{ item.muted_border_color }};
+                                                        color: {{ item.muted_text_color }};
+                                                        font-size: 0.75rem;
+                                                        padding: 0.25rem 0.5rem;
+                                                        pointer-events: none;
+                                                    ">{{ item.name }}</button>
+                                                    {% endif %}
+                                                </td>
+                                                <td></td>
+                                                <td></td>
+                                                <td></td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            {% endfor %}
+
+                            <p class="text-muted text-center" style="padding: 2rem 0;">
+                                <i class="fas fa-paint-brush me-2"></i>カラーデータを追加してください
+                            </p>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- カラーパターンタブ -->
+                <div class="tab-pane" id="color-pattern-main" role="tabpanel">
+                    <p class="text-muted mb-4">
+                        システム全体で利用可能な基本カラーパターンの一覧です。
+                    </p>
+
+                    <!-- サブタブ -->
+                    <ul class="nav nav-tabs mb-3" id="colorPatternSubTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="multi-color-tab" data-bs-toggle="tab" data-bs-target="#multi-color" type="button" role="tab">
+                                複数色
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="single-color-tab" data-bs-toggle="tab" data-bs-target="#single-color" type="button" role="tab">
+                                単色
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="limited-color-tab" data-bs-toggle="tab" data-bs-target="#limited-color" type="button" role="tab">
+                                3～4色
+                            </button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content" id="colorPatternSubTabContent">
+
+                        <!-- 複数色サブタブ -->
+                        <div class="tab-pane show active tab-pane-bordered" id="multi-color" role="tabpanel">
+
+                    <h6 class="mb-3 fw-bold">パターン0（通常時のボタン）</h6>
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th style="width: 10%;">番号</th>
+                                    <th style="width: 45%;">パステル<br><small>（デフォルト）</small></th>
+                                    <th style="width: 45%;">くすみ色</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="fw-bold">0</td>
+                                    <td class="pattern-preview-cell" style="cursor: pointer;"
+                                        data-pattern-number="0"
+                                        data-color-type="pastel"
+                                        data-text-color="#6c757d"
+                                        data-border-color="#6c757d"
+                                        data-bg-color="#ffffff">
+                                        <span style="
+                                            background-color: #ffffff;
+                                            padding: 4px 8px;
+                                            border: 1px solid #6c757d;
+                                            border-radius: 4px;
+                                            font-size: 13px;
+                                            color: #6c757d;
+                                        ">サンプル</span>
+                                    </td>
+                                    <td class="pattern-preview-cell" style="cursor: pointer;"
+                                        data-pattern-number="0"
+                                        data-color-type="muted"
+                                        data-text-color="#6c757d"
+                                        data-border-color="#6c757d"
+                                        data-bg-color="#ffffff">
+                                        <span style="
+                                            background-color: #ffffff;
+                                            padding: 4px 8px;
+                                            border: 1px solid #6c757d;
+                                            border-radius: 4px;
+                                            font-size: 13px;
+                                            color: #6c757d;
+                                        ">サンプル</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <h6 class="mb-3 fw-bold mt-5">パターン1～8（枠線: グレー固定 + 背景色: 8色）</h6>
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th style="width: 10%;">番号</th>
+                                    <th style="width: 45%;">パステル<br><small>（デフォルト）</small></th>
+                                    <th style="width: 45%;">くすみ色</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for pattern in color_patterns %}
+                                {% if pattern.number >= 1 and pattern.number <= 8 %}
+                                <tr>
+                                    <td class="fw-bold">{{ pattern.number }}</td>
+                                    <td class="pattern-preview-cell" style="cursor: pointer;"
+                                        data-pattern-number="{{ pattern.number }}"
+                                        data-color-type="pastel"
+                                        data-text-color="{{ pattern.text_color }}"
+                                        data-border-color="{{ pattern.border_color }}"
+                                        data-bg-color="{{ pattern.bg_color }}">
+                                        <span style="
+                                            background-color: {{ pattern.bg_color }};
+                                            padding: 4px 8px;
+                                            border: 1px solid {{ pattern.border_color }};
+                                            border-radius: 4px;
+                                            font-size: 13px;
+                                            color: {{ pattern.text_color }};
+                                        ">サンプル</span>
+                                    </td>
+                                    <td class="pattern-preview-cell" style="cursor: pointer;"
+                                        {% if pattern.muted_bg_color %}
+                                        data-pattern-number="{{ pattern.number }}"
+                                        data-color-type="muted"
+                                        data-text-color="{{ pattern.muted_text_color }}"
+                                        data-border-color="{{ pattern.muted_border_color }}"
+                                        data-bg-color="{{ pattern.muted_bg_color }}"
+                                        {% endif %}>
+                                        {% if pattern.muted_bg_color %}
+                                        <span style="
+                                            background-color: {{ pattern.muted_bg_color }};
+                                            padding: 4px 8px;
+                                            border: 1px solid {{ pattern.muted_border_color }};
+                                            border-radius: 4px;
+                                            font-size: 13px;
+                                            color: {{ pattern.muted_text_color }};
+                                        ">サンプル</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endif %}
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <h6 class="mb-3 fw-bold mt-5">パターン9～16（枠線色 + 背景色: 8色セット）</h6>
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th style="width: 10%;">番号</th>
+                                    <th style="width: 45%;">パステル<br><small>（デフォルト）</small></th>
+                                    <th style="width: 45%;">くすみ色</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for pattern in color_patterns %}
+                                {% if pattern.number >= 9 and pattern.number <= 16 %}
+                                <tr>
+                                    <td class="fw-bold">{{ pattern.number }}</td>
+                                    <td class="pattern-preview-cell" style="cursor: pointer;"
+                                        data-pattern-number="{{ pattern.number }}"
+                                        data-color-type="pastel"
+                                        data-text-color="{{ pattern.text_color }}"
+                                        data-border-color="{{ pattern.border_color }}"
+                                        data-bg-color="{{ pattern.bg_color }}">
+                                        <span style="
+                                            background-color: {{ pattern.bg_color }};
+                                            padding: 4px 8px;
+                                            border: 1px solid {{ pattern.border_color }};
+                                            border-radius: 4px;
+                                            font-size: 13px;
+                                            color: {{ pattern.text_color }};
+                                        ">サンプル</span>
+                                    </td>
+                                    <td class="pattern-preview-cell" style="cursor: pointer;"
+                                        {% if pattern.muted_bg_color %}
+                                        data-pattern-number="{{ pattern.number }}"
+                                        data-color-type="muted"
+                                        data-text-color="{{ pattern.muted_text_color }}"
+                                        data-border-color="{{ pattern.muted_border_color }}"
+                                        data-bg-color="{{ pattern.muted_bg_color }}"
+                                        {% endif %}>
+                                        {% if pattern.muted_bg_color %}
+                                        <span style="
+                                            background-color: {{ pattern.muted_bg_color }};
+                                            padding: 4px 8px;
+                                            border: 1px solid {{ pattern.muted_border_color }};
+                                            border-radius: 4px;
+                                            font-size: 13px;
+                                            color: {{ pattern.muted_text_color }};
+                                        ">サンプル</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endif %}
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <h6 class="mb-3 fw-bold mt-5">パターン17～24（背景色のみ: 8色）</h6>
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th style="width: 10%;">番号</th>
+                                    <th style="width: 45%;">パステル<br><small>（デフォルト）</small></th>
+                                    <th style="width: 45%;">くすみ色</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for pattern in color_patterns %}
+                                {% if pattern.number >= 17 and pattern.number <= 24 %}
+                                <tr>
+                                    <td class="fw-bold">{{ pattern.number }}</td>
+                                    <td class="pattern-preview-cell" style="cursor: pointer;"
+                                        data-pattern-number="{{ pattern.number }}"
+                                        data-color-type="pastel"
+                                        data-text-color="{{ pattern.text_color }}"
+                                        data-border-color="なし"
+                                        data-bg-color="{{ pattern.bg_color }}">
+                                        <span style="
+                                            background-color: {{ pattern.bg_color }};
+                                            padding: 4px 8px;
+                                            border: none;
+                                            border-radius: 4px;
+                                            font-size: 13px;
+                                            color: {{ pattern.text_color }};
+                                            display: inline-block;
+                                            min-width: 60px;
+                                        ">&nbsp;</span>
+                                    </td>
+                                    <td class="pattern-preview-cell" style="cursor: pointer;"
+                                        {% if pattern.muted_bg_color %}
+                                        data-pattern-number="{{ pattern.number }}"
+                                        data-color-type="muted"
+                                        data-text-color="{{ pattern.muted_text_color }}"
+                                        data-border-color="なし"
+                                        data-bg-color="{{ pattern.muted_bg_color }}"
+                                        {% endif %}>
+                                        {% if pattern.muted_bg_color %}
+                                        <span style="
+                                            background-color: {{ pattern.muted_bg_color }};
+                                            padding: 4px 8px;
+                                            border: none;
+                                            border-radius: 4px;
+                                            font-size: 13px;
+                                            color: {{ pattern.muted_text_color }};
+                                            display: inline-block;
+                                            min-width: 60px;
+                                        ">&nbsp;</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endif %}
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <h6 class="mb-3 fw-bold mt-5">パターン25（テーブルヘッダーの背景色）</h6>
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th style="width: 10%;">番号</th>
+                                    <th style="width: 45%;">パステル<br><small>（デフォルト）</small></th>
+                                    <th style="width: 45%;">くすみ色</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for pattern in color_patterns %}
+                                {% if pattern.number == 25 %}
+                                <tr>
+                                    <td class="fw-bold">{{ pattern.number }}</td>
+                                    <td class="pattern-preview-cell" style="cursor: pointer;"
+                                        data-pattern-number="{{ pattern.number }}"
+                                        data-color-type="pastel"
+                                        data-text-color="{{ pattern.text_color }}"
+                                        data-border-color="なし"
+                                        data-bg-color="{{ pattern.bg_color }}">
+                                        <span style="
+                                            background-color: {{ pattern.bg_color }};
+                                            padding: 4px 8px;
+                                            border: none;
+                                            border-radius: 4px;
+                                            font-size: 13px;
+                                            color: {{ pattern.text_color }};
+                                            display: inline-block;
+                                            min-width: 60px;
+                                        ">&nbsp;</span>
+                                    </td>
+                                    <td class="pattern-preview-cell" style="cursor: pointer;"
+                                        {% if pattern.muted_bg_color %}
+                                        data-pattern-number="{{ pattern.number }}"
+                                        data-color-type="muted"
+                                        data-text-color="{{ pattern.muted_text_color }}"
+                                        data-border-color="なし"
+                                        data-bg-color="{{ pattern.muted_bg_color }}"
+                                        {% endif %}>
+                                        {% if pattern.muted_bg_color %}
+                                        <span style="
+                                            background-color: {{ pattern.muted_bg_color }};
+                                            padding: 4px 8px;
+                                            border: none;
+                                            border-radius: 4px;
+                                            font-size: 13px;
+                                            color: {{ pattern.muted_text_color }};
+                                            display: inline-block;
+                                            min-width: 60px;
+                                        ">&nbsp;</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endif %}
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <h6 class="mb-3 fw-bold mt-5">パターン26〜34（アイコン用パステルカラー: 透明背景・枠線なし）</h6>
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th style="width: 10%;">番号</th>
+                                    <th style="width: 45%;">パステル<br><small>（デフォルト）</small></th>
+                                    <th style="width: 45%;">くすみ色</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="fw-bold">26</td>
+                                    <td class="pattern-preview-cell" style="cursor: pointer;"
+                                        data-pattern-number="26"
+                                        data-color-type="pastel"
+                                        data-text-color="#fff"
+                                        data-border-color="なし"
+                                        data-bg-color="rgba(153, 153, 153, 0.5)">
+                                        <span style="
+                                            background-color: rgba(153, 153, 153, 0.5);
+                                            padding: 4px 8px;
+                                            border: none;
+                                            border-radius: 4px;
+                                            font-size: 13px;
+                                            display: inline-block;
+                                            min-width: 60px;
+                                        ">&nbsp;</span>
+                                    </td>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">27</td>
+                                    <td class="pattern-preview-cell" style="cursor: pointer;"
+                                        data-pattern-number="27"
+                                        data-color-type="pastel"
+                                        data-text-color="#fff"
+                                        data-border-color="なし"
+                                        data-bg-color="rgba(13, 110, 253, 0.5)">
+                                        <span style="
+                                            background-color: rgba(13, 110, 253, 0.5);
+                                            padding: 4px 8px;
+                                            border: none;
+                                            border-radius: 4px;
+                                            font-size: 13px;
+                                            display: inline-block;
+                                            min-width: 60px;
+                                        ">&nbsp;</span>
+                                    </td>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">28</td>
+                                    <td class="pattern-preview-cell" style="cursor: pointer;"
+                                        data-pattern-number="28"
+                                        data-color-type="pastel"
+                                        data-text-color="#fff"
+                                        data-border-color="なし"
+                                        data-bg-color="rgba(25, 135, 84, 0.5)">
+                                        <span style="
+                                            background-color: rgba(25, 135, 84, 0.5);
+                                            padding: 4px 8px;
+                                            border: none;
+                                            border-radius: 4px;
+                                            font-size: 13px;
+                                            display: inline-block;
+                                            min-width: 60px;
+                                        ">&nbsp;</span>
+                                    </td>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">29</td>
+                                    <td class="pattern-preview-cell" style="cursor: pointer;"
+                                        data-pattern-number="29"
+                                        data-color-type="pastel"
+                                        data-text-color="#fff"
+                                        data-border-color="なし"
+                                        data-bg-color="rgba(253, 126, 20, 0.5)">
+                                        <span style="
+                                            background-color: rgba(253, 126, 20, 0.5);
+                                            padding: 4px 8px;
+                                            border: none;
+                                            border-radius: 4px;
+                                            font-size: 13px;
+                                            display: inline-block;
+                                            min-width: 60px;
+                                        ">&nbsp;</span>
+                                    </td>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">30</td>
+                                    <td class="pattern-preview-cell" style="cursor: pointer;"
+                                        data-pattern-number="30"
+                                        data-color-type="pastel"
+                                        data-text-color="#fff"
+                                        data-border-color="なし"
+                                        data-bg-color="rgba(111, 66, 193, 0.5)">
+                                        <span style="
+                                            background-color: rgba(111, 66, 193, 0.5);
+                                            padding: 4px 8px;
+                                            border: none;
+                                            border-radius: 4px;
+                                            font-size: 13px;
+                                            display: inline-block;
+                                            min-width: 60px;
+                                        ">&nbsp;</span>
+                                    </td>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">31</td>
+                                    <td class="pattern-preview-cell" style="cursor: pointer;"
+                                        data-pattern-number="31"
+                                        data-color-type="pastel"
+                                        data-text-color="#fff"
+                                        data-border-color="なし"
+                                        data-bg-color="rgba(220, 53, 69, 0.5)">
+                                        <span style="
+                                            background-color: rgba(220, 53, 69, 0.5);
+                                            padding: 4px 8px;
+                                            border: none;
+                                            border-radius: 4px;
+                                            font-size: 13px;
+                                            display: inline-block;
+                                            min-width: 60px;
+                                        ">&nbsp;</span>
+                                    </td>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">32</td>
+                                    <td class="pattern-preview-cell" style="cursor: pointer;"
+                                        data-pattern-number="32"
+                                        data-color-type="pastel"
+                                        data-text-color="#fff"
+                                        data-border-color="なし"
+                                        data-bg-color="rgba(214, 51, 132, 0.5)">
+                                        <span style="
+                                            background-color: rgba(214, 51, 132, 0.5);
+                                            padding: 4px 8px;
+                                            border: none;
+                                            border-radius: 4px;
+                                            font-size: 13px;
+                                            display: inline-block;
+                                            min-width: 60px;
+                                        ">&nbsp;</span>
+                                    </td>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">33</td>
+                                    <td class="pattern-preview-cell" style="cursor: pointer;"
+                                        data-pattern-number="33"
+                                        data-color-type="pastel"
+                                        data-text-color="#fff"
+                                        data-border-color="なし"
+                                        data-bg-color="rgba(255, 193, 7, 0.5)">
+                                        <span style="
+                                            background-color: rgba(255, 193, 7, 0.5);
+                                            padding: 4px 8px;
+                                            border: none;
+                                            border-radius: 4px;
+                                            font-size: 13px;
+                                            display: inline-block;
+                                            min-width: 60px;
+                                        ">&nbsp;</span>
+                                    </td>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">34</td>
+                                    <td class="pattern-preview-cell" style="cursor: pointer;"
+                                        data-pattern-number="34"
+                                        data-color-type="pastel"
+                                        data-text-color="#fff"
+                                        data-border-color="なし"
+                                        data-bg-color="rgba(210, 180, 140, 0.5)">
+                                        <span style="
+                                            background-color: rgba(210, 180, 140, 0.5);
+                                            padding: 4px 8px;
+                                            border: none;
+                                            border-radius: 4px;
+                                            font-size: 13px;
+                                            display: inline-block;
+                                            min-width: 60px;
+                                        ">&nbsp;</span>
+                                    </td>
+                                    <td></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                        </div>
+                        <!-- 複数色サブタブ終了 -->
+
+                        <!-- 単色サブタブ -->
+                        <div class="tab-pane tab-pane-bordered" id="single-color" role="tabpanel">
+                            <p class="text-muted mb-4">
+                                単色のカラーパターンです。淡い色から濃い色まで5段階の濃淡で作成されています。
+                            </p>
+
+                            <h6 class="mb-3 fw-bold">パターン0（通常時のボタン）</h6>
+                            <div class="table-responsive">
+                                <table class="table table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 6%;">番号</th>
+                                            <th style="width: 13.4%;">モノクロ</th>
+                                            <th style="width: 13.4%;">ブルー</th>
+                                            <th style="width: 13.4%;">グリーン</th>
+                                            <th style="width: 13.4%;">レッド</th>
+                                            <th style="width: 13.4%;">パープル</th>
+                                            <th style="width: 13.4%;">オレンジ</th>
+                                            <th style="width: 13.6%;">ティール</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td class="fw-bold">0</td>
+                                            {% for pattern in monochrome_patterns %}
+                                            {% if pattern.number == 0 %}
+                                            <td class="pattern-preview-cell" style="cursor: pointer;"
+                                                data-pattern-number="{{ pattern.number }}"
+                                                data-color-type="single-monochrome"
+                                                data-text-color="{{ pattern.text_color }}"
+                                                data-border-color="{{ pattern.border_color }}"
+                                                data-bg-color="{{ pattern.bg_color }}">
+                                                <span style="
+                                                    background-color: {{ pattern.bg_color }};
+                                                    padding: 4px 8px;
+                                                    {% if pattern.border_color != 'none' %}border: 1px solid {{ pattern.border_color }};{% endif %}
+                                                    border-radius: 4px;
+                                                    font-size: 13px;
+                                                    color: {{ pattern.text_color }};
+                                                ">{% if pattern.number < 11 %}サンプル{% else %}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{% endif %}</span>
+                                            </td>
+                                            {% endif %}
+                                            {% endfor %}
+                                            {% for pattern in blue_patterns %}
+                                            {% if pattern.number == 0 %}
+                                            <td class="pattern-preview-cell" style="cursor: pointer;"
+                                                data-pattern-number="{{ pattern.number }}"
+                                                data-color-type="single-blue"
+                                                data-text-color="{{ pattern.text_color }}"
+                                                data-border-color="{{ pattern.border_color }}"
+                                                data-bg-color="{{ pattern.bg_color }}">
+                                                <span style="
+                                                    background-color: {{ pattern.bg_color }};
+                                                    padding: 4px 8px;
+                                                    {% if pattern.border_color != 'none' %}border: 1px solid {{ pattern.border_color }};{% endif %}
+                                                    border-radius: 4px;
+                                                    font-size: 13px;
+                                                    color: {{ pattern.text_color }};
+                                                ">{% if pattern.number < 11 %}サンプル{% else %}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{% endif %}</span>
+                                            </td>
+                                            {% endif %}
+                                            {% endfor %}
+                                            {% for pattern in green_patterns %}
+                                            {% if pattern.number == 0 %}
+                                            <td class="pattern-preview-cell" style="cursor: pointer;"
+                                                data-pattern-number="{{ pattern.number }}"
+                                                data-color-type="single-green"
+                                                data-text-color="{{ pattern.text_color }}"
+                                                data-border-color="{{ pattern.border_color }}"
+                                                data-bg-color="{{ pattern.bg_color }}">
+                                                <span style="
+                                                    background-color: {{ pattern.bg_color }};
+                                                    padding: 4px 8px;
+                                                    {% if pattern.border_color != 'none' %}border: 1px solid {{ pattern.border_color }};{% endif %}
+                                                    border-radius: 4px;
+                                                    font-size: 13px;
+                                                    color: {{ pattern.text_color }};
+                                                ">{% if pattern.number < 11 %}サンプル{% else %}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{% endif %}</span>
+                                            </td>
+                                            {% endif %}
+                                            {% endfor %}
+                                            {% for pattern in red_patterns %}
+                                            {% if pattern.number == 0 %}
+                                            <td class="pattern-preview-cell" style="cursor: pointer;"
+                                                data-pattern-number="{{ pattern.number }}"
+                                                data-color-type="single-red"
+                                                data-text-color="{{ pattern.text_color }}"
+                                                data-border-color="{{ pattern.border_color }}"
+                                                data-bg-color="{{ pattern.bg_color }}">
+                                                <span style="
+                                                    background-color: {{ pattern.bg_color }};
+                                                    padding: 4px 8px;
+                                                    {% if pattern.border_color != 'none' %}border: 1px solid {{ pattern.border_color }};{% endif %}
+                                                    border-radius: 4px;
+                                                    font-size: 13px;
+                                                    color: {{ pattern.text_color }};
+                                                ">{% if pattern.number < 11 %}サンプル{% else %}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{% endif %}</span>
+                                            </td>
+                                            {% endif %}
+                                            {% endfor %}
+                                            {% for pattern in purple_patterns %}
+                                            {% if pattern.number == 0 %}
+                                            <td class="pattern-preview-cell" style="cursor: pointer;"
+                                                data-pattern-number="{{ pattern.number }}"
+                                                data-color-type="single-purple"
+                                                data-text-color="{{ pattern.text_color }}"
+                                                data-border-color="{{ pattern.border_color }}"
+                                                data-bg-color="{{ pattern.bg_color }}">
+                                                <span style="
+                                                    background-color: {{ pattern.bg_color }};
+                                                    padding: 4px 8px;
+                                                    {% if pattern.border_color != 'none' %}border: 1px solid {{ pattern.border_color }};{% endif %}
+                                                    border-radius: 4px;
+                                                    font-size: 13px;
+                                                    color: {{ pattern.text_color }};
+                                                ">{% if pattern.number < 11 %}サンプル{% else %}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{% endif %}</span>
+                                            </td>
+                                            {% endif %}
+                                            {% endfor %}
+                                            {% for pattern in orange_patterns %}
+                                            {% if pattern.number == 0 %}
+                                            <td class="pattern-preview-cell" style="cursor: pointer;"
+                                                data-pattern-number="{{ pattern.number }}"
+                                                data-color-type="single-orange"
+                                                data-text-color="{{ pattern.text_color }}"
+                                                data-border-color="{{ pattern.border_color }}"
+                                                data-bg-color="{{ pattern.bg_color }}">
+                                                <span style="
+                                                    background-color: {{ pattern.bg_color }};
+                                                    padding: 4px 8px;
+                                                    {% if pattern.border_color != 'none' %}border: 1px solid {{ pattern.border_color }};{% endif %}
+                                                    border-radius: 4px;
+                                                    font-size: 13px;
+                                                    color: {{ pattern.text_color }};
+                                                ">{% if pattern.number < 11 %}サンプル{% else %}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{% endif %}</span>
+                                            </td>
+                                            {% endif %}
+                                            {% endfor %}
+                                            {% for pattern in teal_patterns %}
+                                            {% if pattern.number == 0 %}
+                                            <td class="pattern-preview-cell" style="cursor: pointer;"
+                                                data-pattern-number="{{ pattern.number }}"
+                                                data-color-type="single-teal"
+                                                data-text-color="{{ pattern.text_color }}"
+                                                data-border-color="{{ pattern.border_color }}"
+                                                data-bg-color="{{ pattern.bg_color }}">
+                                                <span style="
+                                                    background-color: {{ pattern.bg_color }};
+                                                    padding: 4px 8px;
+                                                    {% if pattern.border_color != 'none' %}border: 1px solid {{ pattern.border_color }};{% endif %}
+                                                    border-radius: 4px;
+                                                    font-size: 13px;
+                                                    color: {{ pattern.text_color }};
+                                                ">{% if pattern.number < 11 %}サンプル{% else %}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{% endif %}</span>
+                                            </td>
+                                            {% endif %}
+                                            {% endfor %}
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <h6 class="mb-3 fw-bold mt-5">パターン1～5（枠線: 濃い色固定 + 背景色: 薄い色～濃い色の5段階）</h6>
+                            <div class="table-responsive">
+                                <table class="table table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 6%;">番号</th>
+                                            <th style="width: 13.4%;">モノクロ</th>
+                                            <th style="width: 13.4%;">ブルー</th>
+                                            <th style="width: 13.4%;">グリーン</th>
+                                            <th style="width: 13.4%;">レッド</th>
+                                            <th style="width: 13.4%;">パープル</th>
+                                            <th style="width: 13.4%;">オレンジ</th>
+                                            <th style="width: 13.6%;">ティール</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for i in pattern_ranges.range_1_5 %}
+                                        <tr>
+                                            <td class="fw-bold">{{ i }}</td>
+                                            {% for pattern in monochrome_patterns %}
+                                            {% if pattern.number == i %}
+                                            <td class="pattern-preview-cell" style="cursor: pointer;"
+                                                data-pattern-number="{{ pattern.number }}"
+                                                data-color-type="single-monochrome"
+                                                data-text-color="{{ pattern.text_color }}"
+                                                data-border-color="{{ pattern.border_color }}"
+                                                data-bg-color="{{ pattern.bg_color }}">
+                                                <span style="
+                                                    background-color: {{ pattern.bg_color }};
+                                                    padding: 4px 8px;
+                                                    {% if pattern.border_color != 'none' %}border: 1px solid {{ pattern.border_color }};{% endif %}
+                                                    border-radius: 4px;
+                                                    font-size: 13px;
+                                                    color: {{ pattern.text_color }};
+                                                ">{% if pattern.number < 11 %}サンプル{% else %}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{% endif %}</span>
+                                            </td>
+                                            {% endif %}
+                                            {% endfor %}
+                                            {% for pattern in blue_patterns %}
+                                            {% if pattern.number == i %}
+                                            <td class="pattern-preview-cell" style="cursor: pointer;"
+                                                data-pattern-number="{{ pattern.number }}"
+                                                data-color-type="single-blue"
+                                                data-text-color="{{ pattern.text_color }}"
+                                                data-border-color="{{ pattern.border_color }}"
+                                                data-bg-color="{{ pattern.bg_color }}">
+                                                <span style="
+                                                    background-color: {{ pattern.bg_color }};
+                                                    padding: 4px 8px;
+                                                    {% if pattern.border_color != 'none' %}border: 1px solid {{ pattern.border_color }};{% endif %}
+                                                    border-radius: 4px;
+                                                    font-size: 13px;
+                                                    color: {{ pattern.text_color }};
+                                                ">{% if pattern.number < 11 %}サンプル{% else %}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{% endif %}</span>
+                                            </td>
+                                            {% endif %}
+                                            {% endfor %}
+                                            {% for pattern in green_patterns %}
+                                            {% if pattern.number == i %}
+                                            <td class="pattern-preview-cell" style="cursor: pointer;"
+                                                data-pattern-number="{{ pattern.number }}"
+                                                data-color-type="single-green"
+                                                data-text-color="{{ pattern.text_color }}"
+                                                data-border-color="{{ pattern.border_color }}"
+                                                data-bg-color="{{ pattern.bg_color }}">
+                                                <span style="
+                                                    background-color: {{ pattern.bg_color }};
+                                                    padding: 4px 8px;
+                                                    {% if pattern.border_color != 'none' %}border: 1px solid {{ pattern.border_color }};{% endif %}
+                                                    border-radius: 4px;
+                                                    font-size: 13px;
+                                                    color: {{ pattern.text_color }};
+                                                ">{% if pattern.number < 11 %}サンプル{% else %}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{% endif %}</span>
+                                            </td>
+                                            {% endif %}
+                                            {% endfor %}
+                                            {% for pattern in red_patterns %}
+                                            {% if pattern.number == i %}
+                                            <td class="pattern-preview-cell" style="cursor: pointer;"
+                                                data-pattern-number="{{ pattern.number }}"
+                                                data-color-type="single-red"
+                                                data-text-color="{{ pattern.text_color }}"
+                                                data-border-color="{{ pattern.border_color }}"
+                                                data-bg-color="{{ pattern.bg_color }}">
+                                                <span style="
+                                                    background-color: {{ pattern.bg_color }};
+                                                    padding: 4px 8px;
+                                                    {% if pattern.border_color != 'none' %}border: 1px solid {{ pattern.border_color }};{% endif %}
+                                                    border-radius: 4px;
+                                                    font-size: 13px;
+                                                    color: {{ pattern.text_color }};
+                                                ">{% if pattern.number < 11 %}サンプル{% else %}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{% endif %}</span>
+                                            </td>
+                                            {% endif %}
+                                            {% endfor %}
+                                            {% for pattern in purple_patterns %}
+                                            {% if pattern.number == i %}
+                                            <td class="pattern-preview-cell" style="cursor: pointer;"
+                                                data-pattern-number="{{ pattern.number }}"
+                                                data-color-type="single-purple"
+                                                data-text-color="{{ pattern.text_color }}"
+                                                data-border-color="{{ pattern.border_color }}"
+                                                data-bg-color="{{ pattern.bg_color }}">
+                                                <span style="
+                                                    background-color: {{ pattern.bg_color }};
+                                                    padding: 4px 8px;
+                                                    {% if pattern.border_color != 'none' %}border: 1px solid {{ pattern.border_color }};{% endif %}
+                                                    border-radius: 4px;
+                                                    font-size: 13px;
+                                                    color: {{ pattern.text_color }};
+                                                ">{% if pattern.number < 11 %}サンプル{% else %}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{% endif %}</span>
+                                            </td>
+                                            {% endif %}
+                                            {% endfor %}
+                                            {% for pattern in orange_patterns %}
+                                            {% if pattern.number == i %}
+                                            <td class="pattern-preview-cell" style="cursor: pointer;"
+                                                data-pattern-number="{{ pattern.number }}"
+                                                data-color-type="single-orange"
+                                                data-text-color="{{ pattern.text_color }}"
+                                                data-border-color="{{ pattern.border_color }}"
+                                                data-bg-color="{{ pattern.bg_color }}">
+                                                <span style="
+                                                    background-color: {{ pattern.bg_color }};
+                                                    padding: 4px 8px;
+                                                    {% if pattern.border_color != 'none' %}border: 1px solid {{ pattern.border_color }};{% endif %}
+                                                    border-radius: 4px;
+                                                    font-size: 13px;
+                                                    color: {{ pattern.text_color }};
+                                                ">{% if pattern.number < 11 %}サンプル{% else %}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{% endif %}</span>
+                                            </td>
+                                            {% endif %}
+                                            {% endfor %}
+                                            {% for pattern in teal_patterns %}
+                                            {% if pattern.number == i %}
+                                            <td class="pattern-preview-cell" style="cursor: pointer;"
+                                                data-pattern-number="{{ pattern.number }}"
+                                                data-color-type="single-teal"
+                                                data-text-color="{{ pattern.text_color }}"
+                                                data-border-color="{{ pattern.border_color }}"
+                                                data-bg-color="{{ pattern.bg_color }}">
+                                                <span style="
+                                                    background-color: {{ pattern.bg_color }};
+                                                    padding: 4px 8px;
+                                                    {% if pattern.border_color != 'none' %}border: 1px solid {{ pattern.border_color }};{% endif %}
+                                                    border-radius: 4px;
+                                                    font-size: 13px;
+                                                    color: {{ pattern.text_color }};
+                                                ">{% if pattern.number < 11 %}サンプル{% else %}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{% endif %}</span>
+                                            </td>
+                                            {% endif %}
+                                            {% endfor %}
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <h6 class="mb-3 fw-bold mt-5">パターン6～10（文字色・枠線: 濃い色 + 背景色: 1～5と同じ）</h6>
+                            <div class="table-responsive">
+                                <table class="table table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 6%;">番号</th>
+                                            <th style="width: 13.4%;">モノクロ</th>
+                                            <th style="width: 13.4%;">ブルー</th>
+                                            <th style="width: 13.4%;">グリーン</th>
+                                            <th style="width: 13.4%;">レッド</th>
+                                            <th style="width: 13.4%;">パープル</th>
+                                            <th style="width: 13.4%;">オレンジ</th>
+                                            <th style="width: 13.6%;">ティール</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for num in pattern_ranges.range_6_10 %}
+                                        <tr>
+                                            <td class="fw-bold">{{ num }}</td>
+                                            {% for pattern in monochrome_patterns %}
+                                            {% if pattern.number == num %}
+                                            <td class="pattern-preview-cell" style="cursor: pointer;"
+                                                data-pattern-number="{{ pattern.number }}"
+                                                data-color-type="single-monochrome"
+                                                data-text-color="{{ pattern.text_color }}"
+                                                data-border-color="{{ pattern.border_color }}"
+                                                data-bg-color="{{ pattern.bg_color }}">
+                                                <span style="
+                                                    background-color: {{ pattern.bg_color }};
+                                                    padding: 4px 8px;
+                                                    {% if pattern.border_color != 'none' %}border: 1px solid {{ pattern.border_color }};{% endif %}
+                                                    border-radius: 4px;
+                                                    font-size: 13px;
+                                                    color: {{ pattern.text_color }};
+                                                ">{% if pattern.number < 11 %}サンプル{% else %}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{% endif %}</span>
+                                            </td>
+                                            {% endif %}
+                                            {% endfor %}
+                                            {% for pattern in blue_patterns %}
+                                            {% if pattern.number == num %}
+                                            <td class="pattern-preview-cell" style="cursor: pointer;"
+                                                data-pattern-number="{{ pattern.number }}"
+                                                data-color-type="single-blue"
+                                                data-text-color="{{ pattern.text_color }}"
+                                                data-border-color="{{ pattern.border_color }}"
+                                                data-bg-color="{{ pattern.bg_color }}">
+                                                <span style="
+                                                    background-color: {{ pattern.bg_color }};
+                                                    padding: 4px 8px;
+                                                    {% if pattern.border_color != 'none' %}border: 1px solid {{ pattern.border_color }};{% endif %}
+                                                    border-radius: 4px;
+                                                    font-size: 13px;
+                                                    color: {{ pattern.text_color }};
+                                                ">{% if pattern.number < 11 %}サンプル{% else %}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{% endif %}</span>
+                                            </td>
+                                            {% endif %}
+                                            {% endfor %}
+                                            {% for pattern in green_patterns %}
+                                            {% if pattern.number == num %}
+                                            <td class="pattern-preview-cell" style="cursor: pointer;"
+                                                data-pattern-number="{{ pattern.number }}"
+                                                data-color-type="single-green"
+                                                data-text-color="{{ pattern.text_color }}"
+                                                data-border-color="{{ pattern.border_color }}"
+                                                data-bg-color="{{ pattern.bg_color }}">
+                                                <span style="
+                                                    background-color: {{ pattern.bg_color }};
+                                                    padding: 4px 8px;
+                                                    {% if pattern.border_color != 'none' %}border: 1px solid {{ pattern.border_color }};{% endif %}
+                                                    border-radius: 4px;
+                                                    font-size: 13px;
+                                                    color: {{ pattern.text_color }};
+                                                ">{% if pattern.number < 11 %}サンプル{% else %}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{% endif %}</span>
+                                            </td>
+                                            {% endif %}
+                                            {% endfor %}
+                                            {% for pattern in red_patterns %}
+                                            {% if pattern.number == num %}
+                                            <td class="pattern-preview-cell" style="cursor: pointer;"
+                                                data-pattern-number="{{ pattern.number }}"
+                                                data-color-type="single-red"
+                                                data-text-color="{{ pattern.text_color }}"
+                                                data-border-color="{{ pattern.border_color }}"
+                                                data-bg-color="{{ pattern.bg_color }}">
+                                                <span style="
+                                                    background-color: {{ pattern.bg_color }};
+                                                    padding: 4px 8px;
+                                                    {% if pattern.border_color != 'none' %}border: 1px solid {{ pattern.border_color }};{% endif %}
+                                                    border-radius: 4px;
+                                                    font-size: 13px;
+                                                    color: {{ pattern.text_color }};
+                                                ">{% if pattern.number < 11 %}サンプル{% else %}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{% endif %}</span>
+                                            </td>
+                                            {% endif %}
+                                            {% endfor %}
+                                            {% for pattern in purple_patterns %}
+                                            {% if pattern.number == num %}
+                                            <td class="pattern-preview-cell" style="cursor: pointer;"
+                                                data-pattern-number="{{ pattern.number }}"
+                                                data-color-type="single-purple"
+                                                data-text-color="{{ pattern.text_color }}"
+                                                data-border-color="{{ pattern.border_color }}"
+                                                data-bg-color="{{ pattern.bg_color }}">
+                                                <span style="
+                                                    background-color: {{ pattern.bg_color }};
+                                                    padding: 4px 8px;
+                                                    {% if pattern.border_color != 'none' %}border: 1px solid {{ pattern.border_color }};{% endif %}
+                                                    border-radius: 4px;
+                                                    font-size: 13px;
+                                                    color: {{ pattern.text_color }};
+                                                ">{% if pattern.number < 11 %}サンプル{% else %}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{% endif %}</span>
+                                            </td>
+                                            {% endif %}
+                                            {% endfor %}
+                                            {% for pattern in orange_patterns %}
+                                            {% if pattern.number == num %}
+                                            <td class="pattern-preview-cell" style="cursor: pointer;"
+                                                data-pattern-number="{{ pattern.number }}"
+                                                data-color-type="single-orange"
+                                                data-text-color="{{ pattern.text_color }}"
+                                                data-border-color="{{ pattern.border_color }}"
+                                                data-bg-color="{{ pattern.bg_color }}">
+                                                <span style="
+                                                    background-color: {{ pattern.bg_color }};
+                                                    padding: 4px 8px;
+                                                    {% if pattern.border_color != 'none' %}border: 1px solid {{ pattern.border_color }};{% endif %}
+                                                    border-radius: 4px;
+                                                    font-size: 13px;
+                                                    color: {{ pattern.text_color }};
+                                                ">{% if pattern.number < 11 %}サンプル{% else %}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{% endif %}</span>
+                                            </td>
+                                            {% endif %}
+                                            {% endfor %}
+                                            {% for pattern in teal_patterns %}
+                                            {% if pattern.number == num %}
+                                            <td class="pattern-preview-cell" style="cursor: pointer;"
+                                                data-pattern-number="{{ pattern.number }}"
+                                                data-color-type="single-teal"
+                                                data-text-color="{{ pattern.text_color }}"
+                                                data-border-color="{{ pattern.border_color }}"
+                                                data-bg-color="{{ pattern.bg_color }}">
+                                                <span style="
+                                                    background-color: {{ pattern.bg_color }};
+                                                    padding: 4px 8px;
+                                                    {% if pattern.border_color != 'none' %}border: 1px solid {{ pattern.border_color }};{% endif %}
+                                                    border-radius: 4px;
+                                                    font-size: 13px;
+                                                    color: {{ pattern.text_color }};
+                                                ">{% if pattern.number < 11 %}サンプル{% else %}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{% endif %}</span>
+                                            </td>
+                                            {% endif %}
+                                            {% endfor %}
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <h6 class="mb-3 fw-bold mt-5">パターン11～15（背景色のみ: 1～5と同じ背景色、枠線なし）</h6>
+                            <div class="table-responsive">
+                                <table class="table table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 6%;">番号</th>
+                                            <th style="width: 13.4%;">モノクロ</th>
+                                            <th style="width: 13.4%;">ブルー</th>
+                                            <th style="width: 13.4%;">グリーン</th>
+                                            <th style="width: 13.4%;">レッド</th>
+                                            <th style="width: 13.4%;">パープル</th>
+                                            <th style="width: 13.6%;">オレンジ</th>
+                                            <th style="width: 13.4%;">ティール</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for num in pattern_ranges.range_11_15 %}
+                                        <tr>
+                                            <td class="fw-bold">{{ num }}</td>
+                                            {% for pattern in monochrome_patterns %}
+                                            {% if pattern.number == num %}
+                                            <td class="pattern-preview-cell" style="cursor: pointer;"
+                                                data-pattern-number="{{ pattern.number }}"
+                                                data-color-type="single-monochrome"
+                                                data-text-color="{{ pattern.text_color }}"
+                                                data-border-color="{{ pattern.border_color }}"
+                                                data-bg-color="{{ pattern.bg_color }}">
+                                                <span style="
+                                                    background-color: {{ pattern.bg_color }};
+                                                    padding: 4px 8px;
+                                                    {% if pattern.border_color != 'none' %}border: 1px solid {{ pattern.border_color }};{% endif %}
+                                                    border-radius: 4px;
+                                                    font-size: 13px;
+                                                    color: {{ pattern.text_color }};
+                                                ">{% if pattern.number < 11 %}サンプル{% else %}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{% endif %}</span>
+                                            </td>
+                                            {% endif %}
+                                            {% endfor %}
+                                            {% for pattern in blue_patterns %}
+                                            {% if pattern.number == num %}
+                                            <td class="pattern-preview-cell" style="cursor: pointer;"
+                                                data-pattern-number="{{ pattern.number }}"
+                                                data-color-type="single-blue"
+                                                data-text-color="{{ pattern.text_color }}"
+                                                data-border-color="{{ pattern.border_color }}"
+                                                data-bg-color="{{ pattern.bg_color }}">
+                                                <span style="
+                                                    background-color: {{ pattern.bg_color }};
+                                                    padding: 4px 8px;
+                                                    {% if pattern.border_color != 'none' %}border: 1px solid {{ pattern.border_color }};{% endif %}
+                                                    border-radius: 4px;
+                                                    font-size: 13px;
+                                                    color: {{ pattern.text_color }};
+                                                ">{% if pattern.number < 11 %}サンプル{% else %}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{% endif %}</span>
+                                            </td>
+                                            {% endif %}
+                                            {% endfor %}
+                                            {% for pattern in green_patterns %}
+                                            {% if pattern.number == num %}
+                                            <td class="pattern-preview-cell" style="cursor: pointer;"
+                                                data-pattern-number="{{ pattern.number }}"
+                                                data-color-type="single-green"
+                                                data-text-color="{{ pattern.text_color }}"
+                                                data-border-color="{{ pattern.border_color }}"
+                                                data-bg-color="{{ pattern.bg_color }}">
+                                                <span style="
+                                                    background-color: {{ pattern.bg_color }};
+                                                    padding: 4px 8px;
+                                                    {% if pattern.border_color != 'none' %}border: 1px solid {{ pattern.border_color }};{% endif %}
+                                                    border-radius: 4px;
+                                                    font-size: 13px;
+                                                    color: {{ pattern.text_color }};
+                                                ">{% if pattern.number < 11 %}サンプル{% else %}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{% endif %}</span>
+                                            </td>
+                                            {% endif %}
+                                            {% endfor %}
+                                            {% for pattern in red_patterns %}
+                                            {% if pattern.number == num %}
+                                            <td class="pattern-preview-cell" style="cursor: pointer;"
+                                                data-pattern-number="{{ pattern.number }}"
+                                                data-color-type="single-red"
+                                                data-text-color="{{ pattern.text_color }}"
+                                                data-border-color="{{ pattern.border_color }}"
+                                                data-bg-color="{{ pattern.bg_color }}">
+                                                <span style="
+                                                    background-color: {{ pattern.bg_color }};
+                                                    padding: 4px 8px;
+                                                    {% if pattern.border_color != 'none' %}border: 1px solid {{ pattern.border_color }};{% endif %}
+                                                    border-radius: 4px;
+                                                    font-size: 13px;
+                                                    color: {{ pattern.text_color }};
+                                                ">{% if pattern.number < 11 %}サンプル{% else %}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{% endif %}</span>
+                                            </td>
+                                            {% endif %}
+                                            {% endfor %}
+                                            {% for pattern in purple_patterns %}
+                                            {% if pattern.number == num %}
+                                            <td class="pattern-preview-cell" style="cursor: pointer;"
+                                                data-pattern-number="{{ pattern.number }}"
+                                                data-color-type="single-purple"
+                                                data-text-color="{{ pattern.text_color }}"
+                                                data-border-color="{{ pattern.border_color }}"
+                                                data-bg-color="{{ pattern.bg_color }}">
+                                                <span style="
+                                                    background-color: {{ pattern.bg_color }};
+                                                    padding: 4px 8px;
+                                                    {% if pattern.border_color != 'none' %}border: 1px solid {{ pattern.border_color }};{% endif %}
+                                                    border-radius: 4px;
+                                                    font-size: 13px;
+                                                    color: {{ pattern.text_color }};
+                                                ">{% if pattern.number < 11 %}サンプル{% else %}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{% endif %}</span>
+                                            </td>
+                                            {% endif %}
+                                            {% endfor %}
+                                            {% for pattern in orange_patterns %}
+                                            {% if pattern.number == num %}
+                                            <td class="pattern-preview-cell" style="cursor: pointer;"
+                                                data-pattern-number="{{ pattern.number }}"
+                                                data-color-type="single-orange"
+                                                data-text-color="{{ pattern.text_color }}"
+                                                data-border-color="{{ pattern.border_color }}"
+                                                data-bg-color="{{ pattern.bg_color }}">
+                                                <span style="
+                                                    background-color: {{ pattern.bg_color }};
+                                                    padding: 4px 8px;
+                                                    {% if pattern.border_color != 'none' %}border: 1px solid {{ pattern.border_color }};{% endif %}
+                                                    border-radius: 4px;
+                                                    font-size: 13px;
+                                                    color: {{ pattern.text_color }};
+                                                ">{% if pattern.number < 11 %}サンプル{% else %}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{% endif %}</span>
+                                            </td>
+                                            {% endif %}
+                                            {% endfor %}
+                                            {% for pattern in teal_patterns %}
+                                            {% if pattern.number == num %}
+                                            <td class="pattern-preview-cell" style="cursor: pointer;"
+                                                data-pattern-number="{{ pattern.number }}"
+                                                data-color-type="single-teal"
+                                                data-text-color="{{ pattern.text_color }}"
+                                                data-border-color="{{ pattern.border_color }}"
+                                                data-bg-color="{{ pattern.bg_color }}">
+                                                <span style="
+                                                    background-color: {{ pattern.bg_color }};
+                                                    padding: 4px 8px;
+                                                    {% if pattern.border_color != 'none' %}border: 1px solid {{ pattern.border_color }};{% endif %}
+                                                    border-radius: 4px;
+                                                    font-size: 13px;
+                                                    color: {{ pattern.text_color }};
+                                                ">{% if pattern.number < 11 %}サンプル{% else %}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{% endif %}</span>
+                                            </td>
+                                            {% endif %}
+                                            {% endfor %}
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <h6 class="mb-3 fw-bold mt-5">パターン16（テーブルヘッダー）</h6>
+                            <div class="table-responsive">
+                                <table class="table table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 6%;">番号</th>
+                                            <th style="width: 13.4%;">モノクロ</th>
+                                            <th style="width: 13.4%;">ブルー</th>
+                                            <th style="width: 13.4%;">グリーン</th>
+                                            <th style="width: 13.4%;">レッド</th>
+                                            <th style="width: 13.4%;">パープル</th>
+                                            <th style="width: 13.6%;">オレンジ</th>
+                                            <th style="width: 13.4%;">ティール</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td class="fw-bold">16</td>
+                                            {% for pattern in monochrome_patterns %}
+                                            {% if pattern.number == 16 %}
+                                            <td class="pattern-preview-cell" style="cursor: pointer;"
+                                                data-pattern-number="{{ pattern.number }}"
+                                                data-color-type="single-monochrome"
+                                                data-text-color="{{ pattern.text_color }}"
+                                                data-border-color="{{ pattern.border_color }}"
+                                                data-bg-color="{{ pattern.bg_color }}">
+                                                <span style="
+                                                    background-color: {{ pattern.bg_color }};
+                                                    padding: 4px 8px;
+                                                    {% if pattern.border_color != 'none' %}border: 1px solid {{ pattern.border_color }};{% endif %}
+                                                    border-radius: 4px;
+                                                    font-size: 13px;
+                                                    color: {{ pattern.text_color }};
+                                                ">{% if pattern.number < 11 %}サンプル{% else %}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{% endif %}</span>
+                                            </td>
+                                            {% endif %}
+                                            {% endfor %}
+                                            {% for pattern in blue_patterns %}
+                                            {% if pattern.number == 16 %}
+                                            <td class="pattern-preview-cell" style="cursor: pointer;"
+                                                data-pattern-number="{{ pattern.number }}"
+                                                data-color-type="single-blue"
+                                                data-text-color="{{ pattern.text_color }}"
+                                                data-border-color="{{ pattern.border_color }}"
+                                                data-bg-color="{{ pattern.bg_color }}">
+                                                <span style="
+                                                    background-color: {{ pattern.bg_color }};
+                                                    padding: 4px 8px;
+                                                    {% if pattern.border_color != 'none' %}border: 1px solid {{ pattern.border_color }};{% endif %}
+                                                    border-radius: 4px;
+                                                    font-size: 13px;
+                                                    color: {{ pattern.text_color }};
+                                                ">{% if pattern.number < 11 %}サンプル{% else %}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{% endif %}</span>
+                                            </td>
+                                            {% endif %}
+                                            {% endfor %}
+                                            {% for pattern in green_patterns %}
+                                            {% if pattern.number == 16 %}
+                                            <td class="pattern-preview-cell" style="cursor: pointer;"
+                                                data-pattern-number="{{ pattern.number }}"
+                                                data-color-type="single-green"
+                                                data-text-color="{{ pattern.text_color }}"
+                                                data-border-color="{{ pattern.border_color }}"
+                                                data-bg-color="{{ pattern.bg_color }}">
+                                                <span style="
+                                                    background-color: {{ pattern.bg_color }};
+                                                    padding: 4px 8px;
+                                                    {% if pattern.border_color != 'none' %}border: 1px solid {{ pattern.border_color }};{% endif %}
+                                                    border-radius: 4px;
+                                                    font-size: 13px;
+                                                    color: {{ pattern.text_color }};
+                                                ">{% if pattern.number < 11 %}サンプル{% else %}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{% endif %}</span>
+                                            </td>
+                                            {% endif %}
+                                            {% endfor %}
+                                            {% for pattern in red_patterns %}
+                                            {% if pattern.number == 16 %}
+                                            <td class="pattern-preview-cell" style="cursor: pointer;"
+                                                data-pattern-number="{{ pattern.number }}"
+                                                data-color-type="single-red"
+                                                data-text-color="{{ pattern.text_color }}"
+                                                data-border-color="{{ pattern.border_color }}"
+                                                data-bg-color="{{ pattern.bg_color }}">
+                                                <span style="
+                                                    background-color: {{ pattern.bg_color }};
+                                                    padding: 4px 8px;
+                                                    {% if pattern.border_color != 'none' %}border: 1px solid {{ pattern.border_color }};{% endif %}
+                                                    border-radius: 4px;
+                                                    font-size: 13px;
+                                                    color: {{ pattern.text_color }};
+                                                ">{% if pattern.number < 11 %}サンプル{% else %}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{% endif %}</span>
+                                            </td>
+                                            {% endif %}
+                                            {% endfor %}
+                                            {% for pattern in purple_patterns %}
+                                            {% if pattern.number == 16 %}
+                                            <td class="pattern-preview-cell" style="cursor: pointer;"
+                                                data-pattern-number="{{ pattern.number }}"
+                                                data-color-type="single-purple"
+                                                data-text-color="{{ pattern.text_color }}"
+                                                data-border-color="{{ pattern.border_color }}"
+                                                data-bg-color="{{ pattern.bg_color }}">
+                                                <span style="
+                                                    background-color: {{ pattern.bg_color }};
+                                                    padding: 4px 8px;
+                                                    {% if pattern.border_color != 'none' %}border: 1px solid {{ pattern.border_color }};{% endif %}
+                                                    border-radius: 4px;
+                                                    font-size: 13px;
+                                                    color: {{ pattern.text_color }};
+                                                ">{% if pattern.number < 11 %}サンプル{% else %}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{% endif %}</span>
+                                            </td>
+                                            {% endif %}
+                                            {% endfor %}
+                                            {% for pattern in orange_patterns %}
+                                            {% if pattern.number == 16 %}
+                                            <td class="pattern-preview-cell" style="cursor: pointer;"
+                                                data-pattern-number="{{ pattern.number }}"
+                                                data-color-type="single-orange"
+                                                data-text-color="{{ pattern.text_color }}"
+                                                data-border-color="{{ pattern.border_color }}"
+                                                data-bg-color="{{ pattern.bg_color }}">
+                                                <span style="
+                                                    background-color: {{ pattern.bg_color }};
+                                                    padding: 4px 8px;
+                                                    {% if pattern.border_color != 'none' %}border: 1px solid {{ pattern.border_color }};{% endif %}
+                                                    border-radius: 4px;
+                                                    font-size: 13px;
+                                                    color: {{ pattern.text_color }};
+                                                ">{% if pattern.number < 11 %}サンプル{% else %}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{% endif %}</span>
+                                            </td>
+                                            {% endif %}
+                                            {% endfor %}
+                                            {% for pattern in teal_patterns %}
+                                            {% if pattern.number == 16 %}
+                                            <td class="pattern-preview-cell" style="cursor: pointer;"
+                                                data-pattern-number="{{ pattern.number }}"
+                                                data-color-type="single-teal"
+                                                data-text-color="{{ pattern.text_color }}"
+                                                data-border-color="{{ pattern.border_color }}"
+                                                data-bg-color="{{ pattern.bg_color }}">
+                                                <span style="
+                                                    background-color: {{ pattern.bg_color }};
+                                                    padding: 4px 8px;
+                                                    {% if pattern.border_color != 'none' %}border: 1px solid {{ pattern.border_color }};{% endif %}
+                                                    border-radius: 4px;
+                                                    font-size: 13px;
+                                                    color: {{ pattern.text_color }};
+                                                ">{% if pattern.number < 11 %}サンプル{% else %}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{% endif %}</span>
+                                            </td>
+                                            {% endif %}
+                                            {% endfor %}
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                        </div>
+
+                        <!-- 3～4色サブタブ -->
+                        <div class="tab-pane tab-pane-bordered" id="limited-color" role="tabpanel">
+                            <p class="text-muted mb-4">
+                                暖色系と寒色系の限定カラーパターンです。
+                            </p>
+
+                            <!-- 暖色パターン -->
+                            <h5 class="mb-3 fw-bold mt-4">暖色パターン</h5>
+
+                            <h6 class="mb-3 fw-bold">パターン0（通常時のボタン）</h6>
+                            <div class="table-responsive">
+                                <table class="table table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 10%;">番号</th>
+                                            <th style="width: 90%;">プレビュー</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td class="fw-bold">0</td>
+                                            <td class="pattern-preview-cell" style="cursor: pointer;"
+                                                data-pattern-number="0"
+                                                data-color-type="warm"
+                                                data-text-color="#6c757d"
+                                                data-border-color="#6c757d"
+                                                data-bg-color="#ffffff">
+                                                <span style="
+                                                    background-color: #ffffff;
+                                                    padding: 4px 8px;
+                                                    border: 1px solid #6c757d;
+                                                    border-radius: 4px;
+                                                    font-size: 13px;
+                                                    color: #6c757d;
+                                                ">サンプル</span>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <h6 class="mb-3 fw-bold mt-5">パターン1～8（枠線: グレー固定 + 背景色: 暖色8色）</h6>
+                            <div class="table-responsive">
+                                <table class="table table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 10%;">番号</th>
+                                            <th style="width: 90%;">プレビュー</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for pattern in warm_color_patterns %}
+                                        {% if pattern.number >= 1 and pattern.number <= 8 %}
+                                        <tr>
+                                            <td class="fw-bold">{{ pattern.number }}</td>
+                                            <td class="pattern-preview-cell" style="cursor: pointer;"
+                                                data-pattern-number="{{ pattern.number }}"
+                                                data-color-type="warm"
+                                                data-text-color="{{ pattern.text_color }}"
+                                                data-border-color="{{ pattern.border_color }}"
+                                                data-bg-color="{{ pattern.bg_color }}">
+                                                <span style="
+                                                    background-color: {{ pattern.bg_color }};
+                                                    padding: 4px 8px;
+                                                    border: 1px solid {{ pattern.border_color }};
+                                                    border-radius: 4px;
+                                                    font-size: 13px;
+                                                    color: {{ pattern.text_color }};
+                                                ">サンプル</span>
+                                            </td>
+                                        </tr>
+                                        {% endif %}
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <h6 class="mb-3 fw-bold mt-5">パターン9～16（枠線色 + 背景色: 暖色8色セット）</h6>
+                            <div class="table-responsive">
+                                <table class="table table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 10%;">番号</th>
+                                            <th style="width: 90%;">プレビュー</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for pattern in warm_color_patterns %}
+                                        {% if pattern.number >= 9 and pattern.number <= 16 %}
+                                        <tr>
+                                            <td class="fw-bold">{{ pattern.number }}</td>
+                                            <td class="pattern-preview-cell" style="cursor: pointer;"
+                                                data-pattern-number="{{ pattern.number }}"
+                                                data-color-type="warm"
+                                                data-text-color="{{ pattern.text_color }}"
+                                                data-border-color="{{ pattern.border_color }}"
+                                                data-bg-color="{{ pattern.bg_color }}">
+                                                <span style="
+                                                    background-color: {{ pattern.bg_color }};
+                                                    padding: 4px 8px;
+                                                    border: 1px solid {{ pattern.border_color }};
+                                                    border-radius: 4px;
+                                                    font-size: 13px;
+                                                    color: {{ pattern.text_color }};
+                                                ">サンプル</span>
+                                            </td>
+                                        </tr>
+                                        {% endif %}
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <h6 class="mb-3 fw-bold mt-5">パターン17～24（背景色のみ: 枠線なし）</h6>
+                            <div class="table-responsive">
+                                <table class="table table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 10%;">番号</th>
+                                            <th style="width: 90%;">プレビュー</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for pattern in warm_color_patterns %}
+                                        {% if pattern.number >= 17 and pattern.number <= 24 %}
+                                        <tr>
+                                            <td class="fw-bold">{{ pattern.number }}</td>
+                                            <td class="pattern-preview-cell" style="cursor: pointer;"
+                                                data-pattern-number="{{ pattern.number }}"
+                                                data-color-type="warm"
+                                                data-text-color="{{ pattern.text_color }}"
+                                                data-border-color="{{ pattern.border_color }}"
+                                                data-bg-color="{{ pattern.bg_color }}">
+                                                <span style="
+                                                    background-color: {{ pattern.bg_color }};
+                                                    padding: 4px 8px;
+                                                    {% if pattern.border_color != 'none' %}border: 1px solid {{ pattern.border_color }};{% endif %}
+                                                    border-radius: 4px;
+                                                    font-size: 13px;
+                                                    color: {{ pattern.text_color }};
+                                                ">サンプル</span>
+                                            </td>
+                                        </tr>
+                                        {% endif %}
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <h6 class="mb-3 fw-bold mt-5">パターン25（テーブルヘッダー）</h6>
+                            <div class="table-responsive">
+                                <table class="table table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 10%;">番号</th>
+                                            <th style="width: 90%;">プレビュー</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for pattern in warm_color_patterns %}
+                                        {% if pattern.number == 25 %}
+                                        <tr>
+                                            <td class="fw-bold">25</td>
+                                            <td class="pattern-preview-cell" style="cursor: pointer;"
+                                                data-pattern-number="25"
+                                                data-color-type="warm"
+                                                data-text-color="{{ pattern.text_color }}"
+                                                data-border-color="{{ pattern.border_color }}"
+                                                data-bg-color="{{ pattern.bg_color }}">
+                                                <span style="
+                                                    background-color: {{ pattern.bg_color }};
+                                                    padding: 4px 8px;
+                                                    {% if pattern.border_color != 'none' %}border: 1px solid {{ pattern.border_color }};{% endif %}
+                                                    border-radius: 4px;
+                                                    font-size: 13px;
+                                                    color: {{ pattern.text_color }};
+                                                ">ヘッダー</span>
+                                            </td>
+                                        </tr>
+                                        {% endif %}
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- 寒色パターン -->
+                            <h5 class="mb-3 fw-bold mt-5">寒色パターン</h5>
+
+                            <h6 class="mb-3 fw-bold">パターン0（通常時のボタン）</h6>
+                            <div class="table-responsive">
+                                <table class="table table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 10%;">番号</th>
+                                            <th style="width: 90%;">プレビュー</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td class="fw-bold">0</td>
+                                            <td class="pattern-preview-cell" style="cursor: pointer;"
+                                                data-pattern-number="0"
+                                                data-color-type="cool"
+                                                data-text-color="#6c757d"
+                                                data-border-color="#6c757d"
+                                                data-bg-color="#ffffff">
+                                                <span style="
+                                                    background-color: #ffffff;
+                                                    padding: 4px 8px;
+                                                    border: 1px solid #6c757d;
+                                                    border-radius: 4px;
+                                                    font-size: 13px;
+                                                    color: #6c757d;
+                                                ">サンプル</span>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <h6 class="mb-3 fw-bold mt-5">パターン1～8（枠線: グレー固定 + 背景色: 寒色8色）</h6>
+                            <div class="table-responsive">
+                                <table class="table table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 10%;">番号</th>
+                                            <th style="width: 90%;">プレビュー</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for pattern in cool_color_patterns %}
+                                        {% if pattern.number >= 1 and pattern.number <= 8 %}
+                                        <tr>
+                                            <td class="fw-bold">{{ pattern.number }}</td>
+                                            <td class="pattern-preview-cell" style="cursor: pointer;"
+                                                data-pattern-number="{{ pattern.number }}"
+                                                data-color-type="cool"
+                                                data-text-color="{{ pattern.text_color }}"
+                                                data-border-color="{{ pattern.border_color }}"
+                                                data-bg-color="{{ pattern.bg_color }}">
+                                                <span style="
+                                                    background-color: {{ pattern.bg_color }};
+                                                    padding: 4px 8px;
+                                                    border: 1px solid {{ pattern.border_color }};
+                                                    border-radius: 4px;
+                                                    font-size: 13px;
+                                                    color: {{ pattern.text_color }};
+                                                ">サンプル</span>
+                                            </td>
+                                        </tr>
+                                        {% endif %}
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <h6 class="mb-3 fw-bold mt-5">パターン9～16（枠線色 + 背景色: 寒色8色セット）</h6>
+                            <div class="table-responsive">
+                                <table class="table table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 10%;">番号</th>
+                                            <th style="width: 90%;">プレビュー</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for pattern in cool_color_patterns %}
+                                        {% if pattern.number >= 9 and pattern.number <= 16 %}
+                                        <tr>
+                                            <td class="fw-bold">{{ pattern.number }}</td>
+                                            <td class="pattern-preview-cell" style="cursor: pointer;"
+                                                data-pattern-number="{{ pattern.number }}"
+                                                data-color-type="cool"
+                                                data-text-color="{{ pattern.text_color }}"
+                                                data-border-color="{{ pattern.border_color }}"
+                                                data-bg-color="{{ pattern.bg_color }}">
+                                                <span style="
+                                                    background-color: {{ pattern.bg_color }};
+                                                    padding: 4px 8px;
+                                                    border: 1px solid {{ pattern.border_color }};
+                                                    border-radius: 4px;
+                                                    font-size: 13px;
+                                                    color: {{ pattern.text_color }};
+                                                ">サンプル</span>
+                                            </td>
+                                        </tr>
+                                        {% endif %}
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <h6 class="mb-3 fw-bold mt-5">パターン17～24（背景色のみ: 枠線なし）</h6>
+                            <div class="table-responsive">
+                                <table class="table table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 10%;">番号</th>
+                                            <th style="width: 90%;">プレビュー</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for pattern in cool_color_patterns %}
+                                        {% if pattern.number >= 17 and pattern.number <= 24 %}
+                                        <tr>
+                                            <td class="fw-bold">{{ pattern.number }}</td>
+                                            <td class="pattern-preview-cell" style="cursor: pointer;"
+                                                data-pattern-number="{{ pattern.number }}"
+                                                data-color-type="cool"
+                                                data-text-color="{{ pattern.text_color }}"
+                                                data-border-color="{{ pattern.border_color }}"
+                                                data-bg-color="{{ pattern.bg_color }}">
+                                                <span style="
+                                                    background-color: {{ pattern.bg_color }};
+                                                    padding: 4px 8px;
+                                                    {% if pattern.border_color != 'none' %}border: 1px solid {{ pattern.border_color }};{% endif %}
+                                                    border-radius: 4px;
+                                                    font-size: 13px;
+                                                    color: {{ pattern.text_color }};
+                                                ">サンプル</span>
+                                            </td>
+                                        </tr>
+                                        {% endif %}
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <h6 class="mb-3 fw-bold mt-5">パターン25（テーブルヘッダー）</h6>
+                            <div class="table-responsive">
+                                <table class="table table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 10%;">番号</th>
+                                            <th style="width: 90%;">プレビュー</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for pattern in cool_color_patterns %}
+                                        {% if pattern.number == 25 %}
+                                        <tr>
+                                            <td class="fw-bold">25</td>
+                                            <td class="pattern-preview-cell" style="cursor: pointer;"
+                                                data-pattern-number="25"
+                                                data-color-type="cool"
+                                                data-text-color="{{ pattern.text_color }}"
+                                                data-border-color="{{ pattern.border_color }}"
+                                                data-bg-color="{{ pattern.bg_color }}">
+                                                <span style="
+                                                    background-color: {{ pattern.bg_color }};
+                                                    padding: 4px 8px;
+                                                    {% if pattern.border_color != 'none' %}border: 1px solid {{ pattern.border_color }};{% endif %}
+                                                    border-radius: 4px;
+                                                    font-size: 13px;
+                                                    color: {{ pattern.text_color }};
+                                                ">ヘッダー</span>
+                                            </td>
+                                        </tr>
+                                        {% endif %}
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                        </div>
+
+                    </div>
+                    <!-- サブタブコンテンツ終了 -->
+
+                </div>
+
+                <!-- アニメーションパターンタブ -->
+                <div class="tab-pane" id="animation-pattern" role="tabpanel">
+                    <p class="text-muted mb-4">
+                        ホバー時にアニメーション効果を持つボタンのパターンです。カーソルを合わせると色が変化し、浮き上がる効果があります。
+                    </p>
+
+                    {% for pattern in animation_patterns %}
+                    <h6 class="mb-3 fw-bold">アニメーションパターン{{ pattern.number }}</h6>
+                    <p class="text-muted mb-3">
+                        {{ pattern.description }}
+                    </p>
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th style="width: 10%;">番号</th>
+                                    <th style="width: 30%;">プレビュー<br><small>（カーソルを合わせて確認）</small></th>
+                                    <th style="width: 60%;">アニメーション効果</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="animation-pattern-row" data-pattern="{{ pattern.number }}" style="cursor: pointer;">
+                                    <td class="fw-bold">{{ pattern.number }}</td>
+                                    <td>
+                                        <button class="btn-animation-demo" style="
+                                            background-color: {{ pattern.normal.bg_color }};
+                                            padding: 11px 12px;
+                                            border: 1px solid {{ pattern.normal.border_color }};
+                                            border-radius: 4px;
+                                            font-size: 13px;
+                                            color: {{ pattern.normal.text_color }};
+                                            cursor: pointer;
+                                            transition: all {{ pattern.transition }};
+                                        ">サンプル</button>
+                                    </td>
+                                    <td>
+                                        <ul class="mb-0">
+                                            <li>トランジション時間: {{ pattern.transition }}</li>
+                                            <li>ホバー時に{{ pattern.animation }}の効果</li>
+                                        </ul>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="alert alert-info mt-3">
+                        <i class="fas fa-info-circle"></i> <strong>クリックでコードをコピー：</strong> 行をクリックすると、CSSコードがクリップボードにコピーされます。
+                    </div>
+                    {% endfor %}
+
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.table code {
+    background-color: #f8f9fa;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 0.875rem;
+}
+
+.table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+/* アニメーションパターンのスタイル */
+.btn-animation-demo {
+    transition: all 0.2s ease;
+}
+.btn-animation-demo:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.animation-pattern-row {
+    cursor: pointer;
+}
+
+.copy-toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background-color: #e8f5e8;
+    color: #198754;
+    border: 1px solid #198754;
+    padding: 12px 24px;
+    border-radius: 4px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    z-index: 9999;
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // カラーパターンデータ
+    const colorPatterns = {
+        0: { text: '#6c757d', border: '#6c757d', bg: '#ffffff' },
+        1: { text: '#000000', border: '#999999', bg: '#f5f5f5' },
+        2: { text: '#000000', border: '#999999', bg: '#e3f2fd' },
+        3: { text: '#000000', border: '#999999', bg: '#e8f5e8' },
+        4: { text: '#000000', border: '#999999', bg: '#fff3e0' },
+        5: { text: '#000000', border: '#999999', bg: '#f3e5f5' },
+        6: { text: '#000000', border: '#999999', bg: '#ffebee' },
+        7: { text: '#000000', border: '#999999', bg: '#fff9c4' },
+        8: { text: '#000000', border: '#999999', bg: '#f5f0e8' },
+        9: { text: '#6c757d', border: '#6c757d', bg: '#f5f5f5' },
+        10: { text: '#0d6efd', border: '#0d6efd', bg: '#e3f2fd' },
+        11: { text: '#198754', border: '#198754', bg: '#e8f5e8' },
+        12: { text: '#fd7e14', border: '#fd7e14', bg: '#fff3e0' },
+        13: { text: '#6f42c1', border: '#6f42c1', bg: '#f3e5f5' },
+        14: { text: '#d63384', border: '#d63384', bg: '#ffebee' },
+        15: { text: '#ffc107', border: '#ffc107', bg: '#fff9c4' },
+        16: { text: '#d2b48c', border: '#d2b48c', bg: '#f5f0e8' },
+        17: { text: '#000000', border: 'なし', bg: '#f5f5f5' },
+        18: { text: '#000000', border: 'なし', bg: '#e3f2fd' },
+        19: { text: '#000000', border: 'なし', bg: '#e8f5e8' },
+        20: { text: '#000000', border: 'なし', bg: '#fff3e0' },
+        21: { text: '#000000', border: 'なし', bg: '#f3e5f5' },
+        22: { text: '#000000', border: 'なし', bg: '#ffebee' },
+        23: { text: '#000000', border: 'なし', bg: '#fff9c4' },
+        24: { text: '#000000', border: 'なし', bg: '#f5f0e8' },
+        25: { text: '#000000', border: 'なし', bg: '#f8f9fa' }
+    };
+
+    // カラーパターンのプレビュークリック処理
+    const patternPreviewCells = document.querySelectorAll('.pattern-preview-cell');
+    patternPreviewCells.forEach(cell => {
+        cell.addEventListener('click', function() {
+            const patternNumber = parseInt(this.getAttribute('data-pattern-number'));
+            const colorType = this.getAttribute('data-color-type');
+            const textColor = this.getAttribute('data-text-color');
+            const borderColor = this.getAttribute('data-border-color');
+            const bgColor = this.getAttribute('data-bg-color');
+
+            // data属性がない場合はスキップ
+            if (!patternNumber && patternNumber !== 0) {
+                return;
+            }
+
+            // カラータイプ名を判定
+            let colorTypeName;
+            if (colorType === 'muted') {
+                colorTypeName = 'くすみ色';
+            } else if (colorType === 'single-monochrome') {
+                colorTypeName = 'モノクロ';
+            } else if (colorType === 'single-blue') {
+                colorTypeName = 'ブルー';
+            } else if (colorType === 'single-green') {
+                colorTypeName = 'グリーン';
+            } else if (colorType === 'single-red') {
+                colorTypeName = 'レッド';
+            } else if (colorType === 'single-purple') {
+                colorTypeName = 'パープル';
+            } else if (colorType === 'single-orange') {
+                colorTypeName = 'オレンジ';
+            } else if (colorType === 'single-teal') {
+                colorTypeName = 'ティール';
+            } else if (colorType === 'warm') {
+                colorTypeName = '暖色';
+            } else if (colorType === 'cool') {
+                colorTypeName = '寒色';
+            } else {
+                colorTypeName = 'パステル';
+            }
+
+            let copyText = `${colorTypeName}\n`;
+            copyText += `パターン${patternNumber}\n`;
+
+            // パターン0はアニメーションコードをコピー
+            if (patternNumber == 0) {
+                copyText = `/* アニメーションパターン0 - 利用者一覧と同じホバー効果 */\n`;
+                copyText += `transition: all 0.2s ease;\n\n`;
+                copyText += `/* ホバー時のアニメーション */\n`;
+                copyText += `.btn:hover {\n`;
+                copyText += `    transform: translateY(-1px);\n`;
+                copyText += `    box-shadow: 0 2px 4px rgba(0,0,0,0.1);\n`;
+                copyText += `}`;
+            }
+            // パターン17以上は背景色のみ
+            else if (patternNumber >= 17) {
+                copyText += `背景色: ${bgColor}`;
+            } else {
+                copyText += `文字色: ${textColor}\n`;
+                copyText += `枠線色: ${borderColor}\n`;
+                copyText += `背景色: ${bgColor}`;
+            }
+
+            // クリップボードにコピー
+            navigator.clipboard.writeText(copyText).then(() => {
+                showCopyToast(`${colorTypeName} パターン${patternNumber}の情報をコピーしました`);
+            }).catch(err => {
+                console.error('コピーに失敗:', err);
+                alert('クリップボードへのコピーに失敗しました');
+            });
+        });
+    });
+
+    // カラー一覧のプレビュークリック処理
+    const colorPreviewCells = document.querySelectorAll('.color-preview-cell');
+    colorPreviewCells.forEach(cell => {
+        cell.addEventListener('click', function() {
+            const itemName = this.getAttribute('data-name');
+            const colorType = this.getAttribute('data-color-type');
+            const bgColor = this.getAttribute('data-bg-color');
+            const borderColor = this.getAttribute('data-border-color');
+            const textColor = this.getAttribute('data-text-color');
+
+            // data属性がない場合はスキップ
+            if (!itemName) {
+                return;
+            }
+
+            const colorTypeName = colorType === 'muted' ? 'くすみ色' : 'パステル';
+            let copyText = `${colorTypeName}\n`;
+            copyText += `${itemName}\n`;
+            copyText += `背景色: ${bgColor}\n`;
+            copyText += `枠線色: ${borderColor}\n`;
+            copyText += `文字色: ${textColor}`;
+
+            // クリップボードにコピー
+            navigator.clipboard.writeText(copyText).then(() => {
+                showCopyToast(`${colorTypeName} ${itemName}の色情報をコピーしました`);
+            }).catch(err => {
+                console.error('コピーに失敗:', err);
+                alert('クリップボードへのコピーに失敗しました');
+            });
+        });
+    });
+
+    // アニメーションパターン行のクリック処理
+    const animationPatternRows = document.querySelectorAll('.animation-pattern-row');
+
+    animationPatternRows.forEach(row => {
+        row.addEventListener('click', function(e) {
+            // ボタンのクリックは処理しない（デモのため）
+            if (e.target.tagName === 'BUTTON') {
+                return;
+            }
+
+            const patternNumber = this.getAttribute('data-pattern');
+            let copyText = `/* アニメーションパターン${patternNumber} */\n`;
+            copyText += `transition: all 0.2s ease;\n\n`;
+            copyText += `/* ホバー時のアニメーション */\n`;
+            copyText += `.btn:hover {\n`;
+            copyText += `    transform: translateY(-1px);\n`;
+            copyText += `    box-shadow: 0 2px 4px rgba(0,0,0,0.1);\n`;
+            copyText += `}`;
+
+            // クリップボードにコピー
+            navigator.clipboard.writeText(copyText).then(() => {
+                showCopyToast(`アニメーションパターン${patternNumber}のコードをコピーしました`);
+            }).catch(err => {
+                console.error('コピーに失敗:', err);
+                alert('クリップボードへのコピーに失敗しました');
+            });
+        });
+    });
+
+    // コピー完了トーストを表示
+    function showCopyToast(message) {
+        const toast = document.createElement('div');
+        toast.className = 'copy-toast';
+        toast.innerHTML = '<i class="fas fa-check-circle me-2"></i>' + message;
+        document.body.appendChild(toast);
+
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateX(400px)';
+            setTimeout(() => {
+                document.body.removeChild(toast);
+            }, 300);
+        }, 2000);
+    }
+});
+</script>
+{% endblock %}

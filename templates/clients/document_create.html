@@ -1,0 +1,1142 @@
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+
+{% block title %}{{ document_name }} - {{ client.name }}様 - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="mb-4">
+                <!-- タイトル行 -->
+                <div style="margin-bottom: 2rem;">
+                    <h1 style="font-size: clamp(1.2rem, 3vw, 2rem); margin: 0; word-break: keep-all; overflow-wrap: break-word;">
+                        <i class="fas fa-file-alt"></i> {{ document_name }}
+                    </h1>
+                </div>
+                <!-- 利用者名と戻るボタンの行 -->
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="text-muted" style="font-size: 1.2rem; font-weight: 500;">
+                        <i class="fas fa-user"></i> {{ client.name }}様
+                    </div>
+                    <div>
+                        <button type="button" class="btn btn-outline-secondary btn-back" onclick="goBack()" style="transition: all 0.2s ease;">
+                            <i class="fas fa-arrow-left"></i> 戻る
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 書類作成フォーム -->
+    <div class="row">
+        <div class="col-12">
+            <form method="post" id="documentForm">
+                {% csrf_token %}
+                <input type="hidden" name="action" id="actionField" value="">
+
+
+                <!-- 利用者基本情報（アコーディオン） -->
+                <div class="accordion mb-4" id="basicInfoAccordion">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="basicInfoHeading">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#basicInfoCollapse" aria-expanded="false" aria-controls="basicInfoCollapse">
+                                <i class="fas fa-user-circle me-2"></i>
+                                <strong>利用者基本情報（自動反映）</strong>
+                                <small class="text-muted ms-2">※利用者データから自動入力・必要に応じて編集可能</small>
+                            </button>
+                        </h2>
+                        <div id="basicInfoCollapse" class="accordion-collapse collapse" aria-labelledby="basicInfoHeading" data-bs-parent="#basicInfoAccordion">
+                            <div class="accordion-body">
+                                <!-- 氏名・フリガナ・生年月日（横並び） -->
+                                <div class="row g-3 mb-3">
+                                    <div class="col-md-4">
+                                        <label class="form-label">氏名 <span class="text-danger">*</span></label>
+                                        <input type="text" name="client_name" class="form-control" value="{{ initial_data.client_name|default:client.name }}" required>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">ふりがな <span class="text-danger">*</span></label>
+                                        <input type="text" name="client_furigana" class="form-control" value="{{ initial_data.client_furigana|default:client.furigana }}" required placeholder="ひらがなで入力">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">生年月日 <span class="text-danger">*</span></label>
+                                        <input type="date" name="client_birth_date" class="form-control" value="{% if initial_data.client_birth_date %}{{ initial_data.client_birth_date }}{% else %}{{ client.birth_date|date:'Y-m-d' }}{% endif %}" required>
+                                    </div>
+                                </div>
+
+                                <!-- 住所（新規追加） -->
+                                <div class="row g-3 mb-3">
+                                    <div class="col-12">
+                                        <label class="form-label">住所 <span class="text-danger">*</span></label>
+                                        <input type="text" name="client_address" class="form-control" value="{{ initial_data.client_address|default:client.address }}" required placeholder="住所を入力してください">
+                                    </div>
+                                </div>
+                                <!-- 被保険者番号・担当ケアマネ（横並び） -->
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">介護保険被保険者番号 <span class="text-danger">*</span></label>
+                                        <input type="text" name="client_insurance_number" class="form-control" value="{{ initial_data.client_insurance_number|default:client.insurance_number }}" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">ケアマネ担当者名 <span class="text-danger">*</span></label>
+                                        <input type="text" name="care_manager_name" class="form-control" placeholder="担当ケアマネジャー名を入力" required value="{% if user.is_authenticated %}{{ user.profile.get_full_name }}{% endif %}">
+                                        <small class="text-muted">※ログインユーザーから自動入力・必要に応じて編集可能</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 手動入力項目 -->
+                <div class="card mb-4">
+                    <div class="card-header d-flex align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-edit me-2"></i>入力項目（手動入力）</h5>
+                        <small class="text-muted ms-2">※以下の項目をご入力ください</small>
+                    </div>
+                    <div class="card-body">
+                        {% if document_type == 'kyotaku_preventive_service_plan_request' %}
+                        <!-- 介護予防支援事業者（介護予防版のみ） -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-12">
+                                <label class="form-label">介護予防サービス計画の作成を依頼（変更）する介護予防支援事業者 <span class="text-danger">*</span></label>
+                                <div class="d-flex flex-column gap-2" style="width: fit-content;">
+                                    <select name="provider_category" id="provider_category" class="form-select" style="width: 400px;">
+                                        <option value="">事業者種別を選択</option>
+                                        <option value="anoutsu" {% if initial_data.provider_category == 'anoutsu' %}selected{% endif %}>居宅介護支援事業所　安濃津ろまん</option>
+                                        <option value="tsu" {% if initial_data.provider_category == 'tsu' %}selected{% endif %}>地域包括支援センター（津市）</option>
+                                        <option value="other" {% if initial_data.provider_category == 'other' %}selected{% endif %}>地域包括支援センター（津市以外）</option>
+                                        <option value="kengai" {% if initial_data.provider_category == 'kengai' %}selected{% endif %}>地域包括支援センター（県外）</option>
+                                    </select>
+                                    <select name="preventive_support_provider" id="preventive_support_provider" class="form-select" style="width: 400px; {% if not initial_data.provider_category or initial_data.provider_category == 'anoutsu' or initial_data.provider_category == 'kengai' %}display: none;{% endif %}" required>
+                                        <option value="">選択してください</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 地域包括支援センター詳細情報（地域包括支援センター選択時のみ表示） -->
+                        <div id="houkatsu_detail_section" class="accordion" style="display: none; margin: 0.5rem 0 1rem 0;">
+                            <div class="accordion-item" style="border: none; background-color: #f8f9fa; border-radius: 0.5rem;">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#houkatsuDetailCollapse" aria-expanded="false" aria-controls="houkatsuDetailCollapse" style="background-color: #f8f9fa; padding: 0.5rem 1rem; color: #333;">
+                                        <span id="houkatsu_status_icon" class="me-2"></span>事業所情報
+                                    </button>
+                                </h2>
+                                <div id="houkatsuDetailCollapse" class="accordion-collapse collapse">
+                                    <div class="accordion-body row g-3" style="padding: 0.5rem 1rem 1rem 1rem;">
+                                        <!-- 1行目：事業所名（県外のみ）と事業所番号 -->
+                                        <div class="col-md-6" id="kengai_provider_name_section" style="display: none;">
+                                            <label class="form-label">事業所名 <span class="text-danger">*</span></label>
+                                            <input type="text" name="preventive_support_provider_manual" id="preventive_support_provider_manual" class="form-control" value="{{ initial_data.preventive_support_provider|default:'' }}" placeholder="事業所名を入力">
+                                        </div>
+                                        <div class="col-md-4" id="office_number_section">
+                                            <label class="form-label">事業所番号 <span class="text-danger">*</span></label>
+                                            <input type="text" name="houkatsu_office_number" id="houkatsu_office_number" class="form-control" value="{{ initial_data.houkatsu_office_number|default:'' }}" placeholder="事業所番号を入力">
+                                        </div>
+                                        <!-- 2行目：所在地 -->
+                                        <div class="col-12">
+                                            <label class="form-label">所在地 <span class="text-danger">*</span></label>
+                                            <div class="d-flex gap-2">
+                                                <div class="input-group" style="width: 140px; flex-shrink: 0;">
+                                                    <span class="input-group-text">〒</span>
+                                                    <input type="text" name="houkatsu_postal_code" id="houkatsu_postal_code" class="form-control" value="{{ initial_data.houkatsu_postal_code|default:'' }}" placeholder="000-0000" maxlength="8" style="width: 90px;">
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <input type="text" name="houkatsu_address" id="houkatsu_address" class="form-control" value="{{ initial_data.houkatsu_address|default:'' }}" placeholder="住所を入力">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <!-- 3行目：電話番号と担当者氏名 -->
+                                        <div class="col-md-4">
+                                            <label class="form-label">電話番号 <span class="text-danger">*</span></label>
+                                            <input type="text" name="houkatsu_phone" id="houkatsu_phone" class="form-control" value="{{ initial_data.houkatsu_phone|default:'' }}" placeholder="電話番号を入力">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label" id="houkatsu_staff_name_label">担当者氏名 <small class="text-muted" id="staff_name_optional">（空白でも可）</small><span class="text-danger" id="staff_name_required" style="display: none;">*</span></label>
+                                            <input type="text" name="houkatsu_staff_name" id="houkatsu_staff_name" class="form-control" value="{{ initial_data.houkatsu_staff_name|default:'' }}" placeholder="担当者氏名を入力">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 介護予防支援を受託する居宅介護支援事業者（安濃津ろまん以外選択時のみ表示） -->
+                        <div id="jutaku_section" class="row g-3 mb-3" style="display: none; margin-top: 1.5rem;">
+                            <div class="col-12">
+                                <label class="form-label">介護予防支援を受託する居宅介護支援事業者</label>
+                                <div class="d-flex flex-column gap-2" style="width: fit-content;">
+                                    <select name="jutaku_provider" id="jutaku_provider" class="form-select" style="width: 400px;">
+                                        <option value="">選択してください</option>
+                                        <option value="anoutsu_roman" {% if initial_data.jutaku_provider == 'anoutsu_roman' or not initial_data.jutaku_provider %}selected{% endif %}>居宅介護支援事業所　安濃津ろまん</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 受託事業者詳細情報（安濃津ろまん選択時に表示） -->
+                        <div id="jutaku_detail_section" class="accordion" style="display: none; margin: 0.5rem 0 1rem 0;">
+                            <div class="accordion-item" style="border: none; background-color: #f8f9fa; border-radius: 0.5rem;">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#jutakuDetailCollapse" aria-expanded="false" aria-controls="jutakuDetailCollapse" style="background-color: #f8f9fa; padding: 0.5rem 1rem; color: #333;">
+                                        <span id="jutaku_status_icon" class="me-2"></span>事業所情報
+                                    </button>
+                                </h2>
+                                <div id="jutakuDetailCollapse" class="accordion-collapse collapse">
+                                    <div class="accordion-body row g-3" style="padding: 0.5rem 1rem 1rem 1rem;">
+                                        <div class="col-md-4">
+                                            <label class="form-label">事業所番号</label>
+                                            <input type="text" name="jutaku_office_number" id="jutaku_office_number" class="form-control" value="{{ initial_data.jutaku_office_number|default:'' }}" readonly>
+                                        </div>
+                                        <div class="col-12">
+                                            <label class="form-label">所在地</label>
+                                            <div class="d-flex gap-2">
+                                                <div class="input-group" style="width: 140px; flex-shrink: 0;">
+                                                    <span class="input-group-text">〒</span>
+                                                    <input type="text" name="jutaku_postal_code" id="jutaku_postal_code" class="form-control" value="{{ initial_data.jutaku_postal_code|default:'' }}" readonly style="width: 90px;">
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <input type="text" name="jutaku_address" id="jutaku_address" class="form-control" value="{{ initial_data.jutaku_address|default:'' }}" readonly>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">電話番号</label>
+                                            <input type="text" name="jutaku_phone" id="jutaku_phone" class="form-control" value="{{ initial_data.jutaku_phone|default:'' }}" readonly>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">担当者氏名 <span class="text-danger">*</span></label>
+                                            <input type="text" name="jutaku_staff_name" id="jutaku_staff_name" class="form-control" value="{{ initial_data.jutaku_staff_name|default:'' }}" placeholder="担当者氏名を入力">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 区切り線 -->
+                        <div style="border-top: 1px solid #dee2e6; width: 50%; margin: 1.5rem 0;"></div>
+                        {% endif %}
+
+                        <!-- 届出を行う区分 -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-12">
+                                <label class="form-label">届出を行う区分 <span class="text-danger">*</span></label>
+                                <div class="mt-1">
+                                    <small class="text-muted">現在ケアマネがいる場合は「変更」、いない場合は「新規」を選択</small>
+                                </div>
+                                <div class="mt-2">
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" name="notification_type" id="notification_new" value="new" style="border-radius: 3px;" {% if initial_data.notification_type and 'new' in initial_data.notification_type %}checked{% endif %}>
+                                        <label class="form-check-label" for="notification_new">
+                                            新規（現在ケアマネジャーがいない）
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" name="notification_type" id="notification_change" value="change" style="border-radius: 3px;" {% if initial_data.notification_type and 'change' in initial_data.notification_type %}checked{% endif %}>
+                                        <label class="form-check-label" for="notification_change">
+                                            変更（現在のケアマネジャーから変更）
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 区切り線 -->
+                        <div style="border-top: 1px solid #dee2e6; width: 50%; margin: 1.5rem 0;"></div>
+
+                        <!-- 依頼事由 -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-12">
+                                {% if document_type == 'kyotaku_preventive_service_plan_request' %}
+                                <!-- 介護予防版 -->
+                                <label class="form-label">居宅（介護予防）サービス計画の作成を依頼（変更）する事由 <span class="text-danger">*</span></label>
+                                <div class="mt-2">
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" name="request_reason" id="reason_new" value="new_or_change" style="border-radius: 3px;" {% if initial_data.reason_new_or_change %}checked{% endif %}>
+                                        <label class="form-check-label" for="reason_new">
+                                            新規または住所変更に伴う介護予防事業所変更のため
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" name="request_reason" id="reason_jutaku_change" value="jutaku_change" style="border-radius: 3px;" {% if initial_data.reason_jutaku_change %}checked{% endif %}>
+                                        <label class="form-check-label" for="reason_jutaku_change">
+                                            受託する居宅介護支援事業者変更（追加・削除）のため
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" name="request_reason" id="reason_level_change" value="level_change" style="border-radius: 3px;" {% if initial_data.reason_level_change %}checked{% endif %}>
+                                        <label class="form-check-label" for="reason_level_change">
+                                            要介護から要支援へ変更のため
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" name="request_reason" id="reason_provisional" value="provisional_different" style="border-radius: 3px;" {% if initial_data.reason_provisional_different %}checked{% endif %}>
+                                        <label class="form-check-label" for="reason_provisional">
+                                            暫定での届出と認定結果が異なるため
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" name="request_reason" id="reason_other" value="other" style="border-radius: 3px;" {% if initial_data.reason_other %}checked{% endif %}>
+                                        <label class="form-check-label" for="reason_other">
+                                            その他
+                                        </label>
+                                    </div>
+                                    <div id="other_reason_input" style="{% if initial_data.reason_other %}display: block;{% else %}display: none;{% endif %}" class="mt-3">
+                                        <label class="form-label">その他の事由（具体的に） <small class="text-muted">※全角21文字まで</small></label>
+                                        <div style="width: 300px;">
+                                            <input type="text" name="other_reason_detail" id="other_reason_detail" class="form-control" placeholder="具体的な事由を入力" value="{{ initial_data.other_reason_detail|default:'' }}" maxlength="21">
+                                            <div class="text-end mt-1"><small class="text-muted"><span id="other_reason_count">0</span>/21文字</small></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% else %}
+                                <!-- 居宅版 -->
+                                <label class="form-label">居宅サービス計画の作成を依頼（変更）する事由 <span class="text-danger">*</span></label>
+                                <div class="mt-2">
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" name="request_reason" id="reason_new" value="new_or_change" style="border-radius: 3px;" {% if initial_data.reason_new_or_change %}checked{% endif %}>
+                                        <label class="form-check-label" for="reason_new">
+                                            新規または事業所変更のため
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" name="request_reason" id="reason_level_change" value="level_change" style="border-radius: 3px;" {% if initial_data.reason_level_change %}checked{% endif %}>
+                                        <label class="form-check-label" for="reason_level_change">
+                                            要支援から要介護へ変更のため
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" name="request_reason" id="reason_provisional" value="provisional_different" style="border-radius: 3px;" {% if initial_data.reason_provisional_different %}checked{% endif %}>
+                                        <label class="form-check-label" for="reason_provisional">
+                                            暫定での届出と認定結果が異なるため
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" name="request_reason" id="reason_other" value="other" style="border-radius: 3px;" {% if initial_data.reason_other %}checked{% endif %}>
+                                        <label class="form-check-label" for="reason_other">
+                                            その他
+                                        </label>
+                                    </div>
+                                    <div id="other_reason_input" style="{% if initial_data.reason_other %}display: block;{% else %}display: none;{% endif %}" class="mt-3">
+                                        <label class="form-label">その他の事由（具体的に）</label>
+                                        <input type="text" name="other_reason_detail" id="other_reason_detail" class="form-control" placeholder="具体的な事由を入力してください" value="{{ initial_data.other_reason_detail|default:'' }}">
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- 区切り線 -->
+                        <div style="border-top: 1px solid #dee2e6; width: 50%; margin: 1.5rem 0;"></div>
+
+                        <!-- 有効開始（変更）日 -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-12">
+                                <label class="form-label">有効開始（変更）日 <span class="text-danger">*</span></label>
+                                <div class="mt-1">
+                                    <small class="text-muted">サービス開始予定日を入力してください</small>
+                                </div>
+                                <div class="mt-2">
+                                    <input type="date" name="effective_start_date" class="form-control" required style="max-width: 200px;" value="{{ initial_data.effective_start_date|default:'' }}">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 区切り線 -->
+                        <div style="border-top: 1px solid #dee2e6; width: 50%; margin: 1.5rem 0;"></div>
+
+                        <!-- 介護保険負担割合証の交付について -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-12">
+                                <label class="form-label">介護保険負担割合証の交付について</label>
+                                <div class="mt-1">
+                                    <small class="text-muted">※現在有効な負担割合証が発行されておらず暫定ケアプランにおいてサービスを開始する場合に限り、いずれかに☑をしてください。</small>
+                                </div>
+                                <div class="mt-3">
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" name="burden_delivery_method" id="burden_care_manager" value="care_manager" style="border-radius: 3px;" {% if initial_data.burden_delivery_method == 'care_manager' %}checked{% endif %}>
+                                        <label class="form-check-label" for="burden_care_manager">
+                                            ケアプランを作成依頼する事業者が受領することに同意します。
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" name="burden_delivery_method" id="burden_mail" value="mail" style="border-radius: 3px;" {% if initial_data.burden_delivery_method == 'mail' %}checked{% endif %}>
+                                        <label class="form-check-label" for="burden_mail">
+                                            自宅への郵送を希望します。
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" name="burden_delivery_method" id="burden_with_result" value="with_result" style="border-radius: 3px;" {% if initial_data.burden_delivery_method == 'with_result' %}checked{% endif %}>
+                                        <label class="form-check-label" for="burden_with_result">
+                                            認定結果と同時に受領することを希望します。
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+
+
+
+
+                <!-- アクションボタン -->
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <button type="button" class="btn btn-outline-secondary btn-back px-4 py-2" onclick="goBack()" style="transition: all 0.2s ease;">
+                                    <i class="fas fa-arrow-left me-1"></i> 戻る
+                                </button>
+                            </div>
+                            <div>
+                                <button type="button" class="btn btn-outline-secondary excel-btn px-4 py-2 me-2" onclick="excelDocument()" style="transition: all 0.2s ease;">
+                                    <i class="fas fa-file-excel me-1"></i> Excel出力
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary save-btn px-5 py-2" onclick="saveDocument()" style="transition: all 0.2s ease;">
+                                    <i class="fas fa-save me-1"></i> 保存して戻る
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// 戻るボタンの機能
+function goBack() {
+    if (confirm('入力中のデータがすべて失われます。本当に戻りますか？')) {
+        // 利用者一覧ページに戻る
+        window.location.href = "{% url 'client_list' %}";
+    }
+}
+
+// シンプルなJavaScript関数
+function saveDocument() {
+    console.log('保存ボタンがクリックされました');
+    if (validateForm()) {
+        document.getElementById('actionField').value = 'save';
+        document.getElementById('documentForm').submit();
+    }
+}
+
+function excelDocument() {
+    console.log('Excel出力ボタンがクリックされました');
+    if (validateForm()) {
+        document.getElementById('actionField').value = 'excel';
+        const form = document.getElementById('documentForm');
+        form.target = '_self';  // 同じタブでダウンロード
+        form.submit();
+    }
+}
+
+
+// バリデーション関数
+function validateForm() {
+    // 必須項目のチェック
+    const clientName = document.querySelector('input[name="client_name"]').value;
+    const careManagerName = document.querySelector('input[name="care_manager_name"]').value;
+    const notificationType = document.querySelector('input[name="notification_type"]:checked');
+    const requestReason = document.querySelector('input[name="request_reason"]:checked');
+    const effectiveDate = document.querySelector('input[name="effective_start_date"]').value;
+
+    // 介護予防版の事業者チェック
+    const providerCategorySelect = document.getElementById('provider_category');
+    const providerSelect = document.getElementById('preventive_support_provider');
+
+    if (providerCategorySelect) {
+        const category = providerCategorySelect.value;
+        if (!category) {
+            alert('介護予防支援事業者を選択してください。');
+            return false;
+        }
+        // 安濃津ろまん・県外以外の場合、第2プルダウンの選択をチェック
+        if (category !== 'anoutsu' && category !== 'kengai' && providerSelect && !providerSelect.value) {
+            alert('事業所を選択してください。');
+            return false;
+        }
+        // 県外の場合、手入力欄のチェック
+        if (category === 'kengai') {
+            const manualInput = document.getElementById('preventive_support_provider_manual');
+            if (!manualInput || !manualInput.value.trim()) {
+                alert('事業所名を入力してください。');
+                return false;
+            }
+            // 手入力値をhiddenフィールドに設定（フォーム送信用）
+            providerSelect.innerHTML = '<option value="' + manualInput.value.trim() + '" selected>' + manualInput.value.trim() + '</option>';
+        }
+        // 安濃津ろまんの場合、hidden fieldに値をセット
+        if (category === 'anoutsu') {
+            providerSelect.innerHTML = '<option value="居宅介護支援事業所　安濃津ろまん" selected>居宅介護支援事業所　安濃津ろまん</option>';
+        }
+
+        // 詳細情報の必須チェック（事業者種別が選択されている場合）
+        const officeNumber = document.getElementById('houkatsu_office_number').value;
+        const postalCode = document.getElementById('houkatsu_postal_code').value;
+        const address = document.getElementById('houkatsu_address').value;
+        const phone = document.getElementById('houkatsu_phone').value;
+
+        if (!officeNumber.trim()) {
+            alert('事業所番号を入力してください。');
+            return false;
+        }
+        if (!postalCode.trim()) {
+            alert('郵便番号を入力してください。');
+            return false;
+        }
+        if (!address.trim()) {
+            alert('住所を入力してください。');
+            return false;
+        }
+        if (!phone.trim()) {
+            alert('電話番号を入力してください。');
+            return false;
+        }
+
+        // 安濃津ろまん選択時は担当者氏名も必須
+        if (category === 'anoutsu') {
+            const staffName = document.getElementById('houkatsu_staff_name').value;
+            if (!staffName.trim()) {
+                alert('担当者氏名を入力してください。');
+                // アコーディオンを開く
+                const houkatsuCollapse = document.getElementById('houkatsuDetailCollapse');
+                if (houkatsuCollapse && !houkatsuCollapse.classList.contains('show')) {
+                    new bootstrap.Collapse(houkatsuCollapse, { show: true });
+                }
+                return false;
+            }
+        }
+
+        // 受託事業者（安濃津ろまん以外選択時）の担当者氏名チェック
+        if (category !== 'anoutsu') {
+            const jutakuProviderSelect = document.getElementById('jutaku_provider');
+            if (jutakuProviderSelect && jutakuProviderSelect.value === 'anoutsu_roman') {
+                const jutakuStaffName = document.getElementById('jutaku_staff_name');
+                if (!jutakuStaffName || !jutakuStaffName.value.trim()) {
+                    alert('受託事業者の担当者氏名を入力してください。');
+                    const jutakuCollapse = document.getElementById('jutakuDetailCollapse');
+                    if (jutakuCollapse && !jutakuCollapse.classList.contains('show')) {
+                        new bootstrap.Collapse(jutakuCollapse, { show: true });
+                    }
+                    return false;
+                }
+            }
+        }
+    }
+
+    if (!clientName.trim()) {
+        alert('利用者氏名を入力してください。');
+        return false;
+    }
+
+    if (!careManagerName.trim()) {
+        alert('ケアマネ担当者名を入力してください。');
+        return false;
+    }
+
+    if (!notificationType) {
+        alert('届出を行う区分を選択してください。');
+        return false;
+    }
+
+    if (!requestReason) {
+        alert('依頼事由を選択してください。');
+        return false;
+    }
+
+    if (requestReason.value === 'other') {
+        const otherDetail = document.querySelector('input[name="other_reason_detail"]').value;
+        if (!otherDetail.trim()) {
+            alert('その他の事由を具体的に入力してください。');
+            return false;
+        }
+    }
+
+    if (!effectiveDate.trim()) {
+        alert('有効開始（変更）日を入力してください。');
+        return false;
+    }
+
+    return true;
+}
+
+// DOMContentLoaded
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('居宅サービス計画作成依頼届出書が読み込まれました');
+
+    // 事業所番号の自動フォーカス移動
+    const officeNumberFields = document.querySelectorAll('input[name^="office_number_"]');
+    officeNumberFields.forEach((field, index) => {
+        field.addEventListener('input', function() {
+            if (this.value.length === 1 && index < officeNumberFields.length - 1) {
+                officeNumberFields[index + 1].focus();
+            }
+        });
+    });
+
+    // 削除されたフィールドへの参照を削除（今日の日付自動設定）
+
+    // 届出を行う区分の単一選択制御
+    const notificationCheckboxes = document.querySelectorAll('input[name="notification_type"]');
+    notificationCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            if (this.checked) {
+                // 他のチェックボックスをすべて外す
+                notificationCheckboxes.forEach(cb => {
+                    if (cb !== this) cb.checked = false;
+                });
+            }
+        });
+    });
+
+    // 依頼事由の単一選択制御
+    const reasonCheckboxes = document.querySelectorAll('input[name="request_reason"]');
+    const otherReasonInput = document.getElementById('other_reason_input');
+
+    reasonCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            if (this.checked) {
+                // 他のチェックボックスをすべて外す
+                reasonCheckboxes.forEach(cb => {
+                    if (cb !== this) cb.checked = false;
+                });
+
+                // その他の場合の入力欄表示制御
+                if (this.value === 'other') {
+                    otherReasonInput.style.display = 'block';
+                    otherReasonInput.querySelector('input').setAttribute('required', 'required');
+                } else {
+                    otherReasonInput.style.display = 'none';
+                    otherReasonInput.querySelector('input').removeAttribute('required');
+                }
+            }
+        });
+    });
+
+    // その他の事由 文字数カウント
+    const otherReasonDetail = document.getElementById('other_reason_detail');
+    const otherReasonCount = document.getElementById('other_reason_count');
+    if (otherReasonDetail && otherReasonCount) {
+        // 初期値の文字数を表示
+        otherReasonCount.textContent = otherReasonDetail.value.length;
+        // 入力時に文字数を更新
+        otherReasonDetail.addEventListener('input', function() {
+            otherReasonCount.textContent = this.value.length;
+        });
+    }
+
+    // 負担割合証の単一選択制御
+    const burdenCheckboxes = document.querySelectorAll('input[name="burden_delivery_method"]');
+    burdenCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            if (this.checked) {
+                // 他のチェックボックスをすべて外す
+                burdenCheckboxes.forEach(cb => {
+                    if (cb !== this) cb.checked = false;
+                });
+            }
+        });
+    });
+
+    // 介護予防支援事業者選択の2段階プルダウン制御
+    const providerCategory = document.getElementById('provider_category');
+    const providerSelect = document.getElementById('preventive_support_provider');
+    const houkatsuDetailSection = document.getElementById('houkatsu_detail_section');
+
+    // DBから取得した地域包括支援センターデータ
+    const supportCentersFromDB = {% if support_centers_json %}{{ support_centers_json|safe }}{% else %}[]{% endif %};
+
+    // 保存された値
+    const savedProviderCategory = '{{ initial_data.provider_category|default:"" }}';
+    const savedProvider = '{{ initial_data.preventive_support_provider|default:"" }}';
+
+    // 安濃津ろまんのデータ
+    const anoutsuData = {
+        name: '居宅介護支援事業所　安濃津ろまん',
+        office_number: '2472400072',
+        postal_code: '514-0824',
+        address: '津市神戸154-9',
+        phone: '059-253-6599'
+    };
+
+    // ログインユーザー名
+    const loggedInUserName = '{% if user.is_authenticated %}{{ user.profile.get_full_name }}{% endif %}';
+
+    // 事業所データを動的に構築
+    const providerData = {
+        'tsu': supportCentersFromDB.filter(c => c.area === 'tsu'),
+        'other': supportCentersFromDB.filter(c => c.area !== 'tsu')
+    };
+
+    // 県外用の事業所名セクション
+    const kengaiProviderNameSection = document.getElementById('kengai_provider_name_section');
+    const providerManualInput = document.getElementById('preventive_support_provider_manual');
+
+    // プルダウンを構築する関数
+    function populateProviderSelect(category, selectedValue) {
+        if (!providerSelect) return;
+        providerSelect.innerHTML = '<option value="">選択してください</option>';
+
+        // 安濃津ろまんの場合はプルダウンを非表示
+        if (category === 'anoutsu') {
+            providerSelect.style.display = 'none';
+            providerSelect.removeAttribute('required');
+            if (kengaiProviderNameSection) kengaiProviderNameSection.style.display = 'none';
+            return;
+        }
+
+        // 県外の場合は事業所名セクションを表示
+        if (category === 'kengai') {
+            providerSelect.style.display = 'none';
+            providerSelect.removeAttribute('required');
+            if (kengaiProviderNameSection) {
+                kengaiProviderNameSection.style.display = 'block';
+            }
+            if (providerManualInput && selectedValue) {
+                providerManualInput.value = selectedValue;
+            }
+            return;
+        }
+
+        // 事業所名セクションを非表示
+        if (kengaiProviderNameSection) kengaiProviderNameSection.style.display = 'none';
+
+        if (category && providerData[category]) {
+            providerSelect.style.display = 'block';
+            providerSelect.setAttribute('required', 'required');
+            providerData[category].forEach(p => {
+                const option = document.createElement('option');
+                option.value = p.name;
+                option.textContent = p.name;
+                if (p.name === selectedValue) {
+                    option.selected = true;
+                }
+                providerSelect.appendChild(option);
+            });
+        } else {
+            providerSelect.style.display = 'none';
+            providerSelect.removeAttribute('required');
+        }
+    }
+
+    // 現在の事業者種別を保持
+    let currentProviderCategory = '';
+
+    // 事業所情報の入力状態をチェックしてアイコンを更新する関数
+    function updateHoukatsuStatusIcon() {
+        const statusIcon = document.getElementById('houkatsu_status_icon');
+        if (!statusIcon) return;
+
+        // 現在の事業者種別を直接取得
+        const providerCategorySelect = document.getElementById('provider_category');
+        const category = providerCategorySelect ? providerCategorySelect.value : currentProviderCategory;
+        let isComplete = false;
+
+        if (category === 'anoutsu') {
+            // 安濃津ろまん: 担当者氏名が必須
+            const staffName = document.getElementById('houkatsu_staff_name').value.trim();
+            isComplete = staffName !== '';
+        } else if (category === 'kengai') {
+            // 県外: 事業所名、事業所番号、郵便番号、住所、電話番号が必須
+            const providerName = document.getElementById('preventive_support_provider_manual').value.trim();
+            const officeNumber = document.getElementById('houkatsu_office_number').value.trim();
+            const postalCode = document.getElementById('houkatsu_postal_code').value.trim();
+            const address = document.getElementById('houkatsu_address').value.trim();
+            const phone = document.getElementById('houkatsu_phone').value.trim();
+            isComplete = providerName !== '' && officeNumber !== '' && postalCode !== '' && address !== '' && phone !== '';
+        } else if (category === 'tsu' || category === 'tsu_other') {
+            // 地域包括支援センター: 事業所番号、郵便番号、住所、電話番号が必須（通常は自動入力）
+            const officeNumber = document.getElementById('houkatsu_office_number').value.trim();
+            const postalCode = document.getElementById('houkatsu_postal_code').value.trim();
+            const address = document.getElementById('houkatsu_address').value.trim();
+            const phone = document.getElementById('houkatsu_phone').value.trim();
+            isComplete = officeNumber !== '' && postalCode !== '' && address !== '' && phone !== '';
+        }
+
+        if (isComplete) {
+            statusIcon.innerHTML = '<i class="fas fa-check-circle" style="color: rgba(25, 135, 84, 0.5);"></i>';
+        } else {
+            statusIcon.innerHTML = '<i class="fas fa-circle-exclamation" style="color: rgba(220, 53, 69, 0.5);"></i>';
+        }
+    }
+
+    // 入力フィールドにイベントリスナーを追加
+    const houkatsuFields = [
+        'houkatsu_office_number', 'houkatsu_postal_code', 'houkatsu_address',
+        'houkatsu_phone', 'houkatsu_staff_name', 'preventive_support_provider_manual'
+    ];
+    houkatsuFields.forEach(function(fieldId) {
+        const field = document.getElementById(fieldId);
+        if (field) {
+            field.addEventListener('input', updateHoukatsuStatusIcon);
+        }
+    });
+
+    // 詳細セクションを表示・設定する関数（isInitialLoad: ページ読み込み時はtrue）
+    function showDetailSection(category, providerName, isInitialLoad) {
+        if (!houkatsuDetailSection) return;
+
+        // 現在のカテゴリを保持
+        currentProviderCategory = category;
+
+        const staffNameOptional = document.getElementById('staff_name_optional');
+        const staffNameRequired = document.getElementById('staff_name_required');
+        const houkatsuCollapse = document.getElementById('houkatsuDetailCollapse');
+        const houkatsuCollapseBtn = houkatsuCollapse ? houkatsuCollapse.previousElementSibling.querySelector('.accordion-button') : null;
+
+        // 担当者氏名の必須表示を切り替え
+        function updateStaffNameRequired(isRequired) {
+            if (staffNameOptional) staffNameOptional.style.display = isRequired ? 'none' : 'inline';
+            if (staffNameRequired) staffNameRequired.style.display = isRequired ? 'inline' : 'none';
+        }
+
+        // アコーディオンを開く
+        function openHoukatsuAccordion() {
+            if (houkatsuCollapse) {
+                houkatsuCollapse.classList.add('show');
+                if (houkatsuCollapseBtn) {
+                    houkatsuCollapseBtn.classList.remove('collapsed');
+                    houkatsuCollapseBtn.setAttribute('aria-expanded', 'true');
+                }
+            }
+        }
+
+        // アコーディオンを閉じる
+        function closeHoukatsuAccordion() {
+            if (houkatsuCollapse) {
+                houkatsuCollapse.classList.remove('show');
+                if (houkatsuCollapseBtn) {
+                    houkatsuCollapseBtn.classList.add('collapsed');
+                    houkatsuCollapseBtn.setAttribute('aria-expanded', 'false');
+                }
+            }
+        }
+
+        if (category === 'anoutsu') {
+            // 安濃津ろまんの場合、詳細セクションを表示して値をセット
+            houkatsuDetailSection.style.display = 'block';
+            if (kengaiProviderNameSection) kengaiProviderNameSection.style.display = 'none';
+            document.getElementById('houkatsu_office_number').value = anoutsuData.office_number;
+            document.getElementById('houkatsu_postal_code').value = anoutsuData.postal_code;
+            document.getElementById('houkatsu_address').value = anoutsuData.address;
+            document.getElementById('houkatsu_phone').value = anoutsuData.phone;
+            // 担当者氏名を必須に
+            updateStaffNameRequired(true);
+
+            const staffNameField = document.getElementById('houkatsu_staff_name');
+            if (!isInitialLoad) {
+                // 新規選択時はログインユーザー名を担当者氏名に自動入力
+                staffNameField.value = loggedInUserName;
+            }
+            // 基本的にアコーディオンは閉じておく
+            closeHoukatsuAccordion();
+        } else if (category === 'kengai') {
+            // 県外の場合、詳細セクションを表示して事業所名入力欄も表示
+            houkatsuDetailSection.style.display = 'block';
+            if (kengaiProviderNameSection) kengaiProviderNameSection.style.display = 'block';
+            // 担当者氏名は任意
+            updateStaffNameRequired(false);
+            // ページ読み込み時以外（ユーザーが県外を選択した時）は全てクリア
+            if (!isInitialLoad) {
+                if (providerManualInput) providerManualInput.value = '';
+                document.getElementById('houkatsu_office_number').value = '';
+                document.getElementById('houkatsu_postal_code').value = '';
+                document.getElementById('houkatsu_address').value = '';
+                document.getElementById('houkatsu_phone').value = '';
+                document.getElementById('houkatsu_staff_name').value = '';
+            }
+            // 基本的にアコーディオンは閉じておく
+            closeHoukatsuAccordion();
+        } else if (providerName) {
+            // 地域包括支援センターが選択された場合
+            houkatsuDetailSection.style.display = 'block';
+            if (kengaiProviderNameSection) kengaiProviderNameSection.style.display = 'none';
+            // 担当者氏名は任意
+            updateStaffNameRequired(false);
+            const preset = supportCentersFromDB.find(p => p.name === providerName);
+            if (preset) {
+                document.getElementById('houkatsu_office_number').value = preset.office_number;
+                document.getElementById('houkatsu_postal_code').value = preset.postal_code;
+                document.getElementById('houkatsu_address').value = preset.address;
+                document.getElementById('houkatsu_phone').value = preset.phone;
+                document.getElementById('houkatsu_staff_name').value = '';
+            }
+            // データが自動入力されるのでアコーディオンは閉じる
+            closeHoukatsuAccordion();
+        } else {
+            houkatsuDetailSection.style.display = 'none';
+            if (kengaiProviderNameSection) kengaiProviderNameSection.style.display = 'none';
+            updateStaffNameRequired(false);
+        }
+        // アイコンを更新
+        updateHoukatsuStatusIcon();
+    }
+
+    // ページロード時に保存された値を復元
+    if (savedProviderCategory && providerCategory) {
+        populateProviderSelect(savedProviderCategory, savedProvider);
+        if (savedProviderCategory === 'anoutsu') {
+            showDetailSection('anoutsu', null, true);
+        } else if (savedProviderCategory === 'kengai') {
+            showDetailSection('kengai', null, true);
+        } else {
+            showDetailSection(savedProviderCategory, savedProvider, true);
+        }
+    }
+
+    // カテゴリ変更時
+    if (providerCategory) {
+        providerCategory.addEventListener('change', function() {
+            const category = this.value;
+            populateProviderSelect(category, '');
+
+            if (category === 'anoutsu') {
+                showDetailSection('anoutsu', null, false);
+            } else if (category === 'kengai') {
+                showDetailSection('kengai', null, false);
+            } else {
+                // 津市・津市以外を選択した場合、詳細セクションを非表示にしてアコーディオンを閉じる
+                currentProviderCategory = category;
+                if (houkatsuDetailSection) {
+                    houkatsuDetailSection.style.display = 'none';
+                }
+                if (kengaiProviderNameSection) {
+                    kengaiProviderNameSection.style.display = 'none';
+                }
+                closeHoukatsuAccordion();
+                // アイコンをクリア（詳細セクションが非表示なので）
+                const statusIcon = document.getElementById('houkatsu_status_icon');
+                if (statusIcon) statusIcon.innerHTML = '';
+            }
+        });
+    }
+
+    // 事業所選択時
+    if (providerSelect) {
+        providerSelect.addEventListener('change', function() {
+            const selectedName = this.value;
+            const category = providerCategory ? providerCategory.value : '';
+            showDetailSection(category, selectedName, false);
+        });
+    }
+
+    // 介護予防支援を受託する居宅介護支援事業者セクション
+    const jutakuSection = document.getElementById('jutaku_section');
+    const jutakuDetailSection = document.getElementById('jutaku_detail_section');
+    const jutakuProvider = document.getElementById('jutaku_provider');
+    const savedJutakuProvider = '{{ initial_data.jutaku_provider|default:"" }}';
+
+    // 受託事業者のアイコン更新関数
+    function updateJutakuStatusIcon() {
+        const statusIcon = document.getElementById('jutaku_status_icon');
+        if (!statusIcon) return;
+
+        const jutakuStaffName = document.getElementById('jutaku_staff_name');
+        const isComplete = jutakuStaffName && jutakuStaffName.value.trim() !== '';
+
+        if (isComplete) {
+            statusIcon.innerHTML = '<i class="fas fa-check-circle" style="color: rgba(25, 135, 84, 0.5);"></i>';
+        } else {
+            statusIcon.innerHTML = '<i class="fas fa-circle-exclamation" style="color: rgba(220, 53, 69, 0.5);"></i>';
+        }
+    }
+
+    // 受託事業者の担当者氏名入力時にアイコン更新
+    const jutakuStaffNameField = document.getElementById('jutaku_staff_name');
+    if (jutakuStaffNameField) {
+        jutakuStaffNameField.addEventListener('input', updateJutakuStatusIcon);
+    }
+
+    // 受託事業者の詳細を表示・入力する関数
+    function showJutakuDetail(isInitialLoad) {
+        if (!jutakuDetailSection) return;
+        jutakuDetailSection.style.display = 'block';
+        document.getElementById('jutaku_office_number').value = anoutsuData.office_number;
+        document.getElementById('jutaku_postal_code').value = anoutsuData.postal_code;
+        document.getElementById('jutaku_address').value = anoutsuData.address;
+        document.getElementById('jutaku_phone').value = anoutsuData.phone;
+        // 担当者氏名にログインユーザー名を自動入力（初回のみ）
+        const jutakuStaffName = document.getElementById('jutaku_staff_name');
+        if (jutakuStaffName && !isInitialLoad) {
+            jutakuStaffName.value = loggedInUserName;
+        }
+        // アコーディオンは閉じたままにする
+        const jutakuCollapse = document.getElementById('jutakuDetailCollapse');
+        const jutakuCollapseBtn = jutakuCollapse ? jutakuCollapse.previousElementSibling.querySelector('.accordion-button') : null;
+        if (jutakuCollapse) {
+            jutakuCollapse.classList.remove('show');
+            if (jutakuCollapseBtn) {
+                jutakuCollapseBtn.classList.add('collapsed');
+                jutakuCollapseBtn.setAttribute('aria-expanded', 'false');
+            }
+        }
+        // アイコン更新
+        updateJutakuStatusIcon();
+    }
+
+    // 受託事業者セクションの表示/非表示を制御する関数
+    function updateJutakuSection(category, isInitialLoad) {
+        if (!jutakuSection) return;
+
+        // 安濃津ろまん以外が選択されている場合に表示
+        if (category && category !== 'anoutsu') {
+            jutakuSection.style.display = 'block';
+            // 安濃津ろまんが初期選択されているので詳細も表示
+            if (jutakuProvider && jutakuProvider.value === 'anoutsu_roman') {
+                showJutakuDetail(isInitialLoad);
+            }
+        } else {
+            jutakuSection.style.display = 'none';
+            if (jutakuDetailSection) jutakuDetailSection.style.display = 'none';
+            if (jutakuProvider) jutakuProvider.value = '';
+        }
+    }
+
+    // 受託事業者プルダウン変更時
+    if (jutakuProvider) {
+        jutakuProvider.addEventListener('change', function() {
+            if (this.value === 'anoutsu_roman') {
+                showJutakuDetail(false);
+            } else {
+                if (jutakuDetailSection) {
+                    jutakuDetailSection.style.display = 'none';
+                }
+            }
+        });
+    }
+
+    // ページロード時に受託事業者セクションの状態を復元
+    if (savedProviderCategory) {
+        updateJutakuSection(savedProviderCategory, true);
+    }
+
+    // カテゴリ変更時に受託事業者セクションも更新
+    if (providerCategory) {
+        providerCategory.addEventListener('change', function() {
+            updateJutakuSection(this.value, false);
+        });
+    }
+});
+</script>
+
+<style>
+.bg-pink {
+    background-color: #f8d7da !important;
+}
+
+/* アコーディオンボタンの色を固定 */
+#houkatsu_detail_section .accordion-button,
+#jutaku_detail_section .accordion-button,
+#houkatsu_detail_section .accordion-button:not(.collapsed),
+#jutaku_detail_section .accordion-button:not(.collapsed) {
+    color: #333 !important;
+    background-color: #f8f9fa !important;
+    box-shadow: none !important;
+}
+
+#houkatsu_detail_section .accordion-button:focus,
+#jutaku_detail_section .accordion-button:focus {
+    box-shadow: none !important;
+}
+
+/* UI.md準拠のボタンスタイル */
+
+/* 基本ボタン設定 */
+.btn {
+    transition: all 0.2s ease;
+}
+
+/* 共通ホバーアニメーション */
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* 1. 戻るボタン - UI.md準拠のグレー色 */
+.btn.btn-outline-secondary.btn-back:hover,
+a.btn.btn-outline-secondary.btn-back:hover,
+.general-btn:hover,
+.back-btn:hover {
+    background-color: #f5f5f5 !important;
+    border-color: #999 !important;
+    color: #333 !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+}
+
+/* 2. Excel出力ボタン - UI.md準拠の緑色 */
+.btn.btn-outline-secondary.excel-btn:hover,
+button.btn.btn-outline-secondary.excel-btn:hover {
+    background-color: #d1f2d1 !important;
+    border-color: #198754 !important;
+    color: #198754 !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+}
+
+/* 3. 保存系ボタン - 赤っぽい色 */
+.btn.btn-outline-secondary.save-btn:hover,
+button.btn.btn-outline-secondary.save-btn:hover {
+    background-color: #f8d7da !important;
+    border-color: #dc3545 !important;
+    color: #dc3545 !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+}
+
+/* 4. 削除ボタン - 赤色 (既存) */
+.delete-btn:hover {
+    background-color: #f5f5f5 !important;
+    border-color: #999 !important;
+    color: #333 !important;
+}
+
+.card-header {
+    border-bottom: 2px solid #dee2e6;
+}
+
+.form-check-input:checked {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+
+.gap-3 {
+    gap: 1rem !important;
+}
+
+/* 事業所番号の入力フィールド */
+input[name^="office_number_"] {
+    text-align: center;
+    font-weight: bold;
+}
+
+.alert-info {
+    font-size: 0.9rem;
+}
+
+/* 確認物セクションのスタイル */
+.border {
+    border-radius: 0.375rem;
+    background-color: #f8f9fa;
+}
+
+/* 小さなチェックボックス */
+.form-check-input {
+    width: 1em;
+    height: 1em;
+}
+
+/* ラジオボタンとチェックボックスの間隔調整 */
+.form-check-inline {
+    margin-right: 1rem;
+}
+</style>
+
+{% endblock %}

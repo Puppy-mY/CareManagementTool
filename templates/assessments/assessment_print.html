@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ client.name }}様 - アセスメントシート</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'MS Gothic', 'MS Mincho', monospace;
+            font-size: 9pt;
+            line-height: 1.2;
+            color: #000;
+            background: #fff;
+        }
+
+        .container {
+            max-width: 297mm; /* A4横向き */
+            margin: 0 auto;
+            padding: 5mm;
+        }
+
+        .print-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            z-index: 1000;
+        }
+
+        .back-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            z-index: 1000;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        /* Excel様式のテーブル */
+        .excel-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 9pt;
+            margin-bottom: 0;
+        }
+
+        .excel-table td,
+        .excel-table th {
+            border: 1px solid #000;
+            padding: 2px 4px;
+            vertical-align: top;
+            height: 20px;
+            font-weight: normal;
+        }
+
+        /* ヘッダー */
+        .title-cell {
+            background-color: #d9d9d9;
+            font-weight: bold;
+            text-align: center;
+            font-size: 14pt;
+            height: 30px;
+        }
+
+        .section-header {
+            background-color: #e6e6e6;
+            font-weight: bold;
+            padding: 4px;
+            height: 25px;
+        }
+
+        .label-cell {
+            background-color: #f2f2f2;
+            font-weight: bold;
+            text-align: center;
+            width: 80px;
+            font-size: 8pt;
+        }
+
+        .input-cell {
+            background-color: #ffffff;
+            min-height: 20px;
+            padding: 2px 4px;
+        }
+
+        .wide-input {
+            width: 200px;
+        }
+
+        .narrow-input {
+            width: 100px;
+        }
+
+        /* 複数列にまたがるセル */
+        .span-2 { width: 160px; }
+        .span-3 { width: 240px; }
+        .span-4 { width: 320px; }
+        .span-5 { width: 400px; }
+
+        /* セクション間の余白 */
+        .section-break {
+            height: 10px;
+        }
+
+        /* 印刷用スタイル */
+        @media print {
+            body {
+                margin: 0;
+                padding: 0;
+                background: white;
+                font-size: 8pt;
+            }
+
+            .container {
+                max-width: none;
+                margin: 0;
+                padding: 10mm;
+            }
+
+            .print-button,
+            .back-button {
+                display: none;
+            }
+
+            .excel-table {
+                font-size: 8pt;
+            }
+
+            .excel-table td,
+            .excel-table th {
+                padding: 1px 2px;
+                height: 18px;
+            }
+
+            @page {
+                size: A4 landscape;
+                margin: 10mm;
+            }
+        }
+
+        /* モバイル対応 */
+        @media (max-width: 768px) {
+            .container {
+                padding: 2mm;
+                overflow-x: auto;
+            }
+
+            .excel-table {
+                min-width: 800px;
+                font-size: 8pt;
+            }
+
+            .print-button,
+            .back-button {
+                position: relative;
+                margin: 5px;
+                display: block;
+                width: calc(100% - 10px);
+            }
+        }
+    </style>
+</head>
+<body>
+    <button class="print-button" onclick="window.print()">印刷する</button>
+    <a href="{% url 'assessment_detail' assessment.pk %}" class="back-button">戻る</a>
+
+    <div class="container">
+        <table class="excel-table">
+            <!-- タイトル行 -->
+            <tr>
+                <td colspan="20" class="title-cell">アセスメントシート</td>
+            </tr>
+            
+            <!-- 空白行 -->
+            <tr><td colspan="20" class="section-break"></td></tr>
+            
+            <!-- アセスメントの理由 -->
+            <tr>
+                <td class="section-header" colspan="20">アセスメントの理由</td>
+            </tr>
+            
+            <!-- 基本情報セクション -->
+            <tr>
+                <td class="section-header" colspan="20">基本情報</td>
+            </tr>
+            <tr>
+                <td class="label-cell">基本情報</td>
+                <td class="label-cell">ふりがな</td>
+                <td class="input-cell span-3">{{ client.furigana|default:"" }}</td>
+                <td class="label-cell"></td>
+                <td class="label-cell"></td>
+                <td class="label-cell"></td>
+                <td class="label-cell"></td>
+                <td class="label-cell"></td>
+                <td class="label-cell"></td>
+                <td class="label-cell"></td>
+                <td class="label-cell"></td>
+                <td class="label-cell"></td>
+                <td class="label-cell"></td>
+                <td class="label-cell"></td>
+                <td class="label-cell"></td>
+                <td class="label-cell"></td>
+                <td class="label-cell"></td>
+                <td class="label-cell"></td>
+                <td class="label-cell"></td>
+                <td class="label-cell"></td>
+            </tr>
+            <tr>
+                <td class="input-cell"></td>
+                <td class="label-cell">氏名</td>
+                <td class="input-cell span-3">{{ client.name }}</td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+            </tr>
+            <tr>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+            </tr>
+            <tr>
+                <td class="input-cell"></td>
+                <td class="label-cell">住所</td>
+                <td class="input-cell span-5">{{ client.address|default:"" }}</td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+            </tr>
+            
+            <!-- 空白行 -->
+            <tr><td colspan="20" class="section-break"></td></tr>
+            
+            <!-- 保険情報セクション -->
+            <tr>
+                <td class="section-header" colspan="20">保険情報</td>
+            </tr>
+            <tr>
+                <td class="label-cell">保険情報</td>
+                <td class="label-cell">介護保険</td>
+                <td class="input-cell span-2">{{ assessment.insurance_info.medical_insurance|default:"" }}</td>
+                <td class="label-cell">被保険者番号</td>
+                <td class="input-cell span-3">{{ client.insurance_number|default:"" }}</td>
+                <td class="label-cell">要介護度</td>
+                <td class="input-cell span-2">{{ assessment.insurance_info.care_level|default:"" }}</td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+            </tr>
+            <tr>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="label-cell">身体障害者手帳</td>
+                <td class="input-cell">{{ assessment.insurance_info.disability_handbook|yesno:"有,無"|default:"" }}</td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+            </tr>
+            
+            <!-- 家族情報セクション -->
+            <tr>
+                <td class="section-header" colspan="20">家族情報</td>
+            </tr>
+            <tr>
+                <td class="label-cell">家族情報</td>
+                <td class="label-cell">家族構成員</td>
+                <td class="input-cell span-2">{{ assessment.family_situation.family_member1|default:"" }}</td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="label-cell">人</td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="label-cell">住所</td>
+                <td class="input-cell span-2">{{ client.address|default:"" }}</td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+            </tr>
+            
+            <!-- 健康状態セクション -->
+            {% if assessment.health_status %}
+            <tr>
+                <td class="section-header" colspan="20">健康状態</td>
+            </tr>
+            <tr>
+                <td class="label-cell">主な疾患</td>
+                <td class="input-cell span-4">{{ assessment.health_status.disease_1|default:"" }}</td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+            </tr>
+            <tr>
+                <td class="label-cell">主治医</td>
+                <td class="input-cell span-4">{{ assessment.health_status.main_doctor|default:"" }}</td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+            </tr>
+            <tr>
+                <td class="label-cell">服薬状況</td>
+                <td class="input-cell span-4">{{ assessment.health_status.medication|default:"" }}</td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+            </tr>
+            {% endif %}
+            
+            <!-- 身体状況 -->
+            {% if assessment.physical_status %}
+            <tr>
+                <td class="section-header" colspan="20">身体状況</td>
+            </tr>
+            <tr>
+                <td class="label-cell">身長・体重</td>
+                <td class="input-cell">{{ assessment.physical_status.height|default:"" }}cm</td>
+                <td class="input-cell">{{ assessment.physical_status.weight|default:"" }}kg</td>
+                <td class="label-cell">視力</td>
+                <td class="input-cell span-2">{{ assessment.physical_status.vision|default:"" }}</td>
+                <td class="label-cell">聴力</td>
+                <td class="input-cell span-2">{{ assessment.physical_status.hearing|default:"" }}</td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+            </tr>
+            {% endif %}
+            
+            <!-- ADL（日常生活動作）-->
+            {% if assessment.adl %}
+            <tr>
+                <td class="section-header" colspan="20">日常生活動作（ADL）</td>
+            </tr>
+            <tr>
+                <td class="label-cell">食事</td>
+                <td class="input-cell span-3">{{ assessment.adl.eating_method|default:"" }}</td>
+                <td class="label-cell">入浴</td>
+                <td class="input-cell span-3">{{ assessment.adl.bathing_assistance|default:"" }}</td>
+                <td class="label-cell">排泄</td>
+                <td class="input-cell span-3">{{ assessment.adl.excretion_assistance|default:"" }}</td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+            </tr>
+            {% endif %}
+            
+            <!-- IADL（手段的日常生活動作）-->
+            {% if assessment.iadl %}
+            <tr>
+                <td class="section-header" colspan="20">手段的日常生活動作（IADL）</td>
+            </tr>
+            <tr>
+                <td class="label-cell">調理</td>
+                <td class="input-cell span-2">{{ assessment.iadl.cooking|default:"" }}</td>
+                <td class="label-cell">掃除</td>
+                <td class="input-cell span-2">{{ assessment.iadl.cleaning|default:"" }}</td>
+                <td class="label-cell">買い物</td>
+                <td class="input-cell span-2">{{ assessment.iadl.shopping|default:"" }}</td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+            </tr>
+            {% endif %}
+            
+            <!-- 総合所見 -->
+            <tr>
+                <td class="section-header" colspan="20">総合所見・支援目標</td>
+            </tr>
+            <tr>
+                <td class="label-cell">総合所見</td>
+                <td class="input-cell span-4" style="height: 60px;">{{ assessment.general_assessment|default:"" }}</td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+            </tr>
+            <tr>
+                <td class="label-cell">支援目標</td>
+                <td class="input-cell span-4" style="height: 60px;">{{ assessment.support_goals|default:"" }}</td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+            </tr>
+            
+            <!-- 作成者情報 -->
+            <tr>
+                <td class="section-header" colspan="20">作成者情報</td>
+            </tr>
+            <tr>
+                <td class="label-cell">作成者</td>
+                <td class="input-cell span-2">{{ assessment.assessor.profile.get_full_name }}</td>
+                <td class="label-cell">作成日</td>
+                <td class="input-cell span-2">{{ assessment.assessment_date|date:"Y年m月d日" }}</td>
+                <td class="label-cell">面接場所</td>
+                <td class="input-cell span-2">{{ assessment.get_interview_location_display }}</td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+                <td class="input-cell"></td>
+            </tr>
+            
+        </table>
+    </div>
+</body>
+</html>
