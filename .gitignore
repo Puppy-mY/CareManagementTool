@@ -29,6 +29,9 @@ env/
 .DS_Store
 Thumbs.db
 
+# Environment variables
+.env
+
 # Temp files
 tmpclaude-*
 nul_backup.txt
