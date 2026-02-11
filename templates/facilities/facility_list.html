@@ -1,0 +1,527 @@
+{% extends "base.html" %}
+
+{% block title %}施設一覧 - 施設検索システム{% endblock %}
+
+{% block extra_css %}
+<style>
+    .filter-card {
+        margin-bottom: 1.2rem;
+    }
+    .filter-card .card-body {
+        padding: 1rem 1.2rem;
+    }
+    .room-type-filters .form-check {
+        display: inline-flex;
+        align-items: center;
+        margin-right: 1rem;
+        margin-bottom: 0;
+    }
+    .room-type-filters .form-check-label {
+        font-size: 0.9rem;
+        cursor: pointer;
+        user-select: none;
+    }
+    .room-type-filters .badge-room {
+        font-size: 0.78rem;
+        padding: 0.2em 0.25em;
+    }
+    .room-type-filters .form-check-input {
+        cursor: pointer;
+        margin-right: 0.4rem;
+    }
+    .facility-count {
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+    }
+    .table-responsive {
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    .btn-action {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.8rem;
+    }
+    #facilityTable tbody tr {
+        transition: background-color 0.15s;
+    }
+    .no-results {
+        text-align: center;
+        padding: 2rem;
+        color: var(--text-secondary);
+    }
+    .no-results i {
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+        display: block;
+        color: var(--border-color);
+    }
+    .action-row {
+        display: flex;
+        gap: 0.5rem;
+        justify-content: center;
+        padding: 0.2rem 0;
+    }
+    .action-row + .action-row {
+        border-top: 1px solid #ced4da;
+    }
+    .action-row a, .action-row span {
+        font-size: 0.95rem;
+        cursor: pointer;
+        padding: 0.15rem 0.3rem;
+        border-radius: 4px;
+        transition: background-color 0.15s;
+    }
+    .icon-map:hover { color: rgba(214, 51, 132, 0.5) !important; }
+    .icon-edit:hover { color: rgba(253, 126, 20, 0.5) !important; }
+    .icon-copy:hover { color: rgba(25, 135, 84, 0.5) !important; }
+    .icon-home:hover { color: rgba(111, 66, 193, 0.5) !important; }
+    .icon-info:hover { color: rgba(13, 110, 253, 0.5) !important; }
+    .copy-toast {
+        position: fixed;
+        top: 1rem;
+        right: 1rem;
+        background: #198754;
+        color: #fff;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        z-index: 9999;
+        opacity: 0;
+        transition: opacity 0.3s;
+        pointer-events: none;
+    }
+    .copy-toast.show {
+        opacity: 1;
+    }
+    /* タブレットサイズ以下で特養選択時、種別列非表示＋施設名を広げる */
+    @media (max-width: 991.98px) {
+        .hide-type-col .col-type { display: none; }
+        .hide-type-col .col-name { width: 32% !important; }
+        .hide-type-col .col-region { width: 14% !important; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0"><i class="fas fa-building me-2"></i>施設一覧</h4>
+    <a href="{% url 'facilities:facility_create' %}" class="btn btn-primary">
+        <i class="fas fa-plus me-1"></i>新規登録
+    </a>
+</div>
+
+<!-- 検索フィルタ -->
+<div class="card filter-card">
+    <div class="card-header">
+        <i class="fas fa-filter me-1"></i>検索フィルタ
+    </div>
+    <div class="card-body">
+        <!-- 施設種別（1行目） -->
+        <div class="row mb-3">
+        <div class="col-md-6">
+            <label for="filterFacilityType" class="form-label">施設種別</label>
+            <select id="filterFacilityType" class="form-select">
+                {% for ft in facility_types %}
+                <option value="{{ ft.value }}">{{ ft.value }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-6" id="filterSubTypeSection" style="display:none;">
+            <label for="filterSubType" class="form-label" id="filterSubTypeLabel">区分</label>
+            <select id="filterSubType" class="form-select">
+                <option value="">すべて</option>
+            </select>
+        </div>
+        <div class="col-md-3" id="rokenFilterSection" style="display:none;">
+            <label class="form-label">&nbsp;</label>
+            <div style="border: 1px solid #ced4da; border-radius: 6px; padding: 0.4rem 0.7rem; background-color: #f8f9fa;">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="filterZaitakuKyoka">
+                    <label class="form-check-label" for="filterZaitakuKyoka">在宅強化型</label>
+                </div>
+            </div>
+        </div>
+        </div>
+        <!-- 施設名・地域・部屋タイプ（2行目） -->
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label for="searchName" class="form-label">施設名</label>
+                <input type="text" id="searchName" class="form-control" placeholder="施設名で検索...">
+            </div>
+            <div class="col-md-3">
+                <label for="filterRegion" class="form-label">地域</label>
+                <select id="filterRegion" class="form-select">
+                    <option value="">すべて</option>
+                    {% for region in regions %}
+                    <option value="{{ region }}">{{ region }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-5" id="roomTypeFilterSection">
+                <label class="form-label">部屋タイプ</label>
+                <div class="room-type-filters" style="margin-top: 0.35rem; border: 1px solid #ced4da; border-radius: 6px; padding: 0.5rem 0.7rem; background-color: #f8f9fa;">
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <div class="form-check mb-2">
+                                <input class="form-check-input room-filter" type="checkbox" id="filterUnitPrivate" value="unit_private">
+                                <label class="form-check-label" for="filterUnitPrivate">
+                                    <span class="badge badge-room badge-unit-private">ユニット型個室</span>
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input room-filter" type="checkbox" id="filterUnitMulti" value="unit_multi">
+                                <label class="form-check-label" for="filterUnitMulti">
+                                    <span class="badge badge-room badge-unit-semi">ユニット型多床室</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-check mb-2">
+                                <input class="form-check-input room-filter" type="checkbox" id="filterTradPrivate" value="traditional_private">
+                                <label class="form-check-label" for="filterTradPrivate">
+                                    <span class="badge badge-room badge-trad-private">従来型個室</span>
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input room-filter" type="checkbox" id="filterTradMulti" value="traditional_multi">
+                                <label class="form-check-label" for="filterTradMulti">
+                                    <span class="badge badge-room badge-trad-multi">多床室</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="d-flex justify-content-between align-items-center mt-3">
+            <span class="facility-count">
+                <i class="fas fa-list me-1"></i>
+                表示: <strong id="visibleCount">0</strong> / <strong id="totalCount">0</strong> 件
+            </span>
+            <button type="button" id="clearFilters" class="btn btn-outline-secondary btn-sm">
+                <i class="fas fa-times me-1"></i>クリア
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 施設一覧テーブル -->
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0" id="facilityTable">
+            <thead>
+                <tr>
+                    <th style="width: 24%;" class="col-name">施設名</th>
+                    <th style="width: 8%;" class="col-type">種別</th>
+                    <th style="width: 14%;" class="col-region">地域</th>
+                    <th style="width: 5%;">定員</th>
+                    <th id="thRoomType" style="width: 13%;">部屋タイプ</th>
+                    <th style="width: 15%;">連絡先</th>
+                    <th style="width: 8%;">操作</th>
+                </tr>
+            </thead>
+            <tbody id="facilityTableBody">
+            </tbody>
+        </table>
+    </div>
+    <div id="noResults" class="no-results" style="display:none;">
+        <i class="fas fa-search"></i>
+        <p>条件に一致する施設が見つかりませんでした。</p>
+    </div>
+</div>
+<div id="copyToast" class="copy-toast">コピーしました</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    const facilities = {{ facilities_json|safe }};
+    const tbody = document.getElementById('facilityTableBody');
+    const searchName = document.getElementById('searchName');
+    const filterRegion = document.getElementById('filterRegion');
+    const filterFacilityType = document.getElementById('filterFacilityType');
+    const roomFilters = document.querySelectorAll('.room-filter');
+    const clearBtn = document.getElementById('clearFilters');
+    const visibleCount = document.getElementById('visibleCount');
+    const totalCount = document.getElementById('totalCount');
+    const noResults = document.getElementById('noResults');
+    const table = document.getElementById('facilityTable');
+    const thRoomType = document.getElementById('thRoomType');
+    const roomTypeFilterSection = document.getElementById('roomTypeFilterSection');
+    const filterSubTypeSection = document.getElementById('filterSubTypeSection');
+    const filterSubType = document.getElementById('filterSubType');
+    const rokenFilterSection = document.getElementById('rokenFilterSection');
+    const filterZaitakuKyoka = document.getElementById('filterZaitakuKyoka');
+
+    const SUB_TYPE_CONFIG = {
+        '有料老人ホーム': { label: '類型', options: ['住宅型', '特定施設入居者生活介護'] },
+        'サービス付き高齢者向け住宅': { label: '類型', options: ['住宅型', '特定施設入居者生活介護'] },
+        '軽費老人ホーム': { label: '種類', options: ['A型', 'B型', 'ケアハウス', '特定施設入居者生活介護'] },
+    };
+    var filterSubTypeLabel = document.getElementById('filterSubTypeLabel');
+
+    function updateSubTypeFilter() {
+        var ft = filterFacilityType.value;
+        var config = SUB_TYPE_CONFIG[ft];
+        if (config) {
+            filterSubTypeLabel.textContent = config.label;
+            filterSubType.innerHTML = '<option value="">すべて</option>';
+            config.options.forEach(function(opt) {
+                filterSubType.innerHTML += '<option value="' + opt + '">' + opt + '</option>';
+            });
+            filterSubTypeSection.style.display = '';
+        } else {
+            filterSubTypeSection.style.display = 'none';
+            filterSubType.value = '';
+        }
+        // 老健選択時に在宅強化型フィルタを表示
+        rokenFilterSection.style.display = (ft === '介護老人保健施設') ? '' : 'none';
+        if (ft !== '介護老人保健施設') filterZaitakuKyoka.checked = false;
+    }
+
+    function matchSubType(f, subTypeQuery) {
+        if (!subTypeQuery) return true;
+        if (f.facility_type === '有料老人ホーム' || f.facility_type === 'サービス付き高齢者向け住宅') {
+            if (subTypeQuery === '特定施設入居者生活介護') return f.is_tokutei_shisetsu;
+            if (subTypeQuery === '住宅型') return !f.is_tokutei_shisetsu;
+        }
+        if (f.facility_type === '軽費老人ホーム') {
+            if (subTypeQuery === 'A型') return f.is_keihi_a;
+            if (subTypeQuery === 'B型') return f.is_keihi_b;
+            if (subTypeQuery === 'ケアハウス') return f.is_keihi_carehouse;
+            if (subTypeQuery === '特定施設入居者生活介護') return f.is_tokutei_shisetsu;
+        }
+        return true;
+    }
+
+    const FACILITY_TYPE_SHORT = {
+        '特別養護老人ホーム': '特養',
+        'サービス付き高齢者向け住宅': 'サ高住',
+        '介護老人保健施設': '老健',
+        'グループホーム': 'GH',
+        '有料老人ホーム': '有料',
+        '軽費老人ホーム': '軽費',
+        '養護老人ホーム': '養護',
+        '介護医療院': '医療院',
+        'その他': 'その他',
+    };
+
+    function getSubType(f) {
+        if (f.facility_type === '特別養護老人ホーム') {
+            if (f.is_community_based) return '地域密着型';
+            if (f.is_wide_area) return '広域型';
+        }
+        if (f.facility_type === '介護老人保健施設') {
+            if (f.is_zaitaku_kyoka) return '在宅強化型';
+        }
+        if (f.facility_type === '有料老人ホーム' || f.facility_type === 'サービス付き高齢者向け住宅') {
+            return f.is_tokutei_shisetsu ? '特定施設入居者生活介護' : '住宅型';
+        }
+        if (f.facility_type === '軽費老人ホーム') {
+            var parts = [];
+            if (f.is_keihi_a) parts.push('A型');
+            if (f.is_keihi_b) parts.push('B型');
+            if (f.is_keihi_carehouse) parts.push('ケアハウス');
+            if (f.is_tokutei_shisetsu) parts.push('特定施設入居者生活介護');
+            return parts.join('\n');
+        }
+        return '';
+    }
+
+    totalCount.textContent = facilities.length;
+
+    function makeBadge(label, cls) {
+        return '<span class="badge badge-room ' + cls + '" style="width:8.5em; text-align:center;">' + label + '</span><br>';
+    }
+
+    function renderRoomTypes(f) {
+        let html = '';
+        if (f.unit_private) html += makeBadge('ユニット型個室', 'badge-unit-private');
+        if (f.unit_multi) html += makeBadge('ユニット型多床室', 'badge-unit-semi');
+        if (f.traditional_private) html += makeBadge('従来型個室', 'badge-trad-private');
+        if (f.traditional_multi) html += makeBadge('多床室', 'badge-trad-multi');
+        return html || '<span class="text-muted">-</span>';
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function isShowRoomType() {
+        var v = filterFacilityType.value;
+        return v === '特別養護老人ホーム' || v === '介護老人保健施設';
+    }
+
+    function updateRoomTypeVisibility() {
+        var show = isShowRoomType();
+        thRoomType.style.display = show ? '' : 'none';
+        roomTypeFilterSection.style.display = show ? '' : 'none';
+        document.querySelectorAll('.td-room-type').forEach(function(td) {
+            td.style.display = show ? '' : 'none';
+        });
+    }
+
+    function renderTable() {
+        const nameQuery = searchName.value.trim().toLowerCase();
+        const regionQuery = filterRegion.value;
+        const facilityTypeQuery = filterFacilityType.value;
+        const subTypeQuery = filterSubType.value;
+        const activeRoomFilters = [];
+        roomFilters.forEach(function(cb) {
+            if (cb.checked) activeRoomFilters.push(cb.value);
+        });
+
+        var showRoom = isShowRoomType();
+
+        let html = '';
+        let count = 0;
+
+        facilities.forEach(function(f) {
+            // 施設名フィルタ
+            if (nameQuery && f.name.toLowerCase().indexOf(nameQuery) === -1) return;
+            // 施設種別フィルタ
+            if (facilityTypeQuery && f.facility_type !== facilityTypeQuery) return;
+            // サブタイプフィルタ
+            if (!matchSubType(f, subTypeQuery)) return;
+            // 在宅強化型フィルタ
+            if (filterZaitakuKyoka.checked && !f.is_zaitaku_kyoka) return;
+            // 地域フィルタ
+            if (regionQuery && f.region !== regionQuery) return;
+            // 部屋タイプフィルタ（チェックしたタイプのいずれかを持つ施設を表示）
+            if (activeRoomFilters.length > 0) {
+                const hasMatch = activeRoomFilters.some(function(key) { return f[key]; });
+                if (!hasMatch) return;
+            }
+
+            count++;
+            html += '<tr>';
+            // 施設名
+            html += '<td class="col-name"><strong>' + escapeHtml(f.name) + '</strong>';
+            // サブタイプ表示
+            var subType = getSubType(f);
+            if (subType) html += '<br><small class="text-muted">' + escapeHtml(subType).replace(/\n/g, '<br>') + '</small>';
+            html += '</td>';
+            // 施設種別
+            html += '<td class="col-type" style="font-size:0.8rem;">' + escapeHtml(FACILITY_TYPE_SHORT[f.facility_type] || f.facility_type) + '</td>';
+            // 地域 + 町名 + 住所アイコン
+            html += '<td style="font-size:0.85rem;">' + escapeHtml(f.region);
+            if (f.town) html += '<br><small class="text-muted">' + escapeHtml(f.town) + '</small>';
+            if (f.address) {
+                html += ' <a href="https://maps.google.com/?q=' + encodeURIComponent(f.address) + '" target="_blank" rel="noopener noreferrer" title="' + escapeHtml(f.address) + '" class="text-muted icon-map">';
+                html += '<i class="fas fa-map-marker-alt"></i></a>';
+            }
+            html += '</td>';
+            // 定員
+            html += '<td class="text-center">' + (f.capacity ? f.capacity : '-') + '</td>';
+            // 部屋タイプ（特養のみ表示）
+            html += '<td class="td-room-type"' + (showRoom ? '' : ' style="display:none;"') + '>' + renderRoomTypes(f) + '</td>';
+            // 連絡先（TEL + FAX）
+            html += '<td style="white-space:nowrap; font-size:0.85rem;">';
+            if (f.phone) html += '<span class="fw-bold" style="font-size:0.75rem;">TEL</span> ' + escapeHtml(f.phone);
+            if (f.phone && f.fax) html += '<br>';
+            if (f.fax) html += '<span class="fw-bold" style="font-size:0.75rem;">FAX</span> ' + escapeHtml(f.fax);
+            if (!f.phone && !f.fax) html += '-';
+            html += '</td>';
+            // 操作
+            var copyText = f.name + '\n住所：' + (f.address || '') + '\nTEL：' + (f.phone || '') + '\nFAX：' + (f.fax || '');
+            html += '<td>';
+            html += '<div class="action-row">';
+            html += '<a href="/facilities/' + f.id + '/edit/" class="text-muted icon-edit" title="編集"><i class="fas fa-edit"></i></a>';
+            html += '<span class="text-muted copy-btn icon-copy" title="施設情報をコピー" data-copy="' + escapeHtml(copyText).replace(/"/g, '&quot;') + '"><i class="fas fa-copy"></i></span>';
+            html += '</div>';
+            if (f.homepage_url || f.kaigo_kohyo_url) {
+                html += '<div class="action-row">';
+                if (f.homepage_url) {
+                    html += '<a href="' + escapeHtml(f.homepage_url) + '" target="_blank" rel="noopener noreferrer" class="text-muted icon-home" title="ホームページ"><i class="fas fa-home"></i></a>';
+                }
+                if (f.kaigo_kohyo_url) {
+                    html += '<a href="' + escapeHtml(f.kaigo_kohyo_url) + '" target="_blank" rel="noopener noreferrer" class="text-muted icon-info" title="介護サービス情報公表システム"><i class="fas fa-info-circle"></i></a>';
+                }
+                html += '</div>';
+            }
+            html += '</td>';
+            html += '</tr>';
+        });
+
+        tbody.innerHTML = html;
+        visibleCount.textContent = count;
+
+        // 部屋タイプ列ヘッダーの表示制御
+        thRoomType.style.display = showRoom ? '' : 'none';
+        roomTypeFilterSection.style.display = showRoom ? '' : 'none';
+
+        // 特養選択時、タブレットで種別列を非表示にする
+        if (showRoom) {
+            table.classList.add('hide-type-col');
+        } else {
+            table.classList.remove('hide-type-col');
+        }
+
+        if (count === 0 && facilities.length > 0) {
+            table.style.display = 'none';
+            noResults.style.display = 'block';
+        } else {
+            table.style.display = '';
+            noResults.style.display = 'none';
+        }
+
+        if (facilities.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">' +
+                '<i class="fas fa-info-circle me-1"></i>施設が登録されていません。「新規登録」から追加してください。</td></tr>';
+        }
+    }
+
+    // イベントリスナー
+    searchName.addEventListener('input', renderTable);
+    filterRegion.addEventListener('change', renderTable);
+    filterFacilityType.addEventListener('change', function() {
+        updateSubTypeFilter();
+        filterSubType.value = '';
+        renderTable();
+    });
+    filterSubType.addEventListener('change', renderTable);
+    filterZaitakuKyoka.addEventListener('change', renderTable);
+    roomFilters.forEach(function(cb) {
+        cb.addEventListener('change', renderTable);
+    });
+    clearBtn.addEventListener('click', function() {
+        searchName.value = '';
+        filterRegion.value = '';
+        filterFacilityType.selectedIndex = 0;
+        updateSubTypeFilter();
+        filterSubType.value = '';
+        filterZaitakuKyoka.checked = false;
+        roomFilters.forEach(function(cb) { cb.checked = false; });
+        renderTable();
+    });
+
+    // コピーボタン
+    var copyToast = document.getElementById('copyToast');
+    tbody.addEventListener('click', function(e) {
+        var el = e.target.closest('.copy-btn');
+        if (!el) return;
+        navigator.clipboard.writeText(el.getAttribute('data-copy')).then(function() {
+            copyToast.classList.add('show');
+            setTimeout(function() { copyToast.classList.remove('show'); }, 1500);
+        });
+    });
+
+    // URLパラメータから施設種別を設定
+    var urlParams = new URLSearchParams(window.location.search);
+    var typeParam = urlParams.get('type');
+    if (typeParam) {
+        for (var i = 0; i < filterFacilityType.options.length; i++) {
+            if (filterFacilityType.options[i].value === typeParam) {
+                filterFacilityType.selectedIndex = i;
+                break;
+            }
+        }
+    }
+
+    // 初期表示
+    updateSubTypeFilter();
+    renderTable();
+})();
+</script>
+{% endblock %}

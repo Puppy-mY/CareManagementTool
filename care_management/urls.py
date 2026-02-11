@@ -29,4 +29,5 @@ urlpatterns = [
     path("clients/", include("clients.urls")),
     path("assessments/", include("assessments.urls")),
     path("memo/", views.view_memo, name="view_memo"),
+    path("facilities/", include("facilities.urls")),
 ]

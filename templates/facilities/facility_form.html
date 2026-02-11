@@ -1,0 +1,375 @@
+{% extends "base.html" %}
+
+{% block title %}{% if object %}施設編集{% else %}施設登録{% endif %} - 施設検索システム{% endblock %}
+
+{% block extra_css %}
+<style>
+    .room-type-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1.2rem;
+        border: 1px solid #ced4da;
+        border-radius: 6px;
+        padding: 0.7rem 1rem;
+        background-color: #f8f9fa;
+    }
+    .room-type-group .form-check {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+    .room-type-group .form-check-input {
+        width: 1.2em;
+        height: 1.2em;
+        cursor: pointer;
+    }
+    .room-type-group .form-check-label {
+        cursor: pointer;
+        user-select: none;
+    }
+    .room-type-group .badge-room {
+        font-size: 0.78rem;
+        padding: 0.2em 0.25em;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    {% if object %}
+                    <i class="fas fa-edit me-2"></i>施設情報の編集
+                    {% else %}
+                    <i class="fas fa-plus me-2"></i>新規施設登録
+                    {% endif %}
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+
+                    {% if form.errors %}
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-1"></i>
+                        {% if form.non_field_errors %}
+                            {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+                        {% else %}
+                            入力内容にエラーがあります。修正してください。
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    <!-- 基本情報 -->
+                    <h6 class="text-muted mb-3"><i class="fas fa-building me-1"></i>基本情報</h6>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.name.id_for_label }}" class="form-label">
+                                施設名 <span class="text-danger">*</span>
+                            </label>
+                            {{ form.name }}
+                            {% if form.name.errors %}
+                            <div class="text-danger small mt-1">{{ form.name.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.facility_type.id_for_label }}" class="form-label">
+                                施設種別 <span class="text-danger">*</span>
+                            </label>
+                            {{ form.facility_type }}
+                            {% if form.facility_type.errors %}
+                            <div class="text-danger small mt-1">{{ form.facility_type.errors.0 }}</div>
+                            {% endif %}
+                            <div id="tokuyoTypeSection" style="display:none; margin-top: 0.5rem; border: 1px solid #ced4da; border-radius: 6px; padding: 0.5rem 1rem; background-color: #f8f9fa;">
+                                <div class="d-flex flex-wrap gap-4">
+                                    <div class="form-check">
+                                        {{ form.is_community_based }}
+                                        <label class="form-check-label" for="{{ form.is_community_based.id_for_label }}">地域密着型</label>
+                                    </div>
+                                    <div class="form-check">
+                                        {{ form.is_wide_area }}
+                                        <label class="form-check-label" for="{{ form.is_wide_area.id_for_label }}">広域型</label>
+                                    </div>
+                                </div>
+                                <small class="text-muted">※該当しない場合はチェック不要です</small>
+                            </div>
+                            <div id="yuryoTypeSection" style="display:none; margin-top: 0.5rem; border: 1px solid #ced4da; border-radius: 6px; padding: 0.5rem 1rem; background-color: #f8f9fa;">
+                                <div class="form-check">
+                                    {{ form.is_tokutei_shisetsu }}
+                                    <label class="form-check-label" for="{{ form.is_tokutei_shisetsu.id_for_label }}">特定施設入居者生活介護 指定あり</label>
+                                </div>
+                                <small class="text-muted">※チェックがない場合は住宅型になります</small>
+                            </div>
+                            <div id="sakoujuTypeSection" style="display:none; margin-top: 0.5rem; border: 1px solid #ced4da; border-radius: 6px; padding: 0.5rem 1rem; background-color: #f8f9fa;">
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="id_is_tokutei_shisetsu_sakouju" name="is_tokutei_shisetsu" {% if form.is_tokutei_shisetsu.value %}checked{% endif %}>
+                                    <label class="form-check-label" for="id_is_tokutei_shisetsu_sakouju">特定施設入居者生活介護 指定あり</label>
+                                </div>
+                                <small class="text-muted">※チェックがない場合は住宅型になります</small>
+                            </div>
+                            <div id="rokenTypeSection" style="display:none; margin-top: 0.5rem; border: 1px solid #ced4da; border-radius: 6px; padding: 0.5rem 1rem; background-color: #f8f9fa;">
+                                <div class="form-check">
+                                    {{ form.is_zaitaku_kyoka }}
+                                    <label class="form-check-label" for="{{ form.is_zaitaku_kyoka.id_for_label }}">在宅強化型</label>
+                                </div>
+                                <small class="text-muted">※該当しない場合はチェック不要です</small>
+                            </div>
+                            <div id="keihiTypeSection" style="display:none; margin-top: 0.5rem; border: 1px solid #ced4da; border-radius: 6px; padding: 0.5rem 1rem; background-color: #f8f9fa;">
+                                <div class="d-flex flex-wrap gap-4">
+                                    <div class="form-check">
+                                        {{ form.is_keihi_a }}
+                                        <label class="form-check-label" for="{{ form.is_keihi_a.id_for_label }}">A型</label>
+                                    </div>
+                                    <div class="form-check">
+                                        {{ form.is_keihi_b }}
+                                        <label class="form-check-label" for="{{ form.is_keihi_b.id_for_label }}">B型</label>
+                                    </div>
+                                    <div class="form-check">
+                                        {{ form.is_keihi_carehouse }}
+                                        <label class="form-check-label" for="{{ form.is_keihi_carehouse.id_for_label }}">ケアハウス</label>
+                                    </div>
+                                </div>
+                                <small class="text-muted">※いずれかを選択してください</small>
+                                <hr class="my-2">
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="id_is_tokutei_shisetsu_keihi" name="is_tokutei_shisetsu" {% if form.is_tokutei_shisetsu.value %}checked{% endif %}>
+                                    <label class="form-check-label" for="id_is_tokutei_shisetsu_keihi">特定施設入居者生活介護 指定あり</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <!-- 所在地 -->
+                    <h6 class="text-muted mb-3"><i class="fas fa-map-marker-alt me-1"></i>所在地</h6>
+
+                    <div class="mb-3">
+                        <label for="{{ form.address.id_for_label }}" class="form-label">住所</label>
+                        {{ form.address }}
+                        <div class="form-text">住所を入力すると地域・町名が自動で設定されます</div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.region.id_for_label }}" class="form-label">
+                                地域 <span class="text-danger">*</span>
+                            </label>
+                            {{ form.region }}
+                            {% if form.region.errors %}
+                            <div class="text-danger small mt-1">{{ form.region.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.town.id_for_label }}" class="form-label">町名</label>
+                            {{ form.town }}
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <!-- 連絡先 -->
+                    <h6 class="text-muted mb-3"><i class="fas fa-phone me-1"></i>連絡先</h6>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.phone.id_for_label }}" class="form-label">電話番号</label>
+                            {{ form.phone }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.fax.id_for_label }}" class="form-label">FAX番号</label>
+                            {{ form.fax }}
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <!-- リンク -->
+                    <h6 class="text-muted mb-3"><i class="fas fa-link me-1"></i>リンク</h6>
+
+                    <div class="mb-3">
+                        <label for="{{ form.homepage_url.id_for_label }}" class="form-label">ホームページURL</label>
+                        {{ form.homepage_url }}
+                    </div>
+                    <div class="mb-3">
+                        <label for="{{ form.kaigo_kohyo_url.id_for_label }}" class="form-label">介護サービス情報公表システムURL</label>
+                        {{ form.kaigo_kohyo_url }}
+                    </div>
+
+                    <hr class="my-4">
+
+                    <!-- 施設情報 -->
+                    <h6 class="text-muted mb-3"><i class="fas fa-bed me-1"></i>施設情報</h6>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="{{ form.capacity.id_for_label }}" class="form-label">定員数</label>
+                            {{ form.capacity }}
+                        </div>
+                    </div>
+
+                    <div class="mb-3" id="roomTypeSection">
+                        <label class="form-label">部屋タイプ</label>
+                        <div class="room-type-group">
+                            <div class="form-check">
+                                {{ form.unit_private }}
+                                <label class="form-check-label" for="{{ form.unit_private.id_for_label }}">
+                                    <span class="badge badge-room badge-unit-private">ユニット型個室</span>
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                {{ form.unit_multi }}
+                                <label class="form-check-label" for="{{ form.unit_multi.id_for_label }}">
+                                    <span class="badge badge-room badge-unit-semi">ユニット型多床室</span>
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                {{ form.traditional_private }}
+                                <label class="form-check-label" for="{{ form.traditional_private.id_for_label }}">
+                                    <span class="badge badge-room badge-trad-private">従来型個室</span>
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                {{ form.traditional_multi }}
+                                <label class="form-check-label" for="{{ form.traditional_multi.id_for_label }}">
+                                    <span class="badge badge-room badge-trad-multi">多床室</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr>
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <a href="{% url 'facilities:facility_list' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-1"></i>戻る
+                            </a>
+                            {% if object %}
+                            <a href="{% url 'facilities:facility_delete' object.pk %}" class="btn btn-outline-danger ms-2">
+                                <i class="fas fa-trash me-1"></i>削除
+                            </a>
+                            {% endif %}
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i>{% if object %}更新{% else %}登録{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    var addressInput = document.getElementById('{{ form.address.id_for_label }}');
+    var regionSelect = document.getElementById('{{ form.region.id_for_label }}');
+    var townInput = document.getElementById('{{ form.town.id_for_label }}');
+    if (!addressInput || !regionSelect || !townInput) return;
+
+    // selectのoptionから地域リストを取得（長い順にソートして先にマッチさせる）
+    var regions = [];
+    for (var i = 0; i < regionSelect.options.length; i++) {
+        var val = regionSelect.options[i].value;
+        if (val) regions.push(val);
+    }
+    regions.sort(function(a, b) { return b.length - a.length; });
+
+    function parseAddress(address) {
+        if (!address) return null;
+        // 「三重県」を除去
+        var addr = address.replace(/^三重県/, '');
+
+        // 地域をマッチ
+        var matchedRegion = null;
+        var rest = addr;
+        for (var i = 0; i < regions.length; i++) {
+            if (addr.indexOf(regions[i]) === 0) {
+                matchedRegion = regions[i];
+                rest = addr.substring(regions[i].length);
+                break;
+            }
+        }
+
+        // 町名を抽出（最初の「町」「村」まで）
+        var town = '';
+        if (rest) {
+            var m = rest.match(/^([^町村]+(?:町|村))/);
+            if (m) {
+                town = m[1];
+            } else {
+                // 丁目の場合は漢数字+丁目の手前まで
+                var m2 = rest.match(/^(.+?)[一二三四五六七八九十\d]+丁目/);
+                if (m2) {
+                    town = m2[1];
+                } else {
+                    // 町・村がない場合、数字の手前まで
+                    var m3 = rest.match(/^([^\d]+)/);
+                    if (m3) town = m3[1];
+                }
+            }
+        }
+
+        return { region: matchedRegion, town: town };
+    }
+
+    addressInput.addEventListener('input', function() {
+        var val = this.value.trim();
+        if (!val) {
+            regionSelect.value = '';
+            townInput.value = '';
+            return;
+        }
+        var result = parseAddress(val);
+        if (!result) return;
+        if (result.region) {
+            regionSelect.value = result.region;
+        }
+        townInput.value = result.town;
+    });
+
+    // 施設種別に応じてサブタイプセクションの表示切替
+    var facilityTypeSelect = document.getElementById('{{ form.facility_type.id_for_label }}');
+    var roomTypeSection = document.getElementById('roomTypeSection');
+    var tokuyoTypeSection = document.getElementById('tokuyoTypeSection');
+    var yuryoTypeSection = document.getElementById('yuryoTypeSection');
+    var keihiTypeSection = document.getElementById('keihiTypeSection');
+    var sakoujuTypeSection = document.getElementById('sakoujuTypeSection');
+    var rokenTypeSection = document.getElementById('rokenTypeSection');
+    function toggleSubTypeSections() {
+        var val = facilityTypeSelect.value;
+        var isTokuyo = val === '特別養護老人ホーム';
+        var isYuryo = val === '有料老人ホーム';
+        var isKeihi = val === '軽費老人ホーム';
+        var isSakouju = val === 'サービス付き高齢者向け住宅';
+        var isRoken = val === '介護老人保健施設';
+        roomTypeSection.style.display = (isTokuyo || isRoken) ? '' : 'none';
+        tokuyoTypeSection.style.display = isTokuyo ? '' : 'none';
+        yuryoTypeSection.style.display = isYuryo ? '' : 'none';
+        keihiTypeSection.style.display = isKeihi ? '' : 'none';
+        sakoujuTypeSection.style.display = isSakouju ? '' : 'none';
+        rokenTypeSection.style.display = isRoken ? '' : 'none';
+    }
+    if (facilityTypeSelect) {
+        facilityTypeSelect.addEventListener('change', toggleSubTypeSections);
+        toggleSubTypeSections();
+    }
+
+    // 特定施設チェックボックス同期（有料・軽費・サ高住）
+    var tokuteiMain = document.getElementById('{{ form.is_tokutei_shisetsu.id_for_label }}');
+    var tokuteiKeihi = document.getElementById('id_is_tokutei_shisetsu_keihi');
+    var tokuteiSakouju = document.getElementById('id_is_tokutei_shisetsu_sakouju');
+    var tokuteiAll = [tokuteiMain, tokuteiKeihi, tokuteiSakouju].filter(Boolean);
+    tokuteiAll.forEach(function(cb) {
+        cb.addEventListener('change', function() {
+            tokuteiAll.forEach(function(other) { other.checked = cb.checked; });
+        });
+    });
+})();
+</script>
+{% endblock %}
