@@ -125,9 +125,9 @@
                                     <td style="white-space: nowrap;">
                                         <div class="d-flex align-items-center justify-content-between">
                                             <span>{{ feedback.created_at|date:"Y/m/d H:i" }}</span>
-                                            <form method="post" action="{% url 'feedback_delete_admin' feedback.pk %}" style="display: inline;" onsubmit="return confirm('このフィードバックを削除してもよろしいですか？');" onclick="event.stopPropagation();">
+                                            <form method="post" action="{% url 'feedback_delete_admin' feedback.pk %}" style="display: inline;" class="feedback-delete-form" onclick="event.stopPropagation();">
                                                 {% csrf_token %}
-                                                <button type="submit" class="btn btn-sm feedback-btn feedback-btn-delete ms-2" onclick="event.stopPropagation();">
+                                                <button type="button" class="btn btn-sm feedback-btn feedback-btn-delete ms-2 feedback-delete-btn" onclick="event.stopPropagation();">
                                                     <i class="fas fa-trash-alt"></i> 削除
                                                 </button>
                                             </form>
@@ -396,4 +396,25 @@ document.addEventListener('DOMContentLoaded', function() {
         color: #dc3545 !important;
     }
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.feedback-delete-btn').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var form = this.closest('form');
+            showConfirmModal({
+                icon: 'fa-trash-alt',
+                iconColor: '#dc3545',
+                title: 'フィードバック削除',
+                message: 'このフィードバックを削除してもよろしいですか？',
+                okText: '削除する',
+                okClass: 'btn-danger'
+            }).then(function(ok) {
+                if (ok) form.submit();
+            });
+        });
+    });
+});
+</script>
 {% endblock %}

@@ -380,7 +380,15 @@ document.addEventListener('DOMContentLoaded', function() {
             const userId = this.dataset.userId;
             const username = this.dataset.username;
 
-            if (confirm(`${username} のパスワードを初期化しますか？`)) {
+            showConfirmModal({
+                icon: 'fa-key',
+                iconColor: '#e67e22',
+                title: 'パスワード初期化',
+                message: username + ' のパスワードを初期化しますか？',
+                okText: '初期化する',
+                okClass: 'btn-warning'
+            }).then(function(ok) {
+                if (!ok) return;
                 fetch(`/clients/user/${userId}/reset-password/`, {
                     method: 'POST',
                     headers: {
@@ -402,7 +410,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 .catch(error => {
                     alert('パスワードの初期化に失敗しました: ' + error);
                 });
-            }
+            });
         });
     });
 });

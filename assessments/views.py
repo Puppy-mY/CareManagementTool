@@ -78,6 +78,9 @@ def assessment_edit(request, pk):
                 'life_history': form.cleaned_data.get('life_history', ''),
                 'personal_hopes': form.cleaned_data.get('personal_hopes', ''),
                 'family_hopes': form.cleaned_data.get('family_hopes', ''),
+                'special_situation_status': request.POST.get('special_situation_status', ''),
+                'special_situation': request.POST.getlist('special_situation'),
+                'special_situation_other': request.POST.get('special_situation_other', ''),
             }
 
             detailed_data['insurance_info'] = {
@@ -554,6 +557,9 @@ def detailed_assessment_create(request):
                 'family_hopes': form.cleaned_data.get('family_hopes', ''),
                 'assessment_type_other': request.POST.get('assessment_type_other', ''),
                 'interview_location_other': request.POST.get('interview_location_other', ''),
+                'special_situation_status': request.POST.get('special_situation_status', ''),
+                'special_situation': request.POST.getlist('special_situation'),
+                'special_situation_other': request.POST.get('special_situation_other', ''),
             }
 
             detailed_data['insurance_info'] = {
@@ -565,7 +571,7 @@ def detailed_assessment_create(request):
                 'difficulty_certificate': form.cleaned_data.get('difficulty_certificate', False),
                 'life_protection': form.cleaned_data.get('life_protection', False),
             }
-            
+
             detailed_data['family_situation'] = {
                 'family_member1': form.cleaned_data.get('family_member1', ''),
                 'family_member2': form.cleaned_data.get('family_member2', ''),
@@ -949,6 +955,27 @@ def detailed_assessment_create(request):
         'today': date.today().strftime('%Y-%m-%d'),
         'is_edit': False,
     }
+
+    # 前回アセスメントデータの取得
+    if selected_client:
+        latest_assessment = Assessment.objects.filter(
+            client=selected_client
+        ).order_by('-assessment_date', '-created_at').first()
+        if latest_assessment:
+            context['has_previous_assessment'] = True
+            context['previous_assessment_data'] = json.dumps({
+                'basic_info': latest_assessment.basic_info or {},
+                'insurance_info': latest_assessment.insurance_info or {},
+                'family_situation': latest_assessment.family_situation or {},
+                'living_situation': latest_assessment.living_situation or {},
+                'services': latest_assessment.services or {},
+                'health_status': latest_assessment.health_status or {},
+                'physical_status': latest_assessment.physical_status or {},
+                'cognitive_function': latest_assessment.cognitive_function or {},
+                'basic_activities': latest_assessment.basic_activities or {},
+                'adl': latest_assessment.adl or {},
+                'iadl': latest_assessment.iadl or {},
+            }, ensure_ascii=False)
 
     return render(request, 'assessments/detailed_assessment_form.html', context)
 

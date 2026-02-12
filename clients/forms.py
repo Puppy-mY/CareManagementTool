@@ -14,6 +14,10 @@ class ClientForm(forms.ModelForm):
             'disability_level', 'dementia_level',
             'disability_handbook', 'disability_handbook_type', 'difficult_disease', 'life_protection',
             'medical_insurance_type', 'medical_insurer_name_issuer', 'medical_insurer_number', 'medical_insurance_symbol', 'medical_insurance_number',
+            # 公的制度・受給者証（有無のみ）
+            'limit_cert', 'high_cost_care',
+            'disability_welfare',
+            'specific_medical', 'welfare_medical', 'nhi_limit_cert', 'high_cost_combined',
             # 家族情報（1人目）
             'family_name1', 'family_relationship1', 'family_address1', 'family_contact1',
             'family_living_status1', 'family_care_status1', 'family_employment1', 'family_notes1',
@@ -301,3 +305,68 @@ class HomeCareSupportOfficeForm(forms.ModelForm):
         # 必須フィールド
         self.fields['name'].required = True
         self.fields['office_number'].required = True
+
+
+_DATE_WIDGET = forms.DateInput(attrs={'class': 'form-control', 'type': 'date'})
+
+
+class CareInsuranceForm(forms.ModelForm):
+    """介護保険関係フォーム"""
+
+    class Meta:
+        model = Client
+        fields = [
+            'certification_date', 'certification_period_start', 'certification_period_end',
+            'care_burden', 'burden_period_start', 'burden_period_end',
+            'limit_cert', 'limit_cert_start', 'limit_cert_end',
+            'high_cost_care',
+        ]
+        widgets = {
+            'certification_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'certification_period_start': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'certification_period_end': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'care_burden': forms.Select(attrs={'class': 'form-select'}),
+            'burden_period_start': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'burden_period_end': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'limit_cert_start': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'limit_cert_end': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+        }
+
+
+class DisabilityWelfareForm(forms.ModelForm):
+    """障害福祉関係フォーム"""
+
+    class Meta:
+        model = Client
+        fields = [
+            'disability_welfare',
+            'disability_welfare_cert_start', 'disability_welfare_cert_end',
+            'disability_welfare_decision_start', 'disability_welfare_decision_end',
+        ]
+        widgets = {
+            'disability_welfare_cert_start': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'disability_welfare_cert_end': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'disability_welfare_decision_start': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'disability_welfare_decision_end': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+        }
+
+
+class MedicalCertForm(forms.ModelForm):
+    """医療関係フォーム"""
+
+    class Meta:
+        model = Client
+        fields = [
+            'specific_medical', 'specific_medical_start', 'specific_medical_end',
+            'welfare_medical', 'welfare_medical_start', 'welfare_medical_end',
+            'nhi_limit_cert', 'nhi_limit_cert_start', 'nhi_limit_cert_end',
+            'high_cost_combined',
+        ]
+        widgets = {
+            'specific_medical_start': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'specific_medical_end': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'welfare_medical_start': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'welfare_medical_end': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'nhi_limit_cert_start': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'nhi_limit_cert_end': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+        }

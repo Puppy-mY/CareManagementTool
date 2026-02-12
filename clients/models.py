@@ -113,6 +113,31 @@ class Client(models.Model):
     difficult_disease = models.BooleanField('難病申請', default=False)
     life_protection = models.BooleanField('生活保護', default=False)
 
+    # 公的制度・受給者証（介護保険関係）
+    limit_cert = models.CharField('負担限度額認定証', max_length=3, blank=True)  # yes/no
+    limit_cert_start = models.DateField('負担限度額 有効期間（開始）', blank=True, null=True)
+    limit_cert_end = models.DateField('負担限度額 有効期間（終了）', blank=True, null=True)
+    high_cost_care = models.CharField('高額介護サービス費', max_length=3, blank=True)  # yes/no
+
+    # 公的制度・受給者証（障害福祉関係）
+    disability_welfare = models.CharField('障害福祉サービス受給者証', max_length=3, blank=True)
+    disability_welfare_cert_start = models.DateField('障害福祉 認定有効期間（開始）', blank=True, null=True)
+    disability_welfare_cert_end = models.DateField('障害福祉 認定有効期間（終了）', blank=True, null=True)
+    disability_welfare_decision_start = models.DateField('障害福祉 支給決定期間（開始）', blank=True, null=True)
+    disability_welfare_decision_end = models.DateField('障害福祉 支給決定期間（終了）', blank=True, null=True)
+
+    # 公的制度・受給者証（医療関係）
+    specific_medical = models.CharField('特定医療費（指定難病）受給者証', max_length=3, blank=True)
+    specific_medical_start = models.DateField('特定医療費 有効期間（開始）', blank=True, null=True)
+    specific_medical_end = models.DateField('特定医療費 有効期間（終了）', blank=True, null=True)
+    welfare_medical = models.CharField('福祉医療費受給者証', max_length=3, blank=True)
+    welfare_medical_start = models.DateField('福祉医療費 有効期間（開始）', blank=True, null=True)
+    welfare_medical_end = models.DateField('福祉医療費 有効期間（終了）', blank=True, null=True)
+    nhi_limit_cert = models.CharField('国保限度額適用・減額認定証', max_length=3, blank=True)
+    nhi_limit_cert_start = models.DateField('国保限度額 有効期間（開始）', blank=True, null=True)
+    nhi_limit_cert_end = models.DateField('国保限度額 有効期間（終了）', blank=True, null=True)
+    high_cost_combined = models.CharField('高額医療・高額介護合算療養費', max_length=3, blank=True)
+
     # 医療保険情報
     medical_insurance_type = models.CharField('医療保険種類', max_length=100, blank=True)
     medical_insurer_name_issuer = models.CharField('保険者の名称及び交付者名', max_length=200, blank=True)

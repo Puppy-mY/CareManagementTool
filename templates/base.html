@@ -446,6 +446,55 @@
     <!-- Font Awesome -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
 
+    <!-- 共通カスタム確認モーダル -->
+    <script>
+    function showConfirmModal(options) {
+        var icon = options.icon || 'fa-question-circle';
+        var iconColor = options.iconColor || '#6c757d';
+        var title = options.title || '確認';
+        var message = options.message || 'よろしいですか？';
+        var okText = options.okText || 'OK';
+        var cancelText = options.cancelText || 'キャンセル';
+        var okClass = options.okClass || 'btn-primary';
+
+        var hideCancel = options.hideCancel || false;
+
+        var overlay = document.createElement('div');
+        overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:9998;display:flex;align-items:center;justify-content:center;';
+
+        var buttonsHtml = '';
+        if (!hideCancel) {
+            buttonsHtml += '<button class="btn btn-outline-secondary px-4 py-2 confirm-modal-cancel">' + cancelText + '</button>';
+        }
+        buttonsHtml += '<button class="btn ' + okClass + ' px-4 py-2 confirm-modal-ok">' + okText + '</button>';
+
+        var modal = document.createElement('div');
+        modal.style.cssText = 'background:#fff;border-radius:0.5rem;padding:2rem;max-width:420px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.3);text-align:center;';
+        modal.innerHTML = '<div style="font-size:2rem;margin-bottom:1rem;"><i class="fas ' + icon + '" style="color:' + iconColor + ';"></i></div>' +
+            '<h5 style="margin-bottom:0.75rem;font-weight:600;">' + title + '</h5>' +
+            '<p style="color:#6c757d;margin-bottom:1.5rem;">' + message + '</p>' +
+            '<div style="display:flex;gap:0.75rem;justify-content:center;">' + buttonsHtml + '</div>';
+
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
+
+        return new Promise(function(resolve) {
+            overlay.addEventListener('click', function(e) {
+                if (e.target === overlay) { overlay.remove(); resolve(false); }
+            });
+            var cancelBtn = modal.querySelector('.confirm-modal-cancel');
+            if (cancelBtn) {
+                cancelBtn.addEventListener('click', function() {
+                    overlay.remove(); resolve(false);
+                });
+            }
+            modal.querySelector('.confirm-modal-ok').addEventListener('click', function() {
+                overlay.remove(); resolve(true);
+            });
+        });
+    }
+    </script>
+
     <!-- トースト通知の自動消去 -->
     <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -583,15 +632,23 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    // 成功メッセージを表示
-                    alert('フィードバックを送信しました。ご協力ありがとうございます！');
-
                     // フォームをリセット
                     feedbackForm.reset();
 
                     // モーダルを閉じる
                     const modal = bootstrap.Modal.getInstance(feedbackModal);
                     modal.hide();
+
+                    // 成功メッセージを表示
+                    showConfirmModal({
+                        icon: 'fa-check-circle',
+                        iconColor: '#198754',
+                        title: '送信完了',
+                        message: 'フィードバックを送信しました。<br>ご協力ありがとうございます！',
+                        okText: '閉じる',
+                        okClass: 'btn-primary',
+                        hideCancel: true
+                    });
                 } else {
                     // エラーメッセージを表示
                     let errorMessage = 'エラーが発生しました。';

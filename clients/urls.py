@@ -70,6 +70,7 @@ urlpatterns = [
     path('<str:pk>/', views.client_detail, name='client_detail'),
     path('<str:pk>/edit/', views.client_edit, name='client_edit'),
     path('<str:pk>/delete/', views.client_delete, name='client_delete'),
+    path('<str:pk>/schedule/', views.schedule_management, name='schedule_management'),
     path('<str:pk>/dementia/', views.update_dementia_status, name='update_dementia_status'),
     path('<int:pk>/update-master/', api_views.update_client_master, name='update_client_master'),
     path('<str:client_id>/limits/create/', views.limit_calculation_create, name='limit_calculation_create'),

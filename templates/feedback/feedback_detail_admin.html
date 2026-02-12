@@ -154,9 +154,9 @@
                                         <a href="{% url 'feedback_reply_edit' reply.pk %}" class="btn btn-sm feedback-btn feedback-btn-edit me-1">
                                             <i class="fas fa-edit"></i> 編集
                                         </a>
-                                        <form method="post" action="{% url 'feedback_reply_delete' reply.pk %}" style="display: inline;" onsubmit="return confirm('この返信を削除してもよろしいですか？');">
+                                        <form method="post" action="{% url 'feedback_reply_delete' reply.pk %}" style="display: inline;" class="reply-delete-form">
                                             {% csrf_token %}
-                                            <button type="submit" class="btn btn-sm feedback-btn feedback-btn-delete">
+                                            <button type="button" class="btn btn-sm feedback-btn feedback-btn-delete reply-delete-btn">
                                                 <i class="fas fa-trash-alt"></i> 削除
                                             </button>
                                         </form>
@@ -190,4 +190,24 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.reply-delete-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var form = this.closest('form');
+            showConfirmModal({
+                icon: 'fa-trash-alt',
+                iconColor: '#dc3545',
+                title: '返信削除',
+                message: 'この返信を削除してもよろしいですか？',
+                okText: '削除する',
+                okClass: 'btn-danger'
+            }).then(function(ok) {
+                if (ok) form.submit();
+            });
+        });
+    });
+});
+</script>
 {% endblock %}

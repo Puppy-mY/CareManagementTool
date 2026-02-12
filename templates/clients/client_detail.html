@@ -994,7 +994,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // アセスメント削除機能
 function deleteAssessment(assessmentId) {
-    if (confirm('このアセスメントを削除してもよろしいですか？')) {
+    showConfirmModal({
+        icon: 'fa-trash-alt',
+        iconColor: '#dc3545',
+        title: 'アセスメント削除',
+        message: 'このアセスメントを削除してもよろしいですか？',
+        okText: '削除する',
+        okClass: 'btn-danger'
+    }).then(function(ok) {
+        if (!ok) return;
         fetch(`/assessments/${assessmentId}/delete/`, {
             method: 'POST',
             headers: {
@@ -1010,7 +1018,6 @@ function deleteAssessment(assessmentId) {
         })
         .then(data => {
             if (data.success) {
-                // アセスメント履歴タブを開いた状態でリロード
                 window.location.hash = 'assessment-history';
                 window.location.reload();
             } else {
@@ -1021,12 +1028,20 @@ function deleteAssessment(assessmentId) {
             console.error('Error:', error);
             alert('削除中にエラーが発生しました: ' + error.message);
         });
-    }
+    });
 }
 
 // 書類削除機能
 function deleteDocument(documentId) {
-    if (confirm('この書類を削除してもよろしいですか？')) {
+    showConfirmModal({
+        icon: 'fa-trash-alt',
+        iconColor: '#dc3545',
+        title: '書類削除',
+        message: 'この書類を削除してもよろしいですか？',
+        okText: '削除する',
+        okClass: 'btn-danger'
+    }).then(function(ok) {
+        if (!ok) return;
         fetch(`/clients/documents/${documentId}/delete/`, {
             method: 'POST',
             headers: {
@@ -1053,7 +1068,7 @@ function deleteDocument(documentId) {
             console.error('Error:', error);
             alert('削除中にエラーが発生しました: ' + error.message);
         });
-    }
+    });
 }
 
 // CSRFトークン取得関数

@@ -42,7 +42,7 @@ try:
 except ImportError:
     OPENPYXL_AVAILABLE = False
 from .models import Client, LimitCalculation, AdditionalService, ServiceType, ServiceProvider, ClientDementiaStatus, ServiceAddOn, ProviderAddOnSetting, DocumentCreationHistory, Feedback, FeedbackReply, HomeCareSupportOffice, RegionalSupportCenter
-from .forms import ClientForm, FeedbackForm, FeedbackEditForm, FeedbackReplyForm
+from .forms import ClientForm, FeedbackForm, FeedbackEditForm, FeedbackReplyForm, CareInsuranceForm, DisabilityWelfareForm, MedicalCertForm
 
 
 @login_required
@@ -172,6 +172,54 @@ def client_delete(request, pk):
     }
     
     return render(request, 'clients/client_confirm_delete.html', context)
+
+
+@login_required
+def schedule_management(request, pk):
+    """保険・受給者証管理（有効期間等の詳細確認・更新）"""
+    client = get_object_or_404(Client, pk=pk)
+
+    ITEM_CONFIG = {
+        'certification': {'form': CareInsuranceForm, 'label': '介護認定'},
+        'burden': {'form': CareInsuranceForm, 'label': '負担割合'},
+        'limit_cert': {'form': CareInsuranceForm, 'label': '負担限度額認定証'},
+        'high_cost_care': {'form': CareInsuranceForm, 'label': '高額介護サービス費'},
+        'disability': {'form': DisabilityWelfareForm, 'label': '障害福祉サービス受給者証'},
+        'specific_medical': {'form': MedicalCertForm, 'label': '特定医療費受給者証'},
+        'welfare_medical': {'form': MedicalCertForm, 'label': '福祉医療費受給者証'},
+        'nhi_limit_cert': {'form': MedicalCertForm, 'label': '国保限度額適用認定証'},
+        'high_cost_combined': {'form': MedicalCertForm, 'label': '高額医療・高額介護合算療養費'},
+    }
+
+    if request.method == 'POST':
+        item = request.POST.get('item', '')
+        config = ITEM_CONFIG.get(item)
+        if config:
+            form = config['form'](request.POST, instance=client)
+            if form.is_valid():
+                form.save()
+                messages.success(request, f'{client.name}様の{config["label"]}を更新しました。')
+                return redirect('schedule_management', pk=client.pk)
+
+    care_form = CareInsuranceForm(instance=client)
+    disability_form = DisabilityWelfareForm(instance=client)
+    medical_form = MedicalCertForm(instance=client)
+
+    from datetime import date, timedelta
+    today = date.today()
+    warn_date = today + timedelta(days=30)
+
+    context = {
+        'care_form': care_form,
+        'disability_form': disability_form,
+        'medical_form': medical_form,
+        'client': client,
+        'title': '保険・受給者証管理',
+        'today': today,
+        'warn_date': warn_date,
+    }
+
+    return render(request, 'clients/schedule_management.html', context)
 
 
 @login_required
@@ -1268,7 +1316,7 @@ def color_reference(request):
                 {'name': '限度額試算', 'bg_color': 'transparent', 'border_color': 'なし', 'text_color': 'rgba(25, 135, 84, 0.5)'},
                 {'name': 'アセスメント', 'bg_color': 'transparent', 'border_color': 'なし', 'text_color': 'rgba(253, 126, 20, 0.5)'},
                 {'name': '書類作成', 'bg_color': 'transparent', 'border_color': 'なし', 'text_color': 'rgba(111, 66, 193, 0.5)'},
-                {'name': '予定管理', 'bg_color': 'transparent', 'border_color': 'なし', 'text_color': 'rgba(214, 51, 132, 0.5)'},
+                {'name': '保険・受給者証管理', 'bg_color': 'transparent', 'border_color': 'なし', 'text_color': 'rgba(214, 51, 132, 0.5)'},
                 {'name': '履歴・記録', 'bg_color': 'transparent', 'border_color': 'なし', 'text_color': 'rgba(255, 193, 7, 0.5)'},
                 {'name': '印刷・出力', 'bg_color': 'transparent', 'border_color': 'なし', 'text_color': 'rgba(210, 180, 140, 0.5)'},
             ]
@@ -1281,7 +1329,7 @@ def color_reference(request):
                 {'name': '限度額試算', 'bg_color': '#e8f5e8', 'border_color': '#198754', 'text_color': '#198754', 'muted_bg_color': '#c8e0c8', 'muted_border_color': '#7aaa7a', 'muted_text_color': '#4a854a'},
                 {'name': 'アセスメント', 'bg_color': '#fff3e0', 'border_color': '#fd7e14', 'text_color': '#fd7e14', 'muted_bg_color': '#e8d0b8', 'muted_border_color': '#c18a5a', 'muted_text_color': '#9a6a3a'},
                 {'name': '書類作成', 'bg_color': '#f3e5f5', 'border_color': '#6f42c1', 'text_color': '#6f42c1', 'muted_bg_color': '#d8c8e0', 'muted_border_color': '#9a7ab3', 'muted_text_color': '#704a8f'},
-                {'name': '予定管理', 'bg_color': '#ffebee', 'border_color': '#d63384', 'text_color': '#d63384', 'muted_bg_color': '#e8c8d8', 'muted_border_color': '#c17a9a', 'muted_text_color': '#9a4a70'},
+                {'name': '保険・受給者証管理', 'bg_color': '#ffebee', 'border_color': '#d63384', 'text_color': '#d63384', 'muted_bg_color': '#e8c8d8', 'muted_border_color': '#c17a9a', 'muted_text_color': '#9a4a70'},
                 {'name': '履歴・記録', 'bg_color': '#fff9c4', 'border_color': '#ffc107', 'text_color': '#856404', 'muted_bg_color': '#e8e0c0', 'muted_border_color': '#c1b370', 'muted_text_color': '#9a8a4a'},
                 {'name': '印刷・出力', 'bg_color': '#f5f0e8', 'border_color': '#d2b48c', 'text_color': '#8b7355', 'muted_bg_color': '#e0d4c8', 'muted_border_color': '#b39a7a', 'muted_text_color': '#8a6f50'},
             ]

@@ -66,12 +66,26 @@
                     <a href="{% url 'assessment_list' %}" class="btn btn-secondary">
                         <i class="fas fa-times"></i> キャンセル
                     </a>
-                    <form method="post" class="d-inline">
+                    <form method="post" class="d-inline" id="deleteForm">
                         {% csrf_token %}
-                        <button type="submit" class="btn btn-danger" onclick="return confirm('本当に削除しますか？この操作は取り消すことができません。')">
+                        <button type="button" class="btn btn-danger" onclick="confirmDelete()">
                             <i class="fas fa-trash"></i> 削除する
                         </button>
                     </form>
+                    <script>
+                    function confirmDelete() {
+                        showConfirmModal({
+                            icon: 'fa-trash-alt',
+                            iconColor: '#dc3545',
+                            title: '削除確認',
+                            message: '本当に削除しますか？<br>この操作は取り消すことができません。',
+                            okText: '削除する',
+                            okClass: 'btn-danger'
+                        }).then(function(ok) {
+                            if (ok) document.getElementById('deleteForm').submit();
+                        });
+                    }
+                    </script>
                 </div>
             </div>
         </div>

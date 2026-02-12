@@ -411,10 +411,15 @@
 <script>
 // 戻るボタンの機能
 function goBack() {
-    if (confirm('入力中のデータがすべて失われます。本当に戻りますか？')) {
-        // 利用者一覧ページに戻る
-        window.location.href = "{% url 'client_list' %}";
-    }
+    showConfirmModal({
+        icon: 'fa-arrow-left',
+        title: '戻る',
+        message: '入力中のデータがすべて失われます。<br>本当に戻りますか？',
+        okText: '戻る',
+        okClass: 'btn-secondary'
+    }).then(function(ok) {
+        if (ok) window.location.href = "{% url 'client_list' %}";
+    });
 }
 
 // シンプルなJavaScript関数
