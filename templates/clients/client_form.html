@@ -361,10 +361,10 @@
                         <h6 class="text-muted mb-3 pb-1" style="border-bottom: 1px solid #dee2e6; width: 50%;"><i class="fas fa-heart me-2"></i>介護保険関係</h6>
 
                         <div class="row g-3 mb-3 align-items-center">
-                            <div class="col-xl-5 col-lg-5 col-md-6 col-sm-6">
+                            <div class="col-md-5 col-sm-6">
                                 <label class="form-label mb-0">介護保険負担限度額認定証</label>
                             </div>
-                            <div class="col-xl-3 col-lg-3 col-md-4 col-sm-6">
+                            <div class="col-md-7 col-sm-6">
                                 <div class="btn-group" role="group">
                                     <input type="radio" name="limit_cert" value="yes" class="btn-check" id="limit_cert_yes" {% if form.limit_cert.value == 'yes' %}checked{% endif %}>
                                     <label class="btn btn-outline-secondary" for="limit_cert_yes" data-category="positive">あり</label>
@@ -374,13 +374,13 @@
                             </div>
                         </div>
 
-                        <div style="border-top: 1px solid #dee2e6; width: 50%; margin: 1rem 0;"></div>
+                        <hr class="text-muted my-3">
 
                         <div class="row g-3 mb-3 align-items-center">
-                            <div class="col-xl-5 col-lg-5 col-md-6 col-sm-6">
+                            <div class="col-md-5 col-sm-6">
                                 <label class="form-label mb-0">高額介護サービス費</label>
                             </div>
-                            <div class="col-xl-3 col-lg-3 col-md-4 col-sm-6">
+                            <div class="col-md-7 col-sm-6">
                                 <div class="btn-group" role="group">
                                     <input type="radio" name="high_cost_care" value="yes" class="btn-check" id="high_cost_care_yes" {% if form.high_cost_care.value == 'yes' %}checked{% endif %}>
                                     <label class="btn btn-outline-secondary" for="high_cost_care_yes" data-category="positive">あり</label>
@@ -396,10 +396,10 @@
                         <h6 class="text-muted mb-3 pb-1" style="border-bottom: 1px solid #dee2e6; width: 50%;"><i class="fas fa-hands-helping me-2"></i>障害福祉関係</h6>
 
                         <div class="row g-3 mb-3 align-items-center">
-                            <div class="col-xl-5 col-lg-5 col-md-6 col-sm-6">
+                            <div class="col-md-5 col-sm-6">
                                 <label class="form-label mb-0">障害福祉サービス受給者証</label>
                             </div>
-                            <div class="col-xl-3 col-lg-3 col-md-4 col-sm-6">
+                            <div class="col-md-7 col-sm-6">
                                 <div class="btn-group" role="group">
                                     <input type="radio" name="disability_welfare" value="yes" class="btn-check" id="disability_welfare_yes" {% if form.disability_welfare.value == 'yes' %}checked{% endif %}>
                                     <label class="btn btn-outline-secondary" for="disability_welfare_yes" data-category="positive">あり</label>
@@ -415,10 +415,10 @@
                         <h6 class="text-muted mb-3 pb-1" style="border-bottom: 1px solid #dee2e6; width: 50%;"><i class="fas fa-notes-medical me-2"></i>医療関係</h6>
 
                         <div class="row g-3 mb-3 align-items-center">
-                            <div class="col-xl-5 col-lg-5 col-md-6 col-sm-6">
+                            <div class="col-md-5 col-sm-6">
                                 <label class="form-label mb-0">特定医療費（指定難病）受給者証</label>
                             </div>
-                            <div class="col-xl-3 col-lg-3 col-md-4 col-sm-6">
+                            <div class="col-md-7 col-sm-6">
                                 <div class="btn-group" role="group">
                                     <input type="radio" name="specific_medical" value="yes" class="btn-check" id="specific_medical_yes" {% if form.specific_medical.value == 'yes' %}checked{% endif %}>
                                     <label class="btn btn-outline-secondary" for="specific_medical_yes" data-category="positive">あり</label>
@@ -428,13 +428,13 @@
                             </div>
                         </div>
 
-                        <div style="border-top: 1px solid #dee2e6; width: 50%; margin: 1rem 0;"></div>
+                        <hr class="text-muted my-3">
 
                         <div class="row g-3 mb-3 align-items-center">
-                            <div class="col-xl-5 col-lg-5 col-md-6 col-sm-6">
+                            <div class="col-md-5 col-sm-6">
                                 <label class="form-label mb-0">福祉医療費受給者証</label>
                             </div>
-                            <div class="col-xl-3 col-lg-3 col-md-4 col-sm-6">
+                            <div class="col-md-7 col-sm-6">
                                 <div class="btn-group" role="group">
                                     <input type="radio" name="welfare_medical" value="yes" class="btn-check" id="welfare_medical_yes" {% if form.welfare_medical.value == 'yes' %}checked{% endif %}>
                                     <label class="btn btn-outline-secondary" for="welfare_medical_yes" data-category="positive">あり</label>
@@ -444,13 +444,13 @@
                             </div>
                         </div>
 
-                        <div style="border-top: 1px solid #dee2e6; width: 50%; margin: 1rem 0;"></div>
+                        <hr class="text-muted my-3">
 
                         <div class="row g-3 mb-3 align-items-center">
-                            <div class="col-xl-5 col-lg-5 col-md-6 col-sm-6">
-                                <label class="form-label mb-0">国民健康保険限度額適用・標準負担額減額認定証</label>
+                            <div class="col-md-5 col-sm-6">
+                                <label class="form-label mb-0">国民健康保険限度額適用・減額認定証</label>
                             </div>
-                            <div class="col-xl-3 col-lg-3 col-md-4 col-sm-6">
+                            <div class="col-md-7 col-sm-6">
                                 <div class="btn-group" role="group">
                                     <input type="radio" name="nhi_limit_cert" value="yes" class="btn-check" id="nhi_limit_cert_yes" {% if form.nhi_limit_cert.value == 'yes' %}checked{% endif %}>
                                     <label class="btn btn-outline-secondary" for="nhi_limit_cert_yes" data-category="positive">あり</label>
@@ -460,13 +460,13 @@
                             </div>
                         </div>
 
-                        <div style="border-top: 1px solid #dee2e6; width: 50%; margin: 1rem 0;"></div>
+                        <hr class="text-muted my-3">
 
                         <div class="row g-3 mb-3 align-items-center">
-                            <div class="col-xl-5 col-lg-5 col-md-6 col-sm-6">
+                            <div class="col-md-5 col-sm-6">
                                 <label class="form-label mb-0">高額医療・高額介護合算療養費</label>
                             </div>
-                            <div class="col-xl-3 col-lg-3 col-md-4 col-sm-6">
+                            <div class="col-md-7 col-sm-6">
                                 <div class="btn-group" role="group">
                                     <input type="radio" name="high_cost_combined" value="yes" class="btn-check" id="high_cost_combined_yes" {% if form.high_cost_combined.value == 'yes' %}checked{% endif %}>
                                     <label class="btn btn-outline-secondary" for="high_cost_combined_yes" data-category="positive">あり</label>
