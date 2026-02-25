@@ -316,12 +316,13 @@ class CareInsuranceForm(forms.ModelForm):
     class Meta:
         model = Client
         fields = [
-            'certification_date', 'certification_period_start', 'certification_period_end',
+            'care_level', 'certification_date', 'certification_period_start', 'certification_period_end',
             'care_burden', 'burden_period_start', 'burden_period_end',
             'limit_cert', 'limit_cert_start', 'limit_cert_end',
             'high_cost_care',
         ]
         widgets = {
+            'care_level': forms.Select(attrs={'class': 'form-select'}),
             'certification_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'certification_period_start': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'certification_period_end': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),

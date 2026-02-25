@@ -180,8 +180,8 @@ def schedule_management(request, pk):
     client = get_object_or_404(Client, pk=pk)
 
     ITEM_CONFIG = {
-        'certification': {'form': CareInsuranceForm, 'label': '介護認定'},
-        'burden': {'form': CareInsuranceForm, 'label': '負担割合'},
+        'certification': {'form': CareInsuranceForm, 'label': '介護保険被保険者証'},
+        'burden': {'form': CareInsuranceForm, 'label': '介護保険負担割合証'},
         'limit_cert': {'form': CareInsuranceForm, 'label': '負担限度額認定証'},
         'high_cost_care': {'form': CareInsuranceForm, 'label': '高額介護サービス費'},
         'disability': {'form': DisabilityWelfareForm, 'label': '障害福祉サービス受給者証'},
@@ -192,13 +192,102 @@ def schedule_management(request, pk):
     }
 
     if request.method == 'POST':
+        action = request.POST.get('action', 'save')
         item = request.POST.get('item', '')
-        config = ITEM_CONFIG.get(item)
-        if config:
-            form = config['form'](request.POST, instance=client)
-            if form.is_valid():
-                form.save()
-                messages.success(request, f'{client.name}様の{config["label"]}を更新しました。')
+
+        if action == 'quick_add':
+            if item == 'limit_cert':
+                client.limit_cert = 'yes'
+            elif item == 'high_cost_care':
+                client.high_cost_care = 'yes'
+            elif item == 'disability':
+                client.disability_welfare = 'yes'
+            elif item == 'specific_medical':
+                client.specific_medical = 'yes'
+            elif item == 'welfare_medical':
+                client.welfare_medical = 'yes'
+            elif item == 'nhi_limit_cert':
+                client.nhi_limit_cert = 'yes'
+            elif item == 'high_cost_combined':
+                client.high_cost_combined = 'yes'
+            client.save()
+            messages.success(request, f'{client.name}様の{ITEM_CONFIG[item]["label"]}を追加しました。詳細は編集ボタンから設定してください。')
+            return redirect('schedule_management', pk=client.pk)
+
+        elif action == 'quick_remove':
+            if item == 'limit_cert':
+                client.limit_cert = 'no'
+                client.limit_cert_start = None
+                client.limit_cert_end = None
+            elif item == 'high_cost_care':
+                client.high_cost_care = 'no'
+            elif item == 'disability':
+                client.disability_welfare = 'no'
+                client.disability_welfare_cert_start = None
+                client.disability_welfare_cert_end = None
+                client.disability_welfare_decision_start = None
+                client.disability_welfare_decision_end = None
+            elif item == 'specific_medical':
+                client.specific_medical = 'no'
+                client.specific_medical_start = None
+                client.specific_medical_end = None
+            elif item == 'welfare_medical':
+                client.welfare_medical = 'no'
+                client.welfare_medical_start = None
+                client.welfare_medical_end = None
+            elif item == 'nhi_limit_cert':
+                client.nhi_limit_cert = 'no'
+                client.nhi_limit_cert_start = None
+                client.nhi_limit_cert_end = None
+            elif item == 'high_cost_combined':
+                client.high_cost_combined = 'no'
+            elif item == 'certification':
+                client.care_level = ''
+                client.certification_date = None
+                client.certification_period_start = None
+                client.certification_period_end = None
+            elif item == 'burden':
+                client.care_burden = ''
+                client.burden_period_start = None
+                client.burden_period_end = None
+            
+            client.save()
+            label = ITEM_CONFIG[item]['label'] if item in ITEM_CONFIG else item
+            messages.success(request, f'{client.name}様の{label}を削除しました。')
+            return redirect('schedule_management', pk=client.pk)
+
+        elif action == 'save':
+            config = ITEM_CONFIG.get(item)
+            if config:
+                # 必要なフィールドのみを更新するための定義
+                edit_fields = {
+                    'certification': ['care_level', 'certification_date', 'certification_period_start', 'certification_period_end'],
+                    'burden': ['care_burden', 'burden_period_start', 'burden_period_end'],
+                    'limit_cert': ['limit_cert_start', 'limit_cert_end'],
+                    'high_cost_care': [],
+                    'disability': ['disability_welfare_cert_start', 'disability_welfare_cert_end', 'disability_welfare_decision_start', 'disability_welfare_decision_end'],
+                    'specific_medical': ['specific_medical_start', 'specific_medical_end'],
+                    'welfare_medical': ['welfare_medical_start', 'welfare_medical_end'],
+                    'nhi_limit_cert': ['nhi_limit_cert_start', 'nhi_limit_cert_end'],
+                    'high_cost_combined': [],
+                }
+
+                fields_to_update = edit_fields.get(item, [])
+                if fields_to_update:
+                    from django.forms import modelform_factory
+                    widgets = config['form'].Meta.widgets
+                    # 編集対象のフィールドのみを持つ動的フォームを作成（他フィールドの上書きバグ防止）
+                    DynamicForm = modelform_factory(
+                        Client, 
+                        fields=fields_to_update,
+                        widgets={k: v for k, v in widgets.items() if k in fields_to_update}
+                    )
+                    form = DynamicForm(request.POST, instance=client)
+                    if form.is_valid():
+                        form.save()
+                        messages.success(request, f'{client.name}様の{config["label"]}を更新しました。')
+                    else:
+                        messages.error(request, f'{config["label"]}の更新中にエラーが発生しました。入力内容を確認してください。')
                 return redirect('schedule_management', pk=client.pk)
 
     care_form = CareInsuranceForm(instance=client)
