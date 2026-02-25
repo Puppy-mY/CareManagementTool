@@ -255,7 +255,7 @@
                                     </td>
                                     <td class="assessment-type-col">{{ assessment.get_assessment_type_display }}</td>
                                     <td class="interview-location-col">{{ assessment.get_interview_location_display }}</td>
-                                    <td class="assessor-col">{{ assessment.assessor.username }}</td>
+                                    <td class="assessor-col">{{ assessment.assessor.profile.get_full_name }}</td>
                                     <td class="actions-col">
                                         <div class="btn-group btn-group-sm d-flex justify-content-end">
                                             <a href="{% url 'assessment_edit' assessment.pk %}" class="btn btn-outline-secondary btn-sm btn-edit" style="transition: all 0.2s ease;">
