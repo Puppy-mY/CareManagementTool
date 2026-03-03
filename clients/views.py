@@ -629,6 +629,7 @@ def document_create(request, client_id, document_type):
     document_types = {
         'kyotaku_service_plan_request': '居宅サービス計画作成依頼（変更）届出書',
         'kyotaku_preventive_service_plan_request': '介護予防サービス計画作成・介護予防ケアマネジメント依頼（変更）届出書',
+        'careplan_info_request': '介護保険サービス計画作成等に係る情報提供依頼書',
     }
 
     if document_type not in document_types:
@@ -779,6 +780,13 @@ def document_create(request, client_id, document_type):
             'kyotaku_address': request.POST.get('kyotaku_address'),
             'kyotaku_phone': request.POST.get('kyotaku_phone'),
             'kyotaku_staff_name': request.POST.get('kyotaku_staff_name'),
+
+            # 情報提供依頼書（申請者・担当者情報）
+            'staff_name': request.POST.get('staff_name'),
+            'staff_job_title': request.POST.get('staff_job_title'),
+            'manager_name': request.POST.get('manager_name'),
+            'request_doc_chousasho': request.POST.get('request_doc_chousasho'),
+            'request_doc_ikensho': request.POST.get('request_doc_ikensho'),
 
             # 事業所番号
             'office_number_1': request.POST.get('office_number_1'),
@@ -1119,6 +1127,34 @@ def generate_document_excel(request, client, document_type, document_name, form_
             safe_write_cell(coords.get('burden_agree_mail'), '☑')
         elif burden_delivery == 'with_result':
             safe_write_cell(coords.get('burden_agree_simultaneous'), '☑')
+
+        elif document_type == 'careplan_info_request':
+            # 介護保険サービス計画作成等に係る情報提供依頼書専用ロジック
+            from datetime import datetime
+            today_wareki = to_wareki(datetime.now().date())
+            safe_write_cell(coords.get('request_date'), today_wareki)
+
+            # 申請者情報
+            safe_write_cell(coords.get('office_name'), form_data.get('office_name', ''))
+            safe_write_cell(coords.get('manager_name'), form_data.get('manager_name', ''))
+            safe_write_cell(coords.get('office_phone'), form_data.get('office_phone', ''))
+
+            # 提供依頼資料のチェックボックス表現
+            if form_data.get('request_doc_chousasho') == 'yes':
+                safe_write_cell(coords.get('request_doc_chousasho'), '■\u3000介護保険の認定に係る認定調査票')
+            if form_data.get('request_doc_ikensho') == 'yes':
+                safe_write_cell(coords.get('request_doc_ikensho'), '■\u3000介護保険の認定に係る主治医意見書')
+
+            # 提供申請者情報
+            safe_write_cell(coords.get('staff_name'), form_data.get('staff_name', ''))
+            safe_write_cell(coords.get('staff_job_title'), form_data.get('staff_job_title', ''))
+
+            # 被保険者情報（同意欄）
+            safe_write_cell(coords.get('client_address'), form_data.get('client_address', client.address))
+            if client.birth_date:
+                safe_write_cell(coords.get('client_birth_date'), to_wareki(client.birth_date))
+            safe_write_cell(coords.get('client_insurance_number'), form_data.get('client_insurance_number', client.insurance_number), force_number=True)
+            safe_write_cell(coords.get('client_name'), form_data.get('client_name', client.name))
 
         # 介護予防支援事業者の情報（介護予防版のみ）
         if document_type == 'kyotaku_preventive_service_plan_request':

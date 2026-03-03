@@ -330,16 +330,17 @@
     }
 </style>
 
-<div class="row">
-    <div class="col-12">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1><i class="fas fa-user"></i> {{ client.name }} さん</h1>
-            <div>
-                <a href="{% url 'client_list' %}" class="btn btn-outline-secondary">
-                    <i class="fas fa-arrow-left"></i> 一覧に戻る
-                </a>
-            </div>
-        </div>
+<div class="mb-4 pb-2 border-bottom">
+    <h1 class="h4 mb-1 text-dark fw-bold">
+        <i class="fas fa-user me-2 text-secondary"></i>詳細表示
+    </h1>
+    <div class="d-flex justify-content-between align-items-center">
+        <span class="text-muted small">
+            <i class="fas fa-user me-1"></i>{{ client.name }} さん
+        </span>
+        <a href="{% url 'client_list' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> 一覧に戻る
+        </a>
     </div>
 </div>
 
@@ -735,13 +736,23 @@
     <div class="tab-pane fade" id="documents" role="tabpanel">
         <div class="pt-4 pb-3">
             <div class="card" style="border: none; background-color: white;">
-                <div class="card-header" style="background-color: white; border: none;">
+                <div class="card-header d-flex justify-content-between align-items-center" style="background-color: white; border: none;">
                     <h5 class="mb-0">
                         <i class="fas fa-file-alt"></i> 書類作成履歴
                         {% if document_histories.count %}
                         <span class="badge" style="background-color: #f5f5f5; border: 1px solid #999; color: #333; vertical-align: middle;">{{ document_histories.count }}件</span>
                         {% endif %}
                     </h5>
+                    <div class="dropdown">
+                        <button class="btn btn-primary btn-sm dropdown-toggle" type="button" id="createDocumentDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-plus"></i> 新規作成
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="createDocumentDropdown">
+                            <li><a class="dropdown-item" href="#" onclick="openDocumentWindow('kyotaku_service_plan_request')">居宅サービス計画作成依頼（変更）届出書</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="openDocumentWindow('kyotaku_preventive_service_plan_request')">介護予防・指定介護予防支援契約（変更）届出書</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="openDocumentWindow('careplan_info_request')">介護保険サービス計画作成等に係る情報提供依頼書</a></li>
+                        </ul>
+                    </div>
                 </div>
                 <div class="card-body p-0">
                     {% if document_histories %}
@@ -880,7 +891,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // 新しいウィンドウで書類作成を開く
 function openDocumentWindow(documentType) {
     const clientId = {{ client.pk }};
-    const url = `/clients/${clientId}/document_create/${documentType}/`;
+    const url = `/clients/${clientId}/documents/create/${documentType}/`;
     const windowName = `document_${documentType}_${clientId}`;
     const windowFeatures = 'width=1200,height=800,scrollbars=yes,resizable=yes,location=yes';
 
