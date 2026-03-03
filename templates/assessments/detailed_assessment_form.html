@@ -507,28 +507,30 @@ button[name="action"][value="save"]:hover {
 
 <div class="row">
     <div class="col-12">
-        <div class="mb-4 pb-2 border-bottom">
-            <h1 class="h4 mb-1 text-dark fw-bold">
-                <i class="fas fa-file-medical-alt me-2 text-secondary"></i>{% if is_edit %}アセスメント編集{% else %}アセスメント作成{% endif %}
-            </h1>
-            <div class="d-flex justify-content-between align-items-center">
-                <span class="text-muted small">
-                    {% if is_edit and assessment.client %}
+        <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+            <div class="d-flex align-items-center gap-3">
+                <h1 class="h3 mb-0 text-dark">
+                    <i class="fas fa-file-medical-alt me-2 text-secondary"></i>{% if is_edit %}アセスメント編集{% else %}アセスメント作成{% endif %}
+                </h1>
+                {% if is_edit and assessment.client %}
+                <span class="text-muted border-start ps-3 ms-2">
                     <i class="fas fa-user me-1"></i>{{ assessment.client.name }} さん
-                    {% elif not is_edit and selected_client %}
-                    <i class="fas fa-user me-1"></i>{{ selected_client.name }} さん
-                    {% endif %}
                 </span>
-                <div class="d-flex gap-2">
-                    {% if not is_edit and has_previous_assessment %}
-                    <button type="button" id="loadPreviousBtn" class="btn btn-outline-secondary px-4 py-2" onclick="loadPreviousAssessment()" style="transition: all 0.2s ease;">
-                        <i class="fas fa-history me-1"></i> 前回分を反映
-                    </button>
-                    {% endif %}
-                    <button type="button" class="btn btn-outline-secondary btn-back px-4 py-2" onclick="goBack()" style="transition: all 0.2s ease;">
-                        <i class="fas fa-arrow-left me-1"></i> 戻る
-                    </button>
-                </div>
+                {% elif not is_edit and selected_client %}
+                <span class="text-muted border-start ps-3 ms-2">
+                    <i class="fas fa-user me-1"></i>{{ selected_client.name }} さん
+                </span>
+                {% endif %}
+            </div>
+            <div class="d-flex gap-2">
+                {% if not is_edit and has_previous_assessment %}
+                <button type="button" id="loadPreviousBtn" class="btn btn-outline-secondary px-4 py-2" onclick="loadPreviousAssessment()" style="transition: all 0.2s ease;">
+                    <i class="fas fa-history me-1"></i> 前回分を反映
+                </button>
+                {% endif %}
+                <button type="button" class="btn btn-outline-secondary btn-back px-4 py-2" onclick="goBack()" style="transition: all 0.2s ease;">
+                    <i class="fas fa-arrow-left me-1"></i> 戻る
+                </button>
             </div>
         </div>
     </div>
@@ -4444,4 +4446,5 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
+
 {% endblock %}
