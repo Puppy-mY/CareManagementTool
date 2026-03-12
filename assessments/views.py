@@ -10,6 +10,7 @@ from django.conf import settings
 from datetime import date
 import json
 import os
+import urllib.parse
 from .models import Assessment
 from clients.models import Client
 from .forms import DetailedAssessmentForm
@@ -84,8 +85,8 @@ def assessment_edit(request, pk):
             }
 
             detailed_data['insurance_info'] = {
-                'care_level': form.cleaned_data.get('care_level', ''),
-                'dementia_level': form.cleaned_data.get('dementia_level', ''),
+                'care_level': request.POST.get('care_level', ''),
+                'dementia_level': request.POST.get('dementia_level', ''),
                 'burden_ratio': form.cleaned_data.get('burden_ratio', ''),
                 'medical_insurance': form.cleaned_data.get('medical_insurance', ''),
                 'disability_handbook': form.cleaned_data.get('disability_handbook', False),
@@ -409,7 +410,15 @@ def assessment_edit(request, pk):
 
         # 作成日の初期値を設定
         initial_data['created_date'] = assessment.assessment_date
-        initial_data['creator'] = assessment.assessor.profile.get_full_name() if assessment.assessor else ''
+        
+        # プロフィールが存在しない場合のエラーを回避
+        creator_name = ''
+        if assessment.assessor:
+            try:
+                creator_name = assessment.assessor.profile.get_full_name()
+            except Exception:
+                creator_name = assessment.assessor.username
+        initial_data['creator'] = creator_name
 
         # JSONフィールドから既存データを読み込み
         if assessment.basic_info:
@@ -563,8 +572,8 @@ def detailed_assessment_create(request):
             }
 
             detailed_data['insurance_info'] = {
-                'care_level': form.cleaned_data.get('care_level', ''),
-                'dementia_level': form.cleaned_data.get('dementia_level', ''),
+                'care_level': request.POST.get('care_level', ''),
+                'dementia_level': request.POST.get('dementia_level', ''),
                 'burden_ratio': form.cleaned_data.get('burden_ratio', ''),
                 'medical_insurance': form.cleaned_data.get('medical_insurance', ''),
                 'disability_handbook': form.cleaned_data.get('disability_handbook', False),
@@ -1380,7 +1389,15 @@ def generate_assessment_excel(assessment):
 
         # アセスメント基本情報
         safe_write_cell(coords.get('assessment_date'), to_wareki(assessment.assessment_date) if assessment.assessment_date else '')
-        safe_write_cell(coords.get('assessor'), assessment.assessor.profile.get_full_name() if assessment.assessor else '')
+        
+        assessor_name = ''
+        if assessment.assessor:
+            try:
+                assessor_name = assessment.assessor.profile.get_full_name()
+            except Exception:
+                # Profileが存在しない場合はusernameを使用
+                assessor_name = assessment.assessor.username
+        safe_write_cell(coords.get('assessor'), assessor_name)
 
         # アセスメントの理由（その他の場合は詳細を書き込む）
         if assessment.assessment_type == 'other' and assessment.assessment_type_other:
@@ -2117,7 +2134,12 @@ def generate_assessment_excel(assessment):
         response = HttpResponse(
             content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         )
-        response['Content-Disposition'] = f'attachment; filename="{assessment.client.name}_assessment.xlsx"'
+        # Chrome特有の不具合（日本語ファイル名を拡張機能が破損させる問題）を回避するため、
+        # ファイル名をASCII文字（半角英数字）のみで構成します。
+        # 例: client_24_assessment_20260312.xlsx
+        date_str = assessment.assessment_date.strftime('%Y%m%d') if assessment.assessment_date else 'nodate'
+        filename = f"client_{assessment.client.id}_assessment_{date_str}.xlsx"
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
 
         # Excelファイルを保存
         workbook.save(response)
