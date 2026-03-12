@@ -2886,16 +2886,21 @@ def generate_assessment_excel(assessment):
                 content_type="application/vnd.ms-excel.sheet.macroEnabled.12",
             )
 
-            # Chrome特有の不具合（日本語ファイル名を拡張機能が破損させる問題）を回避するため、
-            # ファイル名をASCII文字（半角英数字）のみで構成します。
-            # 例: client_24_assessment_20260312.xlsm
-            date_str = (
-                assessment.assessment_date.strftime("%Y%m%d")
-                if assessment.assessment_date
-                else "nodate"
+            # クライアントのふりがな（苗字）と氏名を組み合わせてファイル名を生成
+            # 例: やまかわ_山川夏楓様.xlsm
+            from urllib.parse import quote
+
+            furigana = assessment.client.furigana or ""
+            # スペースで分割して最初の要素（苗字）を取得
+            last_name_kana = furigana.split()[0] if furigana.split() else ""
+            # 名前から空白を削除
+            full_name = (assessment.client.name or "").replace(" ", "").replace("　", "")
+
+            filename = f"{last_name_kana}_{full_name}様.xlsm"
+            # 日本語ファイル名を正しく扱うためのエンコーディング
+            response["Content-Disposition"] = (
+                f"attachment; filename*=UTF-8''{quote(filename)}"
             )
-            filename = f"client_{assessment.client.id}_assessment_{date_str}.xlsm"
-            response["Content-Disposition"] = f'attachment; filename="{filename}"'
 
             return response
 
