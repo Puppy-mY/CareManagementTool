@@ -3,10 +3,9 @@
 {% block title %}{{ client.name }} - 利用者詳細 - {{ block.super }}{% endblock %}
 
 {% block content %}
-<!-- 権限情報（開発用） -->
-<div class="permission-label">
-    居宅、ヘルパー、ヘルパー庶務、デイ、デイ庶務、訪看、訪看庶務、事務所
-</div>
+{% block permissions %}
+<span class="badge bg-light text-muted border" style="font-size: 0.75rem;">居宅、ヘルパー、ヘルパー庶務、デイ、デイ庶務、訪看、訪看庶務、事務所</span>
+{% endblock %}
 
 <style>
     /* メインタブのスタイル */
@@ -377,15 +376,18 @@
     <div class="tab-pane fade show active" id="basic-info" role="tabpanel">
         <div class="pt-4 pb-3">
             <div class="mb-0">
-                <ul class="nav nav-tabs" id="clientSubTabs" role="tablist">
+                <ul class="nav nav-tabs d-flex align-items-stretch" id="clientSubTabs" role="tablist">
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link active" id="client-basic-info-tab" data-bs-toggle="tab" data-bs-target="#client-basic-info" type="button" role="tab" aria-controls="client-basic-info" aria-selected="true" style="background-color: #f5f5f5; color: #333; border: 1px solid #999; border-bottom: none; border-top-left-radius: 0.375rem; border-top-right-radius: 0.375rem;">基本情報</button>
+                        <button class="nav-link active h-100 d-flex align-items-center justify-content-center" id="client-basic-info-tab" data-bs-toggle="tab" data-bs-target="#client-basic-info" type="button" role="tab" aria-controls="client-basic-info" aria-selected="true" style="background-color: #f5f5f5; color: #333; border: 1px solid #999; border-bottom: none; border-top-left-radius: 0.375rem; border-top-right-radius: 0.375rem; min-height: 48px;">基本情報</button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="client-contact-tab" data-bs-toggle="tab" data-bs-target="#client-contact" type="button" role="tab" aria-controls="client-contact" aria-selected="false" style="background-color: #ffffff; color: #6c757d; border: 1px solid #dee2e6; border-bottom: none; border-top-left-radius: 0.375rem; border-top-right-radius: 0.375rem;">家族情報</button>
+                        <button class="nav-link h-100 d-flex align-items-center justify-content-center" id="client-contact-tab" data-bs-toggle="tab" data-bs-target="#client-contact" type="button" role="tab" aria-controls="client-contact" aria-selected="false" style="background-color: #ffffff; color: #6c757d; border: 1px solid #dee2e6; border-bottom: none; border-top-left-radius: 0.375rem; border-top-right-radius: 0.375rem; min-height: 48px;">家族情報</button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="client-insurance-tab" data-bs-toggle="tab" data-bs-target="#client-insurance" type="button" role="tab" aria-controls="client-insurance" aria-selected="false" style="background-color: #ffffff; color: #6c757d; border: 1px solid #dee2e6; border-bottom: none; border-top-left-radius: 0.375rem; border-top-right-radius: 0.375rem;">保険情報</button>
+                        <button class="nav-link h-100 d-flex flex-column align-items-center justify-content-center" id="client-insurance-tab" data-bs-toggle="tab" data-bs-target="#client-insurance" type="button" role="tab" aria-controls="client-insurance" aria-selected="false" style="background-color: #ffffff; color: #6c757d; border: 1px solid #dee2e6; border-bottom: none; border-top-left-radius: 0.375rem; border-top-right-radius: 0.375rem; line-height: 1.2; padding-top: 0.3rem; padding-bottom: 0.3rem; min-height: 48px;">
+                            <span style="font-size: 0.85em;">公的制度の有無</span>
+                            <span style="font-size: 0.75em;">保険証・受給者証等</span>
+                        </button>
                     </li>
                 </ul>
             </div>
@@ -571,36 +573,16 @@
                                     <th class="bg-light text-muted">負担割合</th>
                                     <td>{{ client.care_burden|default:"未設定" }}</td>
                                 </tr>
-                            </tbody>
-                        </table>
-
-                        <table class="table table-bordered mt-3">
-                            <tbody>
                                 <tr>
-                                    <th class="bg-light text-muted align-middle" style="width: 25%;">障害高齢者の<br>日常生活自立度<br>（寝たきり度）</th>
+                                    <th colspan="2" class="bg-light text-muted small py-1 text-center">日常生活の自立度等について</th>
+                                </tr>
+                                <tr>
+                                    <th class="bg-light text-muted align-middle">身体障がい者日常生活自立度</th>
                                     <td class="align-middle">{{ client.get_disability_level_display|default:"未設定" }}</td>
                                 </tr>
                                 <tr>
-                                    <th class="bg-light text-muted align-middle">認知症高齢者の<br>日常生活自立度</th>
+                                    <th class="bg-light text-muted align-middle">認知症日常生活自立度</th>
                                     <td class="align-middle">{{ client.get_dementia_level_display|default:"未設定" }}</td>
-                                </tr>
-                                <tr>
-                                    <th class="bg-light text-muted align-middle">身体障がい者手帳</th>
-                                    <td class="align-middle">
-                                        {% if client.disability_handbook %}
-                                            あり{% if client.disability_handbook_type %}（{{ client.disability_handbook_type }}）{% endif %}
-                                        {% else %}
-                                            なし
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <th class="bg-light text-muted align-middle">難病申請</th>
-                                    <td class="align-middle">{% if client.difficult_disease %}あり{% else %}なし{% endif %}</td>
-                                </tr>
-                                <tr>
-                                    <th class="bg-light text-muted align-middle">生活保護</th>
-                                    <td class="align-middle">{% if client.life_protection %}あり{% else %}なし{% endif %}</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -649,10 +631,39 @@
                         </table>
                     </div>
 
-                    <!-- 受給者証 -->
+                    <!-- 自立度・手帳・手当 -->
+                    <div class="mb-4">
+                        <h6 class="text-secondary mb-3 pb-2" style="border-bottom: 2px solid #dee2e6;">
+                            <i class="fas fa-id-card-alt me-2"></i>自立度・手帳・手当関係
+                        </h6>
+                        <table class="table table-bordered">
+                            <tbody>
+                                <tr>
+                                    <th class="bg-light text-muted align-middle">身体障がい者手帳</th>
+                                    <td class="align-middle">
+                                        {% if client.disability_handbook %}
+                                            あり{% if client.disability_handbook_type %}（{{ client.disability_handbook_type }}）{% endif %}
+                                        {% else %}
+                                            なし
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th class="bg-light text-muted align-middle">難病申請</th>
+                                    <td class="align-middle">{% if client.difficult_disease %}あり{% else %}なし{% endif %}</td>
+                                </tr>
+                                <tr>
+                                    <th class="bg-light text-muted align-middle">生活保護</th>
+                                    <td class="align-middle">{% if client.life_protection %}あり{% else %}なし{% endif %}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- 証書類（受給者証等） -->
                     <div class="mb-3">
                         <h6 class="text-secondary mb-3 pb-2" style="border-bottom: 2px solid #dee2e6;">
-                            <i class="fas fa-id-card me-2"></i>受給者証
+                            <i class="fas fa-file-contract me-2"></i>証書類（受給者証等）
                         </h6>
                         <table class="table table-bordered">
                             <tbody>

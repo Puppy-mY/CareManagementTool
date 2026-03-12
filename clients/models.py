@@ -83,6 +83,17 @@ class Client(models.Model):
         ('student', '学生'),
         ('other', 'その他'),
     ]
+
+    MEDICAL_INSURANCE_CHOICES = [
+        ('', '選択してください'),
+        ('national_health', '国民健康保険'),
+        ('latter_stage_elderly', '後期高齢者医療'),
+        ('health_insurance_association', '健康保険（協会けんぽ）'),
+        ('health_insurance_union', '健康保険（組合）'),
+        ('mutual_aid', '共済組合'),
+        ('seamen', '船員保険'),
+        ('other', 'その他'),
+    ]
     
     # 基本情報
     # id = models.AutoField(primary_key=True)  # Djangoが自動的に追加
@@ -139,11 +150,12 @@ class Client(models.Model):
     high_cost_combined = models.CharField('高額医療・高額介護合算療養費', max_length=3, blank=True)
 
     # 医療保険情報
-    medical_insurance_type = models.CharField('医療保険種類', max_length=100, blank=True)
+    medical_insurance_type = models.CharField('医療保険種類', max_length=100, choices=MEDICAL_INSURANCE_CHOICES, blank=True)
     medical_insurer_name_issuer = models.CharField('保険者の名称及び交付者名', max_length=200, blank=True)
     medical_insurer_number = models.CharField('医療保険保険者番号', max_length=50, blank=True)
     medical_insurance_symbol = models.CharField('被保険者番号（記号）', max_length=50, blank=True)
     medical_insurance_number = models.CharField('被保険者番号（番号）', max_length=50, blank=True)
+    medical_insurance_branch = models.CharField('被保険者番号（枝番）', max_length=10, blank=True)
     
     # 家族情報（1人目）
     family_name1 = models.CharField('家族氏名（1人目）', max_length=100, blank=True)

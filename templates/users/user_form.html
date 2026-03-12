@@ -4,10 +4,9 @@
 {% block title %}{% if is_edit %}ユーザー編集{% else %}ユーザー登録{% endif %} - {{ block.super }}{% endblock %}
 
 {% block content %}
-<!-- 権限情報（開発用） -->
-<div class="permission-label">
-    居宅、ヘルパー、ヘルパー庶務、デイ、デイ庶務、訪看、訪看庶務、事務所
-</div>
+{% block permissions %}
+<span class="badge bg-light text-muted border" style="font-size: 0.75rem;">居宅、ヘルパー、ヘルパー庶務、デイ、デイ庶務、訪看、訪看庶務、事務所</span>
+{% endblock %}
 
 <div class="row">
     <div class="col-12">

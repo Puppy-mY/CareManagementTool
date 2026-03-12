@@ -366,7 +366,7 @@ function exportListExcel(assessmentId, clientName, dateStr) {
         const today = new Date();
         dateStr = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
     }
-    const filename = `${clientName}_assessment_${dateStr}.xlsx`;
+    const filename = `${clientName}_assessment_${dateStr}.xlsm`;
     
     // ダウンロード中であることをユーザーに通知（任意）
     const loadingToast = document.createElement('div');

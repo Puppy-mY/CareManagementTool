@@ -4,6 +4,7 @@ from . import api_views
 
 urlpatterns = [
     path('', views.client_list, name='client_list'),
+    path('all/', views.all_client_list, name='all_client_list'),
 
     # 具体的なパスを先に配置（<str:pk>より前に）
     path('create/', views.client_create, name='client_create'),

@@ -13,7 +13,7 @@ class ClientForm(forms.ModelForm):
             'care_burden',
             'disability_level', 'dementia_level',
             'disability_handbook', 'disability_handbook_type', 'difficult_disease', 'life_protection',
-            'medical_insurance_type', 'medical_insurer_name_issuer', 'medical_insurer_number', 'medical_insurance_symbol', 'medical_insurance_number',
+            'medical_insurance_type', 'medical_insurer_name_issuer', 'medical_insurer_number', 'medical_insurance_symbol', 'medical_insurance_number', 'medical_insurance_branch',
             # 公的制度・受給者証（有無のみ）
             'limit_cert', 'high_cost_care',
             'disability_welfare',
@@ -35,12 +35,12 @@ class ClientForm(forms.ModelForm):
                 'pattern': '[0-9]{10}',
                 'inputmode': 'numeric'
             }),
-            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '例: 山田 太郎'}),
-            'furigana': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '例: やまだ たろう'}),
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '例: 介護　太郎'}),
+            'furigana': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '例: かいご　たろう'}),
             'birth_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'gender': forms.Select(attrs={'class': 'form-select'}),
-            'phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '例: 090-1234-5678'}),
-            'address': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '例: 東京都渋谷区神南1-1-1'}),
+            'phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '例: 059-253-6599'}),
+            'address': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '例: 三重県津市神戸154-9'}),
             
             # 保険情報
             'care_level': forms.Select(attrs={'class': 'form-select'}),
@@ -56,31 +56,32 @@ class ClientForm(forms.ModelForm):
             'life_protection': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
 
             # 医療保険情報
-            'medical_insurance_type': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '例: 国民健康保険'}),
+            'medical_insurance_type': forms.Select(attrs={'class': 'form-select'}),
             'medical_insurer_name_issuer': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '例: ○○市'}),
             'medical_insurer_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '例: 123456'}),
             'medical_insurance_symbol': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '例: 01'}),
             'medical_insurance_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '例: 1234567890'}),
+            'medical_insurance_branch': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '例: 01', 'maxlength': '2'}),
             
             # 家族情報（1人目）
-            'family_name1': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '例: 山田花子'}),
+            'family_name1': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '例: 介護　花子'}),
             'family_relationship1': forms.Select(attrs={'class': 'form-select'}),
-            'family_address1': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '例: 東京都渋谷区神南1-1-1'}),
+            'family_address1': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '例: 三重県津市神戸154-9'}),
             'family_living_status1': forms.Select(attrs={'class': 'form-select'}),
             'family_care_status1': forms.Select(attrs={'class': 'form-select'}),
             'family_employment1': forms.Select(attrs={'class': 'form-select'}),
             'family_contact1': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '例: 090-1234-5678'}),
-            'family_notes1': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '備考など'}),
+            'family_notes1': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '特記事項があれば記載'}),
             
             # 家族情報（2人目）
-            'family_name2': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '例: 山田次郎'}),
+            'family_name2': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '例: 介護　次郎'}),
             'family_relationship2': forms.Select(attrs={'class': 'form-select'}),
-            'family_address2': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '例: 東京都渋谷区神南1-1-1'}),
+            'family_address2': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '例: 三重県津市神戸154-9'}),
             'family_living_status2': forms.Select(attrs={'class': 'form-select'}),
             'family_care_status2': forms.Select(attrs={'class': 'form-select'}),
             'family_employment2': forms.Select(attrs={'class': 'form-select'}),
             'family_contact2': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '例: 090-1234-5678'}),
-            'family_notes2': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '備考など'}),
+            'family_notes2': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '特記事項があれば記載'}),
         }
     
     def __init__(self, *args, **kwargs):
@@ -110,6 +111,32 @@ class ClientForm(forms.ModelForm):
             if not insurance_number.isdigit():
                 raise forms.ValidationError('被保険者番号は数字のみで入力してください。')
         return insurance_number
+
+    def clean_name(self):
+        """氏名のバリデーション（全角・半角スペース必須、保存時は全角スペースに統一）"""
+        name = self.cleaned_data.get('name', '')
+        if name:
+            # 前後の空白を削除
+            name = name.strip()
+            # 半角スペースを全角スペースに変換
+            name = name.replace(' ', '　')
+            # 全角スペースが含まれているか確認
+            if '　' not in name:
+                raise forms.ValidationError('姓と名の間にはスペース（空白）を入れてください。')
+        return name
+
+    def clean_furigana(self):
+        """ふりがなのバリデーション（全角・半角スペース必須、保存時は全角スペースに統一）"""
+        furigana = self.cleaned_data.get('furigana', '')
+        if furigana:
+            # 前後の空白を削除
+            furigana = furigana.strip()
+            # 半角スペースを全角スペースに変換
+            furigana = furigana.replace(' ', '　')
+            # 全角スペースが含まれているか確認
+            if '　' not in furigana:
+                raise forms.ValidationError('姓と名の間にはスペース（空白）を入れてください。')
+        return furigana
 
 
 class FeedbackForm(forms.ModelForm):

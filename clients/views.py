@@ -49,6 +49,47 @@ from .forms import ClientForm, FeedbackForm, FeedbackEditForm, FeedbackReplyForm
 def client_list(request):
     from django.contrib.auth.models import User
 
+    # ログインしているケアマネ自身のクライアントのみを取得（クライアントサイドでフィルタリング）
+    clients = Client.objects.select_related('created_by').filter(created_by=request.user)
+
+    # 各利用者の今月の限度額試算情報を取得
+    now = datetime.now()
+    for client in clients:
+        try:
+            current_calculation = LimitCalculation.objects.get(
+                client=client,
+                year=now.year,
+                month=now.month
+            )
+            client.current_calculation = current_calculation
+        except LimitCalculation.DoesNotExist:
+            client.current_calculation = None
+    
+    # ケアマネージャー一覧を取得（安全な方法）
+    care_managers = User.objects.all().order_by('username')
+
+    context = {
+        'clients': list(clients), # list()に変換して長さなどをテンプレートで扱いやすくする
+        'care_level_choices': Client.CARE_LEVEL_CHOICES,
+        'status_choices': [
+            ('', '全て'),
+            ('over_limit', '限度額超過'),
+            ('within_limit', '限度額内'),
+            ('no_calculation', '試算未作成'),
+        ],
+        'care_managers': care_managers,
+        'current_year_month': f'{now.year}年{now.month}月',
+        'is_all_clients': False, # テンプレートでの表示切り替え用フラグ
+    }
+
+    return render(request, 'clients/client_list.html', context)
+
+
+@login_required
+def all_client_list(request):
+    """すべての利用者一覧（全ケアマネージャーの利用者を対象）"""
+    from django.contrib.auth.models import User
+
     # 全クライアントを取得（クライアントサイドでフィルタリング）
     clients = Client.objects.select_related('created_by').all()
 
@@ -69,7 +110,7 @@ def client_list(request):
     care_managers = User.objects.all().order_by('username')
 
     context = {
-        'clients': clients,
+        'clients': list(clients),
         'care_level_choices': Client.CARE_LEVEL_CHOICES,
         'status_choices': [
             ('', '全て'),
@@ -79,6 +120,7 @@ def client_list(request):
         ],
         'care_managers': care_managers,
         'current_year_month': f'{now.year}年{now.month}月',
+        'is_all_clients': True, # テンプレートでの表示切り替え用フラグ
     }
 
     return render(request, 'clients/client_list.html', context)

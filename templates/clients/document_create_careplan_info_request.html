@@ -1,0 +1,108 @@
+{% extends 'clients/document_create_base.html' %}
+
+{% block provider_section %}
+<!-- 情報提供先（通常は市町村長など） -->
+<div class="row g-3 mb-4">
+    <div class="col-12">
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle me-1"></i> 保険者（市区町村長）宛に、認定調査票や主治医意見書の提供を依頼するための申請書です。
+        </div>
+    </div>
+</div>
+
+<!-- 申請者（事業所・施設）情報 -->
+<div id="office_detail_section" class="accordion" style="margin: 0.5rem 0 1rem 0;">
+    <div class="accordion-item" style="border: none; background-color: #f8f9fa; border-radius: 0.5rem;">
+        <h2 class="accordion-header">
+            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#officeDetailCollapse" aria-expanded="true" aria-controls="officeDetailCollapse" style="background-color: #f8f9fa; padding: 0.5rem 1rem; color: #333;">
+                <span id="office_status_icon" class="me-2"><i class="fas fa-check-circle" style="color: rgba(25, 135, 84, 0.5);"></i></span>事業者及び施設情報（申請者）
+            </button>
+        </h2>
+        <div id="officeDetailCollapse" class="accordion-collapse collapse show">
+            <div class="accordion-body row g-3" style="padding: 0.5rem 1rem 1rem 1rem;">
+                <div class="col-md-6">
+                    <label class="form-label">事業者及び施設名 <span class="text-danger">*</span></label>
+                    <input type="text" name="office_name" id="office_name" class="form-control" value="{% if initial_data.office_name %}{{ initial_data.office_name }}{% elif user.profile.home_care_office %}居宅介護支援事業所　{{ user.profile.home_care_office.name }}{% else %}居宅介護支援事業所　安濃津ろまん{% endif %}" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">管理者名 <span class="text-danger">*</span></label>
+                    <input type="text" name="manager_name" id="manager_name" class="form-control" value="{% if initial_data.manager_name %}{{ initial_data.manager_name }}{% elif user.profile.home_care_office.manager_name %}{{ user.profile.home_care_office.manager_name }}{% else %}倉野　美和{% endif %}" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">電話番号 <span class="text-danger">*</span></label>
+                    <input type="text" name="office_phone" id="office_phone" class="form-control" value="{% if initial_data.office_phone %}{{ initial_data.office_phone }}{% elif user.profile.home_care_office %}{{ user.profile.home_care_office.phone }}{% else %}059-253-6599{% endif %}" required>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 提供申請者（担当者）情報 -->
+<div id="staff_detail_section" class="accordion" style="margin: 0.5rem 0 1rem 0;">
+    <div class="accordion-item" style="border: none; background-color: #f8f9fa; border-radius: 0.5rem;">
+        <h2 class="accordion-header">
+            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#staffDetailCollapse" aria-expanded="true" aria-controls="staffDetailCollapse" style="background-color: #f8f9fa; padding: 0.5rem 1rem; color: #333;">
+                <span id="staff_status_icon" class="me-2"><i class="fas fa-check-circle" style="color: rgba(25, 135, 84, 0.5);"></i></span>提供申請者（担当職員）
+            </button>
+        </h2>
+        <div id="staffDetailCollapse" class="accordion-collapse collapse show">
+            <div class="accordion-body row g-3" style="padding: 0.5rem 1rem 1rem 1rem;">
+                <div class="col-md-6">
+                    <label class="form-label">氏名 <span class="text-danger">*</span></label>
+                    <input type="text" name="staff_name" id="staff_name" class="form-control" value="{% if initial_data.staff_name %}{{ initial_data.staff_name }}{% elif user.is_authenticated %}{{ user.profile.get_full_name }}{% endif %}" placeholder="担当者氏名を入力" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">職名 <span class="text-danger">*</span></label>
+                    <input type="text" name="staff_job_title" id="staff_job_title" class="form-control" value="{% if initial_data.staff_job_title %}{{ initial_data.staff_job_title }}{% else %}介護支援専門員{% endif %}" required>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block request_reason_section %}
+<!-- 依頼する資料 -->
+<div class="row g-3 mb-4">
+    <div class="col-12">
+        <label class="form-label">提供を依頼する資料（資料名） <span class="text-danger">*</span></label>
+        <div class="mt-2">
+            <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" name="request_doc_chousasho" id="request_doc_chousasho" value="yes" style="border-radius: 3px;" {% if initial_data.request_doc_chousasho == 'yes' or not initial_data %}checked{% endif %}>
+                <label class="form-check-label" for="request_doc_chousasho">
+                    介護保険の認定に係る認定調査票
+                </label>
+            </div>
+            <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" name="request_doc_ikensho" id="request_doc_ikensho" value="yes" style="border-radius: 3px;" {% if initial_data.request_doc_ikensho == 'yes' or not initial_data %}checked{% endif %}>
+                <label class="form-check-label" for="request_doc_ikensho">
+                    介護保険の認定に係る主治医意見書
+                </label>
+            </div>
+        </div>
+        <small class="text-muted mt-1">※少なくとも1つは選択してください。</small>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// 情報提供依頼書固有の初期化
+function initDocumentSpecific() {
+    console.log('情報提供依頼書が読み込まれました');
+}
+
+// バリデーション
+function validateDocumentSpecific() {
+    const chousasho = document.getElementById('request_doc_chousasho').checked;
+    const ikensho = document.getElementById('request_doc_ikensho').checked;
+    
+    if (!chousasho && !ikensho) {
+        alert('提供を依頼する資料を少なくとも1つ選択してください。');
+        return false;
+    }
+    
+    return true;
+}
+</script>
+{% endblock %}
