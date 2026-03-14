@@ -3249,7 +3249,7 @@ button[name="action"][value="save"]:hover {
                 </button>
             </div>
             <div>
-                <button type="submit" name="action" value="excel" class="btn btn-outline-secondary px-4 py-2 me-2" style="transition: all 0.2s ease;">
+                <button type="button" onclick="exportAssessmentExcel()" class="btn btn-outline-secondary px-4 py-2 me-2" style="transition: all 0.2s ease;">
                     <i class="fas fa-file-excel me-1"></i> Excel出力
                 </button>
                 <button type="submit" name="action" value="save" class="btn btn-outline-secondary btn-save px-5 py-2" style="transition: all 0.2s ease;">
@@ -3280,6 +3280,18 @@ function goBack() {
     }).then(function(ok) {
         if (ok) window.location.href = "{% url 'client_list' %}";
     });
+}
+
+function exportAssessmentExcel() {
+    const form = document.querySelector('form');
+    // バリデーションは一応通しておく
+    if (form.checkValidity()) {
+        const formData = new FormData(form);
+        formData.append('action', 'excel');
+        handleExcelDownload(window.location.href, 'アセスメント.xlsm', formData);
+    } else {
+        form.reportValidity();
+    }
 }
 
 // 前回アセスメントデータの反映

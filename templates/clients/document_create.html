@@ -430,10 +430,11 @@ function saveDocument() {
 function excelDocument() {
     console.log('Excel出力ボタンがクリックされました');
     if (validateForm()) {
-        document.getElementById('actionField').value = 'excel';
         const form = document.getElementById('documentForm');
-        form.target = '_self';  // 同じタブでダウンロード
-        form.submit();
+        document.getElementById('actionField').value = 'excel';
+        const formData = new FormData(form);
+        const url = window.location.href;
+        handleExcelDownload(url, '書類.xlsx', formData);
     }
 }
 

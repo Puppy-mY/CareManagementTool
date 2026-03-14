@@ -501,7 +501,7 @@ def assessment_edit(request, pk):
             # actionによる分岐処理
             if action == "excel":
                 # Excel出力（自動保存済み）
-                return generate_assessment_excel(assessment)
+                return generate_assessment_excel(assessment, request)
             else:
                 # 通常の保存
                 messages.success(request, "アセスメントを更新しました")
@@ -1234,7 +1234,7 @@ def detailed_assessment_create(request):
             # actionによる分岐処理
             if action == "excel":
                 # Excel出力（自動保存済み）
-                return generate_assessment_excel(assessment)
+                return generate_assessment_excel(assessment, request)
             else:
                 # 通常の保存
                 messages.success(request, "アセスメントを保存しました")
@@ -1317,7 +1317,7 @@ def detailed_assessment_create(request):
     return render(request, "assessments/detailed_assessment_form.html", context)
 
 
-def generate_assessment_excel(assessment):
+def generate_assessment_excel(assessment, request=None):
     """アセスメントのExcel生成（共通関数）"""
     if not OPENPYXL_AVAILABLE:
         raise Exception(
@@ -1325,6 +1325,24 @@ def generate_assessment_excel(assessment):
         )
 
     try:
+        # --- 保存先パスの事前特定（ファイル名とサブフォルダ） ---
+        network_base_path = r"N:\居宅関係★★\利用者フォルダ"
+        
+        # 苗字のふりがな（苗字）と氏名を組み合わせてファイル名を生成
+        furigana = assessment.client.furigana or ""
+        last_name_kana = furigana.split()[0] if furigana.split() else ""
+        full_name = (assessment.client.name or "").replace(" ", "").replace("　", "")
+        save_filename = f"{last_name_kana}_{full_name}様.xlsm"
+
+        # 担当者（アセッサー）の苗字を取得してサブフォルダを特定
+        staff_last_name = ""
+        if assessment.assessor and hasattr(assessment.assessor, "profile"):
+            staff_last_name = assessment.assessor.profile.last_name
+        
+        target_dir = os.path.join(network_base_path, staff_last_name) if staff_last_name else network_base_path
+        existing_file_path = os.path.join(target_dir, save_filename)
+        # ----------------------------------------------------
+
         # 座標設定ファイルを読み込み
         coordinates_path = os.path.join(
             settings.BASE_DIR, "static", "config", "excel_coordinates_assessment.json"
@@ -1334,23 +1352,31 @@ def generate_assessment_excel(assessment):
 
         coords = coordinates["assessment_sheet"]
 
-        # テンプレートファイルのパス
-        template_path = os.path.join(
+        # テンプレート（ベースファイル）の決定
+        # 既存ファイルがあればそれをベースにし、なければ原本を使用する
+        default_template_path = os.path.join(
             settings.BASE_DIR, "templates", "forms", "assessment_sheet_genpon.xlsm"
         )
-        if not os.path.exists(template_path):
-            raise Exception(f"Excelテンプレートが見つかりません: {template_path}")
-
+        
         import xlwings as xw
         import tempfile
         import shutil
 
-        # 一時ファイルを作成して操作（xlwingsは直接HttpResponseに書き込めないため）
+        # 一時ファイルを作成
         with tempfile.NamedTemporaryFile(suffix=".xlsm", delete=False) as temp_file:
             temp_filepath = temp_file.name
 
-        # テンプレートを一時ファイルにコピー
-        shutil.copy2(template_path, temp_filepath)
+        # ベースファイルのコピー
+        if os.path.exists(existing_file_path):
+            # 既にファイルが存在する場合、それを一時ファイルにコピーして更新のベースにする
+            shutil.copy2(existing_file_path, temp_filepath)
+            print(f"INFO: Using existing file as template: {existing_file_path}")
+        else:
+            # 存在しない場合は原本テンプレートを使用
+            if not os.path.exists(default_template_path):
+                raise Exception(f"Excelテンプレートが見つかりません: {default_template_path}")
+            shutil.copy2(default_template_path, temp_filepath)
+            print(f"INFO: Using default template: {default_template_path}")
 
         # Excelアプリケーションをバックグラウンドで起動
         app = xw.App(visible=False, add_book=False)
@@ -1703,22 +1729,33 @@ def generate_assessment_excel(assessment):
                 # 文字列の場合のみ変換
                 return CHOICE_LABELS.get(value, value)
 
-            def convert_list_to_text(value_list):
-                """リスト型の選択肢を表示名のカンマ区切りテキストに変換"""
-                if not value_list or not isinstance(value_list, list):
+            def convert_list_to_text(value_list, prefix=""):
+                """リスト形式の値を連結テキストに変換する（型安全）"""
+                if not value_list:
                     return ""
-                labels = [get_choice_label(v) for v in value_list]
+                if not isinstance(value_list, list):
+                    return str(value_list)
+                
+                labels = []
+                for item in value_list:
+                    # prefixがある場合はそれを付与してラベル取得、ない場合はそのまま取得
+                    raw_label = get_choice_label(f"{prefix}{item}") if prefix else get_choice_label(item)
+                    label = str(raw_label) if raw_label is not None else ""
+                    if label:
+                        labels.append(label)
                 return "、".join(labels)
 
             # セルへの安全な書き込み関数
             def safe_write_cell(cell_ref, value):
                 try:
-                    if cell_ref and value is not None and value != "":
-                        # リスト型の場合は空文字列として扱う（書き込まない）
+                    if cell_ref:
+                        # Noneの場合は空文字として扱う
+                        if value is None:
+                            value = ""
+                            
+                        # リスト型の場合は文字列に変換（現状、リストのままでは書き込めないため）
                         if isinstance(value, list):
-                            if len(value) == 0:
-                                return  # 空リストは書き込まない
-                            return
+                            value = "、".join([str(v) for v in value])
 
                         # xlwingsはMergedCellの場合も左上セルへの代入で自動処理される
                         worksheet.range(cell_ref).value = value
@@ -1734,14 +1771,13 @@ def generate_assessment_excel(assessment):
                 coords.get("client_gender"), assessment.client.get_gender_display()
             )
             # 年齢は数値として書き込み
-            if assessment.client.age:
-                safe_write_cell(coords.get("client_age"), int(assessment.client.age))
+            safe_write_cell(coords.get("client_age"), int(assessment.client.age) if assessment.client.age else "")
             safe_write_cell(coords.get("client_address"), assessment.client.address)
             safe_write_cell(coords.get("client_contact"), assessment.client.phone)
-            if assessment.client.birth_date:
-                safe_write_cell(
-                    coords.get("birth_date"), to_wareki(assessment.client.birth_date)
-                )
+            safe_write_cell(
+                coords.get("birth_date"), 
+                to_wareki(assessment.client.birth_date) if assessment.client.birth_date else ""
+            )
 
             # アセスメント基本情報
             safe_write_cell(
@@ -1791,19 +1827,14 @@ def generate_assessment_excel(assessment):
                     assessment.get_interview_location_display(),
                 )
 
-            # 保険情報
             # 被保険者番号は数値として書き込み
-            if assessment.client.insurance_number:
+            insurance_val = assessment.client.insurance_number
+            if insurance_val:
                 try:
-                    safe_write_cell(
-                        coords.get("insurance_number"),
-                        int(assessment.client.insurance_number),
-                    )
+                    insurance_val = int(insurance_val)
                 except (ValueError, TypeError):
-                    safe_write_cell(
-                        coords.get("insurance_number"),
-                        assessment.client.insurance_number,
-                    )
+                    pass
+            safe_write_cell(coords.get("insurance_number"), insurance_val)
             safe_write_cell(
                 coords.get("care_level_official"),
                 (
@@ -1812,21 +1843,18 @@ def generate_assessment_excel(assessment):
                     else ""
                 ),
             )
-            if assessment.client.certification_date:
-                safe_write_cell(
-                    coords.get("certification_date"),
-                    to_wareki(assessment.client.certification_date),
-                )
-            if assessment.client.certification_period_start:
-                safe_write_cell(
-                    coords.get("certification_period_start"),
-                    to_wareki(assessment.client.certification_period_start),
-                )
-            if assessment.client.certification_period_end:
-                safe_write_cell(
-                    coords.get("certification_period_end"),
-                    to_wareki(assessment.client.certification_period_end),
-                )
+            safe_write_cell(
+                coords.get("certification_date"),
+                to_wareki(assessment.client.certification_date) if assessment.client.certification_date else ""
+            )
+            safe_write_cell(
+                coords.get("certification_period_start"),
+                to_wareki(assessment.client.certification_period_start) if assessment.client.certification_period_start else ""
+            )
+            safe_write_cell(
+                coords.get("certification_period_end"),
+                to_wareki(assessment.client.certification_period_end) if assessment.client.certification_period_end else ""
+            )
             # 負担割合（「1割負担」→「1割」に変換）
             if assessment.client.care_burden:
                 burden_text = assessment.client.care_burden.replace("負担", "")
@@ -1844,13 +1872,8 @@ def generate_assessment_excel(assessment):
 
             # 身体障がい者手帳
             if client.disability_handbook:
-                if client.disability_handbook_type:
-                    safe_write_cell(
-                        coords.get("disability_handbook"),
-                        f"あり（{client.disability_handbook_type}）",
-                    )
-                else:
-                    safe_write_cell(coords.get("disability_handbook"), "あり")
+                handbook_text = f"あり（{client.disability_handbook_type}）" if client.disability_handbook_type else "あり"
+                safe_write_cell(coords.get("disability_handbook"), handbook_text)
             else:
                 safe_write_cell(coords.get("disability_handbook"), "なし")
 
@@ -2119,21 +2142,15 @@ def generate_assessment_excel(assessment):
 
                     # 発症日（和暦変換）
                     onset_date_str = health.get(f"onset_date_{i}", "")
+                    onset_val = ""
                     if onset_date_str:
                         try:
                             from datetime import datetime
-
-                            onset_date = datetime.strptime(
-                                onset_date_str, "%Y-%m-%d"
-                            ).date()
-                            safe_write_cell(
-                                coords.get(f"onset_date_{i}"), to_wareki(onset_date)
-                            )
+                            onset_date = datetime.strptime(onset_date_str, "%Y-%m-%d").date()
+                            onset_val = to_wareki(onset_date)
                         except (ValueError, TypeError):
-                            # 日付の変換に失敗した場合は元の文字列を書き込む
-                            safe_write_cell(
-                                coords.get(f"onset_date_{i}"), onset_date_str
-                            )
+                            onset_val = onset_date_str
+                    safe_write_cell(coords.get(f"onset_date_{i}"), onset_val)
 
                 # 既往歴
                 safe_write_cell(
@@ -2170,7 +2187,7 @@ def generate_assessment_excel(assessment):
                         if t
                     ]
                     special_medical_treatment_text = (
-                        "、".join(treatment_texts) if treatment_texts else ""
+                        "、".join([str(t) for t in treatment_texts if t]) if treatment_texts else ""
                     )
                 else:
                     special_medical_treatment_text = special_medical_treatment
@@ -2313,7 +2330,7 @@ def generate_assessment_excel(assessment):
                     medication_parts.append("下剤：なし")
 
                 # 1行目を作成
-                first_line = "　".join(medication_parts) if medication_parts else ""
+                first_line = "　".join([str(p) for p in medication_parts if p]) if medication_parts else ""
 
                 # 服薬内容
                 medication_content = health.get("medication_content", "")
@@ -2333,22 +2350,10 @@ def generate_assessment_excel(assessment):
             # サービス利用状況
             if assessment.services:
                 service = assessment.services
-                # 介護サービス（リストの各要素にservice_プレフィックスを追加）
-                care_services_list = service.get("care_services", [])
-                if care_services_list:
-                    care_labels = [
-                        get_choice_label(f"service_{s}") for s in care_services_list
-                    ]
-                    safe_write_cell(coords.get("care_services"), "、".join(care_labels))
-                # 福祉用具（リストの各要素にwelfare_プレフィックスを追加）
-                welfare_list = service.get("welfare_equipment", [])
-                if welfare_list:
-                    welfare_labels = [
-                        get_choice_label(f"welfare_{w}") for w in welfare_list
-                    ]
-                    safe_write_cell(
-                        coords.get("welfare_equipment"), "、".join(welfare_labels)
-                    )
+                # 介護サービス
+                safe_write_cell(coords.get("care_services"), convert_list_to_text(service.get("care_services", []), "service_"))
+                # 福祉用具
+                safe_write_cell(coords.get("welfare_equipment"), convert_list_to_text(service.get("welfare_equipment", []), "welfare_"))
                 safe_write_cell(
                     coords.get("other_services"), service.get("other_services", "")
                 )
@@ -2365,7 +2370,7 @@ def generate_assessment_excel(assessment):
                                 label = other_detail
                         informal_labels.append(label)
                     safe_write_cell(
-                        coords.get("informal_services"), "、".join(informal_labels)
+                        coords.get("informal_services"), "、".join([str(l) for l in informal_labels if l])
                     )
                 safe_write_cell(
                     coords.get("social_relationships"),
@@ -2402,52 +2407,24 @@ def generate_assessment_excel(assessment):
                 physical = assessment.physical_status
 
                 # 皮膚疾患
-                skin_disease_presence = assessment.health_status.get(
-                    "has_skin_disease", ""
-                )
-                if skin_disease_presence == "no":
+                skin_presence = assessment.health_status.get("has_skin_disease", "")
+                if skin_presence == "no":
                     safe_write_cell(coords.get("skin_disease"), "なし")
-                elif skin_disease_presence == "yes":
-                    skin_disease_list = assessment.health_status.get("skin_disease", [])
-                    if skin_disease_list:
-                        skin_labels = []
-                        for item in skin_disease_list:
-                            if item == "other":
-                                other_text = assessment.health_status.get(
-                                    "skin_disease_other", ""
-                                )
-                                if other_text:
-                                    skin_labels.append(other_text)
-                            else:
-                                skin_labels.append(get_choice_label(f"skin_{item}"))
-                        safe_write_cell(
-                            coords.get("skin_disease"), "、".join(skin_labels)
-                        )
+                else:
+                    skin_list = assessment.health_status.get("skin_disease", [])
+                    s_labels = [str(get_choice_label(f"skin_{item}") if item != "other" else assessment.health_status.get("skin_disease_other", "")) for item in skin_list]
+                    s_summary = "、".join([l for l in s_labels if l])
+                    safe_write_cell(coords.get("skin_disease"), s_summary if s_summary else ("あり" if skin_presence == "yes" else ""))
 
                 # 感染症
-                infection_presence = assessment.health_status.get(
-                    "infection_presence", ""
-                )
+                infection_presence = assessment.health_status.get("infection_presence", "")
                 if infection_presence == "no":
                     safe_write_cell(coords.get("infection_status"), "なし")
-                elif infection_presence == "yes":
+                else:
                     infection_list = assessment.health_status.get("infection", [])
-                    if infection_list:
-                        infection_labels = []
-                        for item in infection_list:
-                            if item == "other":
-                                other_text = assessment.health_status.get(
-                                    "infection_other_text", ""
-                                )
-                                if other_text:
-                                    infection_labels.append(other_text)
-                            else:
-                                infection_labels.append(
-                                    get_choice_label(f"infection_{item}")
-                                )
-                        safe_write_cell(
-                            coords.get("infection_status"), "、".join(infection_labels)
-                        )
+                    i_labels = [str(get_choice_label(f"infection_{item}") if item != "other" else assessment.health_status.get("infection_other_text", "")) for item in infection_list]
+                    i_summary = "、".join([l for l in i_labels if l])
+                    safe_write_cell(coords.get("infection_status"), i_summary if i_summary else ("あり" if infection_presence == "yes" else ""))
                 safe_write_cell(
                     coords.get("paralysis_location"),
                     physical.get("paralysis_location", ""),
@@ -2457,156 +2434,43 @@ def generate_assessment_excel(assessment):
                 )
                 # 身長・体重は数値として書き込み
                 height = physical.get("height", "")
-                if height:
-                    try:
-                        safe_write_cell(coords.get("height"), float(height))
-                    except (ValueError, TypeError):
-                        safe_write_cell(coords.get("height"), height)
+                safe_write_cell(coords.get("height"), float(height) if height and str(height).replace('.','',1).isdigit() else height)
+                
                 weight = physical.get("weight", "")
-                if weight:
-                    try:
-                        safe_write_cell(coords.get("weight"), float(weight))
-                    except (ValueError, TypeError):
-                        safe_write_cell(coords.get("weight"), weight)
-                vision = physical.get("vision", "")
-                if vision:
-                    safe_write_cell(
-                        coords.get("vision"), get_choice_label(f"vision_{vision}")
-                    )
-                # 眼鏡等はhealth_statusに保存されている
-                uses_glasses = assessment.health_status.get("uses_glasses", "")
-                if uses_glasses:
-                    safe_write_cell(
-                        coords.get("uses_glasses"),
-                        get_choice_label(f"glasses_{uses_glasses}"),
-                    )
-                hearing = physical.get("hearing", "")
-                if hearing:
-                    safe_write_cell(
-                        coords.get("hearing"), get_choice_label(f"hearing_{hearing}")
-                    )
-                # 補聴器等はhealth_statusに保存されている
-                uses_hearing_aid = assessment.health_status.get("uses_hearing_aid", "")
-                if uses_hearing_aid:
-                    safe_write_cell(
-                        coords.get("uses_hearing_aid"),
-                        get_choice_label(f"hearing_aid_{uses_hearing_aid}"),
-                    )
-                # 身体状況メモ（麻痺・痛みの詳細があれば追記）
+                safe_write_cell(coords.get("weight"), float(weight) if weight and str(weight).replace('.','',1).isdigit() else weight)
+
+                safe_write_cell(coords.get("vision"), get_choice_label(f"vision_{physical.get('vision', '')}"))
+                safe_write_cell(coords.get("uses_glasses"), get_choice_label(f"glasses_{assessment.health_status.get('uses_glasses', '')}"))
+                safe_write_cell(coords.get("hearing"), get_choice_label(f"hearing_{physical.get('hearing', '')}"))
+                safe_write_cell(coords.get("uses_hearing_aid"), get_choice_label(f"hearing_aid_{assessment.health_status.get('uses_hearing_aid', '')}"))
+                
+                # 身体状況メモ
                 physical_notes_parts = []
-                physical_notes_text = physical.get("physical_notes", "")
-                if physical_notes_text:
-                    physical_notes_parts.append(physical_notes_text)
-                paralysis_pain_details = physical.get("paralysis_pain_details", "")
-                if paralysis_pain_details:
-                    physical_notes_parts.append(
-                        f"【麻痺・痛み】{paralysis_pain_details}"
-                    )
-                safe_write_cell(
-                    coords.get("physical_notes"),
-                    "\n".join(physical_notes_parts) if physical_notes_parts else "",
-                )
+                p_notes = physical.get("physical_notes", "")
+                if p_notes: physical_notes_parts.append(p_notes)
+                p_details = physical.get("paralysis_pain_details", "")
+                if p_details: physical_notes_parts.append(f"【麻痺・痛み】{p_details}")
+                safe_write_cell(coords.get("physical_notes"), "\n".join(physical_notes_parts))
 
             # 基本動作
             if assessment.basic_activities:
                 activity = assessment.basic_activities
-                # 寝返り・起き上がり・立ち上がり（basic_*）
-                turning = activity.get("turning_over", "")
-                if turning:
-                    safe_write_cell(
-                        coords.get("turning_over"), get_choice_label(f"basic_{turning}")
-                    )
-                getting_up = activity.get("getting_up", "")
-                if getting_up:
-                    safe_write_cell(
-                        coords.get("getting_up"),
-                        get_choice_label(f"basic_{getting_up}"),
-                    )
-                standing_up = activity.get("standing_up", "")
-                if standing_up:
-                    safe_write_cell(
-                        coords.get("standing_up"),
-                        get_choice_label(f"basic_{standing_up}"),
-                    )
-                # 座位（sitting_*）
-                sitting = activity.get("sitting", "")
-                if sitting:
-                    safe_write_cell(
-                        coords.get("sitting"), get_choice_label(f"sitting_{sitting}")
-                    )
-                # 立位（standing_*）
-                standing = activity.get("standing", "")
-                if standing:
-                    safe_write_cell(
-                        coords.get("standing"), get_choice_label(f"standing_{standing}")
-                    )
-                # 移乗・移動（mobility_*）
-                transfer = activity.get("transfer", "")
-                if transfer:
-                    safe_write_cell(
-                        coords.get("transfer"), get_choice_label(f"mobility_{transfer}")
-                    )
-                indoor = activity.get("indoor_mobility", "")
-                if indoor:
-                    safe_write_cell(
-                        coords.get("indoor_mobility"),
-                        get_choice_label(f"mobility_{indoor}"),
-                    )
-                outdoor = activity.get("outdoor_mobility", "")
-                if outdoor:
-                    safe_write_cell(
-                        coords.get("outdoor_mobility"),
-                        get_choice_label(f"mobility_{outdoor}"),
-                    )
-                # 移動用具（equipment_*）
-                indoor_eq = activity.get("indoor_mobility_equipment", "")
-                if indoor_eq:
-                    safe_write_cell(
-                        coords.get("indoor_mobility_equipment"),
-                        get_choice_label(f"equipment_{indoor_eq}"),
-                    )
-                outdoor_eq = activity.get("outdoor_mobility_equipment", "")
-                if outdoor_eq:
-                    safe_write_cell(
-                        coords.get("outdoor_mobility_equipment"),
-                        get_choice_label(f"equipment_{outdoor_eq}"),
-                    )
-                safe_write_cell(
-                    coords.get("basic_activity_notes"),
-                    activity.get("basic_activity_notes", ""),
-                )
+                safe_write_cell(coords.get("turning_over"), get_choice_label(f"basic_{activity.get('turning_over', '')}"))
+                safe_write_cell(coords.get("getting_up"), get_choice_label(f"basic_{activity.get('getting_up', '')}"))
+                safe_write_cell(coords.get("standing_up"), get_choice_label(f"basic_{activity.get('standing_up', '')}"))
+                safe_write_cell(coords.get("sitting"), get_choice_label(f"sitting_{activity.get('sitting', '')}"))
+                safe_write_cell(coords.get("standing"), get_choice_label(f"standing_{activity.get('standing', '')}"))
+                safe_write_cell(coords.get("transfer"), get_choice_label(f"mobility_{activity.get('transfer', '')}"))
+                safe_write_cell(coords.get("indoor_mobility"), get_choice_label(f"mobility_{activity.get('indoor_mobility', '')}"))
+                safe_write_cell(coords.get("outdoor_mobility"), get_choice_label(f"mobility_{activity.get('outdoor_mobility', '')}"))
+                safe_write_cell(coords.get("indoor_mobility_equipment"), get_choice_label(f"equipment_{activity.get('indoor_mobility_equipment', '')}"))
+                safe_write_cell(coords.get("outdoor_mobility_equipment"), get_choice_label(f"equipment_{activity.get('outdoor_mobility_equipment', '')}"))
+                safe_write_cell(coords.get("basic_activity_notes"), activity.get("basic_activity_notes", ""))
 
             # ADL
             if assessment.adl:
                 adl = assessment.adl
-                # 食事
-                eating_method = adl.get("eating_method", "")
-                if eating_method:
-                    safe_write_cell(
-                        coords.get("eating_method"),
-                        get_choice_label(f"eating_method_{eating_method}"),
-                    )
-                eating_assist = adl.get("eating_assistance", "")
-                if eating_assist:
-                    safe_write_cell(
-                        coords.get("eating_assistance"),
-                        get_choice_label(f"eating_assistance_{eating_assist}"),
-                    )
-                swallowing = adl.get("swallowing", "")
-                if swallowing:
-                    safe_write_cell(
-                        coords.get("swallowing"),
-                        get_choice_label(f"swallowing_{swallowing}"),
-                    )
-                meal_main = adl.get("meal_form_main", "")
-                if meal_main:
-                    safe_write_cell(
-                        coords.get("meal_form_main"),
-                        get_choice_label(f"meal_main_{meal_main}"),
-                    )
-
-                # 副食の変換
-                meal_side = adl.get("meal_form_side", "")
+                # 副食の変換マップ
                 meal_side_labels = {
                     "normal": "普通",
                     "soft": "一口大",
@@ -2614,170 +2478,111 @@ def generate_assessment_excel(assessment):
                     "paste": "ペースト",
                     "paste_form": "ペースト",
                 }
-                if meal_side:
-                    safe_write_cell(
-                        coords.get("meal_form_side"),
-                        meal_side_labels.get(meal_side, meal_side),
-                    )
-
-                water_thick = adl.get("water_thickening", "")
-                if water_thick:
-                    safe_write_cell(
-                        coords.get("water_thickening"),
-                        get_choice_label(f"water_thickening_{water_thick}"),
-                    )
-                eating_restrict = adl.get("eating_restriction", "")
-                if eating_restrict:
-                    safe_write_cell(
-                        coords.get("eating_restriction"),
-                        get_choice_label(f"eating_restriction_{eating_restrict}"),
-                    )
-
-                # 食事用具（リストの各要素にutensil_プレフィックスを追加）
+                safe_write_cell(coords.get("eating_method"), get_choice_label(f"eating_method_{adl.get('eating_method', '')}"))
+                safe_write_cell(coords.get("eating_assistance"), get_choice_label(f"eating_assistance_{adl.get('eating_assistance', '')}"))
+                safe_write_cell(coords.get("swallowing"), get_choice_label(f"swallowing_{adl.get('swallowing', '')}"))
+                safe_write_cell(coords.get("meal_form_main"), get_choice_label(f"meal_main_{adl.get('meal_form_main', '')}"))
+                safe_write_cell(coords.get("meal_form_side"), meal_side_labels.get(adl.get("meal_form_side", ""), adl.get("meal_form_side", "")))
+                safe_write_cell(coords.get("water_thickening"), get_choice_label(f"water_thickening_{adl.get('water_thickening', '')}"))
+                safe_write_cell(coords.get("eating_restriction"), get_choice_label(f"eating_restriction_{adl.get('eating_restriction', '')}"))
+                # 食事用具
                 utensils_list = adl.get("eating_utensils", [])
-                if utensils_list:
-                    utensils_labels = []
-                    for u in utensils_list:
-                        label = get_choice_label(f"utensil_{u}")
-                        # 「その他」の場合、詳細を追加
-                        if u == "other":
-                            other_detail = adl.get("eating_utensils_other_detail", "")
-                            if other_detail:
-                                label = other_detail
-                        utensils_labels.append(label)
-                    safe_write_cell(
-                        coords.get("eating_utensils"), "、".join(utensils_labels)
-                    )
+                utensils_labels = []
+                for u in utensils_list:
+                    label = get_choice_label(f"utensil_{u}")
+                    if u == "other":
+                        other_detail = adl.get("eating_utensils_other_detail", "")
+                        if other_detail: label = other_detail
+                    utensils_labels.append(label)
+                safe_write_cell(coords.get("eating_utensils"), "、".join([str(l) for l in utensils_labels if l]))
                 safe_write_cell(coords.get("eating_notes"), adl.get("eating_notes", ""))
 
                 # 口腔
-                oral_assist = adl.get("oral_hygiene_assistance", "")
-                if oral_assist:
-                    safe_write_cell(
-                        coords.get("oral_hygiene_assistance"),
-                        get_choice_label(f"oral_assistance_{oral_assist}"),
-                    )
-                teeth = adl.get("natural_teeth_presence", "")
-                if teeth:
-                    safe_write_cell(
-                        coords.get("natural_teeth_presence"),
-                        get_choice_label(f"teeth_{teeth}"),
-                    )
-                denture_type = adl.get("denture_type", "")
-                if denture_type:
-                    safe_write_cell(
-                        coords.get("denture_type"),
-                        get_choice_label(f"denture_{denture_type}"),
-                    )
-                denture_loc = adl.get("denture_location", "")
-                if denture_loc:
-                    safe_write_cell(
-                        coords.get("denture_location"),
-                        get_choice_label(f"denture_{denture_loc}"),
-                    )
+                # 口腔
+                safe_write_cell(
+                    coords.get("oral_hygiene_assistance"),
+                    get_choice_label(f"oral_assistance_{adl.get('oral_hygiene_assistance', '')}"),
+                )
+                safe_write_cell(
+                    coords.get("natural_teeth_presence"),
+                    get_choice_label(f"teeth_{adl.get('natural_teeth_presence', '')}"),
+                )
+                safe_write_cell(
+                    coords.get("denture_type"),
+                    get_choice_label(f"denture_{adl.get('denture_type', '')}"),
+                )
+                safe_write_cell(
+                    coords.get("denture_location"),
+                    get_choice_label(f"denture_{adl.get('denture_location', '')}"),
+                )
                 safe_write_cell(coords.get("oral_notes"), adl.get("oral_notes", ""))
 
                 # 入浴・更衣
-                bathing_assist = adl.get("bathing_assistance", "")
-                if bathing_assist:
-                    safe_write_cell(
-                        coords.get("bathing_assistance"),
-                        get_choice_label(f"bathing_assistance_{bathing_assist}"),
-                    )
-                bathing_form = adl.get("bathing_form", "")
-                if bathing_form:
-                    safe_write_cell(
-                        coords.get("bathing_form"),
-                        get_choice_label(f"bathing_form_{bathing_form}"),
-                    )
-                bathing_restrict = adl.get("bathing_restriction", "")
-                if bathing_restrict:
-                    safe_write_cell(
-                        coords.get("bathing_restriction"),
-                        get_choice_label(f"bathing_restriction_{bathing_restrict}"),
-                    )
-                dressing_up = adl.get("dressing_upper", "")
-                if dressing_up:
-                    safe_write_cell(
-                        coords.get("dressing_upper"),
-                        get_choice_label(f"dressing_{dressing_up}"),
-                    )
-                dressing_low = adl.get("dressing_lower", "")
-                if dressing_low:
-                    safe_write_cell(
-                        coords.get("dressing_lower"),
-                        get_choice_label(f"dressing_{dressing_low}"),
-                    )
+                safe_write_cell(
+                    coords.get("bathing_assistance"),
+                    get_choice_label(f"bathing_assistance_{adl.get('bathing_assistance', '')}"),
+                )
+                safe_write_cell(
+                    coords.get("bathing_form"),
+                    get_choice_label(f"bathing_form_{adl.get('bathing_form', '')}"),
+                )
+                safe_write_cell(
+                    coords.get("bathing_restriction"),
+                    get_choice_label(f"bathing_restriction_{adl.get('bathing_restriction', '')}"),
+                )
+                safe_write_cell(
+                    coords.get("dressing_upper"),
+                    get_choice_label(f"dressing_{adl.get('dressing_upper', '')}"),
+                )
+                safe_write_cell(
+                    coords.get("dressing_lower"),
+                    get_choice_label(f"dressing_{adl.get('dressing_lower', '')}"),
+                )
                 safe_write_cell(
                     coords.get("bathing_notes"), adl.get("bathing_notes", "")
                 )
 
                 # 排泄
-                excretion_assist = adl.get("excretion_assistance", "")
-                if excretion_assist:
-                    safe_write_cell(
-                        coords.get("excretion_assistance"),
-                        get_choice_label(f"excretion_assistance_{excretion_assist}"),
-                    )
-                urination = adl.get("urination", "")
-                if urination:
-                    safe_write_cell(
-                        coords.get("urination"),
-                        get_choice_label(f"excretion_{urination}"),
-                    )
+                safe_write_cell(
+                    coords.get("excretion_assistance"),
+                    get_choice_label(f"excretion_assistance_{adl.get('excretion_assistance', '')}"),
+                )
+                safe_write_cell(
+                    coords.get("urination"),
+                    get_choice_label(f"excretion_{adl.get('urination', '')}"),
+                )
+                
                 urinary_incon = adl.get("urinary_incontinence", "")
-                if urinary_incon:
-                    urinary_label = get_choice_label(f"incontinence_{urinary_incon}")
-                    # 「あり」の場合、詳細（頻度）を追加
-                    if urinary_incon == "yes":
-                        urinary_freq = adl.get("urinary_incontinence_frequency", "")
-                        if urinary_freq:
-                            urinary_label = f"{urinary_label}（{urinary_freq}）"
-                    safe_write_cell(coords.get("urinary_incontinence"), urinary_label)
-                defecation = adl.get("defecation", "")
-                if defecation:
-                    safe_write_cell(
-                        coords.get("defecation"),
-                        get_choice_label(f"excretion_{defecation}"),
-                    )
+                urinary_label = get_choice_label(f"incontinence_{urinary_incon}") if urinary_incon else ""
+                if urinary_incon == "yes":
+                    urinary_freq = adl.get("urinary_incontinence_frequency", "")
+                    if urinary_freq:
+                        urinary_label = f"{urinary_label}（{urinary_freq}）"
+                safe_write_cell(coords.get("urinary_incontinence"), urinary_label)
+
+                safe_write_cell(
+                    coords.get("defecation"),
+                    get_choice_label(f"excretion_{adl.get('defecation', '')}"),
+                )
+                
                 fecal_incon = adl.get("fecal_incontinence", "")
-                if fecal_incon:
-                    fecal_label = get_choice_label(f"incontinence_{fecal_incon}")
-                    # 「あり」の場合、詳細（頻度）を追加
-                    if fecal_incon == "yes":
-                        fecal_freq = adl.get("fecal_incontinence_frequency", "")
-                        if fecal_freq:
-                            fecal_label = f"{fecal_label}（{fecal_freq}）"
-                    safe_write_cell(coords.get("fecal_incontinence"), fecal_label)
+                fecal_label = get_choice_label(f"incontinence_{fecal_incon}") if fecal_incon else ""
+                if fecal_incon == "yes":
+                    fecal_freq = adl.get("fecal_incontinence_frequency", "")
+                    if fecal_freq:
+                        fecal_label = f"{fecal_label}（{fecal_freq}）"
+                safe_write_cell(coords.get("fecal_incontinence"), fecal_label)
 
-                # 排泄場所（リストの各要素にlocation_プレフィックスを追加）
-                daytime_loc_list = adl.get("daytime_location", [])
-                if daytime_loc_list:
-                    daytime_labels = [
-                        get_choice_label(f"location_{loc}") for loc in daytime_loc_list
-                    ]
-                    safe_write_cell(
-                        coords.get("daytime_location"), "、".join(daytime_labels)
-                    )
-                nighttime_loc_list = adl.get("nighttime_location", [])
-                if nighttime_loc_list:
-                    nighttime_labels = [
-                        get_choice_label(f"location_{loc}")
-                        for loc in nighttime_loc_list
-                    ]
-                    safe_write_cell(
-                        coords.get("nighttime_location"), "、".join(nighttime_labels)
-                    )
+                # 排泄場所
+                daytime_labels = convert_list_to_text(adl.get("daytime_location", []))
+                safe_write_cell(coords.get("daytime_location"), daytime_labels)
+                
+                nighttime_labels = convert_list_to_text(adl.get("nighttime_location", []))
+                safe_write_cell(coords.get("nighttime_location"), nighttime_labels)
 
-                # 排泄用品（リストの各要素にsupply_プレフィックスを追加）
-                supplies_list = adl.get("excretion_supplies", [])
-                if supplies_list:
-                    supplies_labels = [
-                        get_choice_label(f"supply_{s}") for s in supplies_list
-                    ]
-                    safe_write_cell(
-                        coords.get("excretion_supplies"), "、".join(supplies_labels)
-                    )
+                # 排泄用品
+                supplies_labels = convert_list_to_text(adl.get("excretion_supplies", []))
+                safe_write_cell(coords.get("excretion_supplies"), supplies_labels)
                 safe_write_cell(
                     coords.get("excretion_notes"), adl.get("excretion_notes", "")
                 )
@@ -2785,89 +2590,80 @@ def generate_assessment_excel(assessment):
             # IADL
             if assessment.iadl:
                 iadl = assessment.iadl
-                cooking = iadl.get("cooking", "")
-                if cooking:
-                    safe_write_cell(
-                        coords.get("cooking"), get_choice_label(f"iadl_{cooking}")
-                    )
-                washing = iadl.get("washing", "")
-                if washing:
-                    safe_write_cell(
-                        coords.get("washing"), get_choice_label(f"iadl_{washing}")
-                    )
-                money = iadl.get("money_management", "")
-                if money:
-                    safe_write_cell(
-                        coords.get("money_management"),
-                        get_choice_label(f"iadl_{money}"),
-                    )
-                cleaning = iadl.get("cleaning", "")
-                if cleaning:
-                    safe_write_cell(
-                        coords.get("cleaning"), get_choice_label(f"iadl_{cleaning}")
-                    )
-                shopping = iadl.get("shopping", "")
-                if shopping:
-                    safe_write_cell(
-                        coords.get("shopping"), get_choice_label(f"iadl_{shopping}")
-                    )
+                safe_write_cell(coords.get("cooking"), get_choice_label(f"iadl_{iadl.get('cooking', '')}"))
+                safe_write_cell(coords.get("washing"), get_choice_label(f"iadl_{iadl.get('washing', '')}"))
+                safe_write_cell(coords.get("money_management"), get_choice_label(f"iadl_{iadl.get('money_management', '')}"))
+                safe_write_cell(coords.get("cleaning"), get_choice_label(f"iadl_{iadl.get('cleaning', '')}"))
+                safe_write_cell(coords.get("shopping"), get_choice_label(f"iadl_{iadl.get('shopping', '')}"))
                 safe_write_cell(coords.get("iadl_notes"), iadl.get("iadl_notes", ""))
 
             # 認知機能
             if assessment.cognitive_function:
                 cognitive = assessment.cognitive_function
-                dementia_pres = cognitive.get("dementia_presence", "")
-                if dementia_pres:
-                    safe_write_cell(
-                        coords.get("dementia_presence"),
-                        get_choice_label(f"dementia_{dementia_pres}"),
-                    )
-                dementia_sev = cognitive.get("dementia_severity", "")
-                if dementia_sev:
-                    safe_write_cell(
-                        coords.get("dementia_severity"),
-                        get_choice_label(f"dementia_{dementia_sev}"),
-                    )
+                # 認知機能
+                safe_write_cell(
+                    coords.get("dementia_presence"),
+                    get_choice_label(f"dementia_{cognitive.get('dementia_presence', '')}"),
+                )
+                safe_write_cell(
+                    coords.get("dementia_severity"),
+                    get_choice_label(f"dementia_{cognitive.get('dementia_severity', '')}"),
+                )
                 # BPSD症状
                 bpsd_presence = cognitive.get("bpsd_presence", "")
                 if bpsd_presence == "no":
                     safe_write_cell(coords.get("bpsd_symptoms"), "なし")
-                elif bpsd_presence == "yes":
+                else:
                     bpsd_list = cognitive.get("bpsd_symptoms", [])
-                    if bpsd_list:
-                        bpsd_labels = [
-                            get_choice_label(f"bpsd_{symptom}") for symptom in bpsd_list
-                        ]
-                        safe_write_cell(
-                            coords.get("bpsd_symptoms"), "、".join(bpsd_labels)
-                        )
-                conversation = cognitive.get("conversation", "")
-                if conversation:
-                    safe_write_cell(
-                        coords.get("conversation"),
-                        get_choice_label(f"conversation_{conversation}"),
-                    )
-                communication = cognitive.get("communication", "")
-                if communication:
-                    safe_write_cell(
-                        coords.get("communication"),
-                        get_choice_label(f"communication_{communication}"),
-                    )
-                # 認知機能メモ（認知症詳細があれば追記）
-                cognitive_notes_parts = []
-                cognitive_notes_text = cognitive.get("cognitive_notes", "")
-                if cognitive_notes_text:
-                    cognitive_notes_parts.append(cognitive_notes_text)
-                dementia_details = cognitive.get("dementia_details", "")
-                if dementia_details:
-                    cognitive_notes_parts.append(f"【認知症詳細】{dementia_details}")
+                    bpsd_labels = [str(get_choice_label(f"bpsd_{s}")) for s in bpsd_list]
+                    safe_write_cell(coords.get("bpsd_symptoms"), "、".join([l for l in bpsd_labels if l]) if bpsd_labels else ("あり" if bpsd_presence == "yes" else ""))
+                
                 safe_write_cell(
-                    coords.get("cognitive_notes"),
-                    "\n".join(cognitive_notes_parts) if cognitive_notes_parts else "",
+                    coords.get("conversation"),
+                    get_choice_label(f"conversation_{cognitive.get('conversation', '')}"),
                 )
+                safe_write_cell(
+                    coords.get("communication"),
+                    get_choice_label(f"communication_{cognitive.get('communication', '')}"),
+                )
+                
+                # 認知機能メモ
+                cognitive_notes_parts = []
+                cog_notes = cognitive.get("cognitive_notes", "")
+                if cog_notes:
+                    cognitive_notes_parts.append(str(cog_notes))
+                dem_details = cognitive.get("dementia_details", "")
+                if dem_details:
+                    cognitive_notes_parts.append(f"【認知症詳細】{dem_details}")
+                safe_write_cell(coords.get("cognitive_notes"), "\n".join([str(p) for p in cognitive_notes_parts]))
 
             # Excelファイルを保存
             workbook.save()
+
+            # --- ネットワークドライブへの自動保存ロジック ---
+            try:
+                if os.path.exists(network_base_path):
+                    # サブフォルダが存在しない場合は作成（target_dirは関数冒頭で特定済み）
+                    if not os.path.exists(target_dir):
+                        try:
+                            os.makedirs(target_dir)
+                            print(f"SUCCESS: Created directory {target_dir}")
+                        except Exception as e:
+                            print(f"WARNING: Failed to create directory {target_dir}: {str(e)}")
+                            target_dir = network_base_path
+
+                    # target_pathを最終決定
+                    target_path = os.path.join(target_dir, save_filename)
+                    import shutil
+
+                    shutil.copy2(temp_filepath, target_path)
+                    print(f"SUCCESS: Network save (overwrite/create) completed to {target_path}")
+                else:
+                    print(f"WARNING: Network base path not found: {network_base_path}")
+            except Exception as e:
+                print(f"WARNING: Network save failed: {str(e)}")
+            # --------------------------------------------
+
             workbook.close()
             app.quit()
 
@@ -2885,7 +2681,6 @@ def generate_assessment_excel(assessment):
                 excel_data,
                 content_type="application/vnd.ms-excel.sheet.macroEnabled.12",
             )
-
             # クライアントのふりがな（苗字）と氏名を組み合わせてファイル名を生成
             # 例: やまかわ_山川夏楓様.xlsm
             from urllib.parse import quote
@@ -2901,6 +2696,16 @@ def generate_assessment_excel(assessment):
             response["Content-Disposition"] = (
                 f"attachment; filename*=UTF-8''{quote(filename)}"
             )
+
+            # AJAXリクエスト（fetchなど）からの呼び出しの場合は、バイナリを返さず成功通知のみ返す（B案: ネットワーク保存のみ）
+            if request and request.headers.get("x-requested-with") == "XMLHttpRequest":
+                return JsonResponse(
+                    {
+                        "success": True,
+                        "message": "共有ドライブの各担当の利用者フォルダに保存しました。",
+                        "filename": filename,
+                    }
+                )
 
             return response
 
@@ -2928,7 +2733,7 @@ def assessment_excel_export(request, pk):
     assessment = get_object_or_404(Assessment, pk=pk)
 
     try:
-        return generate_assessment_excel(assessment)
+        return generate_assessment_excel(assessment, request)
     except Exception as e:
         messages.error(request, f"Excel出力中にエラーが発生しました: {str(e)}")
         return redirect("client_detail", pk=assessment.client.pk)

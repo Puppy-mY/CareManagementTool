@@ -105,7 +105,7 @@
 
     /* アセスメント理由の列幅 */
     .assessment-type-col {
-        width: 15%;
+        width: 10%;
     }
 
     /* 面談場所の列幅 */
@@ -115,7 +115,7 @@
 
     /* 作成者の列幅 */
     .assessor-col {
-        width: 12%;
+        width: 17%;
     }
 
     /* 操作の列幅 */
@@ -358,56 +358,11 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // ExcelをJavaScript（Blob）経由でダウンロードする関数
-// （Chrome拡張機能等による日本語ファイル名文字化け・UUID化を回避するため）
+// （Chrome拡張機能等による日本語ファイル名文字化けを回避しつつ、サーバー側で設定したファイル名を使用する）
 function exportListExcel(assessmentId, clientName, dateStr) {
     const url = `/assessments/${assessmentId}/excel/`;
-    // バックエンドから日付が来ない場合のフォールバック
-    if (!dateStr || dateStr === 'None') {
-        const today = new Date();
-        dateStr = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
-    }
-    const filename = `${clientName}_assessment_${dateStr}.xlsm`;
-    
-    // ダウンロード中であることをユーザーに通知（任意）
-    const loadingToast = document.createElement('div');
-    loadingToast.innerHTML = '<div style="position:fixed;top:20px;right:20px;background:#333;color:white;padding:10px 20px;border-radius:4px;z-index:9999;">ダウンロード準備中...</div>';
-    document.body.appendChild(loadingToast);
-
-    fetch(url, {
-        method: 'GET',
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest'
-        }
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('ネットワークエラー');
-        }
-        return response.blob();
-    })
-    .then(blob => {
-        // BlobURLを作成して<a>タグでクリックさせる（JSでの強制ファイル名指定）
-        const windowUrl = window.URL || window.webkitURL;
-        const blobUrl = windowUrl.createObjectURL(blob);
-        
-        const anchor = document.createElement('a');
-        anchor.style.display = 'none';
-        anchor.href = blobUrl;
-        anchor.download = filename; // ！！！ここで日本語ファイル名を強制！！！
-        
-        document.body.appendChild(anchor);
-        anchor.click();
-        
-        // 後始末
-        windowUrl.revokeObjectURL(blobUrl);
-        document.body.removeChild(anchor);
-        document.body.removeChild(loadingToast);
-    })
-    .catch(error => {
-        console.error('Excel Export Error:', error);
-        document.body.removeChild(loadingToast);
-        alert('Excelファイルのダウンロード中にエラーが発生しました。');
-    });
+    const filename = `アセスメント_${clientName}_${dateStr}.xlsm`;
+    handleExcelDownload(url, filename, null, true);
 }
 </script>
 {% endblock %}

@@ -229,14 +229,431 @@
             color: #2d3748;
             border-color: #a0aec0;
         }
+
+        /* 起動アニメーション（スプラッシュスクリーン） */
+        #splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: #0a0c10;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            transition: opacity 1.2s cubic-bezier(0.4, 0, 0.2, 1), visibility 1.2s;
+            overflow: hidden;
+        }
+
+        #splash-screen.fade-out {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .splash-bg-blobs {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: -1;
+        }
+
+        .splash-blob {
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(74, 144, 226, 0.05) 0%, rgba(0, 0, 0, 0) 70%);
+            border-radius: 50%;
+            filter: blur(50px);
+            animation: splashBlobMove 20s infinite alternate;
+        }
+
+        .splash-blob:nth-child(2) {
+            background: radial-gradient(circle, rgba(167, 139, 250, 0.05) 0%, rgba(0, 0, 0, 0) 70%);
+            right: -100px;
+            top: -100px;
+            animation-duration: 25s;
+        }
+
+        .splash-content {
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .splash-logo {
+            font-size: 3rem;
+            font-weight: 800;
+            color: #fff;
+            margin-bottom: 0.5rem;
+            letter-spacing: 0.3rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1.2rem;
+            text-shadow: 0 0 30px rgba(99, 179, 237, 0.4);
+        }
+
+        .splash-logo i {
+            color: #63b3ed;
+            filter: drop-shadow(0 0 10px rgba(99, 179, 237, 0.6));
+        }
+
+        .splash-text {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 1.2rem;
+            font-weight: 300;
+            letter-spacing: 0.6rem;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: splashTextFadeIn 1.2s ease-out forwards 0.8s;
+            text-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+        }
+
+        .splash-loader-container {
+            margin-top: 3.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .splash-loader {
+            width: 320px;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.05);
+            position: relative;
+            border-radius: 2px;
+            overflow: hidden;
+            backdrop-filter: blur(5px);
+        }
+
+        .splash-loader-bar {
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #3182ce, #63b3ed, #4fd1c5);
+            box-shadow: 0 0 15px rgba(99, 179, 237, 0.6);
+            animation: splashLoad 4.2s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+        }
+
+        .splash-logs {
+            margin-top: 1.5rem;
+            height: 60px;
+            width: 400px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.75rem;
+            color: rgba(79, 209, 197, 0.6);
+            text-align: left;
+            overflow: hidden;
+            mask-image: linear-gradient(to bottom, transparent, black 20%, black 80%, transparent);
+        }
+
+        .log-line {
+            line-height: 1.2;
+            margin-bottom: 2px;
+            opacity: 0;
+            animation: logFadeIn 0.3s forwards;
+        }
+
+        .splash-scanline {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.04), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.04));
+            background-size: 100% 4px, 3px 100%;
+            pointer-events: none;
+            opacity: 0.2;
+            z-index: 2;
+        }
+
+        @keyframes splashTextFadeIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes splashLoad {
+            0% { width: 0%; }
+            15% { width: 10%; }
+            35% { width: 25%; }
+            55% { width: 45%; }
+            75% { width: 85%; }
+            90% { width: 95%; }
+            100% { width: 100%; }
+        }
+
+        @keyframes splashBlobMove {
+            from { transform: translate(-10%, -10%); }
+            to { transform: translate(10%, 10%); }
+        }
+
+        @keyframes logFadeIn {
+            from { opacity: 0; transform: translateX(-5px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        /* アイコンの鼓動アニメーション */
+        .fa-pulse-slow {
+            animation: splashIconSlowSpin 12s infinite linear;
+        }
+
+        @keyframes splashIconSlowSpin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* 起動アニメーション（パターンB: Organic & Fluid） */
+        #splash-screen.pattern-b {
+            background: #ffffff;
+            transition: opacity 1.5s cubic-bezier(0.645, 0.045, 0.355, 1);
+        }
+
+        .pattern-b .splash-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* パターンB: 中心グロー */
+        .pattern-b::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(49, 130, 206, 0.12) 0%, rgba(99, 179, 237, 0.06) 40%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        /* 波紋エフェクト */
+        .splash-ripples {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: none;
+        }
+
+        .pattern-b .splash-ripples {
+            display: block;
+        }
+
+        .ripple {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border: 2px solid rgba(49, 130, 206, 0.55);
+            border-radius: 50%;
+            box-shadow: 0 0 18px rgba(49, 130, 206, 0.25), inset 0 0 18px rgba(49, 130, 206, 0.08);
+            animation: rippleMove 4.5s cubic-bezier(0.23, 1, 0.32, 1) infinite;
+        }
+
+        .ripple:nth-child(2) {
+            animation-delay: 1.1s;
+            border-color: rgba(99, 179, 237, 0.5);
+            box-shadow: 0 0 18px rgba(99, 179, 237, 0.2), inset 0 0 18px rgba(99, 179, 237, 0.06);
+        }
+        .ripple:nth-child(3) {
+            animation-delay: 2.2s;
+            border-color: rgba(79, 209, 197, 0.45);
+            box-shadow: 0 0 18px rgba(79, 209, 197, 0.2), inset 0 0 18px rgba(79, 209, 197, 0.06);
+        }
+        .ripple:nth-child(4) {
+            animation-delay: 3.3s;
+            border-color: rgba(49, 130, 206, 0.4);
+            box-shadow: 0 0 18px rgba(49, 130, 206, 0.18), inset 0 0 18px rgba(49, 130, 206, 0.05);
+        }
+
+        @keyframes rippleMove {
+            0%   { width: 0;     height: 0;     opacity: 0.9; }
+            20%  { opacity: 0.75; }
+            100% { width: 900px; height: 900px; opacity: 0; }
+        }
+
+        .pattern-b .splash-logo {
+            font-size: 3rem;
+            color: #2d3748;
+            margin-bottom: 2rem;
+            animation: pattern-b-breath 4s ease-in-out infinite;
+            text-shadow: none;
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .logo-text-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            line-height: 1.1;
+        }
+
+        .logo-line-top {
+            font-size: 2.4rem;
+            font-weight: 800;
+            letter-spacing: 0.1rem;
+        }
+
+        .logo-line-bottom {
+            font-size: 1.2rem;
+            font-weight: 400;
+            letter-spacing: 0.8rem;
+            color: #63b3ed;
+            margin-top: 0.2rem;
+            text-transform: uppercase;
+        }
+
+        .pattern-b .splash-logo i {
+            font-size: 4rem;
+            color: #3182ce;
+            filter: drop-shadow(0 0 16px rgba(49, 130, 206, 0.55)) drop-shadow(0 0 32px rgba(49, 130, 206, 0.25));
+        }
+
+        .pattern-b .splash-text {
+            color: #718096;
+            font-size: 1.4rem;
+            font-weight: 300;
+            letter-spacing: 0.8rem;
+            transform: scale(0.95);
+            filter: blur(10px);
+            animation: pattern-b-text-reveal 2s cubic-bezier(0.4, 0, 0.2, 1) forwards 1s;
+        }
+
+        .pattern-b .splash-loader-container {
+            display: none; /* Bパターンでは機械的なバーを隠す */
+        }
+
+        @keyframes pattern-b-breath {
+            0%, 100% { transform: scale(1); opacity: 0.9; }
+            50% { transform: scale(1.05); opacity: 1; }
+        }
+
+        @keyframes pattern-b-text-reveal {
+            to {
+                opacity: 1;
+                transform: scale(1);
+                filter: blur(0);
+            }
+        }
+
+        /* 起動アニメーション（パターンC: Futuristic / 近未来的） */
+        #splash-screen.pattern-c {
+            background: #00050a;
+            perspective: 1000px;
+        }
+
+        /* グリッド背景 */
+        .splash-grid {
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            top: -50%;
+            left: -50%;
+            background-image: 
+                linear-gradient(rgba(0, 150, 255, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 150, 255, 0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            transform: rotateX(60deg) translateY(0);
+            animation: gridMove 20s linear infinite;
+            display: none;
+        }
+
+        .pattern-c .splash-grid {
+            display: block;
+        }
+
+        @keyframes gridMove {
+            from { transform: rotateX(60deg) translateY(0); }
+            to { transform: rotateX(60deg) translateY(50px); }
+        }
+
+        .pattern-c .splash-logo {
+            font-size: 2.8rem;
+            color: #00d2ff;
+            text-shadow: 0 0 10px rgba(0, 210, 255, 0.5), 0 0 20px rgba(0, 210, 255, 0.2);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            text-transform: uppercase;
+            animation: glitch-text 4s infinite;
+        }
+
+        .pattern-c .splash-logo i {
+            color: #00d2ff;
+            filter: drop-shadow(0 0 15px rgba(0, 210, 255, 0.8));
+        }
+
+        .pattern-c .splash-text {
+            color: #00d2ff;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            letter-spacing: 0.2rem;
+            background: rgba(0, 210, 255, 0.1);
+            padding: 5px 15px;
+            border-left: 3px solid #00d2ff;
+        }
+
+        @keyframes glitch-text {
+            0%, 90%, 100% { transform: none; opacity: 1; }
+            92% { transform: skewX(10deg); opacity: 0.8; }
+            94% { transform: skewX(-10deg); opacity: 0.9; }
+            96% { transform: skewX(5deg); }
+        }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
 <body class="theme-{% if user.is_authenticated and user.profile.color_theme %}{{ user.profile.color_theme }}{% else %}current{% endif %}">
+
+    {% if user.is_authenticated %}
+    <!-- 起動アニメーション -->
+    <div id="splash-screen">
+        <div class="splash-bg-blobs">
+            <div class="splash-blob"></div>
+            <div class="splash-blob"></div>
+        </div>
+        <div class="splash-grid"></div>
+        <div class="splash-ripples">
+            <div class="ripple"></div>
+            <div class="ripple"></div>
+            <div class="ripple"></div>
+            <div class="ripple"></div>
+        </div>
+        <div class="splash-scanline"></div>
+        <div class="splash-content">
+            <div class="splash-logo">
+                <i class="fas fa-shield-halved fa-pulse-slow"></i>
+                <div class="logo-text-wrapper">
+                    <div class="logo-line-top">CareManagement</div>
+                    <div class="logo-line-bottom">SYSTEM</div>
+                </div>
+            </div>
+            <div class="splash-text">アセスメント管理システム 起動</div>
+            <div class="splash-loader-container">
+                <div class="splash-loader">
+                    <div class="splash-loader-bar"></div>
+                </div>
+                <div class="splash-logs" id="splash-logs"></div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container">
             <a class="navbar-brand" href="{% url 'client_list' %}">
-                <i class="fas fa-clipboard-check"></i> アセスメント管理システム
+                <i class="fas fa-clipboard-check"></i> CareManagement SYSTEM
+                <small style="font-size: 0.85rem; font-weight: 300; opacity: 0.9; letter-spacing: 0.05rem; vertical-align: middle; margin-left: 0.4rem;">アセスメント管理システム</small>
             </a>
 
             <!-- モバイル・タブレット用：右端にハンバーガーメニューとフィードバックボタンをグループ化 -->
@@ -300,24 +717,16 @@
                     </li>
                     -->
                     {% if user.is_staff or user.is_superuser %}
-                    <!--
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'user_list' %}">
                             <i class="fas fa-users-cog"></i> ユーザー管理
                         </a>
                     </li>
-
-                    -->
-                    {% endif %}
-
-                    {% if user.is_staff or user.is_superuser %}
-                    <!--
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'feedback_list_admin' %}">
                             <i class="fas fa-comments"></i> フィードバック管理
                         </a>
                     </li>
-                    -->
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="masterDataDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="fas fa-database"></i> マスタデータ管理
@@ -487,22 +896,26 @@
         var okClass = options.okClass || 'btn-primary';
 
         var hideCancel = options.hideCancel || false;
+        var hideOk = options.hideOk || false;
 
         var overlay = document.createElement('div');
+        overlay.id = 'confirm-modal-overlay';
         overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:9998;display:flex;align-items:center;justify-content:center;';
 
         var buttonsHtml = '';
         if (!hideCancel) {
             buttonsHtml += '<button class="btn btn-outline-secondary px-4 py-2 confirm-modal-cancel">' + cancelText + '</button>';
         }
-        buttonsHtml += '<button class="btn ' + okClass + ' px-4 py-2 confirm-modal-ok">' + okText + '</button>';
+        if (!hideOk) {
+            buttonsHtml += '<button class="btn ' + okClass + ' px-4 py-2 confirm-modal-ok">' + okText + '</button>';
+        }
 
         var modal = document.createElement('div');
         modal.style.cssText = 'background:#fff;border-radius:0.5rem;padding:2rem;max-width:420px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.3);text-align:center;';
-        modal.innerHTML = '<div style="font-size:2rem;margin-bottom:1rem;"><i class="fas ' + icon + '" style="color:' + iconColor + ';"></i></div>' +
-            '<h5 style="margin-bottom:0.75rem;font-weight:600;">' + title + '</h5>' +
-            '<p style="color:#6c757d;margin-bottom:1.5rem;">' + message + '</p>' +
-            '<div style="display:flex;gap:0.75rem;justify-content:center;">' + buttonsHtml + '</div>';
+        modal.innerHTML = '<div class="confirm-modal-icon-container" style="font-size:2rem;margin-bottom:1rem;"><i class="fas ' + icon + '" style="color:' + iconColor + ';"></i></div>' +
+            '<h5 class="confirm-modal-title" style="margin-bottom:0.75rem;font-weight:600;">' + title + '</h5>' +
+            '<p class="confirm-modal-message" style="color:#6c757d;margin-bottom:1.5rem;">' + message + '</p>' +
+            '<div class="confirm-modal-buttons" style="display:flex;gap:0.75rem;justify-content:center;">' + buttonsHtml + '</div>';
 
         overlay.appendChild(modal);
         document.body.appendChild(overlay);
@@ -517,10 +930,150 @@
                     overlay.remove(); resolve(false);
                 });
             }
-            modal.querySelector('.confirm-modal-ok').addEventListener('click', function() {
-                overlay.remove(); resolve(true);
-            });
+            var okBtn = modal.querySelector('.confirm-modal-ok');
+            if (okBtn) {
+                okBtn.addEventListener('click', function() {
+                    overlay.remove(); resolve(true);
+                });
+            }
         });
+    }
+
+    /**
+     * モーダルの内容を動的に更新する（Excelダウンロード用）
+     */
+    function updateConfirmModal(options) {
+        var overlay = document.getElementById('confirm-modal-overlay');
+        if (!overlay) return;
+        
+        var modal = overlay.querySelector('div');
+        if (options.icon) {
+            var iconContainer = modal.querySelector('.confirm-modal-icon-container');
+            iconContainer.innerHTML = '<i class="fas ' + options.icon + '" style="color:' + (options.iconColor || '#6c757d') + ';"></i>';
+            if (options.spinning) {
+                iconContainer.querySelector('i').classList.add('fa-spin');
+            }
+        }
+        if (options.title) {
+            modal.querySelector('.confirm-modal-title').textContent = options.title;
+        }
+        if (options.message) {
+            modal.querySelector('.confirm-modal-message').innerHTML = options.message;
+        }
+        if (options.showOkOnly) {
+            var buttonsContainer = modal.querySelector('.confirm-modal-buttons');
+            buttonsContainer.innerHTML = '<button class="btn ' + (options.okClass || 'btn-primary') + ' px-4 py-2 confirm-modal-ok">' + (options.okText || 'OK') + '</button>';
+            buttonsContainer.querySelector('.confirm-modal-ok').addEventListener('click', function() {
+                overlay.remove();
+            });
+        }
+    }
+
+    /**
+     * Excelダウンロード処理
+     */
+    async function handleExcelDownload(url, filename, postData = null, useAjax = false) {
+        showConfirmModal({
+            icon: 'fa-spinner',
+            iconColor: '#0d6efd',
+            title: 'Excel出力',
+            message: 'ダウンロードを準備しています...',
+            hideCancel: true,
+            hideOk: true
+        });
+        
+        // iconにfa-spinを追加
+        updateConfirmModal({ icon: 'fa-spinner', spinning: true });
+
+        try {
+            const options = {
+                method: postData ? 'POST' : 'GET',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : ''
+                }
+            };
+
+            if (useAjax) {
+                options.headers['X-Requested-With'] = 'XMLHttpRequest';
+            }
+            
+            if (postData) {
+                if (postData instanceof FormData) {
+                    options.body = postData;
+                } else {
+                    options.body = JSON.stringify(postData);
+                    options.headers['Content-Type'] = 'application/json';
+                }
+            }
+
+            const response = await fetch(url, options);
+            if (!response.ok) throw new Error('Network response was not ok');
+
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.indexOf('application/json') !== -1) {
+                const data = await response.json();
+                updateConfirmModal({
+                    icon: 'fa-check-circle',
+                    iconColor: '#198754',
+                    spinning: false,
+                    title: '保存完了',
+                    message: (data.message || '共有ドライブの各担当の利用者フォルダに保存しました。') + (data.filename ? '<br><small class="text-muted" style="font-size: 0.75rem;">保存先: ' + data.filename + '</small>' : ''),
+                    showOkOnly: true,
+                    okText: '閉じる'
+                });
+                return;
+            }
+
+            const blob = await response.blob();
+            const downloadUrl = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = downloadUrl;
+            
+            // Content-Dispositionからファイル名取得を試みる
+            const contentDisposition = response.headers.get('Content-Disposition');
+            if (contentDisposition) {
+                // filename*=UTF-8'' に対応
+                const starMatch = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i);
+                if (starMatch && starMatch[1]) {
+                    filename = decodeURIComponent(starMatch[1].replace(/["']/g, ''));
+                } else {
+                    // filename= に対応
+                    const normMatch = contentDisposition.match(/filename=([^;]+)/i);
+                    if (normMatch && normMatch[1]) {
+                        filename = normMatch[1].replace(/["']/g, '');
+                    }
+                }
+            }
+            
+            a.download = filename || 'download.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(downloadUrl);
+
+            updateConfirmModal({
+                icon: 'fa-check-circle',
+                iconColor: '#198754',
+                spinning: false,
+                title: '完了',
+                message: 'Excelファイルのダウンロードが完了しました。',
+                showOkOnly: true,
+                okText: '閉じる'
+            });
+
+        } catch (error) {
+            console.error('Download error:', error);
+            updateConfirmModal({
+                icon: 'fa-exclamation-triangle',
+                iconColor: '#dc3545',
+                spinning: false,
+                title: 'エラー',
+                message: 'Excel出力中にエラーが発生しました。',
+                showOkOnly: true,
+                okClass: 'btn-danger',
+                okText: '閉じる'
+            });
+        }
     }
     </script>
 
@@ -545,6 +1098,87 @@
             });
             toast.show();
         });
+
+        // ハンバーガーメニュー外をクリックしたときにメニューを閉じる
+        document.addEventListener('click', function(event) {
+            const navbarCollapse = document.getElementById('navbarNav');
+            const navbarToggler = document.querySelector('.navbar-toggler');
+            
+            // メニューが開いているか確認
+            if (navbarCollapse && navbarCollapse.classList.contains('show')) {
+                // クリックされた要素がメニュー内でもトグラーでもない場合
+                if (!navbarCollapse.contains(event.target) && !navbarToggler.contains(event.target)) {
+                    const bsCollapse = new bootstrap.Collapse(navbarCollapse);
+                    bsCollapse.hide();
+                }
+            }
+        });
+
+        // 起動アニメーションの制御
+        const splashScreen = document.getElementById('splash-screen');
+        const splashLogs = document.getElementById('splash-logs');
+        
+        // パターン設定 ('A', 'B', 'C')
+        const ANIMATION_PATTERN = 'B'; 
+        if (splashScreen) {
+            if (ANIMATION_PATTERN === 'B') splashScreen.classList.add('pattern-b');
+            if (ANIMATION_PATTERN === 'C') splashScreen.classList.add('pattern-c');
+        }
+
+        {% if user.is_authenticated %}
+        if (splashScreen) {
+            // ログイン失敗時（form.errorsあり）はスプラッシュをスキップ
+            if (document.getElementById('login-error')) {
+                splashScreen.style.display = 'none';
+                sessionStorage.removeItem('login_triggered_splash');
+            } else if (sessionStorage.getItem('login_triggered_splash')) {
+                sessionStorage.removeItem('login_triggered_splash');
+
+                const logsA = [
+                    "INITIALIZING SYSTEM...", "LOADING CORE MODULES...", "CONNECTING TO DATABASE...",
+                    "AUTHENTICATING USER...", "RETRIEVING CLIENT DATA...", "CALCULATING ASSESSMENT METRICS...",
+                    "OPTIMIZING UI INTERFACE...", "SYNCING REGIONAL CENTERS...", "SYSTEM READY."
+                ];
+                const logsB = [
+                    "SYSTEM INITIALIZING...", "SECURE CONNECTION ESTABLISHED", "LOADING USER PROFILE...",
+                    "OPTIMIZING WORKSPACE...", "CLEANING TEMPORARY DATA...", "SYSTEM READY"
+                ];
+                const logsC = [
+                    "BOOTING NEURAL LINK...", "UPLOADING ENCRYPTED DATA PACKETS...", "BYPASSING CLOUD SECURE GATES...",
+                    "DECRYPTING CLIENT ARCHIVES...", "SYNCHRONIZING CARE NETWORK...", "FUTURISTIC UI RENDERING...",
+                    "ALL SYSTEMS OPERATIONAL.", "WELCOME TO CAREMANAGEMENT SYSTEM."
+                ];
+
+                const logs = ANIMATION_PATTERN === 'A' ? logsA : (ANIMATION_PATTERN === 'B' ? logsB : logsC);
+
+                let currentLog = 0;
+                function addLog() {
+                    if (currentLog < logs.length && splashLogs) {
+                        const line = document.createElement('div');
+                        line.className = 'log-line';
+                        const prefix = ANIMATION_PATTERN === 'A' ? '> ' : (ANIMATION_PATTERN === 'C' ? '[AUTO] ' : '');
+                        line.textContent = prefix + logs[currentLog].toLowerCase();
+                        splashLogs.appendChild(line);
+                        splashLogs.scrollTop = splashLogs.scrollHeight;
+                        currentLog++;
+                        const delay = Math.random() * (ANIMATION_PATTERN === 'B' ? 600 : 300) + 100;
+                        setTimeout(addLog, delay);
+                    }
+                }
+                setTimeout(addLog, 800);
+
+                setTimeout(() => {
+                    splashScreen.classList.add('fade-out');
+                    setTimeout(() => { splashScreen.style.display = 'none'; }, 1500);
+                }, ANIMATION_PATTERN === 'C' ? 6500 : 5500);
+            } else {
+                splashScreen.style.display = 'none';
+            }
+        }
+        {% else %}
+        // 非ログイン時はフラグをリセット
+        sessionStorage.removeItem('login_triggered_splash');
+        {% endif %}
     });
     </script>
 

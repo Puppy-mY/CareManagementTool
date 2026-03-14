@@ -721,9 +721,9 @@
                                                 <button type="button" class="btn btn-outline-secondary btn-sm btn-preview" style="transition: all 0.2s ease; font-size: 0.7rem; line-height: 1.2;" disabled>
                                                     プレビュー<br>開発中
                                                 </button>
-                                                <a href="{% url 'assessment_excel_export' assessment.pk %}" class="btn btn-outline-secondary btn-sm btn-excel" style="transition: all 0.2s ease;">
+                                                <button onclick="handleExcelDownload('{% url 'assessment_excel_export' assessment.pk %}', 'アセスメント_{{ client.name }}_{{ assessment.created_date|date:'Ymd' }}.xlsm')" class="btn btn-outline-secondary btn-sm btn-excel" style="transition: all 0.2s ease;">
                                                     <i class="fas fa-file-excel me-1"></i>Excel
-                                                </a>
+                                                </button>
                                                 <button type="button" class="btn btn-outline-secondary btn-sm btn-delete" style="transition: all 0.2s ease;" onclick="deleteAssessment({{ assessment.pk }})">
                                                     <i class="fas fa-trash me-1"></i>削除
                                                 </button>
@@ -922,7 +922,8 @@ function viewDocumentHistoryPDF(historyId) {
 
 // 書類履歴からExcelファイルをダウンロード
 function downloadDocumentHistoryExcel(historyId) {
-    window.location.href = `/clients/documents/history/${historyId}/excel/`;
+    const url = `/clients/documents/history/${historyId}/excel/`;
+    handleExcelDownload(url);
 }
 
 // 書類を再編集

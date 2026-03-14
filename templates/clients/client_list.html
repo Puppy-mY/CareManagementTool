@@ -51,15 +51,15 @@
         <div class="card">
             <div class="card-body">
                 <div id="filterForm" class="row g-3">
-                    <div class="col-md-4">
+                    <div class="col-md-5">
                         <label for="search" class="form-label">
                             <i class="fas fa-search"></i> 検索
                         </label>
                         <input type="text" class="form-control" id="search"
-                               placeholder="氏名、被保険者番号、ふりがなで検索" autocomplete="off">
+                                placeholder="氏名、番号、ふりがなで検索" autocomplete="off">
                     </div>
 
-                    <div class="col-md-{% if is_all_clients %}4{% else %}7{% endif %}">
+                    <div class="col-md-3">
                         <label for="care_level" class="form-label">
                             <i class="fas fa-user-nurse"></i> 要介護度
                         </label>
@@ -118,376 +118,7 @@
                             </tbody>
                         </table>
                     </div>
-
-                        #clientTable {
-                            table-layout: auto;
-                            width: 100%;
-                        }
-                        #clientTable th, #clientTable td {
-                            border-right: 1px solid #dee2e6;
-                            vertical-align: middle;
-                            padding: 12px;
-                            white-space: nowrap;
-                            font-size: 14px;
-                        }
-                        #clientTable th:last-child, #clientTable td:last-child {
-                            border-right: none;
-                        }
-                        #clientTable th {
-                            border-bottom: 2px solid #dee2e6;
-                            font-weight: 600;
-                            font-size: 13px;
-                        }
-                        /* 氏名カラムは改行を許可 */
-                        #clientTable td:first-child {
-                            white-space: normal;
-                            min-width: 120px;
-                        }
-                        /* 長いテキストのカラムは最小幅を設定 */
-                        #clientTable th, #clientTable td {
-                            min-width: 90px;
-                        }
-                        /* 使用状況カラムは改行を許可 */
-                        #clientTable td.usage-column {
-                            white-space: normal;
-                            min-width: 150px;
-                        }
-                        /* 操作ボタンのデフォルトスタイル（行ホバー時も白背景を保つ） */
-                        #clientTable .btn-outline-secondary.action-toggle {
-                            background-color: #ffffff !important;
-                        }
-                        /* 操作ボタン自体のホバー・アクティブスタイル */
-                        #clientTable .btn-outline-secondary.action-toggle:hover,
-                        #clientTable .btn-outline-secondary.action-toggle:active,
-                        #clientTable .btn-outline-secondary.action-toggle:focus,
-                        #clientTable .btn-outline-secondary.action-toggle.active,
-                        #clientTable .btn-outline-secondary.action-toggle:focus-visible,
-                        #clientTable .btn.btn-outline-secondary.action-toggle:not(:disabled):not(.disabled):hover,
-                        #clientTable .btn.btn-outline-secondary.action-toggle:not(:disabled):not(.disabled):active {
-                            background-color: #f5f5f5 !important;
-                            color: #000000 !important;
-                            border-color: #999999 !important;
-                            box-shadow: none !important;
-                        }
-                        /* 操作メニューのホバー効果 */
-                        .action-menu a:hover {
-                            background-color: #f5f5f5 !important;
-                        }
-                        /* 利用者行のみホバー効果を有効化（展開行は除外） */
-                        #clientTable tbody tr:hover:not(.action-expand-row) {
-                            background-color: #f5f5f5;
-                        }
-                        /* 操作展開行のホバー効果のみ無効化 */
-                        #clientTable tbody .action-expand-row:hover {
-                            background-color: #f5f5f5 !important;
-                        }
-                        #clientTable tbody .action-expand-row td {
-                            background-color: transparent !important;
-                        }
-                        #clientTable tbody .action-expand-row:hover td {
-                            background-color: transparent !important;
-                        }
-                        /* カード部分の背景は白のまま */
-                        #clientTable .action-expand-row .card {
-                            background-color: white !important;
-                        }
-                        /* 展開エリアのアニメーション */
-                        .action-expand-row {
-                            transition: all 0.15s ease;
-                            overflow: hidden;
-                        }
-                        .action-expand-row.closing {
-                            animation: slideUp 0.15s ease forwards;
-                        }
-                        @keyframes slideUp {
-                            from {
-                                max-height: 300px;
-                                opacity: 1;
-                            }
-                            to {
-                                max-height: 0px;
-                                opacity: 0;
-                                padding-top: 0;
-                                padding-bottom: 0;
-                            }
-                        }
-                        /* 書類作成ツールチップ */
-                        .document-create-btn {
-                            position: relative;
-                        }
-                        .document-modal {
-                            position: fixed;
-                            top: 0;
-                            left: 0;
-                            width: 100%;
-                            height: 100%;
-                            background: rgba(0, 0, 0, 0.5);
-                            z-index: 1000;
-                            display: none;
-                            align-items: center;
-                            justify-content: center;
-                        }
-
-                        .document-modal.show {
-                            display: flex !important;
-                        }
-
-                        .document-modal-content {
-                            background: white;
-                            border-radius: 8px;
-                            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-                            width: 90%;
-                            max-width: 600px;
-                            position: relative;
-                            transform: scale(0.9) translateY(10px);
-                            transition: all 0.2s ease;
-                        }
-
-                        .document-modal.show .document-modal-content {
-                            transform: scale(1) translateY(0);
-                        }
-
-                        .document-modal-header {
-                            background: #f8f9fa;
-                            border-bottom: 1px solid #e9ecef;
-                            color: #495057;
-                            padding: 16px 20px;
-                            position: relative;
-                        }
-
-                        .document-modal-title {
-                            font-size: 18px;
-                            font-weight: 600;
-                            margin: 0;
-                            display: flex;
-                            align-items: center;
-                            color: #495057;
-                        }
-
-                        .document-modal-title i {
-                            margin-right: 8px;
-                            font-size: 16px;
-                            color: #6c757d;
-                        }
-
-                        .document-modal-close {
-                            position: absolute;
-                            top: 12px;
-                            right: 16px;
-                            background: #e9ecef;
-                            border: none;
-                            color: #6c757d;
-                            width: 28px;
-                            height: 28px;
-                            border-radius: 4px;
-                            display: flex;
-                            align-items: center;
-                            justify-content: center;
-                            cursor: pointer;
-                            transition: all 0.2s ease;
-                            font-size: 12px;
-                        }
-
-                        .document-modal-close:hover {
-                            background: #dee2e6;
-                            color: #495057;
-                        }
-
-                        .document-modal-body {
-                            padding: 20px;
-                            display: grid;
-                            grid-template-columns: 1fr 1px 1fr;
-                            gap: 30px;
-                            align-items: start;
-                        }
-
-                        .modal-divider {
-                            width: 1px;
-                            background: #dee2e6;
-                            align-self: stretch;
-                        }
-                        .document-create-btn:hover .document-tooltip,
-                        .document-tooltip:hover {
-                            opacity: 1;
-                            visibility: visible;
-                            pointer-events: auto;
-                        }
-                        .document-section {
-                            margin-bottom: 24px;
-                        }
-
-                        .document-section:last-child {
-                            margin-bottom: 0;
-                        }
-
-                        .document-section-title {
-                            font-size: 14px;
-                            font-weight: 600;
-                            color: #495057;
-                            margin-bottom: 8px;
-                            padding-bottom: 4px;
-                            border-bottom: 1px solid #dee2e6;
-                            width: 50%;
-                        }
-
-                        .document-list {
-                            list-style: none;
-                            margin: 0;
-                            padding: 0;
-                        }
-
-                        .document-item {
-                            padding: 4px 0;
-                            cursor: pointer;
-                            color: #495057;
-                            transition: color 0.1s ease;
-                        }
-
-                        .document-item:hover {
-                            color: #007bff;
-                        }
-
-                        .document-item::before {
-                            content: '•';
-                            margin-right: 8px;
-                            color: #6c757d;
-                        }
-
-                        .document-item:last-child::after {
-                            display: none;
-                        }
-
-                        /* 謎の線を削除 */
-                        .document-list li:after,
-                        .document-item:after {
-                            display: none !important;
-                        }
-
-                        .document-list {
-                            border: none !important;
-                            outline: none !important;
-                        }
-
-                        .document-item {
-                            border: none !important;
-                            outline: none !important;
-                            position: relative;
-                        }
-
-
-                        /* モーダル位置アニメーション */
-                        .document-modal-anchor {
-                            position: absolute;
-                            pointer-events: none;
-                            z-index: 999;
-                        }
-
-                        .document-modal-connector {
-                            position: absolute;
-                            width: 1px;
-                            background: linear-gradient(to bottom, #6c757d, transparent);
-                            opacity: 0;
-                            transition: all 0.3s ease;
-                            transform-origin: top;
-                            z-index: 999;
-                            display: none; /* 一時的に非表示 */
-                        }
-
-                        .document-modal.show .document-modal-connector {
-                            opacity: 1;
-                            transform: scaleY(1);
-                        }
-                        /* カスタムスクロールバー */
-                        .document-tooltip::-webkit-scrollbar {
-                            width: 4px;
-                        }
-                        .document-tooltip::-webkit-scrollbar-track {
-                            background: #f9fafb;
-                            border-radius: 2px;
-                        }
-                        .document-tooltip::-webkit-scrollbar-thumb {
-                            background: #d1d5db;
-                            border-radius: 2px;
-                        }
-                        .document-tooltip::-webkit-scrollbar-thumb:hover {
-                            background: #9ca3af;
-                        }
-                        /* 書類作成からの接続を明確にする三角形 */
-                        .document-tooltip {
-                            --triangle-left: 50%;
-                        }
-                        .document-tooltip:before {
-                            content: '';
-                            position: absolute;
-                            top: -6px;
-                            left: var(--triangle-left);
-                            transform: translateX(-50%);
-                            width: 0;
-                            height: 0;
-                            border-left: 6px solid transparent;
-                            border-right: 6px solid transparent;
-                            border-bottom: 6px solid #e5e7eb;
-                        }
-                        .document-tooltip:after {
-                            content: '';
-                            position: absolute;
-                            top: -5px;
-                            left: var(--triangle-left);
-                            transform: translateX(-50%);
-                            width: 0;
-                            height: 0;
-                            border-left: 5px solid transparent;
-                            border-right: 5px solid transparent;
-                            border-bottom: 5px solid #ffffff;
-                        }
-                        /* ボタンホバー効果 */
-                        .action-expand-row .btn:hover {
-                            transform: translateY(-1px);
-                            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-                            transition: all 0.2s ease;
-                        }
-                        /* 各ボタンのホバー時薄いカラー（ボタンのIDで個別指定） */
-                        .action-expand-row .col-md-3:nth-child(1) .btn-outline-secondary:hover {
-                            background-color: #f5f5f5 !important;
-                            border-color: #999 !important;
-                            color: #333 !important;
-                        }
-                        .action-expand-row .col-md-3:nth-child(2) .btn-outline-secondary:hover {
-                            background-color: #e3f2fd !important;
-                            border-color: #0d6efd !important;
-                            color: #0d6efd !important;
-                        }
-                        .action-expand-row .col-md-3:nth-child(3) .btn-outline-secondary:hover {
-                            background-color: #e8f5e8 !important;
-                            border-color: #198754 !important;
-                            color: #198754 !important;
-                        }
-                        .action-expand-row .col-md-3:nth-child(4) .btn-outline-secondary:hover {
-                            background-color: #fff3e0 !important;
-                            border-color: #fd7e14 !important;
-                            color: #fd7e14 !important;
-                        }
-                        .action-expand-row .row:nth-child(2) .col-md-3:nth-child(2) .btn-outline-secondary:hover {
-                            background-color: #f3e5f5 !important;
-                            border-color: #6f42c1 !important;
-                            color: #6f42c1 !important;
-                        }
-                        .action-expand-row .row:nth-child(2) .col-md-3:nth-child(3) .btn-outline-secondary:hover {
-                            background-color: #ffebee !important;
-                            border-color: #d63384 !important;
-                            color: #d63384 !important;
-                        }
-                        .action-expand-row .row:nth-child(2) .col-md-3:nth-child(4) .btn-outline-secondary:hover {
-                            background-color: #fff9c4 !important;
-                            border-color: #ffc107 !important;
-                            color: #856404 !important;
-                        }
-                        .action-expand-row .row:nth-child(2) .col-md-3:nth-child(5) .btn-outline-secondary:hover {
-                            background-color: #f5f0e8 !important;
-                            border-color: #d2b48c !important;
-                            color: #8b7355 !important;
-                        }
-                    </div>
+</div>
                 {% else %}
                     <div class="text-center py-5">
                         <i class="fas fa-users fa-3x text-muted mb-3"></i>
@@ -1009,9 +640,7 @@ document.addEventListener('DOMContentLoaded', function() {
         {% if is_all_clients %}
         care_manager: { label: 'ケアマネ担当者', required: false, default: true, order: 4 },
         {% endif %}
-        {% if user.is_superuser %}
-        current_usage: { label: `${currentMonth}月単位使用状況`, required: false, default: true, order: 5 },
-        {% endif %}
+
         age: { label: '年齢', required: false, default: false, order: 6 },
         care_burden: { label: '負担割合', required: false, default: false, order: 7 },
         medical_insurance_type: { label: '医療保険種別', required: false, default: false, order: 8 },
@@ -1028,25 +657,46 @@ document.addEventListener('DOMContentLoaded', function() {
     // 現在の表示設定を取得
     function getCurrentSettings() {
         const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) {
-            return JSON.parse(saved);
-        }
         // デフォルト設定
         const defaults = {};
         Object.keys(columnConfig).forEach(key => {
             defaults[key] = columnConfig[key].default;
         });
+
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                // 存在的（有効な）列キーのみにフィルタリング
+                const filtered = {};
+                Object.keys(columnConfig).forEach(key => {
+                    filtered[key] = parsed.hasOwnProperty(key) ? parsed[key] : columnConfig[key].default;
+                });
+                return filtered;
+            } catch (e) {
+                console.error("Storage settings parse error:", e);
+                return defaults;
+            }
+        }
         return defaults;
     }
 
     // 現在の順序設定を取得
     function getCurrentOrder() {
+        const defaultOrder = Object.keys(columnConfig).sort((a, b) => columnConfig[a].order - columnConfig[b].order);
         const saved = localStorage.getItem(STORAGE_ORDER_KEY);
         if (saved) {
-            return JSON.parse(saved);
+            try {
+                const parsed = JSON.parse(saved);
+                // 存在的（有効な）列キーのみにフィルタリングし、存在しない列は後ろに追加
+                const filtered = parsed.filter(key => columnConfig.hasOwnProperty(key));
+                const missing = defaultOrder.filter(key => !filtered.includes(key));
+                return [...filtered, ...missing];
+            } catch (e) {
+                console.error("Storage order parse error:", e);
+                return defaultOrder;
+            }
         }
-        // デフォルト順序
-        return Object.keys(columnConfig).sort((a, b) => columnConfig[a].order - columnConfig[b].order);
+        return defaultOrder;
     }
 
     // 設定を保存
@@ -1068,12 +718,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (settings[column]) {
                 const th = document.createElement('th');
 
-                // 単位使用状況の列には「開発中」を追加
-                if (column === 'current_usage') {
-                    th.textContent = columnConfig[column].label + '（開発中）';
-                } else {
-                    th.textContent = columnConfig[column].label;
-                }
+                th.textContent = columnConfig[column].label;
 
                 headerRow.appendChild(th);
             }
@@ -1097,10 +742,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const td = document.createElement('td');
                 td.innerHTML = getCellContent(client, column);
                 
-                // 使用状況カラムにクラスを追加
-                if (column === 'current_usage') {
-                    td.className = 'usage-column';
-                }
+
                 
                 row.appendChild(td);
             }
@@ -1349,8 +991,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 return client.gender || '<small class="text-muted">未設定</small>';
             case 'birth_date':
                 return client.birth_date;
-            case 'current_usage':
-                return '<small class="text-muted">開発中</small>';
+
             default:
                 return '';
         }
@@ -1573,7 +1214,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // 検索・フィルタ機能（クライアントサイド）
     const searchInput = document.getElementById('search');
     const careLevelSelect = document.getElementById('care_level');
-    const statusSelect = document.getElementById('status');
     const careManagerSelect = document.getElementById('care_manager');
     const clearButton = document.getElementById('clearFilters');
     const countBadge = document.getElementById('countBadge');
@@ -1583,10 +1223,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // フィルタリング関数
     function filterClients() {
-        const searchText = searchInput.value.toLowerCase();
-        const selectedCareLevel = careLevelSelect.value;
-        const selectedStatus = statusSelect.value;
-        const selectedCareManager = careManagerSelect.value;
+        const searchText = searchInput ? searchInput.value.toLowerCase() : '';
+        const selectedCareLevel = careLevelSelect ? careLevelSelect.value : '';
+        const selectedCareManager = careManagerSelect ? careManagerSelect.value : '';
 
         filteredClientsData = allClientsData.filter(function(client) {
             // 検索条件
@@ -1598,20 +1237,10 @@ document.addEventListener('DOMContentLoaded', function() {
             // 要介護度フィルター
             const matchesCareLevel = !selectedCareLevel || client.care_level_value === selectedCareLevel;
 
-            // 状況フィルター
-            let matchesStatus = true;
-            if (selectedStatus === 'over_limit') {
-                matchesStatus = client.current_calculation && client.current_calculation.is_over_limit;
-            } else if (selectedStatus === 'within_limit') {
-                matchesStatus = client.current_calculation && !client.current_calculation.is_over_limit;
-            } else if (selectedStatus === 'no_calculation') {
-                matchesStatus = !client.current_calculation;
-            }
-
             // ケアマネフィルター
             const matchesCareManager = !selectedCareManager || client.created_by_id == selectedCareManager;
 
-            return matchesSearch && matchesCareLevel && matchesStatus && matchesCareManager;
+            return matchesSearch && matchesCareLevel && matchesCareManager;
         });
 
         // 件数バッジを更新
@@ -1626,16 +1255,20 @@ document.addEventListener('DOMContentLoaded', function() {
         const settings = getCurrentSettings();
         const bodyElement = document.getElementById('tableBody');
 
-        // ボディを更新
-        bodyElement.innerHTML = '';
+        // ボディを更新（パフォーマンス向上のためフラグメントを使用）
+        const fragment = document.createDocumentFragment();
+        
         filteredClientsData.forEach(client => {
             const rows = generateTableRow(client, settings);
             if (Array.isArray(rows)) {
-                rows.forEach(row => bodyElement.appendChild(row));
+                rows.forEach(row => fragment.appendChild(row));
             } else {
-                bodyElement.appendChild(rows);
+                fragment.appendChild(rows);
             }
         });
+
+        bodyElement.innerHTML = '';
+        bodyElement.appendChild(fragment);
 
         // ドロップダウン機能を設定
         setupActionDropdowns();
@@ -1653,9 +1286,6 @@ document.addEventListener('DOMContentLoaded', function() {
     if (careLevelSelect) {
         careLevelSelect.addEventListener('change', filterClients);
     }
-    if (statusSelect) {
-        statusSelect.addEventListener('change', filterClients);
-    }
     if (careManagerSelect) {
         careManagerSelect.addEventListener('change', filterClients);
     }
@@ -1663,10 +1293,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // クリアボタン
     if (clearButton) {
         clearButton.addEventListener('click', function() {
-            searchInput.value = '';
-            careLevelSelect.value = '';
-            statusSelect.value = '';
-            careManagerSelect.value = '';
+            if (searchInput) searchInput.value = '';
+            if (careLevelSelect) careLevelSelect.value = '';
+            if (careManagerSelect) careManagerSelect.value = '';
             filterClients();
         });
     }
