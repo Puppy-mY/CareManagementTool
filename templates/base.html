@@ -29,9 +29,13 @@
         }
         .main-content {
             flex: 1;
+            padding-bottom: 2.5rem;
+        }
+        .site-navbar {
+            background: linear-gradient(135deg, #4a5568 0%, #64748b 100%);
         }
         .site-footer {
-            background: linear-gradient(135deg, #64748b 0%, #94a3b8 100%);
+            background: linear-gradient(135deg, #4a5568 0%, #64748b 100%);
             padding: 14px 0;
             margin-top: auto;
         }
@@ -705,7 +709,7 @@
         </div>
     </div>
     {% endif %}
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <nav class="navbar navbar-expand-lg navbar-dark site-navbar">
         <div class="container">
             <a class="navbar-brand" href="{% url 'client_list' %}">
                 <i class="fas fa-clipboard-check"></i> CareManagement SYSTEM
