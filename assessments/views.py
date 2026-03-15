@@ -29,7 +29,7 @@ except ImportError:
 def assessment_list(request):
     # 全アセスメントを取得（クライアントサイドでフィルタリング）
     assessments = Assessment.objects.select_related("client", "assessor").order_by(
-        "-assessment_date"
+        "-assessment_date", "-id"
     )
 
     # 作成者一覧を取得（アセスメントを作成したことがあるユーザーのみ）
@@ -1385,108 +1385,72 @@ def generate_assessment_excel(assessment, request=None):
         try:
             workbook = app.books.open(temp_filepath)
 
-            # シートの選択
-            if "（最新）アセスメントシート" in [s.name for s in workbook.sheets]:
-                worksheet = workbook.sheets["（最新）アセスメントシート"]
-            else:
-                worksheet = workbook.sheets[0]
-
-            # 和暦変換関数
+            # --- 和暦変換関数 ---
             def to_wareki(date):
-                if not date:
-                    return ""
-                year = date.year
-                month = date.month
-                day = date.day
-
-                # 令和: 2019年5月1日〜
-                if year >= 2019 and (year > 2019 or month >= 5):
-                    wareki_year = year - 2018
-                    return f"令和{wareki_year}年{month}月{day}日"
-                # 平成: 1989年1月8日〜2019年4月30日
-                elif year >= 1989:
-                    wareki_year = year - 1988
-                    return f"平成{wareki_year}年{month}月{day}日"
-                # それ以前は昭和として処理
+                if not date: return ""
+                from datetime import date as date_class, datetime as datetime_class
+                # datetime.datetime → datetime.date に変換
+                if isinstance(date, datetime_class):
+                    date = date.date()
+                year, month, day = date.year, date.month, date.day
+                if date >= date_class(2019, 5, 1):
+                    wareki_year, era = year - 2018, "令和"
+                elif date >= date_class(1989, 1, 8):
+                    wareki_year, era = year - 1988, "平成"
+                elif date >= date_class(1926, 12, 25):
+                    wareki_year, era = year - 1925, "昭和"
+                elif date >= date_class(1912, 7, 30):
+                    wareki_year, era = year - 1911, "大正"
                 else:
-                    worksheet = workbook.sheets[0]
+                    wareki_year, era = year - 1867, "明治"
 
-                # 和暦変換関数
-                def to_wareki(date):
-                    if not date:
-                        return ""
-                    year = date.year
-                    month = date.month
-                    day = date.day
+                if wareki_year == 1:
+                    return f"{era}元年{month}月{day}日"
+                return f"{era}{wareki_year}年{month}月{day}日"
 
-                    # 令和: 2019年5月1日〜
-                    if year >= 2019 and (year > 2019 or month >= 5):
-                        wareki_year = year - 2018
-                        return f"令和{wareki_year}年{month}月{day}日"
-                    # 平成: 1989年1月8日〜2019年4月30日
-                    elif year >= 1989:
-                        wareki_year = year - 1988
-                        return f"平成{wareki_year}年{month}月{day}日"
-                    # それ以前は昭和として処理
-                    else:
-                        wareki_year = year - 1925
-                        return f"昭和{wareki_year}年{month}月{day}日"
-
-            # 選択肢の値→表示名変換用辞書（接尾辞付き命名規則）
+            # 選択肢の値→表示名変換用辞書
             CHOICE_LABELS = {
-                # 基本動作（turning_over, getting_up, standing_up）
                 "basic_no_assistance": "つかまらないでできる",
                 "basic_with_assistance": "何かにつかまればできる",
                 "basic_cannot": "できない",
-                # 座位（sitting）
                 "sitting_can_do": "できる",
                 "sitting_self_support": "自分の手で支えればできる",
                 "sitting_support_needed": "支えてもらえればできる",
                 "sitting_cannot": "できない",
-                # 立位（standing）
                 "standing_no_support": "支えなしでできる",
                 "standing_with_something": "何か支えがあればできる",
                 "standing_cannot": "できない",
-                # 移乗・移動（transfer, indoor_mobility, outdoor_mobility）
                 "mobility_independent": "自立",
                 "mobility_supervision": "見守り",
                 "mobility_partial_assistance": "一部介助",
                 "mobility_full_assistance": "全介助",
-                # 移動用具（indoor_mobility_equipment, outdoor_mobility_equipment）
                 "equipment_none": "なし",
                 "equipment_wheelchair": "車椅子",
                 "equipment_walker": "歩行器",
                 "equipment_cane": "杖",
                 "equipment_crutches": "松葉杖",
                 "equipment_other": "その他",
-                # 食事方法（eating_method）
                 "eating_method_oral": "経口摂取",
                 "eating_method_tube_oral": "経管栄養+経口摂取",
                 "eating_method_tube_only": "経管栄養（胃ろう）",
                 "eating_method_tube_nasal": "経管栄養（経鼻）",
                 "eating_method_tube_gastronomy": "経管栄養（腸ろう）",
-                # 食事動作（eating_assistance）- MOBILITY_CHOICES
                 "eating_assistance_independent": "自立",
                 "eating_assistance_supervision": "見守り",
                 "eating_assistance_partial_assistance": "一部介助",
                 "eating_assistance_full_assistance": "全介助",
-                # 食事制限（eating_restriction）
                 "eating_restriction_yes": "あり",
                 "eating_restriction_no": "なし",
                 "eating_restriction_unknown": "不明",
-                # 嚥下（swallowing）
                 "swallowing_can_do": "できる",
                 "swallowing_supervision_needed": "見守り等が必要",
                 "swallowing_cannot": "できない",
-                # 食事形態（主食）（meal_form_main）
                 "meal_main_normal": "普通",
                 "meal_main_soft": "軟飯",
                 "meal_main_porridge": "全粥",
                 "meal_main_paste": "ペースト",
-                # 水分とろみ（water_thickening）
                 "water_thickening_yes": "あり",
                 "water_thickening_no": "なし",
-                # 口腔・義歯（natural_teeth_presence, denture_type, denture_location）
                 "teeth_yes": "あり",
                 "teeth_no": "なし",
                 "denture_complete": "総義歯",
@@ -1494,39 +1458,30 @@ def generate_assessment_excel(assessment, request=None):
                 "denture_upper": "上顎",
                 "denture_lower": "下顎",
                 "denture_both": "上下",
-                # 入浴形態（bathing_form）
                 "bathing_form_regular_bath": "一般浴",
                 "bathing_form_sitting_bath": "寝台浴",
                 "bathing_form_shower_bath": "シャワー浴",
                 "bathing_form_chair_bath": "チェアー浴",
-                # 更衣（dressing_upper, dressing_lower）- MOBILITY_CHOICES
                 "dressing_independent": "自立",
                 "dressing_supervision": "見守り",
                 "dressing_partial_assistance": "一部介助",
                 "dressing_full_assistance": "全介助",
-                # 排泄（urination, defecation）
                 "excretion_yes": "あり",
                 "excretion_no": "なし",
-                # 失禁（urinary_incontinence, fecal_incontinence）
                 "incontinence_yes": "あり",
                 "incontinence_no": "なし",
-                # 排泄場所（daytime_location, nighttime_location）
                 "location_toilet": "トイレ",
                 "location_portable_toilet": "Pトイレ",
                 "location_bed": "ベッド",
-                # IADL（cooking, cleaning, washing, shopping, money_management）- MOBILITY_CHOICES
                 "iadl_independent": "自立",
                 "iadl_supervision": "見守り",
                 "iadl_partial_assistance": "一部介助",
                 "iadl_full_assistance": "全介助",
-                # 認知症（dementia_presence）
                 "dementia_yes": "あり",
                 "dementia_no": "なし",
-                # 認知症の程度（dementia_severity）
                 "dementia_mild": "軽度",
                 "dementia_moderate": "中等度",
                 "dementia_severe": "重度",
-                # BPSD症状（bpsd_symptoms）
                 "bpsd_none": "なし",
                 "bpsd_persecution_delusion": "被害妄想",
                 "bpsd_confabulation": "作話",
@@ -1544,88 +1499,68 @@ def generate_assessment_excel(assessment, request=None):
                 "bpsd_selfish_behavior": "自分勝手な行動",
                 "bpsd_agitation": "不穏",
                 "bpsd_depression_tendency": "うつ傾向",
-                # 皮膚疾患（skin_disease）
                 "skin_bedsore": "床ずれ",
                 "skin_eczema": "湿疹",
                 "skin_itching": "かゆみ",
                 "skin_athletes_foot": "水虫",
                 "skin_shingles": "帯状疱疹",
-                # 感染症（infection）
                 "infection_tuberculosis": "結核",
                 "infection_pneumonia": "肺炎",
                 "infection_hepatitis": "肝炎",
                 "infection_scabies": "疥癬",
                 "infection_mrsa": "MRSA",
-                # 会話（conversation）
                 "conversation_possible": "可能",
                 "conversation_unclear": "不明瞭",
                 "conversation_somewhat_difficult": "やや不自由",
                 "conversation_completely_impossible": "全くできない",
                 "conversation_impossible": "全くできない",
-                # 意思疎通（communication）
                 "communication_possible": "可能",
                 "communication_only_sometimes": "その場のみ可能",
-                # 住居（home_environment）
                 "home_family_cohabitation": "家族と同居",
                 "home_living_alone": "一人暮らし",
                 "home_elderly_household": "高齢世帯",
                 "home_daytime_alone": "日中独居",
                 "home_two_generation_house": "二世帯住宅",
                 "home_other": "その他",
-                # 住宅形態（housing_type）
                 "housing_detached_house": "一戸建て",
                 "housing_apartment_complex": "集合住宅",
                 "housing_public_housing": "公営住宅",
                 "housing_condominium": "マンション",
                 "housing_other": "その他",
-                # 住宅所有（housing_ownership）
                 "ownership_owned": "所有",
                 "ownership_rental": "賃貸",
                 "ownership_lodging": "間借り",
                 "ownership_other": "その他",
-                # 個室（private_room）
                 "room_available": "あり",
                 "room_not_available": "なし",
-                # エアコン（air_conditioning）
                 "aircon_available": "あり",
                 "aircon_not_available": "なし",
-                # トイレ（toilet_type）
                 "toilet_western": "洋式",
                 "toilet_japanese": "和式",
-                # 浴室（bathroom）
                 "bathroom_available": "あり",
                 "bathroom_not_available": "なし",
-                # 寝具（sleeping_arrangement）
                 "sleeping_tatami_floor": "畳・床",
                 "sleeping_regular_bed": "ベッド",
                 "sleeping_care_bed": "介護用ベッド",
                 "sleeping_other": "その他",
-                # 段差（room_level_difference）
                 "level_diff_available": "あり",
                 "level_diff_not_available": "なし",
-                # 住宅改修（housing_modification）
                 "modification_completed": "あり",
                 "modification_not_completed": "なし",
-                # 住宅改修の必要性（housing_modification_need）
                 "modification_need_needed": "あり",
                 "modification_need_not_needed": "なし",
-                # 視力（vision）
                 "vision_normal": "正常",
                 "vision_large_letters_ok": "大きい字は可",
                 "vision_barely_visible": "ほぼ見えない",
                 "vision_blind": "失明",
-                # 聴力（hearing）
                 "hearing_normal": "正常",
                 "hearing_loud_voice_ok": "大きい声は可",
                 "hearing_barely_audible": "ほぼ聞こえない",
                 "hearing_deaf": "聞こえない",
-                # 眼鏡等（uses_glasses）
                 "glasses_yes": "使用",
                 "glasses_no": "未使用",
-                # 補聴器等（uses_hearing_aid）
                 "hearing_aid_yes": "使用",
                 "hearing_aid_no": "未使用",
-                # 介護サービス（care_services）
                 "service_home_help": "訪問介護",
                 "service_visit_bath": "訪問入浴",
                 "service_visit_nursing": "訪問看護",
@@ -1634,7 +1569,6 @@ def generate_assessment_excel(assessment, request=None):
                 "service_day_rehab": "通所リハビリ",
                 "service_short_stay": "ショートステイ",
                 "service_small_scale_multi": "小規模多機能",
-                # 福祉用具（welfare_equipment）
                 "welfare_wheelchair": "車いす",
                 "welfare_walker": "車いす付属品",
                 "welfare_special_bed": "特殊寝台",
@@ -1648,7 +1582,6 @@ def generate_assessment_excel(assessment, request=None):
                 "welfare_detect_sensor": "排個感知機器",
                 "welfare_mobility_lift": "移動用リフト",
                 "welfare_automatic_drainage": "自動排泄処理装置",
-                # インフォーマルサービス（informal_services）
                 "informal_family_support": "家族による支援",
                 "informal_neighbor_support": "近隣による支援",
                 "informal_volunteer": "ボランティア",
@@ -1673,7 +1606,6 @@ def generate_assessment_excel(assessment, request=None):
                 "informal_emergency_alert": "緊急通報装置",
                 "informal_meal_delivery": "配食サービス",
                 "informal_other_services": "その他",
-                # 食事用具（eating_utensils）
                 "utensil_chopsticks": "箸",
                 "utensil_spoon": "スプーン",
                 "utensil_apron": "エプロン",
@@ -1735,34 +1667,45 @@ def generate_assessment_excel(assessment, request=None):
                     return ""
                 if not isinstance(value_list, list):
                     return str(value_list)
-                
                 labels = []
                 for item in value_list:
-                    # prefixがある場合はそれを付与してラベル取得、ない場合はそのまま取得
                     raw_label = get_choice_label(f"{prefix}{item}") if prefix else get_choice_label(item)
                     label = str(raw_label) if raw_label is not None else ""
                     if label:
                         labels.append(label)
                 return "、".join(labels)
 
-            # セルへの安全な書き込み関数
+            # --- アセスメントシートのワークシート設定と書き込み関数 ---
+            assessment_sheet_name = coords.get("sheet_name", "（最新）アセスメントシート")
+            worksheet = workbook.sheets[assessment_sheet_name]
+
+            # 既存データをクリア（空白データが前回の値を残さないよう）
+            for _key, _cell_ref in coords.items():
+                if _key != "sheet_name" and _cell_ref:
+                    try:
+                        worksheet.range(_cell_ref).value = ""
+                    except Exception:
+                        pass
+
             def safe_write_cell(cell_ref, value):
                 try:
                     if cell_ref:
-                        # Noneの場合は空文字として扱う
-                        if value is None:
-                            value = ""
-                            
-                        # リスト型の場合は文字列に変換（現状、リストのままでは書き込めないため）
+                        if value is None: value = ""
                         if isinstance(value, list):
                             value = "、".join([str(v) for v in value])
-
-                        # xlwingsはMergedCellの場合も左上セルへの代入で自動処理される
                         worksheet.range(cell_ref).value = value
                 except Exception as e:
-                    print(
-                        f"DEBUG: セル {cell_ref} への書き込みエラー (値: {value}, 型: {type(value)}): {str(e)}"
-                    )
+                    print(f"DEBUG: セル {cell_ref} への書き込みエラー (シート: {assessment_sheet_name}, 値: {value}): {str(e)}")
+
+            def safe_write_wareki_cell(cell_ref, value):
+                """和暦文字列を書き込む（セル書式をテキストに強制してから書き込み）"""
+                try:
+                    if cell_ref:
+                        if value is None: value = ""
+                        worksheet.range(cell_ref).number_format = "@"
+                        worksheet.range(cell_ref).value = str(value)
+                except Exception as e:
+                    print(f"DEBUG: セル {cell_ref} への和暦書き込みエラー (値: {value}): {str(e)}")
 
             # クライアント基本情報
             safe_write_cell(coords.get("client_name"), assessment.client.name)
@@ -1770,17 +1713,23 @@ def generate_assessment_excel(assessment, request=None):
             safe_write_cell(
                 coords.get("client_gender"), assessment.client.get_gender_display()
             )
-            # 年齢は数値として書き込み
-            safe_write_cell(coords.get("client_age"), int(assessment.client.age) if assessment.client.age else "")
+            # アセスメント時点の年齢を計算して数値として書き込み
+            client_age = ""
+            if assessment.client.birth_date:
+                from datetime import date as date_class
+                ref_date = assessment.assessment_date or date_class.today()
+                birth_date = assessment.client.birth_date
+                client_age = ref_date.year - birth_date.year - ((ref_date.month, ref_date.day) < (birth_date.month, birth_date.day))
+            safe_write_cell(coords.get("client_age"), client_age)
             safe_write_cell(coords.get("client_address"), assessment.client.address)
             safe_write_cell(coords.get("client_contact"), assessment.client.phone)
-            safe_write_cell(
-                coords.get("birth_date"), 
+            safe_write_wareki_cell(
+                coords.get("birth_date"),
                 to_wareki(assessment.client.birth_date) if assessment.client.birth_date else ""
             )
 
             # アセスメント基本情報
-            safe_write_cell(
+            safe_write_wareki_cell(
                 coords.get("assessment_date"),
                 (
                     to_wareki(assessment.assessment_date)
@@ -1843,15 +1792,15 @@ def generate_assessment_excel(assessment, request=None):
                     else ""
                 ),
             )
-            safe_write_cell(
+            safe_write_wareki_cell(
                 coords.get("certification_date"),
                 to_wareki(assessment.client.certification_date) if assessment.client.certification_date else ""
             )
-            safe_write_cell(
+            safe_write_wareki_cell(
                 coords.get("certification_period_start"),
                 to_wareki(assessment.client.certification_period_start) if assessment.client.certification_period_start else ""
             )
-            safe_write_cell(
+            safe_write_wareki_cell(
                 coords.get("certification_period_end"),
                 to_wareki(assessment.client.certification_period_end) if assessment.client.certification_period_end else ""
             )
@@ -1867,7 +1816,7 @@ def generate_assessment_excel(assessment, request=None):
 
             # 医療保険
             safe_write_cell(
-                coords.get("medical_insurance"), client.medical_insurance_type
+                coords.get("medical_insurance"), client.get_medical_insurance_type_display() if client.medical_insurance_type else ""
             )
 
             # 身体障がい者手帳
@@ -2124,11 +2073,25 @@ def generate_assessment_excel(assessment, request=None):
                         coords.get("housing_modification_need"),
                         get_choice_label(f"modification_need_{mod_need}"),
                     )
-                # 特記事項
-                safe_write_cell(
-                    coords.get("special_circumstances"),
-                    housing.get("special_circumstances", ""),
-                )
+                # 特別な状況（basic_infoに保存されている）
+                special_situation_labels = {
+                    "abuse": "虐待", "terminal": "終末期", "sudden_caregiver_absence": "介護者の急変",
+                    "financial_difficulty": "経済的困窮", "social_isolation": "社会的孤立",
+                    "housing_problem": "住宅問題", "family_conflict": "家族間の対立",
+                    "self_neglect": "セルフネグレクト", "disaster_victim": "被災者",
+                    "multiple_care_burden": "多重介護負担", "mental_health_issue": "精神的問題",
+                    "other": "その他",
+                }
+                if assessment.basic_info:
+                    situation_list = assessment.basic_info.get("special_situation", [])
+                    situation_other = assessment.basic_info.get("special_situation_other", "")
+                    if isinstance(situation_list, list) and situation_list:
+                        situation_texts = [special_situation_labels.get(s, s) for s in situation_list]
+                        if "other" in situation_list and situation_other:
+                            situation_texts = [t if t != "その他" else situation_other for t in situation_texts]
+                        safe_write_cell(coords.get("special_circumstances"), "、".join(situation_texts))
+                    else:
+                        safe_write_cell(coords.get("special_circumstances"), "")
 
             # 健康状態
             if assessment.health_status:
@@ -2150,7 +2113,7 @@ def generate_assessment_excel(assessment, request=None):
                             onset_val = to_wareki(onset_date)
                         except (ValueError, TypeError):
                             onset_val = onset_date_str
-                    safe_write_cell(coords.get(f"onset_date_{i}"), onset_val)
+                    safe_write_wareki_cell(coords.get(f"onset_date_{i}"), onset_val)
 
                 # 既往歴
                 safe_write_cell(
@@ -2444,12 +2407,17 @@ def generate_assessment_excel(assessment, request=None):
                 safe_write_cell(coords.get("hearing"), get_choice_label(f"hearing_{physical.get('hearing', '')}"))
                 safe_write_cell(coords.get("uses_hearing_aid"), get_choice_label(f"hearing_aid_{assessment.health_status.get('uses_hearing_aid', '')}"))
                 
-                # 身体状況メモ
+                # 身体状況メモ（基本情報の詳細＋身体状況の詳細を合わせる）
                 physical_notes_parts = []
-                p_notes = physical.get("physical_notes", "")
-                if p_notes: physical_notes_parts.append(p_notes)
-                p_details = physical.get("paralysis_pain_details", "")
-                if p_details: physical_notes_parts.append(f"【麻痺・痛み】{p_details}")
+                # 基本情報の詳細 (health_status.health_basic_info_details)
+                if assessment.health_status:
+                    b_notes = assessment.health_status.get("health_basic_info_details", "")
+                    if b_notes:
+                        physical_notes_parts.append(b_notes)
+                # 身体状況の詳細 (physical_status.notes)
+                p_notes = physical.get("notes", "")
+                if p_notes:
+                    physical_notes_parts.append(p_notes)
                 safe_write_cell(coords.get("physical_notes"), "\n".join(physical_notes_parts))
 
             # 基本動作
@@ -2497,7 +2465,6 @@ def generate_assessment_excel(assessment, request=None):
                 safe_write_cell(coords.get("eating_utensils"), "、".join([str(l) for l in utensils_labels if l]))
                 safe_write_cell(coords.get("eating_notes"), adl.get("eating_notes", ""))
 
-                # 口腔
                 # 口腔
                 safe_write_cell(
                     coords.get("oral_hygiene_assistance"),
@@ -2574,14 +2541,14 @@ def generate_assessment_excel(assessment, request=None):
                 safe_write_cell(coords.get("fecal_incontinence"), fecal_label)
 
                 # 排泄場所
-                daytime_labels = convert_list_to_text(adl.get("daytime_location", []))
+                daytime_labels = convert_list_to_text(adl.get("daytime_location", []), "location_")
                 safe_write_cell(coords.get("daytime_location"), daytime_labels)
-                
-                nighttime_labels = convert_list_to_text(adl.get("nighttime_location", []))
+
+                nighttime_labels = convert_list_to_text(adl.get("nighttime_location", []), "location_")
                 safe_write_cell(coords.get("nighttime_location"), nighttime_labels)
 
                 # 排泄用品
-                supplies_labels = convert_list_to_text(adl.get("excretion_supplies", []))
+                supplies_labels = convert_list_to_text(adl.get("excretion_supplies", []), "supply_")
                 safe_write_cell(coords.get("excretion_supplies"), supplies_labels)
                 safe_write_cell(
                     coords.get("excretion_notes"), adl.get("excretion_notes", "")
@@ -2636,6 +2603,114 @@ def generate_assessment_excel(assessment, request=None):
                 if dem_details:
                     cognitive_notes_parts.append(f"【認知症詳細】{dem_details}")
                 safe_write_cell(coords.get("cognitive_notes"), "\n".join([str(p) for p in cognitive_notes_parts]))
+
+            # --- 救急医療情報シートへの書き込み ---
+            ei_coords = coordinates.get("emergency_info", {})
+            ei_sheet_name = ei_coords.get("sheet_name", "救急医療情報")
+            all_sheet_names = [s.name for s in workbook.sheets]
+            if ei_sheet_name in all_sheet_names:
+                ei_sheet = workbook.sheets[ei_sheet_name]
+
+                # 既存データをクリア（空白データが前回の値を残さないよう）
+                for _key, _cell_ref in ei_coords.items():
+                    if _key != "sheet_name" and _cell_ref:
+                        try:
+                            ei_sheet.range(_cell_ref).value = ""
+                        except Exception:
+                            pass
+
+                def safe_write_ei(cell_ref, value):
+                    try:
+                        if cell_ref:
+                            if value is None: value = ""
+                            ei_sheet.range(cell_ref).value = value
+                    except Exception as e:
+                        print(f"DEBUG: 救急医療情報 セル {cell_ref} 書き込みエラー: {str(e)}")
+
+                def safe_write_ei_wareki(cell_ref, value):
+                    try:
+                        if cell_ref:
+                            if value is None: value = ""
+                            ei_sheet.range(cell_ref).number_format = "@"
+                            # 均等割り付けを左揃えに変更してから書き込み
+                            ei_sheet.range(cell_ref).api.HorizontalAlignment = -4131  # xlLeft
+                            ei_sheet.range(cell_ref).value = str(value)
+                    except Exception as e:
+                        print(f"DEBUG: 救急医療情報 セル {cell_ref} 和暦書き込みエラー: {str(e)}")
+
+                safe_write_ei(ei_coords.get("client_name"), assessment.client.name)
+                safe_write_ei(ei_coords.get("client_furigana"), assessment.client.furigana)
+                safe_write_ei(ei_coords.get("client_gender"), assessment.client.get_gender_display() if assessment.client.gender else "")
+                safe_write_ei_wareki(ei_coords.get("birth_date"), to_wareki(assessment.client.birth_date) if assessment.client.birth_date else "")
+                safe_write_ei(ei_coords.get("client_age"), client_age)
+                safe_write_ei(ei_coords.get("client_address"), assessment.client.address)
+                safe_write_ei(
+                    ei_coords.get("care_level_official"),
+                    assessment.client.get_care_level_display() if assessment.client.care_level else ""
+                )
+                # 事業所名・担当者
+                from django.conf import settings as dj_settings
+                office_name = getattr(dj_settings, "OFFICE_NAME", "居宅介護支援事業所")
+                safe_write_ei(ei_coords.get("main_office_name"), office_name)
+                safe_write_ei(ei_coords.get("assessor"), assessor_name)
+
+                # 緊急連絡先①②
+                client = assessment.client
+                safe_write_ei(ei_coords.get("emergency_contact1_name"), client.family_name1)
+                safe_write_ei(ei_coords.get("emergency_contact1_relationship"), client.get_family_relationship1_display() if client.family_relationship1 else "")
+                safe_write_ei(ei_coords.get("emergency_contact1_address"), client.family_address1)
+                safe_write_ei(ei_coords.get("emergency_contact1_phone"), client.family_contact1)
+                safe_write_ei(ei_coords.get("emergency_contact2_name"), client.family_name2)
+                safe_write_ei(ei_coords.get("emergency_contact2_relationship"), client.get_family_relationship2_display() if client.family_relationship2 else "")
+                safe_write_ei(ei_coords.get("emergency_contact2_address"), client.family_address2)
+                safe_write_ei(ei_coords.get("emergency_contact2_phone"), client.family_contact2)
+
+                # 疾患名①〜⑥・既往歴
+                health = assessment.health_status or {}
+                for i in range(1, 7):
+                    safe_write_ei(ei_coords.get(f"disease_name_{i}"), health.get(f"disease_name_{i}", ""))
+                safe_write_ei(ei_coords.get("medical_history"), health.get("medical_history", ""))
+
+                # 主治医
+                safe_write_ei(ei_coords.get("main_doctor_hospital"), health.get("main_doctor_hospital", ""))
+                safe_write_ei(ei_coords.get("main_doctor_name"), health.get("main_doctor_name", ""))
+
+                # 往診医
+                safe_write_ei(ei_coords.get("visiting_doctor_hospital"), health.get("visiting_doctor_hospital", ""))
+                safe_write_ei(ei_coords.get("visiting_doctor_name"), health.get("visiting_doctor_name", ""))
+
+                # かかりつけ医①②③
+                for i in range(1, 4):
+                    safe_write_ei(ei_coords.get(f"family_doctor_hospital_{i}"), health.get(f"family_doctor_hospital_{i}", ""))
+
+                # アレルギー
+                has_allergy_val = health.get("has_allergy", "")
+                if has_allergy_val == "yes":
+                    safe_write_ei(ei_coords.get("has_allergy"), "あり")
+                elif has_allergy_val == "no":
+                    safe_write_ei(ei_coords.get("has_allergy"), "なし")
+                else:
+                    safe_write_ei(ei_coords.get("has_allergy"), has_allergy_val)
+                safe_write_ei(ei_coords.get("allergy_details"), health.get("allergy_details", ""))
+
+                # 屋内外移動方法・介助量
+                physical_ei = assessment.basic_activities or {}
+                mobility_label = {
+                    "independent": "自立", "supervision": "見守り",
+                    "partial_assistance": "一部介助", "full_assistance": "全介助",
+                }
+                equipment_label = {
+                    "none": "なし", "wheelchair": "車椅子", "walker": "歩行器",
+                    "cane": "杖", "crutches": "松葉杖", "other": "その他",
+                }
+                indoor_equip_val = equipment_label.get(physical_ei.get("indoor_mobility_equipment", ""), physical_ei.get("indoor_mobility_equipment", ""))
+                outdoor_equip_val = equipment_label.get(physical_ei.get("outdoor_mobility_equipment", ""), physical_ei.get("outdoor_mobility_equipment", ""))
+                indoor_mob_val = mobility_label.get(physical_ei.get("indoor_mobility", ""), physical_ei.get("indoor_mobility", ""))
+                outdoor_mob_val = mobility_label.get(physical_ei.get("outdoor_mobility", ""), physical_ei.get("outdoor_mobility", ""))
+                safe_write_ei(ei_coords.get("indoor_mobility_equipment"), indoor_equip_val)
+                safe_write_ei(ei_coords.get("outdoor_mobility_equipment"), outdoor_equip_val)
+                safe_write_ei(ei_coords.get("indoor_mobility"), indoor_mob_val)
+                safe_write_ei(ei_coords.get("outdoor_mobility"), outdoor_mob_val)
 
             # Excelファイルを保存
             workbook.save()
@@ -2738,6 +2813,417 @@ def assessment_excel_export(request, pk):
         messages.error(request, f"Excel出力中にエラーが発生しました: {str(e)}")
         return redirect("client_detail", pk=assessment.client.pk)
 
+
+# ── Excel インポート用モジュールレベル定数 ──────────────────────────────────
+
+_COORD_TO_JSON_FIELD = {
+    'personal_hopes': 'basic_info', 'family_hopes': 'basic_info',
+    'life_history': 'basic_info', 'notes': 'basic_info',
+    'medical_insurance': 'insurance_info', 'disability_handbook': 'insurance_info',
+    'disability_type': 'insurance_info', 'difficult_disease': 'insurance_info',
+    'life_protection': 'insurance_info', 'disability_level': 'insurance_info',
+    'dementia_level': 'insurance_info', 'burden_ratio': 'insurance_info',
+    'family_member1_name': 'family_situation', 'family_member1_relation': 'family_situation',
+    'family_member1_address': 'family_situation', 'family_member1_contact': 'family_situation',
+    'family_member1_care': 'family_situation', 'family_member1_living_together': 'family_situation',
+    'family_member1_job': 'family_situation', 'family_member1_notes': 'family_situation',
+    'family_member2_name': 'family_situation', 'family_member2_relation': 'family_situation',
+    'family_member2_address': 'family_situation', 'family_member2_contact': 'family_situation',
+    'family_member2_care': 'family_situation', 'family_member2_living_together': 'family_situation',
+    'family_member2_job': 'family_situation', 'family_member2_notes': 'family_situation',
+    'home_environment': 'living_situation', 'housing_type': 'living_situation',
+    'housing_ownership': 'living_situation', 'private_room': 'living_situation',
+    'air_conditioning': 'living_situation', 'toilet_type': 'living_situation',
+    'bathroom': 'living_situation', 'sleeping_arrangement': 'living_situation',
+    'room_level_difference': 'living_situation', 'housing_modification': 'living_situation',
+    'housing_modification_need': 'living_situation', 'special_circumstances': 'living_situation',
+    'care_services': 'services', 'welfare_equipment': 'services',
+    'other_services': 'services', 'informal_services': 'services',
+    'social_relationships': 'services',
+    'disease_name_1': 'health_status', 'onset_date_1': 'health_status',
+    'disease_name_2': 'health_status', 'onset_date_2': 'health_status',
+    'disease_name_3': 'health_status', 'onset_date_3': 'health_status',
+    'disease_name_4': 'health_status', 'onset_date_4': 'health_status',
+    'disease_name_5': 'health_status', 'onset_date_5': 'health_status',
+    'disease_name_6': 'health_status', 'onset_date_6': 'health_status',
+    'medical_history': 'health_status', 'special_medical_treatment': 'health_status',
+    'main_doctor_hospital': 'health_status', 'main_doctor_name': 'health_status',
+    'visiting_doctor_hospital': 'health_status', 'visiting_doctor_name': 'health_status',
+    'family_doctor_1': 'health_status', 'family_doctor_2': 'health_status',
+    'family_doctor_3': 'health_status', 'family_doctor_4': 'health_status',
+    'hospital_visit_info': 'health_status', 'medication_content': 'health_status',
+    'has_allergy': 'health_status', 'allergy_details': 'health_status',
+    'skin_disease': 'physical_status', 'infection_status': 'physical_status',
+    'special_medical_treatment_summary': 'physical_status',
+    'paralysis_location': 'physical_status', 'pain_location': 'physical_status',
+    'height': 'physical_status', 'weight': 'physical_status',
+    'vision': 'physical_status', 'uses_glasses': 'physical_status',
+    'hearing': 'physical_status', 'uses_hearing_aid': 'physical_status',
+    'physical_notes': 'physical_status',
+    'turning_over': 'basic_activities', 'getting_up': 'basic_activities',
+    'sitting': 'basic_activities', 'standing_up': 'basic_activities',
+    'standing': 'basic_activities', 'transfer': 'basic_activities',
+    'indoor_mobility': 'basic_activities', 'indoor_mobility_equipment': 'basic_activities',
+    'outdoor_mobility': 'basic_activities', 'outdoor_mobility_equipment': 'basic_activities',
+    'basic_activity_notes': 'basic_activities',
+    'eating_method': 'adl', 'eating_assistance': 'adl', 'swallowing': 'adl',
+    'meal_form_main': 'adl', 'meal_form_side': 'adl', 'water_thickening': 'adl',
+    'eating_restriction': 'adl', 'eating_utensils': 'adl', 'eating_notes': 'adl',
+    'oral_hygiene_assistance': 'adl', 'natural_teeth_presence': 'adl',
+    'denture_type': 'adl', 'denture_location': 'adl', 'oral_notes': 'adl',
+    'bathing_assistance': 'adl', 'bathing_form': 'adl', 'bathing_restriction': 'adl',
+    'dressing_upper': 'adl', 'dressing_lower': 'adl', 'bathing_notes': 'adl',
+    'excretion_assistance': 'adl', 'urination': 'adl', 'urinary_incontinence': 'adl',
+    'defecation': 'adl', 'fecal_incontinence': 'adl',
+    'daytime_location': 'adl', 'nighttime_location': 'adl',
+    'excretion_supplies': 'adl', 'excretion_notes': 'adl',
+    'cooking': 'iadl', 'washing': 'iadl', 'money_management': 'iadl',
+    'cleaning': 'iadl', 'shopping': 'iadl', 'iadl_notes': 'iadl',
+    'dementia_presence': 'cognitive_function', 'dementia_severity': 'cognitive_function',
+    'bpsd_symptoms': 'cognitive_function', 'conversation': 'cognitive_function',
+    'communication': 'cognitive_function', 'cognitive_notes': 'cognitive_function',
+}
+
+
+# 単一選択フィールド：表示テキスト → choice key（フォームの選択肢コードに合わせる）
+_MOBIL = {'自立': 'independent', '見守り': 'supervision', '一部介助': 'partial_assistance', '全介助': 'full_assistance'}
+_FIELD_IMPORT_CHOICES = {
+    'turning_over':  {'つかまらないでできる': 'no_assistance', '何かにつかまればできる': 'with_assistance', 'できない': 'cannot'},
+    'getting_up':    {'つかまらないでできる': 'no_assistance', '何かにつかまればできる': 'with_assistance', 'できない': 'cannot'},
+    'standing_up':   {'つかまらないでできる': 'no_assistance', '何かにつかまればできる': 'with_assistance', 'できない': 'cannot'},
+    'sitting':       {'できる': 'can_do', '自分の手で支えればできる': 'self_support', '支えてもらえればできる': 'support_needed', 'できない': 'cannot'},
+    'standing':      {'支えなしでできる': 'no_support', '何か支えがあればできる': 'with_something', 'できない': 'cannot'},
+    'transfer':             _MOBIL,
+    'indoor_mobility':      _MOBIL,
+    'outdoor_mobility':     _MOBIL,
+    'indoor_mobility_equipment':  {'なし': 'none', '車椅子': 'wheelchair', '歩行器': 'walker', '杖': 'cane', '松葉杖': 'crutches', 'その他': 'other'},
+    'outdoor_mobility_equipment': {'なし': 'none', '車椅子': 'wheelchair', '歩行器': 'walker', '杖': 'cane', '松葉杖': 'crutches', 'その他': 'other'},
+    'eating_method':     {'経口摂取': 'oral', '経管栄養+経口摂取': 'tube_oral', '経管栄養（胃ろう）': 'tube_only', '経管栄養（経鼻）': 'tube_nasal', '経管栄養（腸ろう）': 'tube_gastronomy'},
+    'eating_assistance': _MOBIL,
+    'swallowing':        {'できる': 'can_do', '見守り等が必要': 'supervision_needed', 'できない': 'cannot'},
+    'meal_form_main':    {'普通': 'normal', '軟飯': 'soft', '全粥': 'porridge', 'ペースト': 'paste'},
+    'meal_form_side':    {'普通': 'normal', '一口大': 'soft', '粗きザミ': 'minced', 'キザミ': 'paste', 'ペースト': 'paste_form'},
+    'water_thickening':  {'あり': 'yes', 'なし': 'no', '有': 'yes', '無': 'no'},
+    'eating_restriction':{'あり': 'yes', 'なし': 'no', '不明': 'unknown', '有': 'yes', '無': 'no'},
+    'oral_hygiene_assistance': _MOBIL,
+    'natural_teeth_presence': {'あり': 'yes', 'なし': 'no', '有': 'yes', '無': 'no'},
+    'denture_type':     {'総義歯': 'complete', '部分義歯': 'partial'},
+    'denture_location': {'上顎': 'upper', '下顎': 'lower', '上下': 'both'},
+    'bathing_assistance':  _MOBIL,
+    'bathing_form':        {'一般浴': 'regular_bath', '寝台浴': 'sitting_bath', 'シャワー浴': 'shower_bath', 'チェアー浴': 'chair_bath'},
+    'bathing_restriction': {'あり': 'yes', 'なし': 'no', '有': 'yes', '無': 'no'},
+    'dressing_upper': _MOBIL,
+    'dressing_lower': _MOBIL,
+    'excretion_assistance': _MOBIL,
+    'urination':             {'あり': 'yes', 'なし': 'no', '有': 'yes', '無': 'no'},
+    'urinary_incontinence':  {'あり': 'yes', 'なし': 'no', '有': 'yes', '無': 'no'},
+    'defecation':            {'あり': 'yes', 'なし': 'no', '有': 'yes', '無': 'no'},
+    'fecal_incontinence':    {'あり': 'yes', 'なし': 'no', '有': 'yes', '無': 'no'},
+    'daytime_location':   {'トイレ': 'toilet', 'Pトイレ': 'portable_toilet', 'ベッド': 'bed'},
+    'nighttime_location': {'トイレ': 'toilet', 'Pトイレ': 'portable_toilet', 'ベッド': 'bed'},
+    'cooking':         _MOBIL,
+    'washing':         _MOBIL,
+    'money_management':_MOBIL,
+    'cleaning':        _MOBIL,
+    'shopping':        _MOBIL,
+    'dementia_presence': {'あり': 'yes', 'なし': 'no', '有': 'yes', '無': 'no'},
+    'dementia_severity': {'軽度': 'mild', '中等度': 'moderate', '重度': 'severe'},
+    'conversation':    {'可能': 'possible', '不明瞭': 'unclear', 'やや不自由': 'somewhat_difficult', '全くできない': 'impossible'},
+    'communication':   {'可能': 'possible', 'その場のみ可能': 'only_sometimes', 'やや不自由': 'somewhat_difficult', '全くできない': 'impossible'},
+    'home_environment':   {'家族と同居': 'family_cohabitation', '一人暮らし': 'living_alone', '高齢世帯': 'elderly_household', '高齢所帯': 'elderly_household', '日中独居': 'daytime_alone', '二世帯住宅': 'two_generation_house', 'その他': 'other'},
+    'housing_type':       {'一戸建て': 'detached_house', '集合住宅': 'apartment_complex', '公営住宅': 'public_housing', 'マンション': 'condominium', 'その他': 'other'},
+    'housing_ownership':  {'所有': 'owned', '賃貸': 'rental', '間借り': 'lodging', 'その他': 'other'},
+    'private_room':           {'あり': 'available', 'なし': 'not_available', '有': 'available', '無': 'not_available'},
+    'air_conditioning':       {'あり': 'available', 'なし': 'not_available', '有': 'available', '無': 'not_available'},
+    'toilet_type':            {'洋式': 'western', '和式': 'japanese'},
+    'bathroom':               {'あり': 'available', 'なし': 'not_available', '有': 'available', '無': 'not_available'},
+    'sleeping_arrangement':   {'畳・床': 'tatami_floor', 'ベッド': 'regular_bed', '介護用ベッド': 'care_bed', 'その他': 'other'},
+    'room_level_difference':  {'あり': 'available', 'なし': 'not_available', '有': 'available', '無': 'not_available'},
+    'housing_modification':   {'あり': 'completed', 'なし': 'not_completed', '有': 'completed', '無': 'not_completed'},
+    'housing_modification_need': {'あり': 'needed', 'なし': 'not_needed', '有': 'needed', '無': 'not_needed'},
+    'vision':          {'正常': 'normal', '大きい字は可': 'large_letters_ok', 'ほぼ見えない': 'barely_visible', '失明': 'blind'},
+    'uses_glasses':    {'使用': 'yes', '未使用': 'no', '有': 'yes', '無': 'no'},
+    'hearing':         {'正常': 'normal', '大きい声は可': 'loud_voice_ok', 'ほぼ聞こえない': 'barely_audible', '聞こえない': 'deaf', '失聴': 'deaf'},
+    'uses_hearing_aid':{'使用': 'yes', '未使用': 'no', '有': 'yes', '無': 'no'},
+}
+
+# 複数選択フィールド（「、」区切り）→ choice key リスト（フォームの選択肢コードに合わせる）
+_LIST_IMPORT_CHOICES = {
+    'bpsd_symptoms': {
+        'なし': 'none', '被害妄想': 'persecution_delusion', '作話': 'confabulation',
+        '感情の不安定': 'mood_instability', '昼夜逆転': 'day_night_reversal',
+        '帰宅願望': 'home_return_desire', '大声・奇声': 'loud_voice',
+        '暴力・暴言': 'violence', '収集癖': 'collection_habit',
+        '介護抵抗': 'care_resistance', '落ち着きがない': 'restlessness',
+        '徘徊': 'wandering', '破壊行為': 'destructive_behavior',
+        'ひどい物忘れ': 'severe_forgetfulness', '自分勝手な行動': 'selfish_behavior',
+        '不穏': 'agitation', 'うつ傾向': 'depression_tendency',
+    },
+    'care_services': {
+        '訪問介護': 'home_help', '訪問入浴': 'visit_bath',
+        '訪問看護': 'visit_nursing', '訪問リハビリ': 'visit_rehab', '訪問リハ': 'visit_rehab',
+        '通所介護': 'day_service', '通所リハビリ': 'day_rehab', '通所リハ': 'day_rehab',
+        'ショートステイ': 'short_stay', '小規模多機能': 'small_scale_multi',
+    },
+    'welfare_equipment': {
+        '車いす': 'wheelchair', '車いす付属品': 'walker',
+        '特殊寝台': 'special_bed', '特殊寝台付属品': 'special_bed_accessories',
+        '床ずれ防止用具': 'fall_prevention', '体位変換器': 'position_changer',
+        '手すり': 'walking_aid', 'スロープ': 'slope',
+        '歩行器': 'walking_frame', '歩行補助つえ': 'walking_support',
+        '排個感知機器': 'detect_sensor', '移動用リフト': 'mobility_lift',
+        '自動排泄処理装置': 'automatic_drainage',
+    },
+    'informal_services': {
+        '家族による支援': 'family_support', '近隣による支援': 'neighbor_support',
+        'ボランティア': 'volunteer', '地域活動グループ': 'community_group',
+        '友人による支援': 'friend_support', 'NPO団体支援': 'npo_support',
+        '宗教団体支援': 'religious_support', '食事支援': 'meal_support',
+        '排泄支援': 'excretion_support', 'リネンリース': 'linen_lease',
+        '洗濯': 'laundry', '居室清掃': 'room_cleaning',
+        '喀痰吸引': 'sputum_suction', 'オムツ支給': 'diaper_supply',
+        'タクシー券': 'taxi_voucher', 'マッサージ券': 'massage_voucher',
+        '火災報知器': 'fire_alarm', '自動消火器': 'auto_fire_extinguisher',
+        '老人用電話': 'elderly_phone', '寝具乾燥消毒': 'bedding_disinfection',
+        '電磁調理器': 'induction_cooker', '緊急通報装置': 'emergency_alert',
+        '配食サービス': 'meal_delivery', 'その他': 'other_services',
+    },
+    'excretion_supplies': {
+        'リハビリパンツ': 'rehabilitation_pants', '紙おむつ': 'paper_diaper',
+        '小パット': 'small_pad', '大パット': 'large_pad',
+    },
+    'eating_utensils': {
+        '箸': 'chopsticks', 'スプーン': 'spoon',
+        'エプロン': 'apron', '補助具': 'assistive', 'その他': 'other',
+    },
+    'skin_disease': {
+        '床ずれ': 'bedsore', '湿疹': 'eczema', 'かゆみ': 'itching',
+        '水虫': 'athletes_foot', '帯状疱疹': 'shingles', 'その他': 'other',
+    },
+    'infection_status': {
+        '結核': 'tuberculosis', '肺炎': 'pneumonia',
+        '肝炎': 'hepatitis', '疥癬': 'scabies', 'MRSA': 'mrsa', 'その他': 'other',
+    },
+}
+
+
+def _map_import_value(key, val):
+    """Excel表示テキスト → DBのchoice key に変換。複数選択はリストで返す"""
+    if not val:
+        return val
+    if key in _LIST_IMPORT_CHOICES:
+        choices = _LIST_IMPORT_CHOICES[key]
+        # '、' と ' , ' と ',' の両方に対応
+        import re as _re
+        items = [item.strip() for item in _re.split(r'[、,]', str(val)) if item.strip()]
+        return [choices.get(item, item) for item in items]
+    if key in _FIELD_IMPORT_CHOICES:
+        return _FIELD_IMPORT_CHOICES[key].get(val, val)
+    return val
+
+
+def _parse_wareki(text):
+    """和暦/西暦テキスト → date オブジェクト"""
+    import re
+    from datetime import datetime as dt
+    if not text:
+        return None
+    if isinstance(text, date):
+        return text
+    if hasattr(text, 'date'):
+        return text.date()
+    text = str(text).strip()
+    for pattern, base in [
+        (r'令和(\d+)年(\d+)月(\d+)日', 2018),
+        (r'平成(\d+)年(\d+)月(\d+)日', 1988),
+        (r'昭和(\d+)年(\d+)月(\d+)日', 1925),
+    ]:
+        m = re.match(pattern, text)
+        if m:
+            try:
+                return date(base + int(m.group(1)), int(m.group(2)), int(m.group(3)))
+            except ValueError:
+                pass
+    for fmt in ('%Y/%m/%d', '%Y-%m-%d', '%Y年%m月%d日'):
+        try:
+            return dt.strptime(text, fmt).date()
+        except ValueError:
+            pass
+    return None
+
+
+def _read_cell(ws, cell_ref):
+    """セルの値を取得（MergedCell対応）"""
+    try:
+        cell = ws[cell_ref]
+        if isinstance(cell, MergedCell):
+            for rng in ws.merged_cells.ranges:
+                if cell_ref in rng:
+                    return ws.cell(rng.min_row, rng.min_col).value
+            return None
+        return cell.value
+    except Exception:
+        return None
+
+
+@login_required
+def assessment_import(request):
+    """ExcelファイルからAssessmentを取り込む"""
+    clients = Client.objects.all().order_by('furigana')
+
+    if request.method == 'POST':
+        step = request.POST.get('step', 'upload')
+
+        if step == 'upload':
+            client_id = request.POST.get('client_id')
+            excel_file = request.FILES.get('excel_file')
+
+            if not client_id or not excel_file:
+                messages.error(request, '利用者とファイルを選択してください。')
+                return render(request, 'assessments/assessment_import.html', {'clients': clients})
+
+            fname = excel_file.name.lower()
+            if not (fname.endswith('.xlsx') or fname.endswith('.xlsm')):
+                messages.error(request, '.xlsx または .xlsm ファイルを選択してください。')
+                return render(request, 'assessments/assessment_import.html', {'clients': clients})
+
+            try:
+                client = get_object_or_404(Client, pk=client_id)
+
+                coords_path = os.path.join(
+                    settings.BASE_DIR, 'static', 'config', 'excel_coordinates_assessment.json'
+                )
+                with open(coords_path, 'r', encoding='utf-8') as f:
+                    coords = json.load(f)['assessment_sheet']
+
+                wb = load_workbook(excel_file, data_only=True)
+                sheet_name = '（最新）アセスメントシート'
+                ws = wb[sheet_name] if sheet_name in wb.sheetnames else wb.worksheets[0]
+
+                raw = {}
+                for key, cell_ref in coords.items():
+                    val = _read_cell(ws, cell_ref)
+                    raw[key] = str(val).strip() if val is not None else ''
+                wb.close()
+
+                # assessment_type 逆マッピング
+                type_map = {
+                    '新規': 'new', '更新': 'update', '区分変更': 'change',
+                    '退院': 'discharge', '情報提供': 'information', 'その他': 'other',
+                }
+                assessment_type_raw = raw.get('assessment_type', '')
+                assessment_type = type_map.get(assessment_type_raw, 'other')
+                assessment_type_other = (
+                    assessment_type_raw if assessment_type == 'other' and assessment_type_raw else ''
+                )
+
+                # interview_location 逆マッピング
+                loc_map = {
+                    '居室': 'room', '自宅': 'home', '病院': 'hospital',
+                    '施設': 'facility', 'その他': 'other',
+                }
+                interview_location_raw = raw.get('interview_location', '')
+                interview_location = loc_map.get(interview_location_raw, 'other')
+                interview_location_other = (
+                    interview_location_raw if interview_location == 'other' and interview_location_raw else ''
+                )
+
+                assessment_date_obj = _parse_wareki(raw.get('assessment_date', ''))
+
+                request.session['assessment_import_data'] = {
+                    'client_id': int(client_id),
+                    'raw': raw,
+                    'assessment_date': assessment_date_obj.isoformat() if assessment_date_obj else None,
+                    'assessment_type': assessment_type,
+                    'assessment_type_other': assessment_type_other,
+                    'interview_location': interview_location,
+                    'interview_location_other': interview_location_other,
+                }
+
+                # デバッグ用：全フィールドの生の値とセル座標を確認
+                debug_raw = {k: f"{coords.get(k, '?')} → {repr(v)}" for k, v in raw.items() if v}
+
+                preview = {
+                    'assessment_date': assessment_date_obj.strftime('%Y年%m月%d日') if assessment_date_obj else raw.get('assessment_date', ''),
+                    'assessment_type': assessment_type_raw,
+                    'interview_location': interview_location_raw,
+                    'assessor': raw.get('assessor', ''),
+                    'care_level': raw.get('care_level_official', ''),
+                    'disease_1': raw.get('disease_name_1', ''),
+                    'personal_hopes': raw.get('personal_hopes', '')[:100],
+                    'family_hopes': raw.get('family_hopes', '')[:100],
+                    'life_history': raw.get('life_history', '')[:100],
+                    'debug_raw': debug_raw,
+                }
+
+                return render(request, 'assessments/assessment_import.html', {
+                    'clients': clients,
+                    'selected_client': client,
+                    'preview': preview,
+                    'step': 'preview',
+                })
+
+            except Exception as e:
+                messages.error(request, f'ファイルの読み込みに失敗しました: {str(e)}')
+                return render(request, 'assessments/assessment_import.html', {'clients': clients})
+
+        elif step == 'confirm':
+            import_data = request.session.pop('assessment_import_data', None)
+            if not import_data:
+                messages.error(request, 'セッションが切れました。再度アップロードしてください。')
+                return redirect('assessment_import')
+
+            client = get_object_or_404(Client, pk=import_data['client_id'])
+            raw = import_data['raw']
+
+            json_fields = {
+                'basic_info': {}, 'insurance_info': {}, 'family_situation': {},
+                'living_situation': {}, 'services': {}, 'health_status': {},
+                'physical_status': {}, 'basic_activities': {}, 'adl': {},
+                'iadl': {}, 'cognitive_function': {},
+            }
+            for key, val in raw.items():
+                field = _COORD_TO_JSON_FIELD.get(key)
+                if field and val:
+                    json_fields[field][key] = _map_import_value(key, val)
+
+            assessment_date = None
+            if import_data.get('assessment_date'):
+                try:
+                    from datetime import date as date_cls
+                    assessment_date = date_cls.fromisoformat(import_data['assessment_date'])
+                except ValueError:
+                    pass
+            if not assessment_date:
+                assessment_date = date.today()
+
+            assessment = Assessment(
+                client=client,
+                assessor=request.user,
+                assessment_date=assessment_date,
+                assessment_type=import_data['assessment_type'],
+                assessment_type_other=import_data.get('assessment_type_other', ''),
+                interview_location=import_data['interview_location'],
+                interview_location_other=import_data.get('interview_location_other', ''),
+                status='draft',
+                basic_info=json_fields['basic_info'],
+                insurance_info=json_fields['insurance_info'],
+                family_situation=json_fields['family_situation'],
+                living_situation=json_fields['living_situation'],
+                services=json_fields['services'],
+                health_status=json_fields['health_status'],
+                physical_status=json_fields['physical_status'],
+                basic_activities=json_fields['basic_activities'],
+                adl=json_fields['adl'],
+                iadl=json_fields['iadl'],
+                cognitive_function=json_fields['cognitive_function'],
+            )
+            assessment.save()
+
+            messages.success(request, f'「{client.name}」のアセスメントを取り込みました。内容を確認・編集してください。')
+            return redirect('assessment_edit', pk=assessment.pk)
+
+    return render(request, 'assessments/assessment_import.html', {'clients': clients})
 
 @login_required
 def assessment_delete(request, pk):

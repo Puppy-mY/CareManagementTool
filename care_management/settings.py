@@ -28,6 +28,9 @@ SECRET_KEY = os.environ.get(
     "django-insecure-6rjn52!*91)i0$l5cf6fahaca_sbpjmvc+t_^$ayy0!g51#7d2",
 )
 
+# Anthropic API Key（Excel AI取り込み機能で使用）
+ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get("DEBUG", "False").lower() in ("true", "1", "yes")
 

@@ -721,7 +721,7 @@
                                                 <button type="button" class="btn btn-outline-secondary btn-sm btn-preview" style="transition: all 0.2s ease; font-size: 0.7rem; line-height: 1.2;" disabled>
                                                     プレビュー<br>開発中
                                                 </button>
-                                                <button onclick="handleExcelDownload('{% url 'assessment_excel_export' assessment.pk %}', 'アセスメント_{{ client.name }}_{{ assessment.created_date|date:'Ymd' }}.xlsm')" class="btn btn-outline-secondary btn-sm btn-excel" style="transition: all 0.2s ease;">
+                                                <button onclick="handleExcelDownload('{% url 'assessment_excel_export' assessment.pk %}', 'アセスメント_{{ client.name }}_{{ assessment.created_date|date:'Ymd' }}.xlsm', null, true)" class="btn btn-outline-secondary btn-sm btn-excel" style="transition: all 0.2s ease;">
                                                     <i class="fas fa-file-excel me-1"></i>Excel
                                                 </button>
                                                 <button type="button" class="btn btn-outline-secondary btn-sm btn-delete" style="transition: all 0.2s ease;" onclick="deleteAssessment({{ assessment.pk }})">

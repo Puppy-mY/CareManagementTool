@@ -1,0 +1,165 @@
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+
+{% block title %}アセスメント Excel 取り込み - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><i class="fas fa-file-import"></i> アセスメント Excel 取り込み</h1>
+            <a href="{% url 'assessment_list' %}" class="btn btn-outline-secondary btn-sm">
+                <i class="fas fa-arrow-left"></i> 一覧に戻る
+            </a>
+        </div>
+    </div>
+</div>
+
+{% if step == 'preview' %}
+{# ── プレビュー画面 ── #}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header" style="background: linear-gradient(135deg, #4a5568 0%, #64748b 100%); color:#fff;">
+                <i class="fas fa-search"></i> 読み取り内容の確認
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-3" style="font-size:0.88rem;">
+                    以下の内容でアセスメントを新規作成します。取り込み後に編集画面が開きますので、詳細はそちらで確認・修正してください。
+                </p>
+                <table class="table table-sm table-bordered">
+                    <tbody>
+                        <tr>
+                            <th class="table-light" style="width:30%">利用者</th>
+                            <td><strong>{{ selected_client.name }}</strong>
+                                {% if selected_client.furigana %}
+                                <small class="text-muted ms-1">（{{ selected_client.furigana }}）</small>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th class="table-light">作成日</th>
+                            <td>{{ preview.assessment_date|default:"（読み取れませんでした）" }}</td>
+                        </tr>
+                        <tr>
+                            <th class="table-light">アセスメントの理由</th>
+                            <td>{{ preview.assessment_type|default:"—" }}</td>
+                        </tr>
+                        <tr>
+                            <th class="table-light">面談場所</th>
+                            <td>{{ preview.interview_location|default:"—" }}</td>
+                        </tr>
+                        <tr>
+                            <th class="table-light">担当者（シート記載）</th>
+                            <td>{{ preview.assessor|default:"—" }}
+                                <small class="text-muted ms-1">※取り込み後の作成者はログインユーザーになります</small>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th class="table-light">要介護度</th>
+                            <td>{{ preview.care_level|default:"—" }}</td>
+                        </tr>
+                        <tr>
+                            <th class="table-light">主な疾患</th>
+                            <td>{{ preview.disease_1|default:"—" }}</td>
+                        </tr>
+                        {% if preview.personal_hopes %}
+                        <tr>
+                            <th class="table-light">本人の希望（冒頭）</th>
+                            <td>{{ preview.personal_hopes }}{% if preview.personal_hopes|length >= 100 %}…{% endif %}</td>
+                        </tr>
+                        {% endif %}
+                        {% if preview.life_history %}
+                        <tr>
+                            <th class="table-light">生活歴（冒頭）</th>
+                            <td>{{ preview.life_history }}{% if preview.life_history|length >= 100 %}…{% endif %}</td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+
+                {% if preview.debug_raw %}
+                <div class="alert alert-info py-2 mt-3" style="font-size:0.8rem;">
+                    <strong>🔍 デバッグ：選択肢フィールドの生の値（Excelから読み込んだまま）</strong>
+                    <table class="table table-sm table-bordered mt-1 mb-0">
+                        {% for k, v in preview.debug_raw.items %}
+                        <tr><td style="width:40%">{{ k }}</td><td><code>{{ v }}</code></td></tr>
+                        {% endfor %}
+                    </table>
+                </div>
+                {% endif %}
+
+                <div class="alert alert-warning py-2 mt-3" style="font-size:0.85rem;">
+                    <i class="fas fa-exclamation-triangle me-1"></i>
+                    チェックボックスや選択肢の項目は取り込み後に編集画面で確認・修正してください。
+                </div>
+
+                <form method="post" class="d-flex gap-2 mt-3">
+                    {% csrf_token %}
+                    <input type="hidden" name="step" value="confirm">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-check"></i> このデータで取り込む
+                    </button>
+                    <a href="{% url 'assessment_import' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-redo"></i> やり直す
+                    </a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% else %}
+{# ── アップロード画面 ── #}
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+        <div class="card shadow-sm">
+            <div class="card-header" style="background: linear-gradient(135deg, #4a5568 0%, #64748b 100%); color:#fff;">
+                <i class="fas fa-upload"></i> ファイルをアップロード
+            </div>
+            <div class="card-body px-4 py-4">
+                <p class="text-muted mb-4" style="font-size:0.88rem;">
+                    このシステムで出力したアセスメントシート（<code>.xlsx</code> / <code>.xlsm</code>）をアップロードしてデータを取り込みます。
+                </p>
+
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="hidden" name="step" value="upload">
+
+                    <div class="mb-3">
+                        <label for="client_id" class="form-label fw-semibold">
+                            <i class="fas fa-user me-1"></i> 利用者を選択
+                        </label>
+                        <select name="client_id" id="client_id" class="form-select" required>
+                            <option value="">— 選択してください —</option>
+                            {% for client in clients %}
+                            <option value="{{ client.pk }}">
+                                {{ client.name }}{% if client.furigana %} （{{ client.furigana }}）{% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="excel_file" class="form-label fw-semibold">
+                            <i class="fas fa-file-excel me-1"></i> ファイルを選択
+                        </label>
+                        <input type="file" name="excel_file" id="excel_file"
+                               class="form-control" accept=".xlsx,.xlsm" required>
+                        <div class="form-text">.xlsx または .xlsm ファイルを選択してください</div>
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-lg"
+                                style="background: linear-gradient(135deg, #4a5568 0%, #64748b 100%); color:#fff; font-weight:600;">
+                            <i class="fas fa-search me-1"></i> 内容を確認する
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endif %}
+{% endblock %}

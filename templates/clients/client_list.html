@@ -61,7 +61,7 @@
 
                     <div class="col-md-3">
                         <label for="care_level" class="form-label">
-                            <i class="fas fa-user-nurse"></i> 要介護度
+                            <i class="fas fa-wheelchair"></i> 要介護度
                         </label>
                         <select class="form-select" id="care_level">
                             <option value="">全て</option>
@@ -463,18 +463,21 @@
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         transition: all 0.2s ease;
     }
-    /* 各ボタンのホバー時薄いカラー（ボタンのIDで個別指定） */
-    .action-expand-row .col-md-3:nth-child(1) .btn-outline-secondary:hover {
+    /* 各ボタンのホバー時薄いカラー（管理者：col-md-3 / 一般：col-md-4） */
+    .action-expand-row .col-md-3:nth-child(1) .btn-outline-secondary:hover,
+    .action-expand-row .col-md-4:nth-child(1) .btn-outline-secondary:hover {
         background-color: #f5f5f5 !important;
         border-color: #999 !important;
         color: #333 !important;
     }
-    .action-expand-row .col-md-3:nth-child(2) .btn-outline-secondary:hover {
+    .action-expand-row .col-md-3:nth-child(2) .btn-outline-secondary:hover,
+    .action-expand-row .col-md-4:nth-child(2) .btn-outline-secondary:hover {
         background-color: #e3f2fd !important;
         border-color: #0d6efd !important;
         color: #0d6efd !important;
     }
-    .action-expand-row .col-md-3:nth-child(3) .btn-outline-secondary:hover {
+    .action-expand-row .col-md-3:nth-child(3) .btn-outline-secondary:hover,
+    .action-expand-row .col-md-4:nth-child(3) .btn-outline-secondary:hover {
         background-color: #e8f5e8 !important;
         border-color: #198754 !important;
         color: #198754 !important;
