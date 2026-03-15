@@ -1,7 +1,17 @@
 from django.shortcuts import render
-from django.http import HttpResponse
+from django.http import HttpResponse, FileResponse, Http404
+from django.contrib.staticfiles import finders
 import os
 import markdown
+
+
+def serve_sw(request):
+    path = finders.find('sw.js')
+    if not path:
+        raise Http404
+    response = FileResponse(open(path, 'rb'), content_type='application/javascript')
+    response['Cache-Control'] = 'no-cache'
+    return response
 
 def view_memo(request):
     """MEMO_20251010.mdを表示するビュー"""

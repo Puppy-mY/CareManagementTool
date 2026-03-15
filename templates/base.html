@@ -6,10 +6,66 @@
     <title>{% block title %}介護アセスメント管理システム{% endblock %}</title>
     
     {% load django_bootstrap5 %}
+    {% load static %}
     {% bootstrap_css %}
     {% bootstrap_javascript %}
+
+    <!-- PWA -->
+    <link rel="manifest" href="{% static 'manifest.json' %}">
+    <link rel="apple-touch-icon" href="{% static 'images/icons/apple-touch-icon.png' %}">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="ケア管理">
+    <meta name="theme-color" content="#4a5568">
     
     <style>
+        html, body {
+            height: 100%;
+        }
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        .main-content {
+            flex: 1;
+        }
+        .site-footer {
+            background: linear-gradient(135deg, #64748b 0%, #94a3b8 100%);
+            padding: 14px 0;
+            margin-top: auto;
+        }
+        .site-footer-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .site-footer-brand {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .site-footer-name {
+            color: #fff;
+            font-size: 0.82rem;
+            font-weight: 700;
+            letter-spacing: 0.03em;
+        }
+        .site-footer-sep {
+            color: rgba(255,255,255,0.4);
+            font-size: 0.8rem;
+        }
+        .site-footer-sub {
+            color: rgba(255,255,255,0.75);
+            font-size: 0.78rem;
+        }
+        .site-footer-copy {
+            color: rgba(255,255,255,0.6);
+            font-size: 0.75rem;
+        }
+
         :root {
             --primary-color: #4a5568;
             --secondary-color: #718096;
@@ -657,22 +713,13 @@
             </a>
 
             <!-- モバイル・タブレット用：右端にハンバーガーメニューとフィードバックボタンをグループ化 -->
+            {% if user.is_authenticated %}
             <div class="d-lg-none ms-auto d-flex align-items-center">
-                {% if user.is_authenticated %}
-                {% if user.is_superuser %}
-                <!-- 開発者への要望ボタンは非表示
-                <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#feedbackModal" role="button" style="color: rgba(255,255,255,.55); padding: 0.25rem 0.5rem; margin-right: 0.5rem; font-size: 0.9rem; border: 1px solid rgba(255,255,255,.55); border-radius: 0.25rem;">
-                    <i class="fas fa-comment-dots"></i>
-                    <span class="d-none d-md-inline">開発者への要望</span>
-                    <span class="d-inline d-md-none">要望</span>
-                </a>
-                -->
-                {% endif %}
-                {% endif %}
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" style="border: none; padding: 0.25rem 0.5rem;">
                     <span class="navbar-toggler-icon"></span>
                 </button>
             </div>
+            {% endif %}
 
             <div class="collapse navbar-collapse" id="navbarNav">
                 {% if user.is_authenticated %}
@@ -873,10 +920,17 @@
         {% endblock %}
     </div>
     
-    <footer class="bg-light text-center text-lg-start mt-5">
-        <div class="container p-4">
-            <div class="text-center">
-                <p class="text-muted">&copy; 2025 介護アセスメント管理システム</p>
+    <footer class="site-footer">
+        <div class="container">
+            <div class="site-footer-inner">
+                <div class="site-footer-brand">
+                    <span class="site-footer-name">CareManagement SYSTEM</span>
+                    <span class="site-footer-sep">|</span>
+                    <span class="site-footer-sub">介護アセスメント管理システム</span>
+                </div>
+                <div class="site-footer-copy">
+                    &copy; {% now "Y" %} CareManagement SYSTEM. All rights reserved.
+                </div>
             </div>
         </div>
     </footer>
@@ -1420,5 +1474,11 @@
     </script>
 
     {% block extra_js %}{% endblock %}
+
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js');
+      }
+    </script>
 </body>
 </html>

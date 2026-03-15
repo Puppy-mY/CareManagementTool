@@ -25,6 +25,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("accounts/login/", auth_views.LoginView.as_view(), name="login"),
     path("accounts/logout/", auth_views.LogoutView.as_view(), name="logout"),
+    path("sw.js", views.serve_sw, name="service_worker"),
     path("", lambda request: redirect('client_list'), name='root'),
     path("clients/", include("clients.urls")),
     path("assessments/", include("assessments.urls")),
