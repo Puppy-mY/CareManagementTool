@@ -652,6 +652,12 @@
                                     <th class="bg-light text-muted align-middle">難病申請</th>
                                     <td class="align-middle">{% if client.difficult_disease %}あり{% else %}なし{% endif %}</td>
                                 </tr>
+                                {% if client.difficult_disease_name %}
+                                <tr>
+                                    <th class="bg-light text-muted align-middle">難病疾患名</th>
+                                    <td class="align-middle">{{ client.difficult_disease_name }}</td>
+                                </tr>
+                                {% endif %}
                                 <tr>
                                     <th class="bg-light text-muted align-middle">生活保護</th>
                                     <td class="align-middle">{% if client.life_protection %}あり{% else %}なし{% endif %}</td>

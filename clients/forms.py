@@ -7,12 +7,12 @@ class ClientForm(forms.ModelForm):
         model = Client
         fields = [
             # 基本情報
-            'name', 'furigana', 'birth_date', 'gender', 'phone', 'address',
+            'name', 'furigana', 'birth_date', 'gender', 'phone', 'postal_code', 'address',
             # 保険情報
             'insurance_number', 'care_level', 'certification_date', 'certification_period_start', 'certification_period_end',
             'care_burden',
             'disability_level', 'dementia_level',
-            'disability_handbook', 'disability_handbook_type', 'difficult_disease', 'life_protection',
+            'disability_handbook', 'disability_handbook_type', 'difficult_disease', 'difficult_disease_name', 'life_protection',
             'medical_insurance_type', 'medical_insurer_name_issuer', 'medical_insurer_number', 'medical_insurance_symbol', 'medical_insurance_number', 'medical_insurance_branch',
             # 公的制度・受給者証（有無のみ）
             'limit_cert', 'high_cost_care',
@@ -40,6 +40,7 @@ class ClientForm(forms.ModelForm):
             'birth_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'gender': forms.Select(attrs={'class': 'form-select'}),
             'phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '例: 059-253-6599'}),
+            'postal_code': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '例: 514-0824', 'maxlength': '10'}),
             'address': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '例: 三重県津市神戸154-9'}),
             
             # 保険情報
@@ -53,6 +54,7 @@ class ClientForm(forms.ModelForm):
             'disability_handbook': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'disability_handbook_type': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '例: 肢体不自由'}),
             'difficult_disease': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'difficult_disease_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '例: パーキンソン病'}),
             'life_protection': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
 
             # 医療保険情報

@@ -1973,8 +1973,11 @@ def user_create(request):
 
         last_name = forms.CharField(label='姓', max_length=50)
         first_name = forms.CharField(label='名', max_length=50)
+        last_name_kana = forms.CharField(label='セイ', max_length=50, required=False)
+        first_name_kana = forms.CharField(label='メイ', max_length=50, required=False)
 
         organization = forms.ChoiceField(label='事業所', choices=UserProfile.ORGANIZATION_CHOICES, initial='annotsuroman')
+        job_type = forms.CharField(required=False)
         department = forms.ChoiceField(label='部署', choices=UserProfile.DEPARTMENT_CHOICES)
 
         # 居宅介護支援事業所
@@ -2015,7 +2018,10 @@ def user_create(request):
             profile, created = UserProfile.objects.get_or_create(user=user)
             profile.last_name = form.cleaned_data['last_name']
             profile.first_name = form.cleaned_data['first_name']
+            profile.last_name_kana = form.cleaned_data.get('last_name_kana', '')
+            profile.first_name_kana = form.cleaned_data.get('first_name_kana', '')
             profile.organization = form.cleaned_data['organization']
+            profile.job_type = form.cleaned_data.get('job_type', '')
             profile.department = form.cleaned_data['department']
             profile.home_care_office = form.cleaned_data.get('home_care_office')
             profile.role = 'staff'  # デフォルトで一般スタッフ
@@ -2049,8 +2055,11 @@ def user_edit(request, pk):
 
         last_name = forms.CharField(label='姓', max_length=50)
         first_name = forms.CharField(label='名', max_length=50)
+        last_name_kana = forms.CharField(label='セイ', max_length=50, required=False)
+        first_name_kana = forms.CharField(label='メイ', max_length=50, required=False)
 
         organization = forms.ChoiceField(label='事業所', choices=UserProfile.ORGANIZATION_CHOICES)
+        job_type = forms.CharField(required=False)
         department = forms.ChoiceField(label='部署', choices=UserProfile.DEPARTMENT_CHOICES)
 
         # 居宅介護支援事業所
@@ -2078,7 +2087,10 @@ def user_edit(request, pk):
             # UserProfileを更新
             profile.last_name = form.cleaned_data['last_name']
             profile.first_name = form.cleaned_data['first_name']
+            profile.last_name_kana = form.cleaned_data.get('last_name_kana', '')
+            profile.first_name_kana = form.cleaned_data.get('first_name_kana', '')
             profile.organization = form.cleaned_data['organization']
+            profile.job_type = form.cleaned_data.get('job_type', '')
             profile.department = form.cleaned_data['department']
             profile.home_care_office = form.cleaned_data.get('home_care_office')
             profile.save()
@@ -2090,7 +2102,10 @@ def user_edit(request, pk):
             'username': user.username,
             'last_name': profile.last_name,
             'first_name': profile.first_name,
+            'last_name_kana': profile.last_name_kana,
+            'first_name_kana': profile.first_name_kana,
             'organization': profile.organization,
+            'job_type': profile.job_type,
             'department': profile.department,
             'home_care_office': profile.home_care_office,
         })

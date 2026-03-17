@@ -103,6 +103,7 @@ class Client(models.Model):
     birth_date = models.DateField('生年月日')
     gender = models.CharField('性別', max_length=10, choices=GENDER_CHOICES)
     phone = models.CharField('電話番号', max_length=15, blank=True)
+    postal_code = models.CharField('郵便番号', max_length=10, blank=True)
     address = models.TextField('住所', blank=True)
     
     # 保険情報
@@ -122,6 +123,7 @@ class Client(models.Model):
     disability_handbook = models.BooleanField('身体障がい者手帳', default=False)
     disability_handbook_type = models.CharField('障害種別', max_length=100, blank=True)
     difficult_disease = models.BooleanField('難病申請', default=False)
+    difficult_disease_name = models.CharField('難病疾患名', max_length=200, blank=True)
     life_protection = models.BooleanField('生活保護', default=False)
 
     # 公的制度・受給者証（介護保険関係）
@@ -503,7 +505,15 @@ class UserProfile(models.Model):
     ]
 
     ORGANIZATION_CHOICES = [
-        ('annotsuroman', '安濃津ろまん'),
+        ('annotsuroman', '居宅介護支援事業所 安濃津ろまん'),
+    ]
+
+    JOB_TYPE_CHOICES = [
+        ('care_manager', '介護支援専門員'),
+        ('social_worker', '社会福祉士'),
+        ('nurse', '看護師'),
+        ('care_worker', '介護福祉士'),
+        ('other', 'その他'),
     ]
 
     DEPARTMENT_CHOICES = [
@@ -532,6 +542,7 @@ class UserProfile(models.Model):
     # 役職・所属
     role = models.CharField('役職', max_length=20, choices=ROLE_CHOICES, default='staff')
     organization = models.CharField('事業所', max_length=50, choices=ORGANIZATION_CHOICES, default='annotsuroman')
+    job_type = models.CharField('業種', max_length=50, choices=JOB_TYPE_CHOICES, blank=True)
     department = models.CharField('所属部署', max_length=100, choices=DEPARTMENT_CHOICES, blank=True)
     home_care_office = models.ForeignKey('HomeCareSupportOffice', on_delete=models.SET_NULL, null=True, blank=True, verbose_name='所属居宅介護支援事業所', related_name='staff_members')
 

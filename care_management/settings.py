@@ -176,3 +176,8 @@ LOGGING = {
         },
     },
 }
+
+
+# 事業所情報
+OFFICE_NAME = os.environ.get("OFFICE_NAME", "居宅介護支援事業所")
+OFFICE_NAME_FURIGANA = os.environ.get("OFFICE_NAME_FURIGANA", "")

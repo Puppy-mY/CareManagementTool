@@ -201,15 +201,22 @@
                 </div>
             </div>
 
-            <!-- 住所・電話番号（2つ横並び） -->
+            <!-- 郵便番号・住所・電話番号 -->
             <div class="row g-3">
-                <div class="col-lg-8 col-md-8">
-                    <label for="{{ form.address.id_for_label }}" class="form-label">住所</label>
-                    {% bootstrap_field form.address show_label=False %}
+                <div class="col-lg-3 col-md-4">
+                    <label for="{{ form.postal_code.id_for_label }}" class="form-label">郵便番号</label>
+                    <div class="input-group mb-3">
+                        <span class="input-group-text bg-light text-muted">〒</span>
+                        {{ form.postal_code }}
+                    </div>
                 </div>
-                <div class="col-lg-4 col-md-4">
+                <div class="col-lg-6 col-md-5">
+                    <label for="{{ form.address.id_for_label }}" class="form-label">住所</label>
+                    {% bootstrap_field form.address show_label=False wrapper_class="mb-3" %}
+                </div>
+                <div class="col-lg-3 col-md-3">
                     <label for="{{ form.phone.id_for_label }}" class="form-label">電話番号</label>
-                    {% bootstrap_field form.phone show_label=False %}
+                    {% bootstrap_field form.phone show_label=False wrapper_class="mb-3" %}
                 </div>
             </div>
         </div>
@@ -223,13 +230,11 @@
                 保険情報
             </button>
         </li>
-        {% if user.is_superuser %}
         <li class="nav-item" role="presentation">
             <button class="nav-link" id="public-benefit-tab" data-bs-toggle="tab" data-bs-target="#public-benefit" type="button" role="tab">
                 公的制度・受給者証
             </button>
         </li>
-        {% endif %}
         <li class="nav-item" role="presentation">
             <button class="nav-link" id="family-tab" data-bs-toggle="tab" data-bs-target="#family" type="button" role="tab">
                 家族情報
@@ -342,7 +347,6 @@
             </div>
         </div>
 
-        {% if user.is_superuser %}
         <!-- 公的制度・受給者証タブ -->
         <div class="tab-pane fade pt-4" id="public-benefit" role="tabpanel" aria-labelledby="public-benefit-tab">
 
@@ -430,6 +434,14 @@
                         <div class="text-muted small">指定難病の医療費助成の申請状況</div>
                     </div>
                 </div>
+                <div class="row g-3 mb-3 align-items-center">
+                    <div class="col-xl-5 col-lg-5 col-md-6 col-sm-6">
+                        <label class="form-label mb-0 fw-bold">難病疾患名</label>
+                    </div>
+                    <div class="col">
+                        {{ form.difficult_disease_name }}
+                    </div>
+                </div>
 
                 <div style="border-top: 1px dashed #dee2e6; margin: 1rem 0;"></div>
 
@@ -513,7 +525,6 @@
                 <i class="fas fa-info-circle me-1"></i>有効期間等の詳細は、利用者一覧の「保険・受給者証管理」から登録・更新できます。
             </div>
         </div>
-        {% endif %}
 
         <!-- 家族情報タブ -->
         <div class="tab-pane fade pt-4" id="family" role="tabpanel" aria-labelledby="family-tab">

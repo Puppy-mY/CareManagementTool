@@ -2712,6 +2712,402 @@ def generate_assessment_excel(assessment, request=None):
                 safe_write_ei(ei_coords.get("indoor_mobility"), indoor_mob_val)
                 safe_write_ei(ei_coords.get("outdoor_mobility"), outdoor_mob_val)
 
+            # --- ひらがな→カタカナ変換関数 ---
+            def hira_to_kata(text):
+                if not text: return ""
+                return "".join(chr(ord(c) + 0x60) if '\u3041' <= c <= '\u3096' else c for c in text)
+
+            # --- 医療・介護連携シートへの書き込み ---
+            mcc_coords = coordinates.get("medical_care_coordination", {})
+            mcc_sheet_name = mcc_coords.get("sheet_name", "医療・介護連携シート")
+            if mcc_sheet_name in [s.name for s in workbook.sheets]:
+                mcc_sheet = workbook.sheets[mcc_sheet_name]
+
+                def safe_write_mcc(cell_ref, value):
+                    try:
+                        if cell_ref and value is not None:
+                            mcc_sheet.range(cell_ref).value = value
+                    except Exception as e:
+                        print(f"DEBUG: {mcc_sheet_name} セル {cell_ref} 書き込みエラー: {e}")
+
+                def safe_write_mcc_wareki(cell_ref, value):
+                    try:
+                        if cell_ref and value is not None:
+                            mcc_sheet.range(cell_ref).number_format = "@"
+                            mcc_sheet.range(cell_ref).value = str(value)
+                    except Exception as e:
+                        print(f"DEBUG: {mcc_sheet_name} セル {cell_ref} 和暦書き込みエラー: {e}")
+
+                safe_write_mcc(mcc_coords.get("care_manager"), assessor_name)
+                safe_write_mcc(mcc_coords.get("care_manager_2"), assessor_name)
+                safe_write_mcc(mcc_coords.get("client_name"), assessment.client.name)
+                safe_write_mcc(mcc_coords.get("client_furigana"), assessment.client.furigana)
+                safe_write_mcc_wareki(mcc_coords.get("birth_date"), to_wareki(assessment.client.birth_date) if assessment.client.birth_date else "")
+                safe_write_mcc(mcc_coords.get("client_age"), client_age)
+                safe_write_mcc(mcc_coords.get("care_level"), assessment.client.get_care_level_display() if assessment.client.care_level else "")
+                safe_write_mcc_wareki(mcc_coords.get("certification_period_start"), to_wareki(assessment.client.certification_period_start) if assessment.client.certification_period_start else "")
+                safe_write_mcc_wareki(mcc_coords.get("certification_period_end"), to_wareki(assessment.client.certification_period_end) if assessment.client.certification_period_end else "")
+                safe_write_mcc(mcc_coords.get("client_address"), assessment.client.address)
+
+            # --- (貼付作成)入院時情報提供シートへの書き込み ---
+            hai_coords = coordinates.get("hospital_admission_info", {})
+            hai_sheet_name = hai_coords.get("sheet_name", "(貼付作成)入院時情報提供")
+            if hai_sheet_name in [s.name for s in workbook.sheets]:
+                hai_sheet = workbook.sheets[hai_sheet_name]
+
+                def safe_write_hai(cell_ref, value):
+                    try:
+                        if cell_ref and value is not None:
+                            hai_sheet.range(cell_ref).value = value
+                    except Exception as e:
+                        print(f"DEBUG: {hai_sheet_name} セル {cell_ref} 書き込みエラー: {e}")
+
+                def safe_write_hai_wareki(cell_ref, value):
+                    try:
+                        if cell_ref and value is not None:
+                            hai_sheet.range(cell_ref).number_format = "@"
+                            hai_sheet.range(cell_ref).value = str(value)
+                    except Exception as e:
+                        print(f"DEBUG: {hai_sheet_name} セル {cell_ref} 和暦書き込みエラー: {e}")
+
+                # 住宅形態テキストの生成（アセスメントシートと同様のロジック）
+                housing = assessment.living_situation or {}
+                housing_type_val = housing.get("housing_type", "")
+                housing_type_text = ""
+                if housing_type_val:
+                    if housing_type_val == "other":
+                        housing_type_text = housing.get("other_housing_type_detail_text", "") or get_choice_label(f"housing_{housing_type_val}")
+                    else:
+                        housing_type_text = get_choice_label(f"housing_{housing_type_val}")
+                    if housing_type_val != "detached_house":
+                        has_elevator = housing.get("has_elevator", "")
+                        if has_elevator == "yes":
+                            housing_type_text = f"{housing_type_text}、エレベーター有"
+                        elif has_elevator == "no":
+                            housing_type_text = f"{housing_type_text}、エレベーター無"
+
+                client = assessment.client
+                safe_write_hai(hai_coords.get("client_name"), client.name)
+                safe_write_hai(hai_coords.get("client_furigana_katakana"), hira_to_kata(client.furigana or ""))
+                safe_write_hai(hai_coords.get("client_address"), client.address)
+                safe_write_hai(hai_coords.get("client_gender"), client.get_gender_display() if client.gender else "")
+                safe_write_hai_wareki(hai_coords.get("birth_date"), to_wareki(client.birth_date) if client.birth_date else "")
+                safe_write_hai(hai_coords.get("family_name1"), client.family_name1)
+                safe_write_hai(hai_coords.get("family_relationship1"), client.get_family_relationship1_display() if client.family_relationship1 else "")
+                safe_write_hai(hai_coords.get("family_living_status1"), client.get_family_living_status1_display() if client.family_living_status1 else "")
+                safe_write_hai(hai_coords.get("family_address1"), client.family_address1)
+                safe_write_hai(hai_coords.get("family_contact1"), client.family_contact1)
+                safe_write_hai(hai_coords.get("housing_type"), housing_type_text)
+                safe_write_hai(hai_coords.get("life_history"), (assessment.basic_info or {}).get("life_history", ""))
+                safe_write_hai(hai_coords.get("care_level"), client.get_care_level_display() if client.care_level else "")
+                safe_write_hai_wareki(hai_coords.get("certification_period_start"), to_wareki(client.certification_period_start) if client.certification_period_start else "")
+                safe_write_hai_wareki(hai_coords.get("certification_period_end"), to_wareki(client.certification_period_end) if client.certification_period_end else "")
+                safe_write_hai(hai_coords.get("insurance_number"), client.insurance_number)
+                safe_write_hai(hai_coords.get("difficult_disease"), "あり" if client.difficult_disease else "なし")
+                safe_write_hai(hai_coords.get("difficult_disease_name"), client.difficult_disease_name)
+                # I52・P52: 手帳の有無＋疾患名を組み合わせ
+                if client.disability_handbook:
+                    handbook_text = f"あり（{client.disability_handbook_type}）" if client.disability_handbook_type else "あり"
+                else:
+                    handbook_text = "なし"
+                safe_write_hai(hai_coords.get("disability_handbook_i52"), handbook_text)
+                safe_write_hai(hai_coords.get("disability_handbook"), handbook_text)
+                # V52: 生活保護
+                safe_write_hai(hai_coords.get("life_protection"), "あり" if client.life_protection else "なし")
+                # I54: 障がい高齢者の日常生活自立度
+                safe_write_hai(hai_coords.get("disability_level"), client.get_disability_level_display() if client.disability_level else "")
+                # I55: 認知症の日常生活自立度
+                safe_write_hai(hai_coords.get("dementia_level"), client.get_dementia_level_display() if client.dementia_level else "")
+                # I56: かかりつけ医1～4をカンマ区切り
+                health_hai = assessment.health_status or {}
+                family_doctors = []
+                for i in range(1, 5):
+                    hosp = health_hai.get(f"family_doctor_hospital_{i}", "")
+                    name = health_hai.get(f"family_doctor_name_{i}", "")
+                    if hosp or name:
+                        family_doctors.append("、".join(filter(None, [hosp, name])))
+                safe_write_hai(hai_coords.get("family_doctors"), "，".join(family_doctors))
+                # 疾患名1～6
+                for i in range(1, 7):
+                    safe_write_hai(hai_coords.get(f"disease_name_{i}"), health_hai.get(f"disease_name_{i}", ""))
+                # I59: 服薬状況，眠剤，下剤
+                med_parts = []
+                med_status = health_hai.get("medication_status", "")
+                if med_status:
+                    med_parts.append(get_choice_label(f"medication_{med_status}"))
+                has_sleeping = health_hai.get("has_sleeping_medication", "")
+                med_parts.append(f"眠剤：{'あり' if has_sleeping == 'yes' else 'なし'}" if has_sleeping else "")
+                has_laxative = health_hai.get("has_laxative", "")
+                med_parts.append(f"下剤：{'あり' if has_laxative == 'yes' else 'なし'}" if has_laxative else "")
+                safe_write_hai(hai_coords.get("medication_summary"), "，".join(filter(None, med_parts)))
+
+                # ADL
+                adl_hai = assessment.adl or {}
+                meal_side_hai = {"normal": "普通", "soft": "一口大", "minced": "キザミ", "paste": "ペースト", "paste_form": "ペースト"}
+                # I60: 食事方法，食事動作
+                eating_parts = [
+                    get_choice_label(f"eating_method_{adl_hai.get('eating_method', '')}"),
+                    get_choice_label(f"eating_assistance_{adl_hai.get('eating_assistance', '')}"),
+                ]
+                safe_write_hai(hai_coords.get("eating_summary"), "，".join(filter(None, eating_parts)))
+                # K61: 主食  P61: 副食  U61: トロミ
+                safe_write_hai(hai_coords.get("meal_form_main"), get_choice_label(f"meal_main_{adl_hai.get('meal_form_main', '')}"))
+                safe_write_hai(hai_coords.get("meal_form_side"), meal_side_hai.get(adl_hai.get("meal_form_side", ""), adl_hai.get("meal_form_side", "")))
+                safe_write_hai(hai_coords.get("water_thickening"), get_choice_label(f"water_thickening_{adl_hai.get('water_thickening', '')}"))
+                # I62: 排泄動作
+                safe_write_hai(hai_coords.get("excretion_assistance"), get_choice_label(f"excretion_assistance_{adl_hai.get('excretion_assistance', '')}"))
+                # I63: 排尿失禁の有無，程度
+                u_incon = adl_hai.get("urinary_incontinence", "")
+                u_label = get_choice_label(f"incontinence_{u_incon}") if u_incon else ""
+                if u_incon == "yes":
+                    u_freq = adl_hai.get("urinary_incontinence_frequency", "")
+                    if u_freq: u_label = f"{u_label}（{u_freq}）"
+                safe_write_hai(hai_coords.get("urinary_incontinence"), u_label)
+                # K64/S64: 排尿の日中・夜間の方法
+                safe_write_hai(hai_coords.get("excretion_daytime"), convert_list_to_text(adl_hai.get("daytime_location", []), "location_"))
+                safe_write_hai(hai_coords.get("excretion_nighttime"), convert_list_to_text(adl_hai.get("nighttime_location", []), "location_"))
+                # I65: 排便失禁の有無，頻度
+                f_incon = adl_hai.get("fecal_incontinence", "")
+                f_label = get_choice_label(f"incontinence_{f_incon}") if f_incon else ""
+                if f_incon == "yes":
+                    f_freq = adl_hai.get("fecal_incontinence_frequency", "")
+                    if f_freq: f_label = f"{f_label}（{f_freq}）"
+                safe_write_hai(hai_coords.get("fecal_incontinence"), f_label)
+                # K65/S65: 排便の日中・夜間の方法
+                safe_write_hai(hai_coords.get("defecation_daytime"), convert_list_to_text(adl_hai.get("daytime_location", []), "location_"))
+                safe_write_hai(hai_coords.get("defecation_nighttime"), convert_list_to_text(adl_hai.get("nighttime_location", []), "location_"))
+                # I67: 更衣上衣  I68: 更衣下衣
+                safe_write_hai(hai_coords.get("dressing_upper"), get_choice_label(f"dressing_{adl_hai.get('dressing_upper', '')}"))
+                safe_write_hai(hai_coords.get("dressing_lower"), get_choice_label(f"dressing_{adl_hai.get('dressing_lower', '')}"))
+
+                # 基本動作
+                activity_hai = assessment.basic_activities or {}
+                safe_write_hai(hai_coords.get("indoor_mobility"), get_choice_label(f"mobility_{activity_hai.get('indoor_mobility', '')}"))
+                safe_write_hai(hai_coords.get("transfer"), get_choice_label(f"mobility_{activity_hai.get('transfer', '')}"))
+                safe_write_hai(hai_coords.get("indoor_mobility_equipment"), get_choice_label(f"equipment_{activity_hai.get('indoor_mobility_equipment', '')}"))
+
+                # I72: 認知症の有無，程度 / BPSD
+                cognitive_hai = assessment.cognitive_function or {}
+                dem_pres_val = cognitive_hai.get("dementia_presence", "")
+                dem_pres_label = "あり" if dem_pres_val == "yes" else ("なし" if dem_pres_val == "no" else "")
+                dem_sev = get_choice_label(f"dementia_{cognitive_hai.get('dementia_severity', '')}")
+                dem_line = "，".join(filter(None, [f"認知症：{dem_pres_label}" if dem_pres_label else "", dem_sev]))
+                bpsd_pres = cognitive_hai.get("bpsd_presence", "")
+                if bpsd_pres == "no":
+                    bpsd_line = "BPSD：なし"
+                elif bpsd_pres:
+                    bpsd_list = cognitive_hai.get("bpsd_symptoms", [])
+                    bpsd_labels = [str(get_choice_label(f"bpsd_{s}")) for s in bpsd_list]
+                    bpsd_symptoms_str = "、".join(filter(None, bpsd_labels)) or "あり"
+                    bpsd_line = f"BPSD：{bpsd_symptoms_str}"
+                else:
+                    bpsd_line = ""
+                safe_write_hai(hai_coords.get("dementia_summary"), "\n".join(filter(None, [dem_line, bpsd_line])))
+
+            # --- (手入力)入院時情報提供シートへの書き込み ---
+            hai_m_coords = coordinates.get("hospital_admission_info_manual", {})
+            hai_m_sheet_name = hai_m_coords.get("sheet_name", "(手入力)入院時情報提供")
+            if hai_m_sheet_name in [s.name for s in workbook.sheets]:
+                hai_m_sheet = workbook.sheets[hai_m_sheet_name]
+
+                def safe_write_haim(cell_ref, value):
+                    try:
+                        if cell_ref and value is not None:
+                            hai_m_sheet.range(cell_ref).value = value
+                    except Exception as e:
+                        print(f"DEBUG: {hai_m_sheet_name} セル {cell_ref} 書き込みエラー: {e}")
+
+                def safe_write_haim_wareki(cell_ref, value):
+                    try:
+                        if cell_ref and value is not None:
+                            hai_m_sheet.range(cell_ref).number_format = "@"
+                            hai_m_sheet.range(cell_ref).value = str(value)
+                    except Exception as e:
+                        print(f"DEBUG: {hai_m_sheet_name} セル {cell_ref} 和暦書き込みエラー: {e}")
+
+                client = assessment.client
+                # housing_type_textはすでに(貼付作成)ブロックで計算済みの変数を流用
+                safe_write_haim(hai_m_coords.get("client_name"), client.name)
+                safe_write_haim(hai_m_coords.get("client_furigana_katakana"), hira_to_kata(client.furigana or ""))
+                safe_write_haim(hai_m_coords.get("client_gender"), client.get_gender_display() if client.gender else "")
+                safe_write_haim_wareki(hai_m_coords.get("birth_date"), to_wareki(client.birth_date) if client.birth_date else "")
+                safe_write_haim(hai_m_coords.get("client_address"), client.address)
+                safe_write_haim(hai_m_coords.get("family_name1"), client.family_name1)
+                safe_write_haim(hai_m_coords.get("family_relationship1"), client.get_family_relationship1_display() if client.family_relationship1 else "")
+                safe_write_haim(hai_m_coords.get("family_living_status1"), client.get_family_living_status1_display() if client.family_living_status1 else "")
+                safe_write_haim(hai_m_coords.get("family_address1"), client.family_address1)
+                safe_write_haim(hai_m_coords.get("family_contact1"), client.family_contact1)
+                housing = assessment.living_situation or {}
+                housing_type_val_m = housing.get("housing_type", "")
+                housing_type_text_m = ""
+                if housing_type_val_m:
+                    if housing_type_val_m == "other":
+                        housing_type_text_m = housing.get("other_housing_type_detail_text", "") or get_choice_label(f"housing_{housing_type_val_m}")
+                    else:
+                        housing_type_text_m = get_choice_label(f"housing_{housing_type_val_m}")
+                    if housing_type_val_m != "detached_house":
+                        has_elev = housing.get("has_elevator", "")
+                        if has_elev == "yes":
+                            housing_type_text_m = f"{housing_type_text_m}、エレベーター有"
+                        elif has_elev == "no":
+                            housing_type_text_m = f"{housing_type_text_m}、エレベーター無"
+                safe_write_haim(hai_m_coords.get("housing_type"), housing_type_text_m)
+                safe_write_haim(hai_m_coords.get("life_history"), (assessment.basic_info or {}).get("life_history", ""))
+                safe_write_haim(hai_m_coords.get("care_level"), client.get_care_level_display() if client.care_level else "")
+                safe_write_haim_wareki(hai_m_coords.get("certification_period_start"), to_wareki(client.certification_period_start) if client.certification_period_start else "")
+                safe_write_haim_wareki(hai_m_coords.get("certification_period_end"), to_wareki(client.certification_period_end) if client.certification_period_end else "")
+                safe_write_haim(hai_m_coords.get("insurance_number"), client.insurance_number)
+                safe_write_haim(hai_m_coords.get("difficult_disease"), "あり" if client.difficult_disease else "なし")
+                safe_write_haim(hai_m_coords.get("difficult_disease_name"), client.difficult_disease_name)
+                handbook_text_m = (f"あり（{client.disability_handbook_type}）" if client.disability_handbook_type else "あり") if client.disability_handbook else "なし"
+                safe_write_haim(hai_m_coords.get("disability_handbook_i52"), handbook_text_m)
+                safe_write_haim(hai_m_coords.get("disability_handbook"), handbook_text_m)
+                safe_write_haim(hai_m_coords.get("life_protection"), "あり" if client.life_protection else "なし")
+
+            # --- 更新・新規申請書シートへの書き込み ---
+            ks_coords = coordinates.get("koshin_shinki_shinsei", {})
+            ks_sheet_name = ks_coords.get("sheet_name", "更新・新規申請書")
+            if ks_sheet_name in [s.name for s in workbook.sheets]:
+                ks_sheet = workbook.sheets[ks_sheet_name]
+
+                def safe_write_ks(cell_ref, value):
+                    try:
+                        if cell_ref and value is not None:
+                            ks_sheet.range(cell_ref).value = value
+                    except Exception as e:
+                        print(f"DEBUG: 更新・新規申請書 セル {cell_ref} 書き込みエラー: {e}")
+
+                def safe_write_ks_wareki(cell_ref, value):
+                    try:
+                        if cell_ref and value is not None:
+                            ks_sheet.range(cell_ref).number_format = "@"
+                            ks_sheet.range(cell_ref).value = str(value)
+                    except Exception as e:
+                        print(f"DEBUG: 更新・新規申請書 セル {cell_ref} 和暦書き込みエラー: {e}")
+
+                safe_write_ks(ks_coords.get("care_manager"), assessor_name)
+                safe_write_ks(ks_coords.get("care_manager_2"), assessor_name)
+                # I32: 担当ケアマネのフリガナ
+                assessor_kana = ""
+                if assessment.assessor and hasattr(assessment.assessor, "profile"):
+                    p = assessment.assessor.profile
+                    assessor_kana = f"{p.last_name_kana} {p.first_name_kana}".strip()
+                safe_write_ks(ks_coords.get("care_manager_furigana"), assessor_kana)
+                safe_write_ks(ks_coords.get("insurance_number"), assessment.client.insurance_number)
+                safe_write_ks(ks_coords.get("client_name"), assessment.client.name)
+                safe_write_ks(ks_coords.get("client_furigana"), hira_to_kata(assessment.client.furigana or ""))
+                safe_write_ks(ks_coords.get("client_gender"), assessment.client.get_gender_display() if assessment.client.gender else "")
+                safe_write_ks_wareki(ks_coords.get("birth_date"), to_wareki(assessment.client.birth_date) if assessment.client.birth_date else "")
+                safe_write_ks(ks_coords.get("postal_code"), assessment.client.postal_code)
+                safe_write_ks(ks_coords.get("client_address"), assessment.client.address)
+                safe_write_ks(ks_coords.get("care_level"), assessment.client.get_care_level_display() if assessment.client.care_level else "")
+                safe_write_ks_wareki(ks_coords.get("certification_period_start"), to_wareki(assessment.client.certification_period_start) if assessment.client.certification_period_start else "")
+                safe_write_ks_wareki(ks_coords.get("certification_period_end"), to_wareki(assessment.client.certification_period_end) if assessment.client.certification_period_end else "")
+
+                # M25: 医療保険の保険者名（国民健康保険の場合は「国民健康保険 〇市」形式）
+                client_ks = assessment.client
+                med_type = client_ks.medical_insurance_type
+                insurer_name = client_ks.medical_insurer_name_issuer or ""
+                if med_type == "national_health":
+                    med_insurer_text = f"国民健康保険　{insurer_name}" if insurer_name else "国民健康保険"
+                else:
+                    med_insurer_text = insurer_name
+                safe_write_ks(ks_coords.get("medical_insurer_name"), med_insurer_text)
+
+                # AA25: 保険者番号
+                safe_write_ks(ks_coords.get("medical_insurer_number"), client_ks.medical_insurer_number)
+
+                # O26: 記号（枝番があれば「記号〇〇（枝番）〇〇」）
+                symbol = client_ks.medical_insurance_symbol
+                branch = client_ks.medical_insurance_branch
+                if symbol and branch:
+                    symbol_text = f"記号{symbol}（枝番）{branch}"
+                elif symbol:
+                    symbol_text = symbol
+                else:
+                    symbol_text = ""
+                safe_write_ks(ks_coords.get("medical_insurance_symbol"), symbol_text)
+
+                # Y26: 被保険者番号
+                safe_write_ks(ks_coords.get("medical_insurance_number"), client_ks.medical_insurance_number)
+
+                # G37: 主治医（医療機関名）  H39: 主治医名
+                health_ks = assessment.health_status or {}
+                safe_write_ks(ks_coords.get("main_doctor_hospital"), health_ks.get("main_doctor_hospital", ""))
+                safe_write_ks(ks_coords.get("main_doctor_name"), health_ks.get("main_doctor_name", ""))
+
+            # --- モニタリングシートへの書き込み ---
+            mon_coords = coordinates.get("monitoring_sheet", {})
+            mon_sheet_name = mon_coords.get("sheet_name", "モニタリングシート")
+            if mon_sheet_name in [s.name for s in workbook.sheets]:
+                mon_sheet = workbook.sheets[mon_sheet_name]
+                try:
+                    mon_sheet.range(mon_coords["client_name"]).value = assessment.client.name
+                    mon_sheet.range(mon_coords["care_manager"]).value = assessor_name
+                except Exception as e:
+                    print(f"DEBUG: モニタリングシート 書き込みエラー: {e}")
+
+            # --- 担会案内シートへの書き込み ---
+            from django.conf import settings as dj_settings
+            tk_coords = coordinates.get("tankai_annai", {})
+            tk_sheet_name = tk_coords.get("sheet_name", "担会案内")
+            if tk_sheet_name in [s.name for s in workbook.sheets]:
+                tk_sheet = workbook.sheets[tk_sheet_name]
+                office_name = getattr(dj_settings, "OFFICE_NAME", "居宅介護支援事業所")
+                try:
+                    tk_sheet.range(tk_coords["care_manager"]).value = assessor_name
+                    tk_sheet.range(tk_coords["client_name"]).value = assessment.client.name
+                    tk_sheet.range(tk_coords["office_name"]).value = office_name
+                except Exception as e:
+                    print(f"DEBUG: 担会案内 書き込みエラー: {e}")
+
+            # --- チェックシートへの書き込み ---
+            cs_coords = coordinates.get("check_sheet", {})
+            cs_sheet_name = cs_coords.get("sheet_name", "チェックシート")
+            if cs_sheet_name in [s.name for s in workbook.sheets]:
+                cs_sheet = workbook.sheets[cs_sheet_name]
+                cs_sheet.range(cs_coords["client_name"]).value = assessment.client.name
+
+            # --- HOMEシートへの書き込み ---
+            home_coords = coordinates.get("home_sheet", {})
+            home_sheet_name = home_coords.get("sheet_name", "HOME")
+            if home_sheet_name in [s.name for s in workbook.sheets]:
+                home_sheet = workbook.sheets[home_sheet_name]
+                home_sheet.range(home_coords["client_name"]).value = assessment.client.name
+
+            # --- 居宅届シートへの書き込み ---
+            def write_kyotaku(sheet_key):
+                kt_coords = coordinates.get(sheet_key, {})
+                kt_sheet_name = kt_coords.get("sheet_name", "")
+                if not kt_sheet_name or kt_sheet_name not in [s.name for s in workbook.sheets]:
+                    return
+                kt_sheet = workbook.sheets[kt_sheet_name]
+
+                def sw(cell_ref, value):
+                    try:
+                        if cell_ref and value is not None:
+                            kt_sheet.range(cell_ref).value = value
+                    except Exception as e:
+                        print(f"DEBUG: {kt_sheet_name} セル {cell_ref} 書き込みエラー: {e}")
+
+                def sw_wareki(cell_ref, value):
+                    try:
+                        if cell_ref and value is not None:
+                            kt_sheet.range(cell_ref).number_format = "@"
+                            kt_sheet.range(cell_ref).value = str(value)
+                    except Exception as e:
+                        print(f"DEBUG: {kt_sheet_name} セル {cell_ref} 和暦書き込みエラー: {e}")
+
+                sw(kt_coords.get("client_name"), assessment.client.name)
+                sw(kt_coords.get("client_furigana_katakana"), hira_to_kata(assessment.client.furigana or ""))
+                sw(kt_coords.get("insurance_number"), assessment.client.insurance_number)
+                sw_wareki(kt_coords.get("birth_date"), to_wareki(assessment.client.birth_date) if assessment.client.birth_date else "")
+                sw(kt_coords.get("care_manager"), assessor_name)
+                sw(kt_coords.get("client_address"), assessment.client.address)
+
+            write_kyotaku("kyotaku_todoke")
+            write_kyotaku("kyotaku_todoke_yobou")
+
             # Excelファイルを保存
             workbook.save()
 
