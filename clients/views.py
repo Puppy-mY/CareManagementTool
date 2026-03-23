@@ -273,6 +273,7 @@ def schedule_management(request, pk):
                 client.specific_medical = 'no'
                 client.specific_medical_start = None
                 client.specific_medical_end = None
+                client.difficult_disease_name = ''
             elif item == 'welfare_medical':
                 client.welfare_medical = 'no'
                 client.welfare_medical_start = None

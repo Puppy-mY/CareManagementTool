@@ -28,7 +28,7 @@ class Client(models.Model):
     ]
 
     DISABILITY_LEVEL_CHOICES = [
-        ('', '選択してください'),
+        ('', '----------'),
         ('independent', '自立'),
         ('J1', 'J1'),
         ('J2', 'J2'),
@@ -41,7 +41,7 @@ class Client(models.Model):
     ]
 
     DEMENTIA_LEVEL_CHOICES = [
-        ('', '選択してください'),
+        ('', '----------'),
         ('independent', '自立'),
         ('I', 'I'),
         ('IIa', 'IIa'),
@@ -85,7 +85,7 @@ class Client(models.Model):
     ]
 
     MEDICAL_INSURANCE_CHOICES = [
-        ('', '選択してください'),
+        ('', '----------'),
         ('national_health', '国民健康保険'),
         ('latter_stage_elderly', '後期高齢者医療'),
         ('health_insurance_association', '健康保険（協会けんぽ）'),
@@ -120,10 +120,54 @@ class Client(models.Model):
     dementia_level = models.CharField('認知症日常生活自立度', max_length=20, choices=DEMENTIA_LEVEL_CHOICES, blank=True)
 
     # 手帳・申請・保護
+    DISABILITY_TYPE_CHOICES = [
+        ('visual', '視覚障害'),
+        ('hearing_balance', '聴覚・平衡機能障害'),
+        ('voice_language', '音声・言語・そしゃく機能障害'),
+        ('limb_upper', '肢体不自由（上肢）'),
+        ('limb_lower', '肢体不自由（下肢）'),
+        ('limb_trunk', '肢体不自由（体幹）'),
+        ('heart', '心臓機能障害'),
+        ('kidney', 'じん臓機能障害'),
+        ('respiratory', '呼吸器機能障害'),
+        ('bladder_rectum', 'ぼうこう又は直腸機能障害'),
+        ('small_intestine', '小腸機能障害'),
+        ('immune', '免疫機能障害'),
+        ('liver', '肝臓機能障害'),
+    ]
+
+    DISABILITY_GRADE_CHOICES = [
+        ('1', '1級'),
+        ('2', '2級'),
+        ('3', '3級'),
+        ('4', '4級'),
+        ('5', '5級'),
+        ('6', '6級'),
+    ]
+
+    DIFFICULT_DISEASE_CHOICES = [
+        ('', '----------'),
+        ('parkinson', 'パーキンソン病'),
+        ('ulcerative_colitis', '潰瘍性大腸炎'),
+        ('crohn', 'クローン病'),
+        ('sle', '全身性エリテマトーデス'),
+        ('als', '筋萎縮性側索硬化症 (ALS)'),
+        ('spinocerebellar_degeneration', '脊髄小脳変性症'),
+        ('ms', '多発性硬化症'),
+        ('myasthenia_gravis', '重症筋無力症'),
+        ('aplastic_anemia', '再生不良性貧血'),
+        ('idiopathic_femoral_head_necrosis', '特発性大腿骨頭壊死症'),
+        ('progressive_supranuclear_palsy', '進行性核上性麻痺'),
+        ('cbd', '大脳皮質基底核変性症'),
+        ('other', 'その他'),
+    ]
+
     disability_handbook = models.BooleanField('身体障がい者手帳', default=False)
-    disability_handbook_type = models.CharField('障害種別', max_length=100, blank=True)
+    disability_handbook_type = models.CharField('障害種別', max_length=100, choices=DISABILITY_TYPE_CHOICES, blank=True)
+    disability_handbook_grade = models.CharField('障害等級', max_length=10, choices=DISABILITY_GRADE_CHOICES, blank=True)
     difficult_disease = models.BooleanField('難病申請', default=False)
-    difficult_disease_name = models.CharField('難病疾患名', max_length=200, blank=True)
+    difficult_disease_name = models.CharField('難病疾患名', max_length=200, choices=DIFFICULT_DISEASE_CHOICES, blank=True)
+    difficult_disease_other = models.CharField('難病疾患名（その他）', max_length=200, blank=True)
     life_protection = models.BooleanField('生活保護', default=False)
 
     # 公的制度・受給者証（介護保険関係）

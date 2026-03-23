@@ -230,6 +230,19 @@
             padding-bottom: 0;
         }
     }
+    /* ホバーカラー */
+    .btn.btn-hover-purple:hover,
+    .btn.btn-hover-purple:focus {
+        background-color: #6f42c1 !important;
+        border-color: #6f42c1 !important;
+        color: #fff !important;
+    }
+    .btn.btn-hover-orange:hover,
+    .btn.btn-hover-orange:focus {
+        background-color: #fd7e14 !important;
+        border-color: #fd7e14 !important;
+        color: #fff !important;
+    }
     /* 書類作成ツールチップ */
     .document-create-btn {
         position: relative;
@@ -483,26 +496,26 @@
         color: #198754 !important;
     }
     .action-expand-row .col-md-3:nth-child(4) .btn-outline-secondary:hover {
-        background-color: #fff3e0 !important;
-        border-color: #fd7e14 !important;
-        color: #fd7e14 !important;
-    }
-    .action-expand-row .row:nth-child(2) .col-md-3:nth-child(2) .btn-outline-secondary:hover {
         background-color: #f3e5f5 !important;
         border-color: #6f42c1 !important;
         color: #6f42c1 !important;
     }
-    .action-expand-row .row:nth-child(2) .col-md-3:nth-child(3) .btn-outline-secondary:hover {
+    .action-expand-row .row:nth-child(2) .col-md-3:nth-child(1) .btn-outline-secondary:hover {
+        background-color: #fff3e0 !important;
+        border-color: #fd7e14 !important;
+        color: #fd7e14 !important;
+    }
+    .action-expand-row .row:nth-child(3) .col-md-3:nth-child(2) .btn-outline-secondary:hover {
         background-color: #ffebee !important;
         border-color: #d63384 !important;
         color: #d63384 !important;
     }
-    .action-expand-row .row:nth-child(2) .col-md-3:nth-child(4) .btn-outline-secondary:hover {
+    .action-expand-row .row:nth-child(3) .col-md-3:nth-child(3) .btn-outline-secondary:hover {
         background-color: #fff9c4 !important;
         border-color: #ffc107 !important;
         color: #856404 !important;
     }
-    .action-expand-row .row:nth-child(2) .col-md-3:nth-child(5) .btn-outline-secondary:hover {
+    .action-expand-row .row:nth-child(3) .col-md-3:nth-child(4) .btn-outline-secondary:hover {
         background-color: #f5f0e8 !important;
         border-color: #d2b48c !important;
         color: #8b7355 !important;
@@ -627,6 +640,7 @@ document.addEventListener('DOMContentLoaded', function() {
             edit_url: "{% url 'client_edit' client.pk %}",
             calculation_url: "{% url 'limit_calculation_create' client.insurance_number %}",
             assessment_url: "{% url 'assessment_create' %}?client={{ client.pk }}",
+            assessment_list_url: "{% url 'assessment_list' %}?client={{ client.pk }}",
             schedule_url: "{% url 'schedule_management' client.pk %}"
         }{% if not forloop.last %},{% endif %}
         {% endfor %}
@@ -787,7 +801,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function generateExpandContent(client) {
         return `
             <div class="row g-2">
-                <div class="{% if user.is_superuser %}col-md-3{% else %}col-md-4{% endif %}">
+                <div class="col-md-3">
                     <div class="card h-100">
                         <div class="card-body text-center p-2" style="min-height: 110px; display: flex; flex-direction: column; justify-content: space-between;">
                             <div>
@@ -799,7 +813,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                     </div>
                 </div>
-                <div class="{% if user.is_superuser %}col-md-3{% else %}col-md-4{% endif %}">
+                <div class="col-md-3">
                     <div class="card h-100">
                         <div class="card-body text-center p-2" style="min-height: 110px; display: flex; flex-direction: column; justify-content: space-between;">
                             <div>
@@ -811,19 +825,36 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                     </div>
                 </div>
-                <div class="{% if user.is_superuser %}col-md-3{% else %}col-md-4{% endif %}">
+                <div class="col-md-3">
                     <div class="card h-100">
                         <div class="card-body text-center p-2" style="min-height: 110px; display: flex; flex-direction: column; justify-content: space-between;">
                             <div>
                                 <i class="fas fa-clipboard-list mb-1" style="font-size: 18px; color: #198754; opacity: 0.5;"></i>
-                                <div class="card-title mb-1" style="font-size: clamp(10px, 2.5vw, 14px); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">アセスメント作成</div>
+                                <div class="card-title mb-1" style="font-size: clamp(10px, 2.5vw, 14px); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">アセスメント作成・一覧</div>
                                 <div class="card-text text-muted" style="font-size: clamp(8px, 2vw, 11px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 8px;">評価・アセスメント作成</div>
                             </div>
-                            <a href="${client.assessment_url}" class="btn btn-outline-secondary btn-sm" style="font-size: 11px; padding: 2px 8px;">作成する</a>
+                            <div class="d-flex justify-content-center gap-1 w-100">
+                                <a href="${client.assessment_url}" class="btn btn-outline-secondary btn-sm w-50" style="font-size: 11px; padding: 2px 4px;">作成する</a>
+                                <a href="${client.assessment_list_url}" class="btn btn-outline-secondary btn-sm w-50" style="font-size: 11px; padding: 2px 4px;">一覧をみる</a>
+                            </div>
                         </div>
                     </div>
                 </div>
-                {% if user.is_superuser %}
+                <div class="col-md-3">
+                    <div class="card h-100">
+                        <div class="card-body text-center p-2" style="min-height: 110px; display: flex; flex-direction: column; justify-content: space-between;">
+                            <div>
+                                <i class="fas fa-calendar-check mb-1" style="font-size: 18px; color: #6f42c1; opacity: 0.5;"></i>
+                                <div class="card-title mb-1" style="font-size: clamp(10px, 2.5vw, 14px); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">保険・受給者証管理</div>
+                                <div class="card-text text-muted" style="font-size: clamp(8px, 2vw, 11px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 8px;">保険・受給者証の期間管理</div>
+                            </div>
+                            <a href="${client.schedule_url}" class="btn btn-outline-secondary btn-sm" style="font-size: 11px; padding: 2px 8px;">管理する</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% if user.is_superuser %}
+            <div class="row g-2 mt-1">
                 <div class="col-md-3">
                     <div class="card h-100">
                         <div class="card-body text-center p-2" style="min-height: 110px; display: flex; flex-direction: column; justify-content: space-between;">
@@ -838,24 +869,12 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                     </div>
                 </div>
-                {% endif %}
             </div>
+            {% endif %}
             {% if user.is_superuser %}
             <div class="row g-2 mt-1">
                 <div class="col-12 mb-1">
                     <small class="text-muted" style="font-size: 10px;"><i class="fas fa-info-circle me-1"></i>以下の機能は今後の開発予定です</small>
-                </div>
-                <div class="col-md-3">
-                    <div class="card h-100">
-                        <div class="card-body text-center p-2" style="min-height: 110px; display: flex; flex-direction: column; justify-content: space-between;">
-                            <div>
-                                <i class="fas fa-calendar-check mb-1" style="font-size: 18px; color: #6f42c1; opacity: 0.5;"></i>
-                                <div class="card-title mb-1" style="font-size: clamp(10px, 2.5vw, 14px); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">保険・受給者証管理</div>
-                                <div class="card-text text-muted" style="font-size: clamp(8px, 2vw, 11px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 8px;">保険・受給者証の期間管理</div>
-                            </div>
-                            <a href="${client.schedule_url}" class="btn btn-outline-secondary btn-sm" style="font-size: 11px; padding: 2px 8px;">管理する</a>
-                        </div>
-                    </div>
                 </div>
                 <div class="col-md-3">
                     <div class="card h-100" style="opacity: 0.6;">

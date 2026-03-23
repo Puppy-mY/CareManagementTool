@@ -1739,9 +1739,11 @@ def generate_assessment_excel(assessment, request=None):
             )
 
             assessor_name = ""
+            assessor_kana_raw = ""
             if assessment.assessor:
                 try:
                     assessor_name = assessment.assessor.profile.get_full_name()
+                    assessor_kana_raw = assessment.assessor.profile.get_full_name_kana()
                 except Exception:
                     # Profileが存在しない場合はusernameを使用
                     assessor_name = assessment.assessor.username
@@ -2717,6 +2719,8 @@ def generate_assessment_excel(assessment, request=None):
                 if not text: return ""
                 return "".join(chr(ord(c) + 0x60) if '\u3041' <= c <= '\u3096' else c for c in text)
 
+            assessor_kana = hira_to_kata(assessor_kana_raw)
+
             # --- 医療・介護連携シートへの書き込み ---
             mcc_coords = coordinates.get("medical_care_coordination", {})
             mcc_sheet_name = mcc_coords.get("sheet_name", "医療・介護連携シート")
@@ -2804,10 +2808,11 @@ def generate_assessment_excel(assessment, request=None):
                 safe_write_hai_wareki(hai_coords.get("certification_period_end"), to_wareki(client.certification_period_end) if client.certification_period_end else "")
                 safe_write_hai(hai_coords.get("insurance_number"), client.insurance_number)
                 safe_write_hai(hai_coords.get("difficult_disease"), "あり" if client.difficult_disease else "なし")
-                safe_write_hai(hai_coords.get("difficult_disease_name"), client.difficult_disease_name)
+                difficult_disease_display = client.difficult_disease_other if client.difficult_disease_name == 'other' else client.get_difficult_disease_name_display()
+                safe_write_hai(hai_coords.get("difficult_disease_name"), difficult_disease_display)
                 # I52・P52: 手帳の有無＋疾患名を組み合わせ
                 if client.disability_handbook:
-                    handbook_text = f"あり（{client.disability_handbook_type}）" if client.disability_handbook_type else "あり"
+                    handbook_text = "あり"
                 else:
                     handbook_text = "なし"
                 safe_write_hai(hai_coords.get("disability_handbook_i52"), handbook_text)
@@ -2958,8 +2963,9 @@ def generate_assessment_excel(assessment, request=None):
                 safe_write_haim_wareki(hai_m_coords.get("certification_period_end"), to_wareki(client.certification_period_end) if client.certification_period_end else "")
                 safe_write_haim(hai_m_coords.get("insurance_number"), client.insurance_number)
                 safe_write_haim(hai_m_coords.get("difficult_disease"), "あり" if client.difficult_disease else "なし")
-                safe_write_haim(hai_m_coords.get("difficult_disease_name"), client.difficult_disease_name)
-                handbook_text_m = (f"あり（{client.disability_handbook_type}）" if client.disability_handbook_type else "あり") if client.disability_handbook else "なし"
+                difficult_disease_display_m = client.difficult_disease_other if client.difficult_disease_name == 'other' else client.get_difficult_disease_name_display()
+                safe_write_haim(hai_m_coords.get("difficult_disease_name"), difficult_disease_display_m)
+                handbook_text_m = "あり" if client.disability_handbook else "なし"
                 safe_write_haim(hai_m_coords.get("disability_handbook_i52"), handbook_text_m)
                 safe_write_haim(hai_m_coords.get("disability_handbook"), handbook_text_m)
                 safe_write_haim(hai_m_coords.get("life_protection"), "あり" if client.life_protection else "なし")
@@ -2987,11 +2993,6 @@ def generate_assessment_excel(assessment, request=None):
 
                 safe_write_ks(ks_coords.get("care_manager"), assessor_name)
                 safe_write_ks(ks_coords.get("care_manager_2"), assessor_name)
-                # I32: 担当ケアマネのフリガナ
-                assessor_kana = ""
-                if assessment.assessor and hasattr(assessment.assessor, "profile"):
-                    p = assessment.assessor.profile
-                    assessor_kana = f"{p.last_name_kana} {p.first_name_kana}".strip()
                 safe_write_ks(ks_coords.get("care_manager_furigana"), assessor_kana)
                 safe_write_ks(ks_coords.get("insurance_number"), assessment.client.insurance_number)
                 safe_write_ks(ks_coords.get("client_name"), assessment.client.name)
@@ -3035,6 +3036,122 @@ def generate_assessment_excel(assessment, request=None):
                 health_ks = assessment.health_status or {}
                 safe_write_ks(ks_coords.get("main_doctor_hospital"), health_ks.get("main_doctor_hospital", ""))
                 safe_write_ks(ks_coords.get("main_doctor_name"), health_ks.get("main_doctor_name", ""))
+
+            # --- 区分変更申請書シートへの書き込み ---
+            kb_coords = coordinates.get("kubun_henkou_shinsei", {})
+            kb_sheet_name = kb_coords.get("sheet_name", "区分変更申請書")
+            if kb_sheet_name in [s.name for s in workbook.sheets]:
+                kb_sheet = workbook.sheets[kb_sheet_name]
+
+                def safe_write_kb(cell_ref, value):
+                    if cell_ref:
+                        try:
+                            kb_sheet.range(cell_ref).value = value
+                        except Exception as e:
+                            print(f"DEBUG: 区分変更申請書 セル {cell_ref} 書き込みエラー: {e}")
+
+                def safe_write_kb_wareki(cell_ref, value):
+                    if cell_ref:
+                        try:
+                            kb_sheet.range(cell_ref).number_format = "@"
+                            kb_sheet.range(cell_ref).value = str(value)
+                        except Exception as e:
+                            print(f"DEBUG: 区分変更申請書 セル {cell_ref} 和暦書き込みエラー: {e}")
+
+                safe_write_kb(kb_coords.get("care_manager"), assessor_name)
+                safe_write_kb(kb_coords.get("insurance_number"), client.insurance_number)
+                safe_write_kb(kb_coords.get("client_furigana"), hira_to_kata(client.furigana or ""))
+                safe_write_kb(kb_coords.get("client_name"), client.name)
+                safe_write_kb(kb_coords.get("client_gender"), client.get_gender_display() if client.gender else "")
+                safe_write_kb_wareki(kb_coords.get("birth_date"), to_wareki(client.birth_date) if client.birth_date else "")
+                safe_write_kb(kb_coords.get("postal_code"), client.postal_code)
+                safe_write_kb(kb_coords.get("client_address"), client.address)
+                safe_write_kb(kb_coords.get("care_level"), client.get_care_level_display() if client.care_level else "")
+                safe_write_kb_wareki(kb_coords.get("certification_period_start"), to_wareki(client.certification_period_start) if client.certification_period_start else "")
+                safe_write_kb_wareki(kb_coords.get("certification_period_end"), to_wareki(client.certification_period_end) if client.certification_period_end else "")
+                # 医療保険情報（更新・新規申請書と同じロジック）
+                kb_med_type = client.medical_insurance_type
+                kb_insurer_name = client.medical_insurer_name_issuer or ""
+                if kb_med_type == "national_health":
+                    kb_med_insurer_text = f"国民健康保険　{kb_insurer_name}" if kb_insurer_name else "国民健康保険"
+                else:
+                    kb_med_insurer_text = kb_insurer_name
+                safe_write_kb(kb_coords.get("medical_insurer_name"), kb_med_insurer_text)
+                safe_write_kb(kb_coords.get("medical_insurer_number"), client.medical_insurer_number)
+                kb_symbol = client.medical_insurance_symbol
+                kb_branch = client.medical_insurance_branch
+                if kb_symbol and kb_branch:
+                    kb_symbol_text = f"記号{kb_symbol}（枝番）{kb_branch}"
+                elif kb_symbol:
+                    kb_symbol_text = kb_symbol
+                else:
+                    kb_symbol_text = ""
+                safe_write_kb(kb_coords.get("medical_insurance_symbol"), kb_symbol_text)
+                safe_write_kb(kb_coords.get("medical_insurance_number"), client.medical_insurance_number)
+                safe_write_kb(kb_coords.get("care_manager_furigana"), assessor_kana)
+                safe_write_kb(kb_coords.get("care_manager_name"), assessor_name)
+                health_kb = assessment.health_status or {}
+                safe_write_kb(kb_coords.get("main_doctor_hospital"), health_kb.get("main_doctor_hospital", ""))
+                safe_write_kb(kb_coords.get("main_doctor_name"), health_kb.get("main_doctor_name", ""))
+
+            # --- 資料提供申請書シートへの書き込み ---
+            st_coords = coordinates.get("shiryo_teikyou", {})
+            st_sheet_name = st_coords.get("sheet_name", "資料提供申請書")
+            if st_sheet_name in [s.name for s in workbook.sheets]:
+                st_sheet = workbook.sheets[st_sheet_name]
+
+                def safe_write_st(cell_ref, value):
+                    if cell_ref:
+                        try:
+                            st_sheet.range(cell_ref).value = value
+                        except Exception as e:
+                            print(f"DEBUG: 資料提供申請書 セル {cell_ref} 書き込みエラー: {e}")
+
+                def safe_write_st_wareki(cell_ref, value):
+                    if cell_ref:
+                        try:
+                            st_sheet.range(cell_ref).number_format = "@"
+                            st_sheet.range(cell_ref).value = str(value)
+                        except Exception as e:
+                            print(f"DEBUG: 資料提供申請書 セル {cell_ref} 和暦書き込みエラー: {e}")
+
+                safe_write_st(st_coords.get("care_manager"), assessor_name)
+                safe_write_st(st_coords.get("client_address"), client.address)
+                safe_write_st_wareki(st_coords.get("birth_date"), to_wareki(client.birth_date) if client.birth_date else "")
+                safe_write_st(st_coords.get("insurance_number"), client.insurance_number)
+
+            # --- 入退去連絡シートへの書き込み ---
+            ntr_coords = coordinates.get("nyutaikyo_renraku", {})
+            ntr_sheet_name = ntr_coords.get("sheet_name", "入退去連絡")
+            if ntr_sheet_name in [s.name for s in workbook.sheets]:
+                ntr_sheet = workbook.sheets[ntr_sheet_name]
+                try:
+                    ntr_sheet.range(ntr_coords.get("client_name")).value = client.name
+                except Exception as e:
+                    print(f"DEBUG: 入退去連絡 セル {ntr_coords.get('client_name')} 書き込みエラー: {e}")
+
+            # --- 確認書（原本）シートへの書き込み ---
+            kg_coords = coordinates.get("kakuninsho_genpon", {})
+            kg_sheet_name = kg_coords.get("sheet_name", "確認書（原本）")
+            if kg_sheet_name in [s.name for s in workbook.sheets]:
+                kg_sheet = workbook.sheets[kg_sheet_name]
+                try:
+                    kg_sheet.range(kg_coords.get("certification_period_start")).number_format = "@"
+                    kg_sheet.range(kg_coords.get("certification_period_start")).value = to_wareki(client.certification_period_start) if client.certification_period_start else ""
+                except Exception as e:
+                    print(f"DEBUG: 確認書（原本） セル {kg_coords.get('certification_period_start')} 書き込みエラー: {e}")
+
+            # --- 確認書シートへの書き込み（ヘルパー・デイ・福祉用具）---
+            for kakuninsho_key in ["kakuninsho_helper", "kakuninsho_day", "kakuninsho_fukushi"]:
+                kk_coords = coordinates.get(kakuninsho_key, {})
+                kk_sheet_name = kk_coords.get("sheet_name", "")
+                if kk_sheet_name and kk_sheet_name in [s.name for s in workbook.sheets]:
+                    kk_sheet = workbook.sheets[kk_sheet_name]
+                    try:
+                        kk_sheet.range(kk_coords.get("care_manager")).value = assessor_name
+                        kk_sheet.range(kk_coords.get("client_name")).value = client.name
+                    except Exception as e:
+                        print(f"DEBUG: {kk_sheet_name} 書き込みエラー: {e}")
 
             # --- モニタリングシートへの書き込み ---
             mon_coords = coordinates.get("monitoring_sheet", {})

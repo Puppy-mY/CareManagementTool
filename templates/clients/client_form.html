@@ -352,11 +352,11 @@
 
             <!-- 介護保険関係 -->
             <div class="insurance-subsection mb-4">
-                <h6 class="text-secondary fw-bold mb-3 pb-2" style="border-bottom: 2px solid #dee2e6;"><i class="fas fa-heart me-2 text-pink"></i>介護保険関係（証書類等）</h6>
+                <h6 class="text-secondary fw-bold mb-3 pb-2" style="border-bottom: 2px solid #dee2e6;"><i class="fas fa-heart me-2"></i>介護保険関係（証書類等）</h6>
 
                 <div class="row g-3 mb-3 align-items-center">
                     <div class="col-xl-5 col-lg-5 col-md-6 col-sm-6">
-                        <label class="form-label mb-0 fw-bold">介護保険負担限度額認定証</label>
+                        <label class="form-label mb-0 fw-bold">介護保険負担限度額認定証 <button type="button" class="btn btn-link p-0 ms-1 align-baseline text-secondary opacity-50" onclick="showCertInfo('limit_cert')"><i class="fas fa-info-circle"></i></button></label>
                     </div>
                     <div class="col">
                         <div class="btn-group w-100" role="group">
@@ -372,7 +372,7 @@
 
                 <div class="row g-3 mb-3 align-items-center">
                     <div class="col-xl-5 col-lg-5 col-md-6 col-sm-6">
-                        <label class="form-label mb-0 fw-bold">高額介護サービス費</label>
+                        <label class="form-label mb-0 fw-bold">高額介護サービス費 <button type="button" class="btn btn-link p-0 ms-1 align-baseline text-secondary opacity-50" onclick="showCertInfo('high_cost_care')"><i class="fas fa-info-circle"></i></button></label>
                     </div>
                     <div class="col">
                         <div class="btn-group w-100" role="group">
@@ -387,26 +387,73 @@
 
             <!-- 障害関係 -->
             <div class="insurance-subsection mb-4">
-                <h6 class="text-secondary fw-bold mb-3 pb-2" style="border-bottom: 2px solid #dee2e6;"><i class="fas fa-wheelchair me-2 text-info"></i>障害福祉関係</h6>
+                <h6 class="text-secondary fw-bold mb-3 pb-2" style="border-bottom: 2px solid #dee2e6;"><i class="fas fa-wheelchair me-2"></i>障害福祉関係</h6>
 
                 <div class="row g-3 mb-3 align-items-center">
                     <div class="col-xl-5 col-lg-5 col-md-6 col-sm-6">
-                        <div class="form-check pt-1 mb-0">
-                            {{ form.disability_handbook }}
-                            <label class="form-check-label fw-bold d-inline" for="{{ form.disability_handbook.id_for_label }}">身体障がい者手帳あり</label>
-                        </div>
+                        <label class="form-label mb-0 fw-bold">身体障がい者手帳 <button type="button" class="btn btn-link p-0 ms-1 align-baseline text-secondary opacity-50" onclick="showCertInfo('disability_handbook')"><i class="fas fa-info-circle"></i></button></label>
                     </div>
                     <div class="col-xl-7 col-lg-7 col-md-6 col-sm-6">
-                        <label for="{{ form.disability_handbook_type.id_for_label }}" class="form-label small text-muted mb-1">障害種別</label>
-                        {% bootstrap_field form.disability_handbook_type show_label=False %}
+                        <div class="btn-group w-100" role="group">
+                            <input type="radio" name="disability_handbook_radio" value="yes" class="btn-check" id="disability_handbook_yes"
+                                {% if form.disability_handbook.value %}checked{% endif %}
+                                onchange="toggleHandbook()">
+                            <label class="btn btn-outline-secondary" for="disability_handbook_yes" data-category="positive">あり</label>
+                            <input type="radio" name="disability_handbook_radio" value="no" class="btn-check" id="disability_handbook_no"
+                                {% if form.instance.pk or form.is_bound %}{% if not form.disability_handbook.value %}checked{% endif %}{% endif %}
+                                onchange="toggleHandbook()">
+                            <label class="btn btn-outline-secondary" for="disability_handbook_no" data-category="negative">なし</label>
+                        </div>
+                        <input type="hidden" name="{{ form.disability_handbook.html_name }}" id="id_disability_handbook_hidden"
+                            value="{% if form.disability_handbook.value %}on{% endif %}">
                     </div>
                 </div>
+
+                <div id="disability-handbook-detail" class="row g-3 mb-3 {% if not form.disability_handbook.value %}d-none{% endif %}">
+                    <div class="col-xl-5 col-lg-5 d-none d-lg-block"></div>
+                    <div class="col-xl-7 col-lg-7 col-md-12">
+                        <div class="p-3 border rounded shadow-sm bg-white">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label small text-muted mb-1">障害種別</label>
+                                    <select class="form-select border-primary-subtle" name="{{ form.disability_handbook_type.html_name }}" id="{{ form.disability_handbook_type.id_for_label }}">
+                                        <option value="">----------</option>
+                                        {% for value, label in form.fields.disability_handbook_type.choices %}
+                                        {% if value %}<option value="{{ value }}" {% if form.disability_handbook_type.value == value %}selected{% endif %}>{{ label }}</option>{% endif %}
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small text-muted mb-1">等級</label>
+                                    <select class="form-select border-primary-subtle" name="{{ form.disability_handbook_grade.html_name }}" id="{{ form.disability_handbook_grade.id_for_label }}">
+                                        <option value="">----------</option>
+                                        {% for value, label in form.fields.disability_handbook_grade.choices %}
+                                        {% if value %}<option value="{{ value }}" {% if form.disability_handbook_grade.value == value %}selected{% endif %}>{{ label }}</option>{% endif %}
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <script>
+                function toggleHandbook() {
+                    var isYes = document.getElementById('disability_handbook_yes').checked;
+                    document.getElementById('id_disability_handbook_hidden').value = isYes ? 'on' : '';
+                    document.getElementById('disability-handbook-detail').classList.toggle('d-none', !isYes);
+                    if (!isYes) {
+                        document.getElementById('{{ form.disability_handbook_type.id_for_label }}').value = '';
+                        document.getElementById('{{ form.disability_handbook_grade.id_for_label }}').value = '';
+                    }
+                }
+                </script>
 
                 <div style="border-top: 1px dashed #dee2e6; margin: 1rem 0;"></div>
 
                 <div class="row g-3 mb-3 align-items-center">
                     <div class="col-xl-5 col-lg-5 col-md-6 col-sm-6">
-                        <label class="form-label mb-0 fw-bold">障害福祉サービス受給者証</label>
+                        <label class="form-label mb-0 fw-bold">障害福祉サービス受給者証 <button type="button" class="btn btn-link p-0 ms-1 align-baseline text-secondary opacity-50" onclick="showCertInfo('disability_welfare')"><i class="fas fa-info-circle"></i></button></label>
                     </div>
                     <div class="col">
                         <div class="btn-group w-100" role="group">
@@ -421,49 +468,70 @@
 
             <!-- 医療関係 -->
             <div class="insurance-subsection mb-4">
-                <h6 class="text-secondary fw-bold mb-3 pb-2" style="border-bottom: 2px solid #dee2e6;"><i class="fas fa-notes-medical me-2 text-success"></i>医療関係・難病等</h6>
+                <h6 class="text-secondary fw-bold mb-3 pb-2" style="border-bottom: 2px solid #dee2e6;"><i class="fas fa-notes-medical me-2"></i>医療関係・難病等</h6>
 
                 <div class="row g-3 mb-3 align-items-center">
                     <div class="col-xl-5 col-lg-5 col-md-6 col-sm-6">
-                        <div class="form-check pt-1 mb-0">
-                            {{ form.difficult_disease }}
-                            <label class="form-check-label fw-bold d-inline" for="{{ form.difficult_disease.id_for_label }}">難病申請あり</label>
-                        </div>
-                    </div>
-                    <div class="col-xl-7 col-lg-7 col-md-6 col-sm-6">
-                        <div class="text-muted small">指定難病の医療費助成の申請状況</div>
-                    </div>
-                </div>
-                <div class="row g-3 mb-3 align-items-center">
-                    <div class="col-xl-5 col-lg-5 col-md-6 col-sm-6">
-                        <label class="form-label mb-0 fw-bold">難病疾患名</label>
-                    </div>
-                    <div class="col">
-                        {{ form.difficult_disease_name }}
-                    </div>
-                </div>
-
-                <div style="border-top: 1px dashed #dee2e6; margin: 1rem 0;"></div>
-
-                <div class="row g-3 mb-3 align-items-center">
-                    <div class="col-xl-5 col-lg-5 col-md-6 col-sm-6">
-                        <label class="form-label mb-0 fw-bold">特定医療費（指定難病）受給者証</label>
+                        <label class="form-label mb-0 fw-bold">特定医療費（指定難病）受給者証 <button type="button" class="btn btn-link p-0 ms-1 align-baseline text-secondary opacity-50" onclick="showCertInfo('specific_medical')"><i class="fas fa-info-circle"></i></button></label>
                     </div>
                     <div class="col">
                         <div class="btn-group w-100" role="group">
-                            <input type="radio" name="specific_medical" value="yes" class="btn-check" id="specific_medical_yes" {% if form.specific_medical.value == 'yes' %}checked{% endif %}>
+                            <input type="radio" name="specific_medical" value="yes" class="btn-check" id="specific_medical_yes"
+                                {% if form.specific_medical.value == 'yes' %}checked{% endif %}
+                                onchange="toggleSpecificMedical()">
                             <label class="btn btn-outline-secondary" for="specific_medical_yes" data-category="positive">あり</label>
-                            <input type="radio" name="specific_medical" value="no" class="btn-check" id="specific_medical_no" {% if form.specific_medical.value == 'no' %}checked{% endif %}>
+                            <input type="radio" name="specific_medical" value="no" class="btn-check" id="specific_medical_no"
+                                {% if form.specific_medical.value == 'no' %}checked{% endif %}
+                                onchange="toggleSpecificMedical()">
                             <label class="btn btn-outline-secondary" for="specific_medical_no" data-category="negative">なし</label>
                         </div>
                     </div>
                 </div>
 
+                <div id="difficult-disease-detail" class="row g-3 mb-3 {% if form.specific_medical.value != 'yes' %}d-none{% endif %}">
+                    <div class="col-xl-5 col-lg-5 d-none d-lg-block"></div>
+                    <div class="col-xl-7 col-lg-7 col-md-12">
+                        <div class="p-3 border rounded shadow-sm bg-white">
+                            <label class="form-label small text-muted mb-1">難病の疾患名</label>
+                            <div class="d-flex gap-2 align-items-center">
+                                <div style="width: 50%;">
+                                    <select class="form-select border-primary-subtle" name="{{ form.difficult_disease_name.html_name }}" id="{{ form.difficult_disease_name.id_for_label }}" onchange="toggleDiseaseOther(this.value)">
+                                        {% for value, label in form.fields.difficult_disease_name.choices %}
+                                        <option value="{{ value }}" {% if form.difficult_disease_name.value == value %}selected{% endif %}>{{ label }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div id="disease-other-wrap" style="flex: 1;" class="{% if form.difficult_disease_name.value != 'other' %}d-none{% endif %}">
+                                    <input type="text" class="form-control border-primary-subtle" name="{{ form.difficult_disease_other.html_name }}" id="{{ form.difficult_disease_other.id_for_label }}" placeholder="疾患名を入力" value="{{ form.difficult_disease_other.value|default:'' }}">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <script>
+                function toggleSpecificMedical() {
+                    var isYes = document.getElementById('specific_medical_yes').checked;
+                    document.getElementById('difficult-disease-detail').classList.toggle('d-none', !isYes);
+                    if (!isYes) {
+                        document.getElementById('{{ form.difficult_disease_name.id_for_label }}').value = '';
+                        document.getElementById('disease-other-wrap').classList.add('d-none');
+                        document.getElementById('{{ form.difficult_disease_other.id_for_label }}').value = '';
+                    }
+                }
+                function toggleDiseaseOther(val) {
+                    document.getElementById('disease-other-wrap').classList.toggle('d-none', val !== 'other');
+                    if (val !== 'other') {
+                        document.getElementById('{{ form.difficult_disease_other.id_for_label }}').value = '';
+                    }
+                }
+                </script>
+
                 <div style="border-top: 1px dashed #dee2e6; margin: 1rem 0;"></div>
 
                 <div class="row g-3 mb-3 align-items-center">
                     <div class="col-xl-5 col-lg-5 col-md-6 col-sm-6">
-                        <label class="form-label mb-0 fw-bold">福祉医療費受給者証</label>
+                        <label class="form-label mb-0 fw-bold">福祉医療費受給者証 <button type="button" class="btn btn-link p-0 ms-1 align-baseline text-secondary opacity-50" onclick="showCertInfo('welfare_medical')"><i class="fas fa-info-circle"></i></button></label>
                     </div>
                     <div class="col">
                         <div class="btn-group w-100" role="group">
@@ -479,7 +547,7 @@
 
                 <div class="row g-3 mb-3 align-items-center">
                     <div class="col-xl-5 col-lg-5 col-md-6 col-sm-6">
-                        <label class="form-label mb-0 fw-bold">国民健康保険限度額適用・標準負担額減額認定証</label>
+                        <label class="form-label mb-0 fw-bold">国民健康保険限度額適用・標準負担額減額認定証 <button type="button" class="btn btn-link p-0 ms-1 align-baseline text-secondary opacity-50" onclick="showCertInfo('nhi_limit_cert')"><i class="fas fa-info-circle"></i></button></label>
                     </div>
                     <div class="col">
                         <div class="btn-group w-100" role="group">
@@ -495,7 +563,7 @@
 
                 <div class="row g-3 mb-3 align-items-center">
                     <div class="col-xl-5 col-lg-5 col-md-6 col-sm-6">
-                        <label class="form-label mb-0 fw-bold">高額医療・高額介護合算療養費</label>
+                        <label class="form-label mb-0 fw-bold">高額医療・高額介護合算療養費 <button type="button" class="btn btn-link p-0 ms-1 align-baseline text-secondary opacity-50" onclick="showCertInfo('high_cost_combined')"><i class="fas fa-info-circle"></i></button></label>
                     </div>
                     <div class="col">
                         <div class="btn-group w-100" role="group">
@@ -510,19 +578,46 @@
 
             <!-- 生活保護・その他 -->
             <div class="insurance-subsection mb-3">
-                <h6 class="text-secondary fw-bold mb-3 pb-2" style="border-bottom: 2px solid #dee2e6;"><i class="fas fa-hands me-2 text-warning"></i>生活保護・その他公的制度</h6>
-                <div class="row g-3 align-items-center">
-                    <div class="col-md-12">
-                        <div class="form-check pt-1 mb-0">
-                            {{ form.life_protection }}
-                            <label class="form-check-label fw-bold text-primary d-inline" for="{{ form.life_protection.id_for_label }}">生活保護あり</label>
+                <h6 class="text-secondary fw-bold mb-3 pb-2" style="border-bottom: 2px solid #dee2e6;"><i class="fas fa-hands me-2"></i>生活保護・その他公的制度</h6>
+                <div class="row g-3 mb-3 align-items-center">
+                    <div class="col-xl-5 col-lg-5 col-md-6 col-sm-6">
+                        <label class="form-label mb-0 fw-bold">生活保護 <button type="button" class="btn btn-link p-0 ms-1 align-baseline text-secondary opacity-50" onclick="showCertInfo('life_protection')"><i class="fas fa-info-circle"></i></button></label>
+                    </div>
+                    <div class="col-xl-7 col-lg-7 col-md-6 col-sm-6">
+                        <div class="btn-group w-100" role="group">
+                            <input type="radio" name="life_protection_radio" value="yes" class="btn-check" id="life_protection_yes"
+                                {% if form.life_protection.value %}checked{% endif %}
+                                onchange="toggleLifeProtection()">
+                            <label class="btn btn-outline-secondary" for="life_protection_yes" data-category="positive">あり</label>
+                            <input type="radio" name="life_protection_radio" value="no" class="btn-check" id="life_protection_no"
+                                {% if form.instance.pk or form.is_bound %}{% if not form.life_protection.value %}checked{% endif %}{% endif %}
+                                onchange="toggleLifeProtection()">
+                            <label class="btn btn-outline-secondary" for="life_protection_no" data-category="negative">なし</label>
                         </div>
+                        <input type="hidden" name="{{ form.life_protection.html_name }}" id="id_life_protection_hidden"
+                            value="{% if form.life_protection.value %}on{% endif %}">
                     </div>
                 </div>
             </div>
 
             <div class="text-muted small mt-4 px-2 mb-3 py-3 bg-light rounded border">
                 <i class="fas fa-info-circle me-1"></i>有効期間等の詳細は、利用者一覧の「保険・受給者証管理」から登録・更新できます。
+            </div>
+
+            <!-- 証・制度説明モーダル -->
+            <div class="modal fade" id="certInfoModal" tabindex="-1" aria-labelledby="certInfoModalTitle" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h6 class="modal-title fw-bold" id="certInfoModalTitle"></h6>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="閉じる"></button>
+                        </div>
+                        <div class="modal-body" id="certInfoModalBody" style="line-height: 1.8;"></div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">閉じる</button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -832,6 +927,99 @@ document.addEventListener('DOMContentLoaded', function() {
     updatePresetOptions();
     updateSymbolBranchVisibility();
 });
+</script>
+
+<script>
+// 証・制度説明モーダル
+var CERT_INFO = {
+    limit_cert: {
+        title: '介護保険負担限度額認定証',
+        body: '介護保険施設（特別養護老人ホーム・老人保健施設・介護療養型医療施設等）に入所・入院した際の<strong>食費・居住費（滞在費）の自己負担額を軽減</strong>する認定証です。<br><br>所得や預貯金の状況に応じて第1〜第4段階に区分され、段階ごとに負担上限額が異なります。市区町村に申請して交付を受けます。'
+    },
+    high_cost_care: {
+        title: '高額介護サービス費',
+
+        body: '1か月間に支払った介護サービスの<strong>利用者負担の合計が一定の上限額を超えた場合に、超えた分が後から払い戻される</strong>制度です。<br><br>上限額は所得に応じて異なります（例：一般世帯は月44,400円）。申請は市区町村の介護保険担当窓口へ行います。'
+    },
+    disability_handbook: {
+        title: '身体障がい者手帳',
+
+        body: '身体の機能に一定以上の障がいがあると認定された方に都道府県知事から交付される手帳です。<br><br>障がいの程度により<strong>1級〜6級</strong>に区分され、等級に応じて各種福祉サービス・税の減免・公共交通機関の割引などを受けることができます。'
+    },
+    disability_welfare: {
+        title: '障害福祉サービス受給者証',
+
+        body: '障害者総合支援法に基づく<strong>障害福祉サービス（居宅介護・短期入所・就労支援等）を利用するために必要な証</strong>です。<br><br>市区町村に申請し、支給決定を受けると交付されます。サービスの種類・支給量・有効期間が記載されています。'
+    },
+    specific_medical: {
+        title: '特定医療費（指定難病）受給者証',
+
+        body: '国が指定した<strong>指定難病の患者に対して医療費の自己負担を軽減</strong>するための受給者証です。<br><br>所得に応じた自己負担上限月額が設定され、指定医療機関での治療費がその上限額までに抑えられます。都道府県・指定都市に申請します。'
+    },
+    welfare_medical: {
+        title: '福祉医療費受給者証',
+
+        body: '各都道府県・市区町村が独自に実施する<strong>医療費助成制度の受給者証</strong>です。<br><br>対象者（障がい者・乳幼児・母子家庭等）や助成内容は自治体によって異なります。窓口で提示することで医療費の自己負担が軽減・無料になります。'
+    },
+    nhi_limit_cert: {
+        title: '国民健康保険限度額適用・標準負担額減額認定証',
+
+        body: '国民健康保険加入者が高額な医療を受ける際、<strong>医療機関の窓口での支払いを自己負担限度額までに抑える</strong>ための認定証です。<br><br>低所得者（住民税非課税世帯等）は入院時の食事療養費の減額も受けられます。市区町村の国保担当窓口に申請します。'
+    },
+    high_cost_combined: {
+        title: '高額医療・高額介護合算療養費',
+
+        body: '医療保険と介護保険の両方を利用している世帯で、<strong>1年間（8月〜翌7月）の医療費と介護費の自己負担合計が一定の上限額を超えた場合に、超えた分が支給</strong>される制度です。<br><br>年に一度、市区町村または保険者に申請することで払い戻しを受けられます。'
+    },
+    life_protection: {
+        title: '生活保護',
+
+        body: '生活に困窮する国民に対し、<strong>最低限度の生活を保障しつつ自立を支援</strong>する制度です（生活保護法に基づく）。<br><br>生活・住宅・医療・介護・教育・出産・生業・葬祭の8種類の扶助があります。医療扶助により医療費は全額公費負担となります。申請は居住地の福祉事務所へ。'
+    }
+};
+
+function showCertInfo(key) {
+    var info = CERT_INFO[key];
+    if (!info) return;
+    document.getElementById('certInfoModalTitle').textContent = info.title;
+    document.getElementById('certInfoModalBody').innerHTML = info.body;
+    new bootstrap.Modal(document.getElementById('certInfoModal')).show();
+}
+
+// 生活保護トグル
+function toggleLifeProtection() {
+    var isYes = document.getElementById('life_protection_yes').checked;
+    document.getElementById('id_life_protection_hidden').value = isYes ? 'on' : '';
+}
+
+// あり/なし ボタン：同じボタンを再クリックで解除
+(function() {
+    document.addEventListener('mousedown', function(e) {
+        var input = e.target.classList && e.target.classList.contains('btn-check') ? e.target : null;
+        if (!input && e.target.tagName === 'LABEL') {
+            var forId = e.target.getAttribute('for');
+            if (forId) input = document.getElementById(forId);
+        }
+        if (input && input.classList.contains('btn-check') && input.type === 'radio') {
+            input.dataset.wasChecked = input.checked ? '1' : '0';
+        }
+    }, true);
+
+    document.addEventListener('click', function(e) {
+        var input = null;
+        if (e.target.classList && e.target.classList.contains('btn-check') && e.target.type === 'radio') {
+            input = e.target;
+        } else if (e.target.tagName === 'LABEL') {
+            var forId = e.target.getAttribute('for');
+            if (forId) input = document.getElementById(forId);
+        }
+        if (!input || !input.classList.contains('btn-check')) return;
+        if (input.dataset.wasChecked === '1') {
+            input.checked = false;
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+    }, true);
+})();
 </script>
 
 {% endblock %}

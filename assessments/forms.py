@@ -86,7 +86,7 @@ class DetailedAssessmentForm(forms.Form):
     
     # 保険情報
     CARE_LEVEL_CHOICES = [
-        ('', '選択してください'),
+        ('', '----------'),
         ('independent', '自立'),
         ('support1', '要支援1'),
         ('support2', '要支援2'),
@@ -113,7 +113,7 @@ class DetailedAssessmentForm(forms.Form):
     )
     
     DEMENTIA_LEVEL_CHOICES = [
-        ('', '選択してください'),
+        ('', '----------'),
         ('independent', '自立'),
         ('I', 'I'),
         ('IIa', 'IIa'),
@@ -133,7 +133,7 @@ class DetailedAssessmentForm(forms.Form):
     
     burden_ratio = forms.ChoiceField(
         label='負担割合',
-        choices=[('', '選択してください'), ('1', '1割負担'), ('2', '2割負担'), ('3', '3割負担')],
+        choices=[('', '----------'), ('1', '1割負担'), ('2', '2割負担'), ('3', '3割負担')],
         widget=forms.Select(attrs={'class': 'form-select'}),
         required=False
     )
@@ -177,7 +177,7 @@ class DetailedAssessmentForm(forms.Form):
     
     # 居住状況
     HOUSEHOLD_TYPE_CHOICES = [
-        ('', '選択してください'),
+        ('', '----------'),
         ('family_together', '家族同居'),
         ('single', '一人暮らし'),
         ('elderly', '高齢所帯'),
@@ -366,7 +366,7 @@ class DetailedAssessmentForm(forms.Form):
     )
 
     BEDDING_TYPE_CHOICES = [
-        ('', '選択してください'),
+        ('', '----------'),
         ('futon', '畳・床'),
         ('bed', 'ベッド'),
         ('reclining', 'リクライニングベッド'),
@@ -595,7 +595,7 @@ class DetailedAssessmentForm(forms.Form):
 
     # 服薬・アレルギーフィールド
     MEDICATION_STATUS_CHOICES = [
-        ('', '選択してください'),
+        ('', '----------'),
         ('self', '自己管理'),
         ('family', '家族管理'),
         ('support', '支援あり'),

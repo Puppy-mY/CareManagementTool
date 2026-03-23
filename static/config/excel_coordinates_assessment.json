@@ -261,6 +261,58 @@
     "main_doctor_hospital": "G37",
     "main_doctor_name": "H39"
   },
+  "kubun_henkou_shinsei": {
+    "sheet_name": "区分変更申請書 ",
+    "care_manager": "G13",
+    "insurance_number": "G15",
+    "client_furigana": "G16",
+    "client_name": "G17",
+    "client_gender": "U16",
+    "birth_date": "U17",
+    "postal_code": "I18",
+    "client_address": "G19",
+    "care_level": "J21",
+    "certification_period_start": "J22",
+    "certification_period_end": "T22",
+    "medical_insurer_name": "M25",
+    "medical_insurer_number": "AA25",
+    "medical_insurance_symbol": "O26",
+    "medical_insurance_number": "Y26",
+    "care_manager_furigana": "I32",
+    "care_manager_name": "I33",
+    "main_doctor_hospital": "G37",
+    "main_doctor_name": "G39"
+  },
+  "shiryo_teikyou": {
+    "sheet_name": "資料提供申請書",
+    "care_manager": "C18",
+    "client_address": "C20",
+    "birth_date": "C21",
+    "insurance_number": "F21"
+  },
+  "nyutaikyo_renraku": {
+    "sheet_name": "入退去連絡",
+    "client_name": "F5"
+  },
+  "kakuninsho_helper": {
+    "sheet_name": "確認書（ヘルパー）",
+    "care_manager": "F36",
+    "client_name": "D44"
+  },
+  "kakuninsho_day": {
+    "sheet_name": "確認書（デイ）",
+    "care_manager": "F36",
+    "client_name": "D44"
+  },
+  "kakuninsho_fukushi": {
+    "sheet_name": "確認書（福祉用具）",
+    "care_manager": "F36",
+    "client_name": "D44"
+  },
+  "kakuninsho_genpon": {
+    "sheet_name": "確認書（原本）",
+    "certification_period_start": "D7"
+  },
   "monitoring_sheet": {
     "sheet_name": "モニタリングシート",
     "client_name": "M1",

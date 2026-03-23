@@ -12,7 +12,7 @@ class ClientForm(forms.ModelForm):
             'insurance_number', 'care_level', 'certification_date', 'certification_period_start', 'certification_period_end',
             'care_burden',
             'disability_level', 'dementia_level',
-            'disability_handbook', 'disability_handbook_type', 'difficult_disease', 'difficult_disease_name', 'life_protection',
+            'disability_handbook', 'disability_handbook_type', 'disability_handbook_grade', 'difficult_disease_name', 'difficult_disease_other', 'life_protection',
             'medical_insurance_type', 'medical_insurer_name_issuer', 'medical_insurer_number', 'medical_insurance_symbol', 'medical_insurance_number', 'medical_insurance_branch',
             # 公的制度・受給者証（有無のみ）
             'limit_cert', 'high_cost_care',
@@ -52,9 +52,10 @@ class ClientForm(forms.ModelForm):
             'disability_level': forms.Select(attrs={'class': 'form-select'}),
             'dementia_level': forms.Select(attrs={'class': 'form-select'}),
             'disability_handbook': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-            'disability_handbook_type': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '例: 肢体不自由'}),
-            'difficult_disease': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-            'difficult_disease_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '例: パーキンソン病'}),
+            'disability_handbook_type': forms.Select(attrs={'class': 'form-select'}),
+            'disability_handbook_grade': forms.Select(attrs={'class': 'form-select'}),
+            'difficult_disease_name': forms.Select(attrs={'class': 'form-select'}),
+            'difficult_disease_other': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '疾患名を入力'}),
             'life_protection': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
 
             # 医療保険情報
@@ -139,6 +140,23 @@ class ClientForm(forms.ModelForm):
             if '　' not in furigana:
                 raise forms.ValidationError('姓と名の間にはスペース（空白）を入れてください。')
         return furigana
+
+    def clean(self):
+        cleaned_data = super().clean()
+        
+        # 身体障がい者手帳が「なし」の場合、種別と等級をクリア
+        if not cleaned_data.get('disability_handbook'):
+            cleaned_data['disability_handbook_type'] = ''
+            cleaned_data['disability_handbook_grade'] = ''
+            
+        # 特定医療費（指定難病）受給者証が「なし」の場合、疾患名をクリア
+        if cleaned_data.get('specific_medical') != 'yes':
+            cleaned_data['difficult_disease_name'] = ''
+            cleaned_data['difficult_disease_other'] = ''
+        elif cleaned_data.get('difficult_disease_name') != 'other':
+            cleaned_data['difficult_disease_other'] = ''
+            
+        return cleaned_data
 
 
 class FeedbackForm(forms.ModelForm):

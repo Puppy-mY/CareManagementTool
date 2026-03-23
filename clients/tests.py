@@ -17,16 +17,16 @@ class ClientCreateViewTests(TestCase):
         self.assertTemplateUsed(resp, "clients/client_form.html")
         # Headings to confirm layout sections exist
         self.assertContains(resp, "基本情報")
-        self.assertContains(resp, "介護保険情報")
-        self.assertContains(resp, "医療保険情報")
+        self.assertContains(resp, "介護保険関係")
+        self.assertContains(resp, "医療保険関係")
         self.assertContains(resp, "家族情報")
 
     def test_post_create_minimal_required_fields(self):
         url = reverse("client_create")
         data = {
             "insurance_number": "1234567890",
-            "name": "山田太郎",
-            "furigana": "やまだたろう",
+            "name": "山田 太郎",
+            "furigana": "やまだ たろう",
             "birth_date": "1950-01-01",
             "gender": "male",
         }
