@@ -537,7 +537,9 @@
                         <h6 class="text-secondary mb-3 pb-2" style="border-bottom: 2px solid #dee2e6;">
                             <i class="fas fa-file-medical me-2"></i>介護保険
                         </h6>
-                        <table class="table table-bordered">
+                        <div class="card shadow-sm border rounded-0">
+                            <div class="card-body p-0">
+                                <table class="table table-bordered mb-0" style="border-style: hidden;">
                             <tbody>
                                 <tr>
                                     <th class="bg-light text-muted" style="width: 25%;">被保険者番号</th>
@@ -585,7 +587,9 @@
                                     <td class="align-middle">{{ client.get_dementia_level_display|default:"未設定" }}</td>
                                 </tr>
                             </tbody>
-                        </table>
+                                </table>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- 医療保険 -->
@@ -593,31 +597,21 @@
                         <h6 class="text-secondary mb-3 pb-2" style="border-bottom: 2px solid #dee2e6;">
                             <i class="fas fa-hospital me-2"></i>医療保険
                         </h6>
-                        <table class="table table-bordered">
+                        <div class="card shadow-sm border rounded-0">
+                            <div class="card-body p-0">
+                                <table class="table table-bordered mb-0" style="border-style: hidden;">
                             <tbody>
                                 <tr>
                                     <th class="bg-light text-muted align-middle" style="width: 25%;">保険種別</th>
-                                    <td class="align-middle">{{ client.medical_insurance_type|default:"未登録" }}</td>
+                                    <td class="align-middle">{{ client.get_medical_insurance_type_display|default:"未登録" }}</td>
                                 </tr>
                                 <tr>
                                     <th class="bg-light text-muted align-middle">被保険者番号<br>(記号・番号)</th>
                                     <td class="align-middle">
                                         {% if client.medical_insurance_symbol and client.medical_insurance_number %}
-                                            記号：{{ client.medical_insurance_symbol }}　番号：{{ client.medical_insurance_number }}
+                                            （記号）{{ client.medical_insurance_symbol }}　（番号）{{ client.medical_insurance_number }}
                                         {% elif client.medical_insurance_number %}
-                                            番号：{{ client.medical_insurance_number }}
-                                        {% else %}
-                                            未登録
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <th class="bg-light text-muted align-middle">保険者の名称及び<br>交付者名(番号)</th>
-                                    <td class="align-middle">
-                                        {% if client.medical_insurer_name_issuer and client.medical_insurer_number %}
-                                            {{ client.medical_insurer_name_issuer }}　番号：{{ client.medical_insurer_number }}
-                                        {% elif client.medical_insurer_name_issuer %}
-                                            {{ client.medical_insurer_name_issuer }}
+                                            （番号）{{ client.medical_insurance_number }}
                                         {% else %}
                                             未登録
                                         {% endif %}
@@ -625,64 +619,174 @@
                                 </tr>
                                 <tr>
                                     <th class="bg-light text-muted align-middle">負担割合</th>
-                                    <td class="align-middle text-danger">データ無</td>
+                                    <td class="align-middle">{{ client.medical_burden|default:"未設定" }}</td>
                                 </tr>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <!-- 自立度・手帳・手当 -->
-                    <div class="mb-4">
-                        <h6 class="text-secondary mb-3 pb-2" style="border-bottom: 2px solid #dee2e6;">
-                            <i class="fas fa-id-card-alt me-2"></i>自立度・手帳・手当関係
-                        </h6>
-                        <table class="table table-bordered">
-                            <tbody>
                                 <tr>
-                                    <th class="bg-light text-muted align-middle">身体障がい者手帳</th>
+                                    <th class="bg-light text-muted align-middle">保険者の名称及び<br>交付者名（番号）</th>
                                     <td class="align-middle">
-                                        {% if client.disability_handbook %}
-                                            あり{% if client.disability_handbook_type %}（{{ client.disability_handbook_type }}）{% endif %}
+                                        {% if client.medical_insurer_name_issuer and client.medical_insurer_number %}
+                                            {{ client.medical_insurer_name_issuer }}　（番号）{{ client.medical_insurer_number }}
+                                        {% elif client.medical_insurer_name_issuer %}
+                                            {{ client.medical_insurer_name_issuer }}
                                         {% else %}
-                                            なし
+                                            未登録
                                         {% endif %}
                                     </td>
                                 </tr>
-                                <tr>
-                                    <th class="bg-light text-muted align-middle">難病申請</th>
-                                    <td class="align-middle">{% if client.difficult_disease %}あり{% else %}なし{% endif %}</td>
-                                </tr>
-                                {% if client.difficult_disease_name %}
-                                <tr>
-                                    <th class="bg-light text-muted align-middle">難病疾患名</th>
-                                    <td class="align-middle">{{ client.difficult_disease_name }}</td>
-                                </tr>
-                                {% endif %}
-                                <tr>
-                                    <th class="bg-light text-muted align-middle">生活保護</th>
-                                    <td class="align-middle">{% if client.life_protection %}あり{% else %}なし{% endif %}</td>
-                                </tr>
                             </tbody>
-                        </table>
+                                </table>
+                            </div>
+                        </div>
                     </div>
 
-                    <!-- 証書類（受給者証等） -->
+                    <!-- 公的制度・受給者証等 -->
                     <div class="mb-3">
                         <h6 class="text-secondary mb-3 pb-2" style="border-bottom: 2px solid #dee2e6;">
-                            <i class="fas fa-file-contract me-2"></i>証書類（受給者証等）
+                            <i class="fas fa-file-contract me-2"></i>公的制度・受給者証等
                         </h6>
-                        <table class="table table-bordered">
-                            <tbody>
-                                <tr>
-                                    <th class="bg-light text-muted" style="width: 25%;">受給者証番号</th>
-                                    <td class="text-danger">データ無</td>
-                                </tr>
-                                <tr>
-                                    <th class="bg-light text-muted">有効期間</th>
-                                    <td class="text-danger">データ無</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                        <div class="row g-4">
+                            <!-- 左カラム: 介護保険関係 ＆ 生活保護 -->
+                            <div class="col-md-6 d-flex flex-column gap-4">
+                                <!-- 介護保険関係 -->
+                                <div class="card w-100 shadow-sm border rounded-0">
+                                    <div class="card-header bg-light py-2 rounded-0" style="border-bottom: 1px solid #dee2e6;">
+                                        <h6 class="mb-0 text-secondary" style="font-size: 0.95rem;"><i class="fas fa-wheelchair me-2"></i>介護保険関係</h6>
+                                    </div>
+                                    <div class="card-body p-0">
+                                        <table class="table table-bordered mb-0" style="font-size: 0.9rem; border-style: hidden;">
+                                            <tbody>
+                                                <tr>
+                                                    <th class="bg-light text-muted align-middle text-nowrap" style="width: 40%; border-top: none; border-left: none;">負担限度額認定証</th>
+                                                    <td class="align-middle" style="border-top: none; border-right: none;">
+                                                        <span class="text-dark">{% if client.limit_cert == 'yes' or client.limit_cert == '有' or client.limit_cert == 'あり' %}あり{% elif client.limit_cert == 'no' or client.limit_cert == '無' or client.limit_cert == 'なし' %}なし{% elif client.limit_cert %}{{ client.limit_cert }}{% else %}なし{% endif %}</span>
+                                                        {% if client.limit_cert == 'yes' or client.limit_cert == '有' or client.limit_cert == 'あり' %}
+                                                        <div class="text-muted mt-1" style="font-size: 0.85rem;">
+                                                            {% if client.limit_cert_start and client.limit_cert_end %}{{ client.limit_cert_start|date:'Y/m/d' }}～{{ client.limit_cert_end|date:'Y/m/d' }}{% else %}期間未設定{% endif %}
+                                                        </div>
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <th class="bg-light text-muted align-middle text-nowrap" style="border-bottom: none; border-left: none;">高額介護サービス費</th>
+                                                    <td class="align-middle" style="border-bottom: none; border-right: none;">
+                                                        <span class="text-dark">{% if client.high_cost_care == 'yes' or client.high_cost_care == '有' or client.high_cost_care == 'あり' %}あり{% elif client.high_cost_care == 'no' or client.high_cost_care == '無' or client.high_cost_care == 'なし' %}なし{% elif client.high_cost_care %}{{ client.high_cost_care }}{% else %}なし{% endif %}</span>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <!-- 生活保護 -->
+                                <div class="card w-100 shadow-sm border rounded-0">
+                                    <div class="card-header bg-light py-2 rounded-0" style="border-bottom: 1px solid #dee2e6;">
+                                        <h6 class="mb-0 text-secondary" style="font-size: 0.95rem;"><i class="fas fa-hand-holding-heart me-2"></i>生活保護</h6>
+                                    </div>
+                                    <div class="card-body p-0">
+                                        <table class="table table-bordered mb-0" style="font-size: 0.9rem; border-style: hidden;">
+                                            <tbody>
+                                                <tr>
+                                                    <th class="bg-light text-muted align-middle text-nowrap" style="width: 40%; border-top: none; border-left: none;">生活保護受給</th>
+                                                    <td class="align-middle text-dark" style="border-top: none; border-right: none;">
+                                                        {% if client.life_protection %}あり{% else %}なし{% endif %}
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 右カラム: 障害福祉関係 -->
+                            <div class="col-md-6 d-flex flex-column gap-4">
+                                <!-- 障害福祉関係 -->
+                                <div class="card w-100 shadow-sm border rounded-0">
+                                    <div class="card-header bg-light py-2 rounded-0" style="border-bottom: 1px solid #dee2e6;">
+                                        <h6 class="mb-0 text-secondary" style="font-size: 0.95rem;"><i class="fas fa-hands-helping me-2"></i>障害福祉関係</h6>
+                                    </div>
+                                    <div class="card-body p-0">
+                                        <table class="table table-bordered mb-0" style="font-size: 0.9rem; border-style: hidden;">
+                                            <tbody>
+                                                <tr>
+                                                    <th class="bg-light text-muted align-middle text-nowrap" style="width: 40%; border-top: none; border-left: none;">身体障がい者手帳</th>
+                                                    <td class="align-middle" style="border-top: none; border-right: none;">
+                                                        <span class="text-dark">{% if client.disability_handbook %}あり{% else %}なし{% endif %}</span>
+                                                        {% if client.disability_handbook %}
+                                                        <div class="text-dark mt-1" style="font-size: 0.85rem;">
+                                                            {% if client.disability_handbook_type %}{{ client.get_disability_handbook_type_display }}{% endif %}
+                                                            {% if client.disability_handbook_grade %} ({{ client.get_disability_handbook_grade_display }}){% endif %}
+                                                        </div>
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <th class="bg-light text-muted align-middle text-nowrap" style="border-bottom: none; border-left: none;">障害福祉受給者証</th>
+                                                    <td class="align-middle" style="border-bottom: none; border-right: none;">
+                                                        <span class="text-dark">{% if client.disability_welfare == 'yes' or client.disability_welfare == '有' or client.disability_welfare == 'あり' %}あり{% elif client.disability_welfare == 'no' or client.disability_welfare == '無' or client.disability_welfare == 'なし' %}なし{% elif client.disability_welfare %}{{ client.disability_welfare }}{% else %}なし{% endif %}</span>
+                                                        {% if client.disability_welfare == 'yes' or client.disability_welfare == '有' or client.disability_welfare == 'あり' %}
+                                                        <div class="text-muted mt-1" style="font-size: 0.85rem;">
+                                                            認定: {% if client.disability_welfare_cert_start and client.disability_welfare_cert_end %}{{ client.disability_welfare_cert_start|date:'Y/m/d' }}～{{ client.disability_welfare_cert_end|date:'Y/m/d' }}{% else %}未設定{% endif %}
+                                                        </div>
+                                                        <div class="text-muted mt-1" style="font-size: 0.85rem;">
+                                                            支給: {% if client.disability_welfare_decision_start and client.disability_welfare_decision_end %}{{ client.disability_welfare_decision_start|date:'Y/m/d' }}～{{ client.disability_welfare_decision_end|date:'Y/m/d' }}{% else %}未設定{% endif %}
+                                                        </div>
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 医療関係 -->
+                            <div class="col-12 d-flex">
+                                <div class="card w-100 shadow-sm border rounded-0">
+                                    <div class="card-header bg-light py-2 rounded-0" style="border-bottom: 1px solid #dee2e6;">
+                                        <h6 class="mb-0 text-secondary" style="font-size: 0.95rem;"><i class="fas fa-notes-medical me-2"></i>医療関係</h6>
+                                    </div>
+                                    <div class="card-body p-0">
+                                        <table class="table table-bordered mb-0" style="font-size: 0.9rem; border-style: hidden;">
+                                            <tbody>
+                                                <tr>
+                                                    <th class="bg-light text-muted align-middle text-nowrap" style="width: 25%; border-top: none; border-left: none;">特定医療費(指定難病)</th>
+                                                    <td class="align-middle" style="border-top: none; border-right: none;">
+                                                        <span class="text-dark">{% if client.specific_medical == 'yes' or client.specific_medical == '有' or client.specific_medical == 'あり' %}あり{% elif client.specific_medical == 'no' or client.specific_medical == '無' or client.specific_medical == 'なし' %}なし{% elif client.specific_medical %}{{ client.specific_medical }}{% else %}なし{% endif %}</span>
+                                                        {% if client.specific_medical == 'yes' or client.specific_medical == '有' or client.specific_medical == 'あり' %}
+                                                        <span class="text-muted ms-2" style="font-size: 0.85rem;">{% if client.specific_medical_start and client.specific_medical_end %}({{ client.specific_medical_start|date:'Y/m/d' }}～{{ client.specific_medical_end|date:'Y/m/d' }}){% endif %}</span>
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <th class="bg-light text-muted align-middle text-nowrap" style="border-left: none;">福祉医療費受給者証</th>
+                                                    <td class="align-middle" style="border-right: none;">
+                                                        <span class="text-dark">{% if client.welfare_medical == 'yes' or client.welfare_medical == '有' or client.welfare_medical == 'あり' %}あり{% elif client.welfare_medical == 'no' or client.welfare_medical == '無' or client.welfare_medical == 'なし' %}なし{% elif client.welfare_medical %}{{ client.welfare_medical }}{% else %}なし{% endif %}</span>
+                                                        {% if client.welfare_medical == 'yes' or client.welfare_medical == '有' or client.welfare_medical == 'あり' %}
+                                                        <span class="text-muted ms-2" style="font-size: 0.85rem;">{% if client.welfare_medical_start and client.welfare_medical_end %}({{ client.welfare_medical_start|date:'Y/m/d' }}～{{ client.welfare_medical_end|date:'Y/m/d' }}){% endif %}</span>
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <th class="bg-light text-muted align-middle text-nowrap" style="border-left: none;">国保限度額認定証</th>
+                                                    <td class="align-middle" style="border-right: none;">
+                                                        <span class="text-dark">{% if client.nhi_limit_cert == 'yes' or client.nhi_limit_cert == '有' or client.nhi_limit_cert == 'あり' %}あり{% elif client.nhi_limit_cert == 'no' or client.nhi_limit_cert == '無' or client.nhi_limit_cert == 'なし' %}なし{% elif client.nhi_limit_cert %}{{ client.nhi_limit_cert }}{% else %}なし{% endif %}</span>
+                                                        {% if client.nhi_limit_cert == 'yes' or client.nhi_limit_cert == '有' or client.nhi_limit_cert == 'あり' %}
+                                                        <span class="text-muted ms-2" style="font-size: 0.85rem;">{% if client.nhi_limit_cert_start and client.nhi_limit_cert_end %}({{ client.nhi_limit_cert_start|date:'Y/m/d' }}～{{ client.nhi_limit_cert_end|date:'Y/m/d' }}){% endif %}</span>
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <th class="bg-light text-muted align-middle text-nowrap" style="border-bottom: none; border-left: none;">高額医療・介護合算</th>
+                                                    <td class="align-middle" style="border-bottom: none; border-right: none;">
+                                                        <span class="text-dark">{% if client.high_cost_combined == 'yes' or client.high_cost_combined == '有' or client.high_cost_combined == 'あり' %}あり{% elif client.high_cost_combined == 'no' or client.high_cost_combined == '無' or client.high_cost_combined == 'なし' %}なし{% elif client.high_cost_combined %}{{ client.high_cost_combined }}{% else %}なし{% endif %}</span>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
