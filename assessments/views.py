@@ -46,6 +46,26 @@ def assessment_list(request):
 
 
 @login_required
+def my_assessment_list(request):
+    # 自分が担当する利用者のアセスメントのみ取得
+    assessments = Assessment.objects.select_related("client", "assessor").filter(
+        client__created_by=request.user
+    ).order_by("-assessment_date", "-id")
+
+    # 作成者一覧を取得（絞り込み後のアセスメントに関わるユーザーのみ）
+    all_assessors = User.objects.filter(
+        id__in=assessments.values_list("assessor_id", flat=True).distinct()
+    ).order_by("username")
+
+    context = {
+        "assessments": assessments,
+        "all_assessors": all_assessors,
+    }
+
+    return render(request, "assessments/my_assessment_list.html", context)
+
+
+@login_required
 def assessment_detail(request, pk):
     assessment = get_object_or_404(Assessment, pk=pk)
 

@@ -154,12 +154,7 @@
 <div class="row">
     <div class="col-12">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1><i class="fas fa-file-medical-alt"></i> アセスメント一覧</h1>
-            <div class="d-flex gap-2">
-                <a href="{% url 'assessment_import' %}" class="btn btn-outline-secondary btn-sm">
-                    <i class="fas fa-file-import"></i> Excel取り込み
-                </a>
-            </div>
+            <h1><i class="fas fa-file-medical-alt"></i> すべてのアセスメント一覧</h1>
         </div>
     </div>
 </div>
@@ -262,15 +257,12 @@
                                     <td class="assessor-col">{{ assessment.assessor.profile.get_full_name }}</td>
                                     <td class="actions-col">
                                         <div class="btn-group btn-group-sm d-flex justify-content-end">
-                                            <a href="{% url 'assessment_edit' assessment.pk %}" class="btn btn-outline-secondary btn-sm btn-edit" style="transition: all 0.2s ease;">
-                                                <i class="fas fa-edit me-1"></i>編集
-                                            </a>
                                             <button type="button" class="btn btn-outline-secondary btn-sm btn-preview" style="transition: all 0.2s ease; font-size: 0.7rem; line-height: 1.2;" disabled>
                                                 プレビュー<br>開発中
                                             </button>
-                                            <button type="button" 
-                                                    onclick="exportListExcel({{ assessment.pk }}, '{{ assessment.client.name|escapejs }}', '{{ assessment.assessment_date|date:'Ymd' }}')" 
-                                                    class="btn btn-outline-success btn-sm btn-excel" 
+                                            <button type="button"
+                                                    onclick="exportListExcel({{ assessment.pk }}, '{{ assessment.client.name|escapejs }}', '{{ assessment.assessment_date|date:'Ymd' }}')"
+                                                    class="btn btn-outline-success btn-sm btn-excel"
                                                     style="transition: all 0.2s ease;">
                                                 <i class="fas fa-file-excel me-1"></i>Excel
                                             </button>

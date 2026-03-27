@@ -640,7 +640,7 @@ document.addEventListener('DOMContentLoaded', function() {
             edit_url: "{% url 'client_edit' client.pk %}",
             calculation_url: "{% url 'limit_calculation_create' client.insurance_number %}",
             assessment_url: "{% url 'assessment_create' %}?client={{ client.pk }}",
-            assessment_list_url: "{% url 'assessment_list' %}?client={{ client.pk }}",
+            assessment_list_url: "{% url 'my_assessment_list' %}",
             schedule_url: "{% url 'schedule_management' client.pk %}"
         }{% if not forloop.last %},{% endif %}
         {% endfor %}

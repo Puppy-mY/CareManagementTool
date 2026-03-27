@@ -13,7 +13,7 @@ class ClientForm(forms.ModelForm):
             'care_burden',
             'disability_level', 'dementia_level',
             'disability_handbook', 'disability_handbook_type', 'disability_handbook_grade', 'difficult_disease_name', 'difficult_disease_other', 'life_protection',
-            'medical_insurance_type', 'medical_insurer_name_issuer', 'medical_insurer_number', 'medical_insurance_symbol', 'medical_insurance_number', 'medical_insurance_branch',
+            'medical_insurance_type', 'medical_burden', 'medical_insurer_name_issuer', 'medical_insurer_number', 'medical_insurance_symbol', 'medical_insurance_number', 'medical_insurance_branch',
             # 公的制度・受給者証（有無のみ）
             'limit_cert', 'high_cost_care',
             'disability_welfare',
@@ -60,6 +60,7 @@ class ClientForm(forms.ModelForm):
 
             # 医療保険情報
             'medical_insurance_type': forms.Select(attrs={'class': 'form-select'}),
+            'medical_burden': forms.Select(attrs={'class': 'form-select'}),
             'medical_insurer_name_issuer': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '例: ○○市'}),
             'medical_insurer_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '例: 123456'}),
             'medical_insurance_symbol': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '例: 01'}),

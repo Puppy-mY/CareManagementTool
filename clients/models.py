@@ -197,6 +197,7 @@ class Client(models.Model):
 
     # 医療保険情報
     medical_insurance_type = models.CharField('医療保険種類', max_length=100, choices=MEDICAL_INSURANCE_CHOICES, blank=True)
+    medical_burden = models.CharField('医療保険負担割合', max_length=10, choices=CARE_BURDEN_CHOICES, blank=True)
     medical_insurer_name_issuer = models.CharField('保険者の名称及び交付者名', max_length=200, blank=True)
     medical_insurer_number = models.CharField('医療保険保険者番号', max_length=50, blank=True)
     medical_insurance_symbol = models.CharField('被保険者番号（記号）', max_length=50, blank=True)
