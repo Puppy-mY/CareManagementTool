@@ -3,9 +3,6 @@
 {% block title %}{{ client.name }} - 利用者詳細 - {{ block.super }}{% endblock %}
 
 {% block content %}
-{% block permissions %}
-<span class="badge bg-light text-muted border" style="font-size: 0.75rem;">居宅、ヘルパー、ヘルパー庶務、デイ、デイ庶務、訪看、訪看庶務、事務所</span>
-{% endblock %}
 
 <style>
     /* メインタブのスタイル */
@@ -335,7 +332,7 @@
             <i class="fas fa-user me-2 text-secondary"></i>詳細表示
         </h1>
         <span class="text-muted border-start ps-3 ms-2">
-            <i class="fas fa-user me-1"></i>{{ client.name }} さん
+            <i class="fas fa-user me-1"></i>{{ client.name }} 様
         </span>
     </div>
     <div class="d-flex gap-2">
@@ -360,11 +357,13 @@
                         アセスメント履歴
                     </button>
                 </li>
+                {% if request.user.is_staff or request.user.is_superuser %}
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="physical-tab" data-bs-toggle="tab" data-bs-target="#documents" type="button" role="tab">
                         書類作成履歴
                     </button>
                 </li>
+                {% endif %}
             </ul>
         </div>
     </div>
@@ -400,34 +399,38 @@
                         <h6 class="text-secondary mb-3 pb-2" style="border-bottom: 2px solid #dee2e6;">
                             <i class="fas fa-id-card me-2"></i>基本情報
                         </h6>
-                        <table class="table table-bordered">
-                            <tbody>
-                                <tr>
-                                    <th class="bg-light text-muted" style="width: 25%;">氏名</th>
-                                    <td>{{ client.name }}</td>
-                                </tr>
-                                <tr>
-                                    <th class="bg-light text-muted">ふりがな</th>
-                                    <td>{{ client.furigana }}</td>
-                                </tr>
-                                <tr>
-                                    <th class="bg-light text-muted">生年月日</th>
-                                    <td>{{ client.birth_date }} ({{ client.age }}歳)</td>
-                                </tr>
-                                <tr>
-                                    <th class="bg-light text-muted">性別</th>
-                                    <td>{{ client.get_gender_display }}</td>
-                                </tr>
-                                <tr>
-                                    <th class="bg-light text-muted">住所</th>
-                                    <td>{{ client.address|default:"未登録" }}</td>
-                                </tr>
-                                <tr>
-                                    <th class="bg-light text-muted">連絡先</th>
-                                    <td>{{ client.phone|default:"未登録" }}</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                        <div class="card shadow-sm border rounded-0">
+                            <div class="card-body p-0">
+                                <table class="table table-bordered mb-0" style="table-layout: fixed; border-style: hidden; font-size: 0.9rem;">
+                                    <tbody>
+                                        <tr>
+                                            <th class="bg-light text-muted" style="width: 25%;">氏名</th>
+                                            <td>{{ client.name }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th class="bg-light text-muted">ふりがな</th>
+                                            <td>{{ client.furigana }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th class="bg-light text-muted">生年月日</th>
+                                            <td>{{ client.birth_date }} ({{ client.age }}歳)</td>
+                                        </tr>
+                                        <tr>
+                                            <th class="bg-light text-muted">性別</th>
+                                            <td>{{ client.get_gender_display }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th class="bg-light text-muted">住所</th>
+                                            <td>{{ client.address|default:"未登録" }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th class="bg-light text-muted">連絡先</th>
+                                            <td>{{ client.phone|default:"未登録" }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
 
                     {% if client.notes %}
@@ -436,8 +439,10 @@
                         <h6 class="text-secondary mb-3 pb-2" style="border-bottom: 2px solid #dee2e6;">
                             <i class="fas fa-sticky-note me-2"></i>備考
                         </h6>
-                        <div class="p-3 border bg-light">
-                            {{ client.notes|linebreaks }}
+                        <div class="card shadow-sm border rounded-0">
+                            <div class="card-body p-3 bg-light">
+                                {{ client.notes|linebreaks }}
+                            </div>
                         </div>
                     </div>
                     {% endif %}
@@ -449,84 +454,100 @@
                         <i class="fas fa-users me-2"></i>家族情報
                     </h6>
 
-                    <!-- 家族1 -->
-                    <div class="mb-4">
-                        <table class="table table-bordered">
-                            <tbody>
-                                <tr>
-                                    <th class="bg-light text-muted" style="width: 25%;">氏名</th>
-                                    <td>{{ client.family_name1|default:"未登録" }}</td>
-                                </tr>
-                                <tr>
-                                    <th class="bg-light text-muted">続柄</th>
-                                    <td>{{ client.get_family_relationship1_display|default:"未登録" }}</td>
-                                </tr>
-                                <tr>
-                                    <th class="bg-light text-muted">住所</th>
-                                    <td>{{ client.family_address1|default:"未登録" }}</td>
-                                </tr>
-                                <tr>
-                                    <th class="bg-light text-muted">連絡先</th>
-                                    <td>{{ client.family_contact1|default:"未登録" }}</td>
-                                </tr>
-                                <tr>
-                                    <th class="bg-light text-muted">同居の有無</th>
-                                    <td>{{ client.get_family_living_status1_display|default:"未登録" }}</td>
-                                </tr>
-                                <tr>
-                                    <th class="bg-light text-muted">介護状況</th>
-                                    <td>{{ client.get_family_care_status1_display|default:"未登録" }}</td>
-                                </tr>
-                                <tr>
-                                    <th class="bg-light text-muted">就労状況</th>
-                                    <td>{{ client.get_family_employment1_display|default:"未登録" }}</td>
-                                </tr>
-                                <tr>
-                                    <th class="bg-light text-muted">備考</th>
-                                    <td>{{ client.family_notes1|default:"未登録" }}</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+                    <div class="row g-4">
+                        <!-- 家族1 -->
+                        <div class="col-md-6">
+                            <div class="card w-100 shadow-sm border rounded-0">
+                                <div class="card-header bg-light py-2 rounded-0" style="border-bottom: 1px solid #dee2e6;">
+                                    <h6 class="mb-0 text-secondary" style="font-size: 0.9rem;"><i class="fas fa-user me-2"></i>家族 (1)</h6>
+                                </div>
+                                <div class="card-body p-0">
+                                    <table class="table table-bordered mb-0" style="table-layout: fixed; border-style: hidden; font-size: 0.9rem;">
+                                        <tbody>
+                                            <tr>
+                                                <th class="bg-light text-muted" style="width: 35%;">氏名</th>
+                                                <td>{{ client.family_name1|default:"未登録" }}</td>
+                                            </tr>
+                                            <tr>
+                                                <th class="bg-light text-muted">続柄</th>
+                                                <td>{{ client.get_family_relationship1_display|default:"未登録" }}</td>
+                                            </tr>
+                                            <tr>
+                                                <th class="bg-light text-muted">住所</th>
+                                                <td>{{ client.family_address1|default:"未登録" }}</td>
+                                            </tr>
+                                            <tr>
+                                                <th class="bg-light text-muted">連絡先</th>
+                                                <td>{{ client.family_contact1|default:"未登録" }}</td>
+                                            </tr>
+                                            <tr>
+                                                <th class="bg-light text-muted">同居の有無</th>
+                                                <td>{{ client.get_family_living_status1_display|default:"未登録" }}</td>
+                                            </tr>
+                                            <tr>
+                                                <th class="bg-light text-muted">介護状況</th>
+                                                <td>{{ client.get_family_care_status1_display|default:"未登録" }}</td>
+                                            </tr>
+                                            <tr>
+                                                <th class="bg-light text-muted">就労状況</th>
+                                                <td>{{ client.get_family_employment1_display|default:"未登録" }}</td>
+                                            </tr>
+                                            <tr>
+                                                <th class="bg-light text-muted">備考</th>
+                                                <td>{{ client.family_notes1|default:"未登録" }}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
 
-                    <!-- 家族2 -->
-                    <div class="mb-3">
-                        <table class="table table-bordered">
-                            <tbody>
-                                <tr>
-                                    <th class="bg-light text-muted" style="width: 25%;">氏名</th>
-                                    <td>{{ client.family_name2|default:"未登録" }}</td>
-                                </tr>
-                                <tr>
-                                    <th class="bg-light text-muted">続柄</th>
-                                    <td>{{ client.get_family_relationship2_display|default:"未登録" }}</td>
-                                </tr>
-                                <tr>
-                                    <th class="bg-light text-muted">住所</th>
-                                    <td>{{ client.family_address2|default:"未登録" }}</td>
-                                </tr>
-                                <tr>
-                                    <th class="bg-light text-muted">連絡先</th>
-                                    <td>{{ client.family_contact2|default:"未登録" }}</td>
-                                </tr>
-                                <tr>
-                                    <th class="bg-light text-muted">同居の有無</th>
-                                    <td>{{ client.get_family_living_status2_display|default:"未登録" }}</td>
-                                </tr>
-                                <tr>
-                                    <th class="bg-light text-muted">介護状況</th>
-                                    <td>{{ client.get_family_care_status2_display|default:"未登録" }}</td>
-                                </tr>
-                                <tr>
-                                    <th class="bg-light text-muted">就労状況</th>
-                                    <td>{{ client.get_family_employment2_display|default:"未登録" }}</td>
-                                </tr>
-                                <tr>
-                                    <th class="bg-light text-muted">備考</th>
-                                    <td>{{ client.family_notes2|default:"未登録" }}</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                        <!-- 家族2 -->
+                        <div class="col-md-6">
+                            <div class="card w-100 shadow-sm border rounded-0">
+                                <div class="card-header bg-light py-2 rounded-0" style="border-bottom: 1px solid #dee2e6;">
+                                    <h6 class="mb-0 text-secondary" style="font-size: 0.9rem;"><i class="fas fa-user me-2"></i>家族 (2)</h6>
+                                </div>
+                                <div class="card-body p-0">
+                                    <table class="table table-bordered mb-0" style="table-layout: fixed; border-style: hidden; font-size: 0.9rem;">
+                                        <tbody>
+                                            <tr>
+                                                <th class="bg-light text-muted" style="width: 35%;">氏名</th>
+                                                <td>{{ client.family_name2|default:"未登録" }}</td>
+                                            </tr>
+                                            <tr>
+                                                <th class="bg-light text-muted">続柄</th>
+                                                <td>{{ client.get_family_relationship2_display|default:"未登録" }}</td>
+                                            </tr>
+                                            <tr>
+                                                <th class="bg-light text-muted">住所</th>
+                                                <td>{{ client.family_address2|default:"未登録" }}</td>
+                                            </tr>
+                                            <tr>
+                                                <th class="bg-light text-muted">連絡先</th>
+                                                <td>{{ client.family_contact2|default:"未登録" }}</td>
+                                            </tr>
+                                            <tr>
+                                                <th class="bg-light text-muted">同居の有無</th>
+                                                <td>{{ client.get_family_living_status2_display|default:"未登録" }}</td>
+                                            </tr>
+                                            <tr>
+                                                <th class="bg-light text-muted">介護状況</th>
+                                                <td>{{ client.get_family_care_status2_display|default:"未登録" }}</td>
+                                            </tr>
+                                            <tr>
+                                                <th class="bg-light text-muted">就労状況</th>
+                                                <td>{{ client.get_family_employment2_display|default:"未登録" }}</td>
+                                            </tr>
+                                            <tr>
+                                                <th class="bg-light text-muted">備考</th>
+                                                <td>{{ client.family_notes2|default:"未登録" }}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -548,15 +569,15 @@
                                         <table class="table table-bordered mb-0" style="table-layout: fixed; border-style: hidden; font-size: 0.9rem;">
                                             <tbody>
                                                 <tr>
-                                                    <th class="bg-light text-muted" style="width: 40%;">被保険者番号</th>
+                                                    <th class="bg-light text-muted insurance-th" style="width: 40%;">被保険者番号</th>
                                                     <td>{{ client.insurance_number|default:"未登録" }}</td>
                                                 </tr>
                                                 <tr>
-                                                    <th class="bg-light text-muted">介護度</th>
+                                                    <th class="bg-light text-muted insurance-th">介護度</th>
                                                     <td>{{ client.get_care_level_display|default:"未設定" }}</td>
                                                 </tr>
                                                 <tr>
-                                                    <th class="bg-light text-muted">認定日</th>
+                                                    <th class="bg-light text-muted insurance-th">認定日</th>
                                                     <td>
                                                         {% if client.certification_date %}
                                                             {% load custom_filters %}
@@ -567,29 +588,30 @@
                                                     </td>
                                                 </tr>
                                                 <tr>
-                                                    <th class="bg-light text-muted align-middle">認定期間</th>
+                                                    <th class="bg-light text-muted align-middle insurance-th">認定期間</th>
                                                     <td class="align-middle">
                                                         {% if client.certification_period_start and client.certification_period_end %}
                                                             {% load custom_filters %}
-                                                            <div class="text-nowrap" style="font-size: 0.75rem;">{{ client.certification_period_start|wareki }}～{{ client.certification_period_end|wareki }}</div>
+                                                            <div class="insurance-td-fit">{{ client.certification_period_start|wareki }}～{{ client.certification_period_end|wareki }}</div>
+                                                            <div class="cert-renewal-warn" data-end-date="{{ client.certification_period_end|date:'Y-m-d' }}" data-auto-renew="false"></div>
                                                         {% else %}
                                                             未登録
                                                         {% endif %}
                                                     </td>
                                                 </tr>
                                                 <tr>
-                                                    <th class="bg-light text-muted">負担割合</th>
+                                                    <th class="bg-light text-muted insurance-th">負担割合</th>
                                                     <td>{{ client.care_burden|default:"未設定" }}</td>
                                                 </tr>
                                                 <tr>
                                                     <th colspan="2" class="bg-light text-muted small py-1 text-center">日常生活の自立度等について</th>
                                                 </tr>
                                                 <tr>
-                                                    <th class="bg-light text-muted align-middle">身体障がい者日常生活自立度</th>
+                                                    <th class="bg-light text-muted align-middle insurance-th">身体障がい者日常生活自立度</th>
                                                     <td class="align-middle">{{ client.get_disability_level_display|default:"未設定" }}</td>
                                                 </tr>
                                                 <tr>
-                                                    <th class="bg-light text-muted align-middle">認知症日常生活自立度</th>
+                                                    <th class="bg-light text-muted align-middle insurance-th">認知症日常生活自立度</th>
                                                     <td class="align-middle">{{ client.get_dementia_level_display|default:"未設定" }}</td>
                                                 </tr>
                                             </tbody>
@@ -607,34 +629,31 @@
                                         <table class="table table-bordered mb-0" style="table-layout: fixed; border-style: hidden; font-size: 0.9rem;">
                                             <tbody>
                                                 <tr>
-                                                    <th class="bg-light text-muted align-middle" style="width: 40%;">保険種別</th>
+                                                    <th class="bg-light text-muted align-middle insurance-th" style="width: 40%;">保険種別</th>
                                                     <td class="align-middle">{{ client.get_medical_insurance_type_display|default:"未登録" }}</td>
                                                 </tr>
                                                 <tr>
-                                                    <th class="bg-light text-muted align-middle">被保険者番号<br>(記号・番号)</th>
-                                                    <td class="align-middle">
-                                                        {% if client.medical_insurance_symbol and client.medical_insurance_number %}
-                                                            <div class="d-inline-block me-1">（記号）{{ client.medical_insurance_symbol }}</div>
-                                                            <div class="d-inline-block">（番号）{{ client.medical_insurance_number }}</div>
-                                                        {% elif client.medical_insurance_number %}
-                                                            （番号）{{ client.medical_insurance_number }}
+                                                    <th class="bg-light text-muted align-middle insurance-th"><span class="text-nowrap">被保険者番号</span><br><span class="text-nowrap">記号・番号・枝番</span></th>
+                                                    <td class="align-middle" style="font-size: 0.85rem;">
+                                                        {% if client.medical_insurance_symbol or client.medical_insurance_number or client.medical_insurance_branch %}
+                                                            {% if client.medical_insurance_symbol %}<div>記号 {{ client.medical_insurance_symbol }}</div>{% endif %}
+                                                            {% if client.medical_insurance_number %}<div>番号 {{ client.medical_insurance_number }}</div>{% endif %}
+                                                            {% if client.medical_insurance_branch %}<div>枝番 {{ client.medical_insurance_branch }}</div>{% endif %}
                                                         {% else %}
                                                             未登録
                                                         {% endif %}
                                                     </td>
                                                 </tr>
                                                 <tr>
-                                                    <th class="bg-light text-muted align-middle">負担割合</th>
+                                                    <th class="bg-light text-muted align-middle insurance-th">負担割合</th>
                                                     <td class="align-middle">{{ client.medical_burden|default:"未設定" }}</td>
                                                 </tr>
                                                 <tr>
-                                                    <th class="bg-light text-muted align-middle" style="font-size: 0.75rem;">保険者の名称及び<br>交付者名（番号）</th>
+                                                    <th class="bg-light text-muted align-middle insurance-th"><span class="text-nowrap">保険者の名称及び</span><br><span class="text-nowrap">交付者名（番号）</span></th>
                                                     <td class="align-middle">
-                                                        {% if client.medical_insurer_name_issuer and client.medical_insurer_number %}
-                                                            <div class="d-inline-block text-nowrap me-1" style="font-size: 0.75rem;">{{ client.medical_insurer_name_issuer }}</div>
-                                                            <div class="d-inline-block" style="font-size: 0.75rem;">（番号）{{ client.medical_insurer_number }}</div>
-                                                        {% elif client.medical_insurer_name_issuer %}
-                                                            <div class="text-nowrap" style="font-size: 0.75rem;">{{ client.medical_insurer_name_issuer }}</div>
+                                                        {% if client.medical_insurer_name_issuer %}
+                                                            <div class="insurance-td-fit">{{ client.medical_insurer_name_issuer }}</div>
+                                                            {% if client.medical_insurer_number %}<div class="insurance-td-fit">（番号）{{ client.medical_insurer_number }}</div>{% endif %}
                                                         {% else %}
                                                             未登録
                                                         {% endif %}
@@ -665,18 +684,17 @@
                                         <table class="table table-bordered mb-0" style="table-layout: fixed; font-size: 0.9rem; border-style: hidden;">
                                             <tbody>
                                                 <tr>
-                                                    <th class="bg-light text-muted align-middle text-nowrap" style="width: 40%; border-top: none; border-left: none; font-size: 0.75rem;">負担限度額認定証</th>
+                                                    <th class="bg-light text-muted align-middle insurance-th" style="width: 40%; border-top: none; border-left: none;">負担限度額認定証</th>
                                                     <td class="align-middle" style="border-top: none; border-right: none;">
                                                         <span class="text-dark">{% if client.limit_cert == 'yes' or client.limit_cert == '有' or client.limit_cert == 'あり' %}あり{% elif client.limit_cert == 'no' or client.limit_cert == '無' or client.limit_cert == 'なし' %}なし{% elif client.limit_cert %}{{ client.limit_cert }}{% else %}なし{% endif %}</span>
                                                         {% if client.limit_cert == 'yes' or client.limit_cert == '有' or client.limit_cert == 'あり' %}
-                                                        <div class="text-muted mt-1" style="font-size: 0.85rem;">
-                                                            {% if client.limit_cert_start and client.limit_cert_end %}{{ client.limit_cert_start|date:'Y/m/d' }}～{{ client.limit_cert_end|date:'Y/m/d' }}{% else %}期間未設定{% endif %}
-                                                        </div>
+                                                        <div class="insurance-td-fit text-muted mt-1">{% if client.limit_cert_start and client.limit_cert_end %}{{ client.limit_cert_start|wareki }}～{{ client.limit_cert_end|wareki }}{% else %}期間未設定{% endif %}</div>
+                                                        {% if client.limit_cert_end %}<div class="cert-renewal-warn" data-end-date="{{ client.limit_cert_end|date:'Y-m-d' }}" data-auto-renew="false"></div>{% endif %}
                                                         {% endif %}
                                                     </td>
                                                 </tr>
                                                 <tr>
-                                                    <th class="bg-light text-muted align-middle text-nowrap" style="border-bottom: none; border-left: none; font-size: 0.75rem;">高額介護サービス費</th>
+                                                    <th class="bg-light text-muted align-middle insurance-th" style="border-bottom: none; border-left: none;">高額介護サービス費</th>
                                                     <td class="align-middle" style="border-bottom: none; border-right: none;">
                                                         <span class="text-dark">{% if client.high_cost_care == 'yes' or client.high_cost_care == '有' or client.high_cost_care == 'あり' %}あり{% elif client.high_cost_care == 'no' or client.high_cost_care == '無' or client.high_cost_care == 'なし' %}なし{% elif client.high_cost_care %}{{ client.high_cost_care }}{% else %}なし{% endif %}</span>
                                                     </td>
@@ -695,11 +713,11 @@
                                         <table class="table table-bordered mb-0" style="table-layout: fixed; font-size: 0.9rem; border-style: hidden;">
                                             <tbody>
                                                 <tr>
-                                                    <th class="bg-light text-muted align-middle text-nowrap" style="width: 40%; border-top: none; border-left: none; font-size: 0.75rem;">身体障がい者手帳</th>
+                                                    <th class="bg-light text-muted align-middle insurance-th" style="width: 40%; border-top: none; border-left: none;">身体障がい者手帳</th>
                                                     <td class="align-middle" style="border-top: none; border-right: none;">
                                                         <span class="text-dark">{% if client.disability_handbook %}あり{% else %}なし{% endif %}</span>
                                                         {% if client.disability_handbook %}
-                                                        <div class="text-dark mt-1" style="font-size: 0.65rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                                        <div class="insurance-td-fit text-muted mt-1">
                                                             {% if client.disability_handbook_type %}{{ client.get_disability_handbook_type_display }}{% endif %}
                                                             {% if client.disability_handbook_grade %} ({{ client.get_disability_handbook_grade_display }}){% endif %}
                                                         </div>
@@ -707,16 +725,12 @@
                                                     </td>
                                                 </tr>
                                                 <tr>
-                                                    <th class="bg-light text-muted align-middle text-nowrap" style="border-bottom: none; border-left: none; font-size: 0.75rem;">障害福祉受給者証</th>
+                                                    <th class="bg-light text-muted align-middle insurance-th" style="border-bottom: none; border-left: none;">障害福祉受給者証</th>
                                                     <td class="align-middle" style="border-bottom: none; border-right: none;">
                                                         <span class="text-dark">{% if client.disability_welfare == 'yes' or client.disability_welfare == '有' or client.disability_welfare == 'あり' %}あり{% elif client.disability_welfare == 'no' or client.disability_welfare == '無' or client.disability_welfare == 'なし' %}なし{% elif client.disability_welfare %}{{ client.disability_welfare }}{% else %}なし{% endif %}</span>
                                                         {% if client.disability_welfare == 'yes' or client.disability_welfare == '有' or client.disability_welfare == 'あり' %}
-                                                        <div class="text-muted mt-1" style="font-size: 0.85rem;">
-                                                            認定: {% if client.disability_welfare_cert_start and client.disability_welfare_cert_end %}{{ client.disability_welfare_cert_start|date:'Y/m/d' }}～{{ client.disability_welfare_cert_end|date:'Y/m/d' }}{% else %}未設定{% endif %}
-                                                        </div>
-                                                        <div class="text-muted mt-1" style="font-size: 0.85rem;">
-                                                            支給: {% if client.disability_welfare_decision_start and client.disability_welfare_decision_end %}{{ client.disability_welfare_decision_start|date:'Y/m/d' }}～{{ client.disability_welfare_decision_end|date:'Y/m/d' }}{% else %}未設定{% endif %}
-                                                        </div>
+                                                        <div class="insurance-td-fit text-muted mt-1">{% if client.disability_welfare_decision_start and client.disability_welfare_decision_end %}{{ client.disability_welfare_decision_start|wareki }}～{{ client.disability_welfare_decision_end|wareki }}{% else %}未設定{% endif %}</div>
+                                                        {% if client.disability_welfare_decision_end %}<div class="cert-renewal-warn" data-end-date="{{ client.disability_welfare_decision_end|date:'Y-m-d' }}" data-auto-renew="false"></div>{% endif %}
                                                         {% endif %}
                                                     </td>
                                                 </tr>
@@ -737,34 +751,37 @@
                                         <table class="table table-bordered mb-0" style="table-layout: fixed; font-size: 0.9rem; border-style: hidden;">
                                             <tbody>
                                                 <tr>
-                                                    <th class="bg-light text-muted align-middle text-nowrap" style="width: 40%; border-top: none; border-left: none; font-size: 0.75rem;">特定医療費(指定難病)</th>
+                                                    <th class="bg-light text-muted align-middle insurance-th" style="width: 40%; border-top: none; border-left: none;">特定医療費(指定難病)</th>
                                                     <td class="align-middle" style="border-top: none; border-right: none;">
                                                         <span class="text-dark">{% if client.specific_medical == 'yes' or client.specific_medical == '有' or client.specific_medical == 'あり' %}あり{% elif client.specific_medical == 'no' or client.specific_medical == '無' or client.specific_medical == 'なし' %}なし{% elif client.specific_medical %}{{ client.specific_medical }}{% else %}なし{% endif %}</span>
                                                         {% if client.specific_medical == 'yes' or client.specific_medical == '有' or client.specific_medical == 'あり' %}
-                                                        <span class="text-muted ms-2" style="font-size: 0.85rem;">{% if client.specific_medical_start and client.specific_medical_end %}({{ client.specific_medical_start|date:'Y/m/d' }}～{{ client.specific_medical_end|date:'Y/m/d' }}){% endif %}</span>
+                                                        <div class="insurance-td-fit text-muted mt-1">{% if client.specific_medical_start and client.specific_medical_end %}{{ client.specific_medical_start|wareki }}～{{ client.specific_medical_end|wareki }}{% endif %}</div>
+                                                        {% if client.specific_medical_end %}<div class="cert-renewal-warn" data-end-date="{{ client.specific_medical_end|date:'Y-m-d' }}" data-auto-renew="false"></div>{% endif %}
                                                         {% endif %}
                                                     </td>
                                                 </tr>
                                                 <tr>
-                                                    <th class="bg-light text-muted align-middle text-nowrap" style="border-left: none; font-size: 0.75rem;">福祉医療費受給者証</th>
+                                                    <th class="bg-light text-muted align-middle insurance-th" style="border-left: none;">福祉医療費受給者証</th>
                                                     <td class="align-middle" style="border-right: none;">
                                                         <span class="text-dark">{% if client.welfare_medical == 'yes' or client.welfare_medical == '有' or client.welfare_medical == 'あり' %}あり{% elif client.welfare_medical == 'no' or client.welfare_medical == '無' or client.welfare_medical == 'なし' %}なし{% elif client.welfare_medical %}{{ client.welfare_medical }}{% else %}なし{% endif %}</span>
                                                         {% if client.welfare_medical == 'yes' or client.welfare_medical == '有' or client.welfare_medical == 'あり' %}
-                                                        <span class="text-muted ms-2" style="font-size: 0.85rem;">{% if client.welfare_medical_start and client.welfare_medical_end %}({{ client.welfare_medical_start|date:'Y/m/d' }}～{{ client.welfare_medical_end|date:'Y/m/d' }}){% endif %}</span>
+                                                        <div class="insurance-td-fit text-muted mt-1">{% if client.welfare_medical_start and client.welfare_medical_end %}{{ client.welfare_medical_start|wareki }}～{{ client.welfare_medical_end|wareki }}{% endif %}</div>
+                                                        {% if client.welfare_medical_end %}<div class="cert-renewal-warn" data-end-date="{{ client.welfare_medical_end|date:'Y-m-d' }}" data-auto-renew="true"></div>{% endif %}
                                                         {% endif %}
                                                     </td>
                                                 </tr>
                                                 <tr>
-                                                    <th class="bg-light text-muted align-middle text-nowrap" style="border-left: none; font-size: 0.75rem;">国保限度額認定証</th>
+                                                    <th class="bg-light text-muted align-middle insurance-th" style="border-left: none;">国保限度額認定証</th>
                                                     <td class="align-middle" style="border-right: none;">
                                                         <span class="text-dark">{% if client.nhi_limit_cert == 'yes' or client.nhi_limit_cert == '有' or client.nhi_limit_cert == 'あり' %}あり{% elif client.nhi_limit_cert == 'no' or client.nhi_limit_cert == '無' or client.nhi_limit_cert == 'なし' %}なし{% elif client.nhi_limit_cert %}{{ client.nhi_limit_cert }}{% else %}なし{% endif %}</span>
                                                         {% if client.nhi_limit_cert == 'yes' or client.nhi_limit_cert == '有' or client.nhi_limit_cert == 'あり' %}
-                                                        <span class="text-muted ms-2" style="font-size: 0.85rem;">{% if client.nhi_limit_cert_start and client.nhi_limit_cert_end %}({{ client.nhi_limit_cert_start|date:'Y/m/d' }}～{{ client.nhi_limit_cert_end|date:'Y/m/d' }}){% endif %}</span>
+                                                        <div class="insurance-td-fit text-muted mt-1">{% if client.nhi_limit_cert_start and client.nhi_limit_cert_end %}{{ client.nhi_limit_cert_start|wareki }}～{{ client.nhi_limit_cert_end|wareki }}{% endif %}</div>
+                                                        {% if client.nhi_limit_cert_end %}<div class="cert-renewal-warn" data-end-date="{{ client.nhi_limit_cert_end|date:'Y-m-d' }}" data-auto-renew="false"></div>{% endif %}
                                                         {% endif %}
                                                     </td>
                                                 </tr>
                                                 <tr>
-                                                    <th class="bg-light text-muted align-middle text-nowrap" style="border-bottom: none; border-left: none; font-size: 0.75rem;">高額医療・介護合算</th>
+                                                    <th class="bg-light text-muted align-middle insurance-th" style="border-bottom: none; border-left: none;">高額医療・介護合算</th>
                                                     <td class="align-middle" style="border-bottom: none; border-right: none;">
                                                         <span class="text-dark">{% if client.high_cost_combined == 'yes' or client.high_cost_combined == '有' or client.high_cost_combined == 'あり' %}あり{% elif client.high_cost_combined == 'no' or client.high_cost_combined == '無' or client.high_cost_combined == 'なし' %}なし{% elif client.high_cost_combined %}{{ client.high_cost_combined }}{% else %}なし{% endif %}</span>
                                                     </td>
@@ -783,7 +800,7 @@
                                         <table class="table table-bordered mb-0" style="table-layout: fixed; font-size: 0.9rem; border-style: hidden;">
                                             <tbody>
                                                 <tr>
-                                                    <th class="bg-light text-muted align-middle" style="width: 40%; border-top: none; border-left: none;">生活保護受給</th>
+                                                    <th class="bg-light text-muted align-middle insurance-th" style="width: 40%; border-top: none; border-left: none;">生活保護受給</th>
                                                     <td class="align-middle text-dark" style="border-top: none; border-right: none;">
                                                         {% if client.life_protection %}あり{% else %}なし{% endif %}
                                                     </td>
@@ -863,6 +880,7 @@
     </div>
 
     <!-- 書類作成履歴タブ -->
+    {% if request.user.is_staff or request.user.is_superuser %}
     <div class="tab-pane fade" id="documents" role="tabpanel">
         <div class="pt-4 pb-3">
             <div class="card" style="border: none; background-color: white;">
@@ -931,6 +949,7 @@
             </div>
         </div>
     </div>
+    {% endif %}
 </div>
 </div>
 
@@ -949,7 +968,7 @@
                 <div class="modal-body">
                     <div class="row">
                         <div class="col-12">
-                            <h6>{{ client.name }}さんの認知症対応設定</h6>
+                            <h6>{{ client.name }}様の認知症対応設定</h6>
                             <hr>
                         </div>
                     </div>
@@ -1241,8 +1260,172 @@ document.addEventListener('DOMContentLoaded', function() {
             tab.show();
         }
     }
+});
 
+// ======================================================
+// 公的制度テーブル th の自動フォントサイズ調整（拡大・縮小）
+// ======================================================
+(function() {
+    // 最大フォントサイズ（rem）と最小フォントサイズ（rem）
+    const MAX_SIZE_REM = 0.95;  // 上限（これ以上大きくしない）
+    const MIN_SIZE_REM = 0.40;  // 下限（これ以上小さくしない）
+    const STEP_REM     = 0.01;  // 1ステップあたりの変化量
 
+    // 指定セルのフォントサイズをセル幅に合わせて調整する
+    // （常に最大サイズから縮小していくことで、拡大・縮小両方に対応）
+    function fitCell(th) {
+        const cellWidth = th.clientWidth;
+        if (!cellWidth) return; // 非表示中はスキップ
+
+        // パディングを除いた実際のコンテンツ幅
+        const cs = getComputedStyle(th);
+        const availableWidth = cellWidth
+            - parseFloat(cs.paddingLeft)
+            - parseFloat(cs.paddingRight);
+        if (!availableWidth) return;
+
+        const hasBr = th.querySelector('br') !== null;
+        // <br> がある場合は normal（<br> での改行は維持）、ない場合は nowrap
+        th.style.whiteSpace = hasBr ? 'normal' : 'nowrap';
+
+        // プローブ span で各行のテキスト幅を正確に計測
+        const probe = document.createElement('span');
+        probe.style.cssText = 'position:absolute;visibility:hidden;white-space:nowrap;font-family:inherit;';
+        document.body.appendChild(probe);
+
+        // <br> で分割した行テキストを取得
+        const lines = th.innerHTML
+            .replace(/<br\s*\/?>/gi, '\n')
+            .replace(/<[^>]+>/g, '')
+            .split('\n')
+            .map(s => s.trim())
+            .filter(s => s);
+
+        let size = MAX_SIZE_REM;
+        th.style.fontSize = size + 'rem';
+
+        while (size > MIN_SIZE_REM) {
+            probe.style.fontSize = size + 'rem';
+            const maxW = Math.max(...lines.map(line => {
+                probe.textContent = line;
+                return probe.offsetWidth;
+            }));
+            if (maxW <= availableWidth) break;
+            size = Math.max(size - STEP_REM, MIN_SIZE_REM);
+        }
+        th.style.fontSize = size + 'rem';
+        document.body.removeChild(probe);
+    }
+
+    // 全 insurance-th を再調整する
+    function fitAllCells() {
+        document.querySelectorAll('th.insurance-th').forEach(fitCell);
+        // td 内の自動縮小テキストも調整する
+        fitTdCells();
+    }
+
+    // td 内の auto-fit テキストをセル幅に合わせて縮小する
+    function fitTdCell(el) {
+        // closest('td') で親 td を取得
+        const td = el.closest('td');
+        if (!td) return;
+        if (!td.clientWidth) return; // 非表示中はスキップ
+
+        el.style.whiteSpace = 'nowrap';
+
+        // まず最大サイズにリセット
+        let size = MAX_SIZE_REM;
+        el.style.fontSize = size + 'rem';
+
+        // el.offsetWidth = td のコンテンツ幅（パディング除外）と比較する
+        // td.clientWidth はパディング込みのため、el.offsetWidth で正しく判定する
+        while (el.scrollWidth > el.offsetWidth && size > MIN_SIZE_REM) {
+            size = Math.max(size - STEP_REM, MIN_SIZE_REM);
+            el.style.fontSize = size + 'rem';
+        }
+    }
+
+    function fitTdCells() {
+        document.querySelectorAll('.insurance-td-fit').forEach(fitTdCell);
+    }
+
+    // 初期実行（DOMContentLoaded 後）
+    document.addEventListener('DOMContentLoaded', function() {
+        // 保険タブが表示されたとき（サブタブ）
+        const insuranceTab = document.getElementById('client-insurance-tab');
+        if (insuranceTab) {
+            insuranceTab.addEventListener('shown.bs.tab', function() {
+                // タブ表示直後に描画完了を待って実行
+                requestAnimationFrame(function() { requestAnimationFrame(fitAllCells); });
+            });
+        }
+
+        // メインタブの切り替え時にも実行
+        document.querySelectorAll('#assessmentTabs button[data-bs-toggle="tab"]').forEach(function(btn) {
+            btn.addEventListener('shown.bs.tab', function() {
+                requestAnimationFrame(function() { requestAnimationFrame(fitAllCells); });
+            });
+        });
+
+        // 初回: 描画後に複数タイミングで実行（非表示タブの初期化を確実にカバー）
+        requestAnimationFrame(function() { requestAnimationFrame(fitAllCells); });
+        setTimeout(fitAllCells, 150);
+        setTimeout(fitAllCells, 400);
+
+        // ResizeObserver でウィンドウリサイズにも対応
+        if (window.ResizeObserver) {
+            const ro = new ResizeObserver(function() {
+                requestAnimationFrame(fitAllCells);
+            });
+            const pane = document.getElementById('client-insurance');
+            if (pane) ro.observe(pane);
+            ro.observe(document.body);
+        }
+    });
+})();
+
+</script>
+
+<script>
+// 受給者証 更新注意喚起
+(function() {
+    var today = new Date();
+    today.setHours(0,0,0,0);
+    var twoMonthsLater = new Date(today);
+    twoMonthsLater.setMonth(twoMonthsLater.getMonth() + 2);
+
+    var oneMonthLater = new Date(today);
+    oneMonthLater.setMonth(oneMonthLater.getMonth() + 1);
+
+    document.querySelectorAll('.cert-renewal-warn').forEach(function(el) {
+        var endDateStr = el.getAttribute('data-end-date');
+        var isAuto = el.getAttribute('data-auto-renew') === 'true';
+        if (!endDateStr) return;
+        var endDate = new Date(endDateStr);
+        endDate.setHours(0,0,0,0);
+        if (endDate > twoMonthsLater) return;
+
+        var msg, style;
+        if (isAuto) {
+            msg = '自動更新';
+            style = 'background:#cfe2ff; color:#084298;';
+        } else if (endDate < today) {
+            msg = '期限切れ';
+            style = 'background:#f8d7da; color:#842029;';
+        } else if (endDate <= oneMonthLater) {
+            msg = '更新確認';
+            style = 'background:#f8d7da; color:#842029;';
+        } else {
+            msg = '更新確認';
+            style = 'background:#fff3cd; color:#664d03;';
+        }
+        var badge = document.createElement('a');
+        badge.href = '{% url "schedule_management" client.pk %}';
+        badge.style.cssText = 'font-size:0.72rem; margin-top:3px; padding:1px 5px; border-radius:3px; display:inline-block; text-decoration:none;' + style;
+        badge.innerHTML = '<i class="fas fa-exclamation-circle me-1"></i>' + msg;
+        el.appendChild(badge);
+    });
+})();
 </script>
 
 {% endblock %}

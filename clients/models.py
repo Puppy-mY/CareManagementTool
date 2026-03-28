@@ -75,7 +75,7 @@ class Client(models.Model):
     ]
 
     EMPLOYMENT_STATUS_CHOICES = [
-        ('', '選択してください'),
+        ('', '---------'),
         ('employed', '就労中'),
         ('unemployed', '無職'),
         ('retired', '退職'),
@@ -203,7 +203,9 @@ class Client(models.Model):
     medical_insurance_symbol = models.CharField('被保険者番号（記号）', max_length=50, blank=True)
     medical_insurance_number = models.CharField('被保険者番号（番号）', max_length=50, blank=True)
     medical_insurance_branch = models.CharField('被保険者番号（枝番）', max_length=10, blank=True)
-    
+    medical_insurance_start = models.DateField('医療保険 有効期間（開始）', blank=True, null=True)
+    medical_insurance_end = models.DateField('医療保険 有効期間（終了）', blank=True, null=True)
+
     # 家族情報（1人目）
     family_name1 = models.CharField('家族氏名（1人目）', max_length=100, blank=True)
     family_relationship1 = models.CharField('続柄（1人目）', max_length=20, choices=RELATIONSHIP_CHOICES, blank=True)
