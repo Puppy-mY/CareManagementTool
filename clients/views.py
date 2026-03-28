@@ -222,15 +222,20 @@ def schedule_management(request, pk):
     client = get_object_or_404(Client, pk=pk)
 
     ITEM_CONFIG = {
+        'medical_insurance': {'form': CareInsuranceForm, 'label': '医療保険証'},
         'certification': {'form': CareInsuranceForm, 'label': '介護保険被保険者証'},
         'burden': {'form': CareInsuranceForm, 'label': '介護保険負担割合証'},
         'limit_cert': {'form': CareInsuranceForm, 'label': '負担限度額認定証'},
         'high_cost_care': {'form': CareInsuranceForm, 'label': '高額介護サービス費'},
+        'care_public': {'form': CareInsuranceForm, 'label': '介護保険関係（公的制度）'},
         'disability': {'form': DisabilityWelfareForm, 'label': '障害福祉サービス受給者証'},
+        'disability_all': {'form': DisabilityWelfareForm, 'label': '障害福祉関係'},
         'specific_medical': {'form': MedicalCertForm, 'label': '特定医療費受給者証'},
         'welfare_medical': {'form': MedicalCertForm, 'label': '福祉医療費受給者証'},
         'nhi_limit_cert': {'form': MedicalCertForm, 'label': '国保限度額適用認定証'},
         'high_cost_combined': {'form': MedicalCertForm, 'label': '高額医療・高額介護合算療養費'},
+        'medical_all': {'form': MedicalCertForm, 'label': '医療関係'},
+        'life_protection': {'form': CareInsuranceForm, 'label': '生活保護'},
     }
 
     if request.method == 'POST':
@@ -257,7 +262,10 @@ def schedule_management(request, pk):
             return redirect('schedule_management', pk=client.pk)
 
         elif action == 'quick_remove':
-            if item == 'limit_cert':
+            if item == 'medical_insurance':
+                client.medical_insurance_start = None
+                client.medical_insurance_end = None
+            elif item == 'limit_cert':
                 client.limit_cert = 'no'
                 client.limit_cert_start = None
                 client.limit_cert_end = None
@@ -304,15 +312,20 @@ def schedule_management(request, pk):
             if config:
                 # 必要なフィールドのみを更新するための定義
                 edit_fields = {
+                    'medical_insurance': ['medical_insurance_type', 'medical_burden', 'medical_insurer_name_issuer', 'medical_insurer_number', 'medical_insurance_symbol', 'medical_insurance_number', 'medical_insurance_branch', 'medical_insurance_start', 'medical_insurance_end'],
                     'certification': ['care_level', 'certification_date', 'certification_period_start', 'certification_period_end'],
                     'burden': ['care_burden', 'burden_period_start', 'burden_period_end'],
-                    'limit_cert': ['limit_cert_start', 'limit_cert_end'],
-                    'high_cost_care': [],
-                    'disability': ['disability_welfare_cert_start', 'disability_welfare_cert_end', 'disability_welfare_decision_start', 'disability_welfare_decision_end'],
-                    'specific_medical': ['specific_medical_start', 'specific_medical_end'],
-                    'welfare_medical': ['welfare_medical_start', 'welfare_medical_end'],
-                    'nhi_limit_cert': ['nhi_limit_cert_start', 'nhi_limit_cert_end'],
-                    'high_cost_combined': [],
+                    'limit_cert': ['limit_cert', 'limit_cert_start', 'limit_cert_end'],
+                    'high_cost_care': ['high_cost_care'],
+                    'care_public': ['limit_cert', 'limit_cert_start', 'limit_cert_end', 'high_cost_care'],
+                    'disability': ['disability_welfare', 'disability_welfare_decision_start', 'disability_welfare_decision_end'],
+                    'disability_all': ['disability_welfare', 'disability_welfare_decision_start', 'disability_welfare_decision_end'],
+                    'specific_medical': ['specific_medical', 'specific_medical_start', 'specific_medical_end'],
+                    'welfare_medical': ['welfare_medical', 'welfare_medical_start', 'welfare_medical_end'],
+                    'nhi_limit_cert': ['nhi_limit_cert', 'nhi_limit_cert_start', 'nhi_limit_cert_end'],
+                    'high_cost_combined': ['high_cost_combined'],
+                    'medical_all': ['specific_medical', 'specific_medical_start', 'specific_medical_end', 'welfare_medical', 'welfare_medical_start', 'welfare_medical_end', 'nhi_limit_cert', 'nhi_limit_cert_start', 'nhi_limit_cert_end', 'high_cost_combined'],
+                    'life_protection': ['life_protection'],
                 }
 
                 fields_to_update = edit_fields.get(item, [])
