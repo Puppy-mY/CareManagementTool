@@ -4,9 +4,6 @@
 {% block title %}{% if is_edit %}アセスメント編集{% else %}アセスメント作成{% endif %} - {{ block.super }}{% endblock %}
 
 {% block content %}
-{% block permissions %}
-<span class="badge bg-light text-muted border" style="font-size: 0.75rem;">居宅</span>
-{% endblock %}
 
 <style>
 /* Minimal, readable, 3-color-driven form layout */
@@ -513,11 +510,11 @@ button[name="action"][value="save"]:hover {
                 </h1>
                 {% if is_edit and assessment.client %}
                 <span class="text-muted border-start ps-3 ms-2">
-                    <i class="fas fa-user me-1"></i>{{ assessment.client.name }} さん
+                    <i class="fas fa-user me-1"></i>{{ assessment.client.name }} 様
                 </span>
                 {% elif not is_edit and selected_client %}
                 <span class="text-muted border-start ps-3 ms-2">
-                    <i class="fas fa-user me-1"></i>{{ selected_client.name }} さん
+                    <i class="fas fa-user me-1"></i>{{ selected_client.name }} 様
                 </span>
                 {% endif %}
             </div>
@@ -579,7 +576,7 @@ button[name="action"][value="save"]:hover {
                 <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12">
                     <label for="assessment_reason" class="form-label">アセスメント理由</label>
                     <select name="assessment_type" id="assessment_type" class="form-select" onchange="toggleOtherInput('assessment_type', 'assessment_type_other_input')">
-                        <option value="">選択してください</option>
+                        <option value="">---------</option>
                         {% for value, display in assessment_types %}
                             <option value="{{ value }}" {% if is_edit and assessment.assessment_type == value %}selected{% endif %}>{{ display }}</option>
                         {% endfor %}
@@ -589,7 +586,7 @@ button[name="action"][value="save"]:hover {
                 <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12">
                     <label for="interview_location" class="form-label">面談場所</label>
                     <select name="interview_location" id="interview_location" class="form-select" onchange="toggleOtherInput('interview_location', 'interview_location_other_input')">
-                        <option value="">選択してください</option>
+                        <option value="">---------</option>
                         {% for value, display in interview_locations %}
                             <option value="{{ value }}" {% if is_edit and assessment.interview_location == value %}selected{% endif %}>{{ display }}</option>
                         {% endfor %}
@@ -986,7 +983,7 @@ button[name="action"][value="save"]:hover {
                             <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 mb-3">
                                 <label class="form-label">通院状況</label>
                                 <select name="hospital_visit_status" class="form-select">
-                        <option value="">選択してください</option>
+                        <option value="">---------</option>
                         <option value="regular" {% if form.hospital_visit_status.value == 'regular' %}selected{% endif %}>定期通院</option>
                         <option value="occasional" {% if form.hospital_visit_status.value == 'occasional' %}selected{% endif %}>時々通院</option>
                         <option value="home_visit" {% if form.hospital_visit_status.value == 'home_visit' %}selected{% endif %}>往診</option>
@@ -996,7 +993,7 @@ button[name="action"][value="save"]:hover {
                             <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 mb-3">
                                 <label class="form-label">通院方法</label>
                                 <select name="hospital_visit_method" class="form-select" onchange="toggleOtherInput('hospital_visit_method', 'hospital_visit_method_other_input')">
-                        <option value="">選択してください</option>
+                        <option value="">---------</option>
                         <option value="self" {% if form.hospital_visit_method.value == 'self' %}selected{% endif %}>本人</option>
                         <option value="family" {% if form.hospital_visit_method.value == 'family' %}selected{% endif %}>家族</option>
                         <option value="care_assistance" {% if form.hospital_visit_method.value == 'care_assistance' %}selected{% endif %}>通院乗降介助</option>
@@ -1027,7 +1024,7 @@ button[name="action"][value="save"]:hover {
                                 <div class="mb-3">
                         <label class="form-label">服薬状況</label>
                         <select name="medication_status" class="form-select">
-                            <option value="">選択してください</option>
+                            <option value="">---------</option>
                             <option value="self" {% if form.medication_status.value == 'self' %}selected{% endif %}>自己管理</option>
                             <option value="family" {% if form.medication_status.value == 'family' %}selected{% endif %}>家族管理</option>
                             <option value="support" {% if form.medication_status.value == 'support' %}selected{% endif %}>支援あり</option>
@@ -1359,7 +1356,7 @@ button[name="action"][value="save"]:hover {
                             <div class="col-xl-3 col-lg-3 col-md-6 col-sm-12 mb-3">
                                 <label class="form-label">視力</label>
                                 <select name="vision" class="form-select">
-                        <option value="">選択してください</option>
+                        <option value="">---------</option>
                         <option value="normal" {% if form.vision.value == 'normal' %}selected{% endif %}>正常</option>
                         <option value="large_letters_ok" {% if form.vision.value == 'large_letters_ok' %}selected{% endif %}>大きい字は可</option>
                         <option value="barely_visible" {% if form.vision.value == 'barely_visible' %}selected{% endif %}>ほぼ見えない</option>
@@ -1378,7 +1375,7 @@ button[name="action"][value="save"]:hover {
                             <div class="col-xl-3 col-lg-3 col-md-6 col-sm-12 mb-3">
                                 <label class="form-label">聴力</label>
                                 <select name="hearing" class="form-select">
-                                  <option value="">選択してください</option>
+                                  <option value="">---------</option>
                                   <option value="normal" {% if form.hearing.value == 'normal' %}selected{% endif %}>正常</option>
                                   <option value="loud_voice_ok" {% if form.hearing.value == 'loud_voice_ok' %}selected{% endif %}>大きい声は可</option>
                                   <option value="barely_audible" {% if form.hearing.value == 'barely_audible' %}selected{% endif %}>ほぼ聞こえない</option>
@@ -1439,7 +1436,7 @@ button[name="action"][value="save"]:hover {
                                 <div class="col-xl-4 col-lg-4 col-md-4 col-sm-6 mb-3">
                                     <label class="form-label">寝返り</label>
                                     <select name="turning_over" class="form-select">
-                                        <option value="">選択してください</option>
+                                        <option value="">---------</option>
                                         <option value="no_assistance" {% if assessment.basic_activities.turning_over == 'no_assistance' %}selected{% endif %}>つかまらないでできる</option>
                                         <option value="with_assistance" {% if assessment.basic_activities.turning_over == 'with_assistance' %}selected{% endif %}>何かにつかまればできる</option>
                                         <option value="cannot" {% if assessment.basic_activities.turning_over == 'cannot' %}selected{% endif %}>できない</option>
@@ -1448,7 +1445,7 @@ button[name="action"][value="save"]:hover {
                                 <div class="col-xl-4 col-lg-4 col-md-4 col-sm-6 mb-3">
                                     <label class="form-label">起き上がり</label>
                                     <select name="getting_up" class="form-select">
-                                        <option value="">選択してください</option>
+                                        <option value="">---------</option>
                                         <option value="no_assistance" {% if assessment.basic_activities.getting_up == 'no_assistance' %}selected{% endif %}>つかまらないでできる</option>
                                         <option value="with_assistance" {% if assessment.basic_activities.getting_up == 'with_assistance' %}selected{% endif %}>何かにつかまればできる</option>
                                         <option value="cannot" {% if assessment.basic_activities.getting_up == 'cannot' %}selected{% endif %}>できない</option>
@@ -1457,7 +1454,7 @@ button[name="action"][value="save"]:hover {
                                 <div class="col-xl-4 col-lg-4 col-md-4 col-sm-6 mb-3">
                                     <label class="form-label">座位</label>
                                     <select name="sitting" class="form-select">
-                                        <option value="">選択してください</option>
+                                        <option value="">---------</option>
                                         <option value="can_do" {% if assessment.basic_activities.sitting == 'can_do' %}selected{% endif %}>できる</option>
                                         <option value="self_support" {% if assessment.basic_activities.sitting == 'self_support' %}selected{% endif %}>自分の手で支えればできる</option>
                                         <option value="support_needed" {% if assessment.basic_activities.sitting == 'support_needed' %}selected{% endif %}>支えてもらえればできる</option>
@@ -1474,7 +1471,7 @@ button[name="action"][value="save"]:hover {
                                 <div class="col-xl-4 col-lg-4 col-md-4 col-sm-6 mb-3">
                                     <label class="form-label">立ち上がり</label>
                                     <select name="standing_up" class="form-select">
-                                        <option value="">選択してください</option>
+                                        <option value="">---------</option>
                                         <option value="no_assistance" {% if assessment.basic_activities.standing_up == 'no_assistance' %}selected{% endif %}>つかまらないでできる</option>
                                         <option value="with_assistance" {% if assessment.basic_activities.standing_up == 'with_assistance' %}selected{% endif %}>何かにつかまればできる</option>
                                         <option value="cannot" {% if assessment.basic_activities.standing_up == 'cannot' %}selected{% endif %}>できない</option>
@@ -1483,7 +1480,7 @@ button[name="action"][value="save"]:hover {
                                 <div class="col-xl-4 col-lg-4 col-md-4 col-sm-6 mb-3">
                                     <label class="form-label">立位</label>
                                     <select name="standing" class="form-select">
-                                        <option value="">選択してください</option>
+                                        <option value="">---------</option>
                                         <option value="no_support" {% if assessment.basic_activities.standing == 'no_support' %}selected{% endif %}>支えなしでできる</option>
                                         <option value="with_something" {% if assessment.basic_activities.standing == 'with_something' %}selected{% endif %}>何か支えがあればできる</option>
                                         <option value="cannot" {% if assessment.basic_activities.standing == 'cannot' %}selected{% endif %}>できない</option>
@@ -1492,7 +1489,7 @@ button[name="action"][value="save"]:hover {
                                 <div class="col-xl-4 col-lg-4 col-md-4 col-sm-6 mb-3">
                                     <label class="form-label">移乗</label>
                                     <select name="transfer" class="form-select">
-                                        <option value="">選択してください</option>
+                                        <option value="">---------</option>
                                         <option value="independent" {% if assessment.basic_activities.transfer == 'independent' %}selected{% endif %}>自立</option>
                                         <option value="supervision" {% if assessment.basic_activities.transfer == 'supervision' %}selected{% endif %}>見守り</option>
                                         <option value="partial_assistance" {% if assessment.basic_activities.transfer == 'partial_assistance' %}selected{% endif %}>一部介助</option>
@@ -1514,7 +1511,7 @@ button[name="action"][value="save"]:hover {
                                             <div class="col-12 mb-3">
                                                 <label class="form-label">移動能力</label>
                                                 <select name="indoor_mobility" class="form-select">
-                                                    <option value="">選択してください</option>
+                                                    <option value="">---------</option>
                                                     <option value="independent" {% if assessment.basic_activities.indoor_mobility == 'independent' %}selected{% endif %}>自立</option>
                                                     <option value="supervision" {% if assessment.basic_activities.indoor_mobility == 'supervision' %}selected{% endif %}>見守り</option>
                                                     <option value="partial_assistance" {% if assessment.basic_activities.indoor_mobility == 'partial_assistance' %}selected{% endif %}>一部介助</option>
@@ -1524,7 +1521,7 @@ button[name="action"][value="save"]:hover {
                                             <div class="col-12">
                                                 <label class="form-label">使用用具</label>
                                                 <select name="indoor_mobility_equipment" class="form-select" onchange="toggleOtherInput('indoor_mobility_equipment', 'indoor_mobility_equipment_other_input')">
-                                                    <option value="">選択してください</option>
+                                                    <option value="">---------</option>
                                                     <option value="none" {% if assessment.basic_activities.indoor_mobility_equipment == 'none' %}selected{% endif %}>なし</option>
                                                     <option value="wheelchair" {% if assessment.basic_activities.indoor_mobility_equipment == 'wheelchair' %}selected{% endif %}>車椅子</option>
                                                     <option value="walker" {% if assessment.basic_activities.indoor_mobility_equipment == 'walker' %}selected{% endif %}>歩行器</option>
@@ -1546,7 +1543,7 @@ button[name="action"][value="save"]:hover {
                                             <div class="col-12 mb-3">
                                                 <label class="form-label">移動能力</label>
                                                 <select name="outdoor_mobility" class="form-select">
-                                                    <option value="">選択してください</option>
+                                                    <option value="">---------</option>
                                                     <option value="independent" {% if assessment.basic_activities.outdoor_mobility == 'independent' %}selected{% endif %}>自立</option>
                                                     <option value="supervision" {% if assessment.basic_activities.outdoor_mobility == 'supervision' %}selected{% endif %}>見守り</option>
                                                     <option value="partial_assistance" {% if assessment.basic_activities.outdoor_mobility == 'partial_assistance' %}selected{% endif %}>一部介助</option>
@@ -1556,7 +1553,7 @@ button[name="action"][value="save"]:hover {
                                             <div class="col-12">
                                                 <label class="form-label">使用用具</label>
                                                 <select name="outdoor_mobility_equipment" class="form-select" onchange="toggleOtherInput('outdoor_mobility_equipment', 'outdoor_mobility_equipment_other_input')">
-                                                    <option value="">選択してください</option>
+                                                    <option value="">---------</option>
                                                     <option value="none" {% if assessment.basic_activities.outdoor_mobility_equipment == 'none' %}selected{% endif %}>なし</option>
                                                     <option value="wheelchair" {% if assessment.basic_activities.outdoor_mobility_equipment == 'wheelchair' %}selected{% endif %}>車椅子</option>
                                                     <option value="walker" {% if assessment.basic_activities.outdoor_mobility_equipment == 'walker' %}selected{% endif %}>歩行器</option>
@@ -1590,7 +1587,7 @@ button[name="action"][value="save"]:hover {
                                 <div class="col-xl-4 col-lg-4 col-md-4 col-sm-6 mb-3">
                                     <label class="form-label">食事方法</label>
                                     <select name="eating_method" class="form-select">
-                                        <option value="">選択してください</option>
+                                        <option value="">---------</option>
                                         <option value="oral" {% if assessment.adl.eating_method == 'oral' %}selected{% endif %}>経口摂取</option>
                                         <option value="tube_oral" {% if assessment.adl.eating_method == 'tube_oral' %}selected{% endif %}>経管栄養+経口摂取</option>
                                         <option value="tube_only" {% if assessment.adl.eating_method == 'tube_only' %}selected{% endif %}>経管栄養（胃ろう）</option>
@@ -1601,7 +1598,7 @@ button[name="action"][value="save"]:hover {
                                 <div class="col-xl-4 col-lg-4 col-md-4 col-sm-6 mb-3">
                                     <label class="form-label">食事動作</label>
                                     <select name="eating_assistance" class="form-select">
-                                        <option value="">選択してください</option>
+                                        <option value="">---------</option>
                                         <option value="independent" {% if assessment.adl.eating_assistance == 'independent' %}selected{% endif %}>自立</option>
                                         <option value="supervision" {% if assessment.adl.eating_assistance == 'supervision' %}selected{% endif %}>見守り</option>
                                         <option value="partial_assistance" {% if assessment.adl.eating_assistance == 'partial_assistance' %}selected{% endif %}>一部介助</option>
@@ -1611,7 +1608,7 @@ button[name="action"][value="save"]:hover {
                                 <div class="col-xl-4 col-lg-4 col-md-4 col-sm-6 mb-3">
                                     <label class="form-label">嚥下</label>
                                     <select name="swallowing" class="form-select">
-                                        <option value="">選択してください</option>
+                                        <option value="">---------</option>
                                         <option value="can_do" {% if assessment.adl.swallowing == 'can_do' %}selected{% endif %}>できる</option>
                                         <option value="supervision_needed" {% if assessment.adl.swallowing == 'supervision_needed' %}selected{% endif %}>見守り等が必要</option>
                                         <option value="cannot" {% if assessment.adl.swallowing == 'cannot' %}selected{% endif %}>できない</option>
@@ -1627,7 +1624,7 @@ button[name="action"][value="save"]:hover {
                                 <div class="col-xl-4 col-lg-4 col-md-4 col-sm-6 mb-3">
                                     <label class="form-label">主食</label>
                                     <select name="meal_form_main" class="form-select">
-                                        <option value="">選択してください</option>
+                                        <option value="">---------</option>
                                         <option value="normal" {% if assessment.adl.meal_form_main == 'normal' %}selected{% endif %}>普通</option>
                                         <option value="soft" {% if assessment.adl.meal_form_main == 'soft' %}selected{% endif %}>軟飯</option>
                                         <option value="porridge" {% if assessment.adl.meal_form_main == 'porridge' %}selected{% endif %}>全粥</option>
@@ -1637,7 +1634,7 @@ button[name="action"][value="save"]:hover {
                                 <div class="col-xl-4 col-lg-4 col-md-4 col-sm-6 mb-3">
                                     <label class="form-label">副食</label>
                                     <select name="meal_form_side" class="form-select">
-                                        <option value="">選択してください</option>
+                                        <option value="">---------</option>
                                         <option value="normal" {% if assessment.adl.meal_form_side == 'normal' %}selected{% endif %}>普通</option>
                                         <option value="soft" {% if assessment.adl.meal_form_side == 'soft' %}selected{% endif %}>一口大</option>
                                         <option value="minced" {% if assessment.adl.meal_form_side == 'minced' %}selected{% endif %}>粗きザミ</option>
@@ -1741,7 +1738,7 @@ button[name="action"][value="save"]:hover {
                                 <div class="col-xl-6 col-lg-6 col-md-6 col-sm-6 mb-3">
                                     <label class="form-label">口腔衛生</label>
                                     <select name="oral_hygiene_assistance" class="form-select">
-                                        <option value="">選択してください</option>
+                                        <option value="">---------</option>
                                         <option value="independent" {% if assessment.adl.oral_hygiene_assistance == 'independent' %}selected{% endif %}>自立</option>
                                         <option value="supervision" {% if assessment.adl.oral_hygiene_assistance == 'supervision' %}selected{% endif %}>見守り</option>
                                         <option value="partial_assistance" {% if assessment.adl.oral_hygiene_assistance == 'partial_assistance' %}selected{% endif %}>一部介助</option>
@@ -1820,7 +1817,7 @@ button[name="action"][value="save"]:hover {
                                 <div class="col-xl-4 col-lg-4 col-md-4 col-sm-6 mb-3">
                                     <label class="form-label">入浴動作</label>
                                     <select name="bathing_assistance" class="form-select">
-                                        <option value="">選択してください</option>
+                                        <option value="">---------</option>
                                         <option value="independent" {% if assessment.adl.bathing_assistance == 'independent' %}selected{% endif %}>自立</option>
                                         <option value="supervision" {% if assessment.adl.bathing_assistance == 'supervision' %}selected{% endif %}>見守り</option>
                                         <option value="partial_assistance" {% if assessment.adl.bathing_assistance == 'partial_assistance' %}selected{% endif %}>一部介助</option>
@@ -1830,7 +1827,7 @@ button[name="action"][value="save"]:hover {
                                 <div class="col-xl-4 col-lg-4 col-md-4 col-sm-6 mb-3">
                                     <label class="form-label">入浴形態</label>
                                     <select name="bathing_form" class="form-select">
-                                        <option value="">選択してください</option>
+                                        <option value="">---------</option>
                                         <option value="regular_bath" {% if assessment.adl.bathing_form == 'regular_bath' %}selected{% endif %}>一般浴</option>
                                         <option value="sitting_bath" {% if assessment.adl.bathing_form == 'sitting_bath' %}selected{% endif %}>寝台浴</option>
                                         <option value="shower_bath" {% if assessment.adl.bathing_form == 'shower_bath' %}selected{% endif %}>シャワー浴</option>
@@ -1859,7 +1856,7 @@ button[name="action"][value="save"]:hover {
                                 <div class="col-xl-4 col-lg-4 col-md-4 col-sm-6 mb-3">
                                     <label class="form-label">上衣</label>
                                     <select name="dressing_upper" class="form-select">
-                                        <option value="">選択してください</option>
+                                        <option value="">---------</option>
                                         <option value="independent" {% if assessment.adl.dressing_upper == 'independent' %}selected{% endif %}>自立</option>
                                         <option value="supervision" {% if assessment.adl.dressing_upper == 'supervision' %}selected{% endif %}>見守り</option>
                                         <option value="partial_assistance" {% if assessment.adl.dressing_upper == 'partial_assistance' %}selected{% endif %}>一部介助</option>
@@ -1869,7 +1866,7 @@ button[name="action"][value="save"]:hover {
                                 <div class="col-xl-4 col-lg-4 col-md-4 col-sm-6 mb-3">
                                     <label class="form-label">下衣</label>
                                     <select name="dressing_lower" class="form-select">
-                                        <option value="">選択してください</option>
+                                        <option value="">---------</option>
                                         <option value="independent" {% if assessment.adl.dressing_lower == 'independent' %}selected{% endif %}>自立</option>
                                         <option value="supervision" {% if assessment.adl.dressing_lower == 'supervision' %}selected{% endif %}>見守り</option>
                                         <option value="partial_assistance" {% if assessment.adl.dressing_lower == 'partial_assistance' %}selected{% endif %}>一部介助</option>
@@ -1897,7 +1894,7 @@ button[name="action"][value="save"]:hover {
                                 <div class="col-xl-4 col-lg-4 col-md-4 col-sm-6 mb-3">
                                     <label class="form-label">排泄動作</label>
                                     <select name="excretion_assistance" class="form-select">
-                                        <option value="">選択してください</option>
+                                        <option value="">---------</option>
                                         <option value="independent" {% if assessment.adl.excretion_assistance == 'independent' %}selected{% endif %}>自立</option>
                                         <option value="supervision" {% if assessment.adl.excretion_assistance == 'supervision' %}selected{% endif %}>見守り</option>
                                         <option value="partial_assistance" {% if assessment.adl.excretion_assistance == 'partial_assistance' %}selected{% endif %}>一部介助</option>
@@ -3849,7 +3846,7 @@ function toggleInfectionOptions() {
 
 // 動的セレクトボックス機能
 const medicalTreatmentOptions = [
-    { value: '', text: '選択してください' },
+    { value: '', text: '---------' },
     { value: 'none', text: 'なし' },
     { value: 'iv_management', text: '点滴の管理' },
     { value: 'central_venous_nutrition', text: '中心静脈栄養' },
@@ -3866,7 +3863,7 @@ const medicalTreatmentOptions = [
 ];
 
 const skinDiseaseOptions = [
-    { value: '', text: '選択してください' },
+    { value: '', text: '---------' },
     { value: 'none', text: 'なし' },
     { value: 'bedsore', text: '床ずれ' },
     { value: 'eczema', text: '湿疹' },
@@ -3877,7 +3874,7 @@ const skinDiseaseOptions = [
 ];
 
 const infectionOptions = [
-    { value: '', text: '選択してください' },
+    { value: '', text: '---------' },
     { value: 'none', text: 'なし' },
     { value: 'tuberculosis', text: '結核' },
     { value: 'pneumonia', text: '肺炎' },
@@ -4278,6 +4275,8 @@ function handleAllergyStatus(element) {
             detailsField.style.display = 'none';
             // なしが選択された場合、またはすべて選択解除された場合、詳細テキストをクリア
             detailsTextarea.value = '';
+            // 服薬・アレルギーの詳細も連動して更新
+            updateMedicationAllergyDetails();
         }
     }
 }

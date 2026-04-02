@@ -223,6 +223,7 @@ def schedule_management(request, pk):
 
     ITEM_CONFIG = {
         'medical_insurance': {'form': CareInsuranceForm, 'label': '医療保険証'},
+        'daily_living': {'form': CareInsuranceForm, 'label': '日常生活の自立度'},
         'certification': {'form': CareInsuranceForm, 'label': '介護保険被保険者証'},
         'burden': {'form': CareInsuranceForm, 'label': '介護保険負担割合証'},
         'limit_cert': {'form': CareInsuranceForm, 'label': '負担限度額認定証'},
@@ -322,14 +323,15 @@ def schedule_management(request, pk):
                     'care_public': ['limit_cert', 'limit_cert_start', 'limit_cert_end', 'high_cost_care'],
                     'disability_handbook': ['disability_handbook', 'disability_handbook_type', 'disability_handbook_grade'],
                     'disability': ['disability_welfare', 'disability_welfare_decision_start', 'disability_welfare_decision_end'],
-                    'disability_all': ['disability_welfare', 'disability_welfare_decision_start', 'disability_welfare_decision_end'],
+                    'disability_all': ['disability_handbook', 'disability_handbook_type', 'disability_handbook_grade', 'disability_welfare', 'disability_welfare_decision_start', 'disability_welfare_decision_end'],
                     'specific_medical': ['specific_medical', 'specific_medical_start', 'specific_medical_end'],
                     'welfare_medical': ['welfare_medical', 'welfare_medical_start', 'welfare_medical_end'],
                     'nhi_limit_cert': ['nhi_limit_cert', 'nhi_limit_cert_start', 'nhi_limit_cert_end'],
                     'high_cost_combined': ['high_cost_combined'],
                     'medical_all': ['specific_medical', 'specific_medical_start', 'specific_medical_end', 'welfare_medical', 'welfare_medical_start', 'welfare_medical_end', 'nhi_limit_cert', 'nhi_limit_cert_start', 'nhi_limit_cert_end', 'high_cost_combined'],
                     'life_protection': ['life_protection'],
-                    'care_insurance_all': ['care_level', 'certification_date', 'certification_period_start', 'certification_period_end', 'care_burden', 'burden_period_start', 'burden_period_end'],
+                    'care_insurance_all': ['insurance_number', 'care_level', 'certification_date', 'certification_period_start', 'certification_period_end', 'care_burden', 'burden_period_start', 'burden_period_end'],
+                    'daily_living': ['disability_level', 'dementia_level'],
                 }
 
                 fields_to_update = edit_fields.get(item, [])
@@ -366,6 +368,8 @@ def schedule_management(request, pk):
         'title': '保険・受給者証管理',
         'today': today,
         'warn_date': warn_date,
+        'disability_level_choices': Client.DISABILITY_LEVEL_CHOICES,
+        'dementia_level_choices': Client.DEMENTIA_LEVEL_CHOICES,
     }
 
     return render(request, 'clients/schedule_management.html', context)

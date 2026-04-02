@@ -86,7 +86,7 @@ class DetailedAssessmentForm(forms.Form):
     
     # 保険情報
     CARE_LEVEL_CHOICES = [
-        ('', '----------'),
+        ('', '---------'),
         ('independent', '自立'),
         ('support1', '要支援1'),
         ('support2', '要支援2'),
@@ -113,7 +113,7 @@ class DetailedAssessmentForm(forms.Form):
     )
     
     DEMENTIA_LEVEL_CHOICES = [
-        ('', '----------'),
+        ('', '---------'),
         ('independent', '自立'),
         ('I', 'I'),
         ('IIa', 'IIa'),
@@ -133,7 +133,7 @@ class DetailedAssessmentForm(forms.Form):
     
     burden_ratio = forms.ChoiceField(
         label='負担割合',
-        choices=[('', '----------'), ('1', '1割負担'), ('2', '2割負担'), ('3', '3割負担')],
+        choices=[('', '---------'), ('1', '1割負担'), ('2', '2割負担'), ('3', '3割負担')],
         widget=forms.Select(attrs={'class': 'form-select'}),
         required=False
     )
@@ -177,7 +177,7 @@ class DetailedAssessmentForm(forms.Form):
     
     # 居住状況
     HOUSEHOLD_TYPE_CHOICES = [
-        ('', '----------'),
+        ('', '---------'),
         ('family_together', '家族同居'),
         ('single', '一人暮らし'),
         ('elderly', '高齢所帯'),
@@ -366,7 +366,7 @@ class DetailedAssessmentForm(forms.Form):
     )
 
     BEDDING_TYPE_CHOICES = [
-        ('', '----------'),
+        ('', '---------'),
         ('futon', '畳・床'),
         ('bed', 'ベッド'),
         ('reclining', 'リクライニングベッド'),
@@ -595,7 +595,7 @@ class DetailedAssessmentForm(forms.Form):
 
     # 服薬・アレルギーフィールド
     MEDICATION_STATUS_CHOICES = [
-        ('', '----------'),
+        ('', '---------'),
         ('self', '自己管理'),
         ('family', '家族管理'),
         ('support', '支援あり'),
@@ -920,7 +920,7 @@ class DetailedAssessmentForm(forms.Form):
     )
     
     VISION_CHOICES = [
-        ('', '選択してください'),
+        ('', '---------'),
         ('normal', '正常'),
         ('large_letters_ok', '大きい字は可'),
         ('barely_visible', 'ほぼ見えない'),
@@ -935,7 +935,7 @@ class DetailedAssessmentForm(forms.Form):
     )
     
     HEARING_CHOICES = [
-        ('', '選択してください'),
+        ('', '---------'),
         ('normal', '正常'),
         ('loud_voice_ok', '大きい声は可'),
         ('barely_audible', 'ほぼ聞こえない'),
@@ -991,7 +991,7 @@ class DetailedAssessmentForm(forms.Form):
     )
     
     CONVERSATION_CHOICES = [
-        ('', '選択してください'),
+        ('', '---------'),
         ('possible', '可能'),
         ('unclear', '不明瞭'),
         ('somewhat_difficult', 'やや不自由'),
@@ -1006,7 +1006,7 @@ class DetailedAssessmentForm(forms.Form):
     )
     
     COMMUNICATION_CHOICES = [
-        ('', '選択してください'),
+        ('', '---------'),
         ('possible', '可能'),
         ('only_sometimes', 'その場のみ可'),
         ('somewhat_difficult', 'やや不自由'),
@@ -1028,7 +1028,7 @@ class DetailedAssessmentForm(forms.Form):
     
     # 基本動作
     BASIC_ACTIVITY_CHOICES = [
-        ('', '選択してください'),
+        ('', '---------'),
         ('no_assistance', 'つかまらないでできる'),
         ('with_assistance', '何かにつかまればできる'),
         ('cannot', 'できない'),
@@ -1049,7 +1049,7 @@ class DetailedAssessmentForm(forms.Form):
     )
     
     SITTING_CHOICES = [
-        ('', '選択してください'),
+        ('', '---------'),
         ('can_do', 'できる'),
         ('self_support', '自分の手で支えればできる'),
         ('support_needed', '支えてもらえればできる'),
@@ -1073,7 +1073,7 @@ class DetailedAssessmentForm(forms.Form):
     standing = forms.ChoiceField(
         label='立位',
         choices=[
-            ('', '選択してください'),
+            ('', '---------'),
             ('no_support', '支えなしでできる'),
             ('with_something', '何か支えがあればできる'),
             ('cannot', 'できない'),
@@ -1083,7 +1083,7 @@ class DetailedAssessmentForm(forms.Form):
     )
     
     MOBILITY_CHOICES = [
-        ('', '選択してください'),
+        ('', '---------'),
         ('independent', '自立'),
         ('supervision', '見守り'),
         ('partial_assistance', '一部介助'),
@@ -1105,7 +1105,7 @@ class DetailedAssessmentForm(forms.Form):
     )
     
     MOBILITY_EQUIPMENT_CHOICES = [
-        ('', '選択してください'),
+        ('', '---------'),
         ('none', 'なし'),
         ('wheelchair', '車椅子'),
         ('walker', '歩行器'),
@@ -1145,7 +1145,7 @@ class DetailedAssessmentForm(forms.Form):
     eating_method = forms.ChoiceField(
         label='食事方法',
         choices=[
-            ('', '選択してください'),
+            ('', '---------'),
             ('oral', '経口摂取'),
             ('tube_oral', '経管栄養+経口摂取'),
             ('tube_only', '経管栄養（胃ろう）'),
@@ -1166,7 +1166,7 @@ class DetailedAssessmentForm(forms.Form):
     swallowing = forms.ChoiceField(
         label='嚥下',
         choices=[
-            ('', '選択してください'),
+            ('', '---------'),
             ('can_do', 'できる'),
             ('supervision_needed', '見守り等が必要'),
             ('cannot', 'できない'),
@@ -1176,7 +1176,7 @@ class DetailedAssessmentForm(forms.Form):
     )
     
     MEAL_FORM_MAIN_CHOICES = [
-        ('', '選択してください'),
+        ('', '---------'),
         ('normal', '普通'),
         ('soft', '軟飯'),
         ('porridge', '全粥'),
@@ -1191,7 +1191,7 @@ class DetailedAssessmentForm(forms.Form):
     )
     
     MEAL_FORM_SIDE_CHOICES = [
-        ('', '選択してください'),
+        ('', '---------'),
         ('normal', '普通'),
         ('soft', '一口大'),
         ('minced', '粗きザミ'),
@@ -1232,7 +1232,7 @@ class DetailedAssessmentForm(forms.Form):
     eating_restriction = forms.ChoiceField(
         label='食事制限の有無',
         choices=[
-            ('', '選択してください'),
+            ('', '---------'),
             ('yes', 'あり'),
             ('no', 'なし'),
             ('unknown', '不明'),
@@ -1331,7 +1331,7 @@ class DetailedAssessmentForm(forms.Form):
     )
     
     BATHING_FORM_CHOICES = [
-        ('', '選択してください'),
+        ('', '---------'),
         ('regular_bath', '一般浴'),
         ('sitting_bath', '寝台浴'),
         ('shower_bath', 'シャワー浴'),
@@ -1532,14 +1532,14 @@ class DetailedAssessmentForm(forms.Form):
     # 認知機能
     dementia_presence = forms.ChoiceField(
         label='認知症の有無',
-        choices=[('', '選択してください'), ('yes', 'あり'), ('no', 'なし')],
+        choices=[('', '---------'), ('yes', 'あり'), ('no', 'なし')],
         widget=forms.RadioSelect(attrs={'class': 'btn-check'}),
         required=False
     )
 
     dementia_severity = forms.ChoiceField(
         label='認知症の程度',
-        choices=[('', '選択してください'), ('mild', '軽度'), ('moderate', '中等度'), ('severe', '重度')],
+        choices=[('', '---------'), ('mild', '軽度'), ('moderate', '中等度'), ('severe', '重度')],
         widget=forms.RadioSelect(attrs={'class': 'btn-check'}),
         required=False
     )
@@ -1552,7 +1552,7 @@ class DetailedAssessmentForm(forms.Form):
     
     bpsd_presence = forms.ChoiceField(
         label='BPSDの有無',
-        choices=[('', '選択してください'), ('yes', 'あり'), ('no', 'なし')],
+        choices=[('', '---------'), ('yes', 'あり'), ('no', 'なし')],
         widget=forms.RadioSelect(attrs={'class': 'btn-check'}),
         required=False
     )
@@ -1591,7 +1591,7 @@ class DetailedAssessmentForm(forms.Form):
     )
     
     CONVERSATION_CHOICES = [
-        ('', '選択してください'),
+        ('', '---------'),
         ('possible', '可能'),
         ('unclear', '不明瞭'),
         ('somewhat_difficult', 'やや不自由'),
@@ -1606,7 +1606,7 @@ class DetailedAssessmentForm(forms.Form):
     )
     
     COMMUNICATION_CHOICES = [
-        ('', '選択してください'),
+        ('', '---------'),
         ('possible', '可能'),
         ('only_sometimes', 'その場のみ可能'),
         ('somewhat_difficult', 'やや不自由'),

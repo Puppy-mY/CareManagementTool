@@ -4,12 +4,11 @@
 {% block title %}{{ title }} - {{ block.super }}{% endblock %}
 
 {% block content %}
-{% block permissions %}
-<span class="badge bg-light text-muted border" style="font-size: 0.7rem;">居宅、ヘルパー、ヘルパー庶務、デイ、デイ庶務、訪看、訪看庶務、事務所</span>
-{% endblock %}
+
 
 
 <style>
+@media (min-width: 576px) { .w-sm-50 { width: 50% !important; } }
 /* Minimal, readable, 3-color-driven form layout */
 .section-title { color: var(--text-primary); font-weight: 600; margin: 0; }
 .card-header { background-color: var(--background-color); border-bottom: 1px solid var(--border-color); }
@@ -141,7 +140,7 @@
         </h1>
         {% if client %}
         <span class="text-muted border-start ps-3 ms-2">
-            <i class="fas fa-user me-1"></i>{{ client.name }} さん
+            <i class="fas fa-user me-1"></i>{{ client.name }} 様
         </span>
         {% endif %}
     </div>
@@ -366,10 +365,33 @@
                     </div>
                     <div class="col">
                         <div class="btn-group w-100" role="group">
-                            <input type="radio" name="limit_cert" value="yes" class="btn-check" id="limit_cert_yes" {% if form.limit_cert.value == 'yes' %}checked{% endif %}>
+                            <input type="radio" name="limit_cert" value="yes" class="btn-check" id="limit_cert_yes" {% if form.limit_cert.value == 'yes' %}checked{% endif %} onchange="toggleLimitCertPeriod()">
                             <label class="btn btn-outline-secondary" for="limit_cert_yes" data-category="positive">あり</label>
-                            <input type="radio" name="limit_cert" value="no" class="btn-check" id="limit_cert_no" {% if form.limit_cert.value == 'no' %}checked{% endif %}>
+                            <input type="radio" name="limit_cert" value="no" class="btn-check" id="limit_cert_no" {% if form.limit_cert.value == 'no' %}checked{% endif %} onchange="toggleLimitCertPeriod()">
                             <label class="btn btn-outline-secondary" for="limit_cert_no" data-category="negative">なし</label>
+                        </div>
+                    </div>
+                </div>
+                <div id="limit_cert_period_row" class="row g-3 mb-2" style="display: {% if form.limit_cert.value == 'yes' %}flex{% else %}none{% endif %};">
+                    <div class="col-xl-5 col-lg-5 col-md-6 col-sm-6"></div>
+                    <div class="col">
+                        <div class="d-flex align-items-start flex-nowrap gap-1">
+                            <div class="d-flex flex-column align-items-center">
+                                <label class="form-label mb-1 small text-muted align-self-start">開始日</label>
+                                <input type="date" name="limit_cert_start" id="limit_cert_start" class="form-control form-control-sm"
+                                    value="{{ form.limit_cert_start.value|date:'Y-m-d'|default:'' }}"
+                                    onchange="autoFillLimitCertEnd()"
+                                    style="min-width:130px;">
+                                <small class="wareki-label text-muted text-center d-block" style="font-size:0.8em; margin-top:2px; width:100%;"></small>
+                            </div>
+                            <div class="small text-muted" style="padding-top: 30px;">〜</div>
+                            <div class="d-flex flex-column align-items-center">
+                                <label class="form-label mb-1 small text-muted align-self-start">終了日（自動）</label>
+                                <input type="date" name="limit_cert_end" id="limit_cert_end" class="form-control form-control-sm"
+                                    value="{{ form.limit_cert_end.value|date:'Y-m-d'|default:'' }}"
+                                    style="min-width:130px;">
+                                <small class="wareki-label text-muted text-center d-block" style="font-size:0.8em; margin-top:2px; width:100%;"></small>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -463,10 +485,49 @@
                     </div>
                     <div class="col">
                         <div class="btn-group w-100" role="group">
-                            <input type="radio" name="disability_welfare" value="yes" class="btn-check" id="disability_welfare_yes" {% if form.disability_welfare.value == 'yes' %}checked{% endif %}>
+                            <input type="radio" name="disability_welfare" value="yes" class="btn-check" id="disability_welfare_yes" {% if form.disability_welfare.value == 'yes' %}checked{% endif %} onchange="toggleDisabilityWelfarePeriod()">
                             <label class="btn btn-outline-secondary" for="disability_welfare_yes" data-category="positive">あり</label>
-                            <input type="radio" name="disability_welfare" value="no" class="btn-check" id="disability_welfare_no" {% if form.disability_welfare.value == 'no' %}checked{% endif %}>
+                            <input type="radio" name="disability_welfare" value="no" class="btn-check" id="disability_welfare_no" {% if form.disability_welfare.value == 'no' %}checked{% endif %} onchange="toggleDisabilityWelfarePeriod()">
                             <label class="btn btn-outline-secondary" for="disability_welfare_no" data-category="negative">なし</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="disability_welfare_period_row" style="display: {% if form.disability_welfare.value == 'yes' %}block{% else %}none{% endif %};">
+                    <!-- 注意喚起 -->
+                    <div class="row g-3 mb-1">
+                        <div class="col-xl-5 col-lg-5 col-md-6 col-sm-6"></div>
+                        <div class="col">
+                            <div class="alert alert-warning py-1 px-2 mb-0" style="font-size: 0.8rem;">
+                                <i class="fas fa-exclamation-triangle me-1"></i>
+                                <strong>支給決定期間</strong>はサービス利用の有効期間です。障害支援区分の<strong>認定期間とは異なります</strong>のでご注意ください。
+                            </div>
+                        </div>
+                    </div>
+                    <!-- 支給決定期間 -->
+                    <div class="row g-3 mb-2">
+                        <div class="col-xl-5 col-lg-5 col-md-6 col-sm-6 text-end">
+                            <label class="form-label mb-0 small text-muted" style="padding-top: 20px;">支給決定期間：</label>
+                        </div>
+                        <div class="col">
+                            <div class="d-flex align-items-start flex-nowrap gap-1">
+                                <div class="d-flex flex-column align-items-center">
+                                    <label class="form-label mb-1 small text-muted align-self-start">開始日</label>
+                                    <input type="date" name="disability_welfare_decision_start" id="disability_welfare_decision_start" class="form-control form-control-sm"
+                                        value="{{ form.disability_welfare_decision_start.value|date:'Y-m-d'|default:'' }}"
+                                        onchange="autoFillDisabilityWelfareDecisionEnd()"
+                                        style="min-width:130px;">
+                                    <small class="wareki-label text-muted text-center d-block" style="font-size:0.8em; margin-top:2px; width:100%;"></small>
+                                </div>
+                                <div class="small text-muted" style="padding-top: 30px;">〜</div>
+                                <div class="d-flex flex-column align-items-center">
+                                    <label class="form-label mb-1 small text-muted align-self-start">終了日（自動）</label>
+                                    <input type="date" name="disability_welfare_decision_end" id="disability_welfare_decision_end" class="form-control form-control-sm"
+                                        value="{{ form.disability_welfare_decision_end.value|date:'Y-m-d'|default:'' }}"
+                                        style="min-width:130px;">
+                                    <small class="wareki-label text-muted text-center d-block" style="font-size:0.8em; margin-top:2px; width:100%;"></small>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -495,21 +556,37 @@
                 </div>
 
                 <div id="difficult-disease-detail" class="row g-3 mb-3 {% if form.specific_medical.value != 'yes' %}d-none{% endif %}">
-                    <div class="col-xl-5 col-lg-5 d-none d-lg-block"></div>
-                    <div class="col-xl-7 col-lg-7 col-md-12">
+                    <div class="col-xl-5 col-lg-5 col-md-6 col-sm-6"></div>
+                    <div class="col d-flex flex-column gap-2">
+                        <!-- 疾患名 -->
                         <div class="p-3 border rounded shadow-sm bg-white">
                             <label class="form-label small text-muted mb-1">難病の疾患名</label>
-                            <div class="d-flex gap-2 align-items-center">
-                                <div style="width: 50%;">
-                                    <select class="form-select border-primary-subtle" name="{{ form.difficult_disease_name.html_name }}" id="{{ form.difficult_disease_name.id_for_label }}" onchange="toggleDiseaseOther(this.value)">
-                                        {% for value, label in form.fields.difficult_disease_name.choices %}
-                                        <option value="{{ value }}" {% if form.difficult_disease_name.value == value %}selected{% endif %}>{{ label }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                                <div id="disease-other-wrap" style="flex: 1;" class="{% if form.difficult_disease_name.value != 'other' %}d-none{% endif %}">
-                                    <input type="text" class="form-control border-primary-subtle" name="{{ form.difficult_disease_other.html_name }}" id="{{ form.difficult_disease_other.id_for_label }}" placeholder="疾患名を入力" value="{{ form.difficult_disease_other.value|default:'' }}">
-                                </div>
+                            <select class="form-select border-primary-subtle" name="{{ form.difficult_disease_name.html_name }}" id="{{ form.difficult_disease_name.id_for_label }}" onchange="toggleDiseaseOther(this.value)">
+                                {% for value, label in form.fields.difficult_disease_name.choices %}
+                                <option value="{{ value }}" {% if form.difficult_disease_name.value == value %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                            <div id="disease-other-wrap" class="mt-2 {% if form.difficult_disease_name.value != 'other' %}d-none{% endif %}">
+                                <input type="text" class="form-control border-primary-subtle" name="{{ form.difficult_disease_other.html_name }}" id="{{ form.difficult_disease_other.id_for_label }}" placeholder="疾患名を入力" value="{{ form.difficult_disease_other.value|default:'' }}">
+                            </div>
+                        </div>
+                        <!-- 有効期間 -->
+                        <div class="d-flex align-items-start flex-nowrap gap-1">
+                            <div class="d-flex flex-column align-items-center">
+                                <label class="form-label mb-1 small text-muted align-self-start">開始日</label>
+                                <input type="date" name="specific_medical_start" id="specific_medical_start" class="form-control form-control-sm"
+                                    value="{{ form.specific_medical_start.value|date:'Y-m-d'|default:'' }}"
+                                    onchange="autoFillSpecificMedicalEnd()"
+                                    style="min-width:130px;">
+                                <small class="wareki-label text-muted text-center d-block" style="font-size:0.8em; margin-top:2px; width:100%;"></small>
+                            </div>
+                            <div class="small text-muted" style="padding-top: 30px;">〜</div>
+                            <div class="d-flex flex-column align-items-center">
+                                <label class="form-label mb-1 small text-muted align-self-start">終了日（自動）</label>
+                                <input type="date" name="specific_medical_end" id="specific_medical_end" class="form-control form-control-sm"
+                                    value="{{ form.specific_medical_end.value|date:'Y-m-d'|default:'' }}"
+                                    style="min-width:130px;">
+                                <small class="wareki-label text-muted text-center d-block" style="font-size:0.8em; margin-top:2px; width:100%;"></small>
                             </div>
                         </div>
                     </div>
@@ -523,7 +600,22 @@
                         document.getElementById('{{ form.difficult_disease_name.id_for_label }}').value = '';
                         document.getElementById('disease-other-wrap').classList.add('d-none');
                         document.getElementById('{{ form.difficult_disease_other.id_for_label }}').value = '';
+                        ['specific_medical_start','specific_medical_end'].forEach(function(id) {
+                            const el = document.getElementById(id);
+                            el.value = '';
+                            el.dispatchEvent(new Event('change', { bubbles: true }));
+                        });
                     }
+                }
+                function autoFillSpecificMedicalEnd() {
+                    const startVal = document.getElementById('specific_medical_start').value;
+                    if (!startVal) return;
+                    const end = new Date(startVal);
+                    end.setFullYear(end.getFullYear() + 1);
+                    end.setDate(end.getDate() - 1);
+                    const endInput = document.getElementById('specific_medical_end');
+                    endInput.value = `${end.getFullYear()}-${String(end.getMonth()+1).padStart(2,'0')}-${String(end.getDate()).padStart(2,'0')}`;
+                    endInput.dispatchEvent(new Event('change', { bubbles: true }));
                 }
                 function toggleDiseaseOther(val) {
                     document.getElementById('disease-other-wrap').classList.toggle('d-none', val !== 'other');
@@ -541,13 +633,63 @@
                     </div>
                     <div class="col">
                         <div class="btn-group w-100" role="group">
-                            <input type="radio" name="welfare_medical" value="yes" class="btn-check" id="welfare_medical_yes" {% if form.welfare_medical.value == 'yes' %}checked{% endif %}>
+                            <input type="radio" name="welfare_medical" value="yes" class="btn-check" id="welfare_medical_yes" {% if form.welfare_medical.value == 'yes' %}checked{% endif %} onchange="toggleWelfareMedicalPeriod()">
                             <label class="btn btn-outline-secondary" for="welfare_medical_yes" data-category="positive">あり</label>
-                            <input type="radio" name="welfare_medical" value="no" class="btn-check" id="welfare_medical_no" {% if form.welfare_medical.value == 'no' %}checked{% endif %}>
+                            <input type="radio" name="welfare_medical" value="no" class="btn-check" id="welfare_medical_no" {% if form.welfare_medical.value == 'no' %}checked{% endif %} onchange="toggleWelfareMedicalPeriod()">
                             <label class="btn btn-outline-secondary" for="welfare_medical_no" data-category="negative">なし</label>
                         </div>
                     </div>
                 </div>
+
+                <div id="welfare_medical_period_row" style="display: {% if form.welfare_medical.value == 'yes' %}block{% else %}none{% endif %};">
+                    <div class="row g-3 mb-2">
+                        <div class="col-xl-5 col-lg-5 col-md-6 col-sm-6"></div>
+                        <div class="col">
+                            <div class="d-flex align-items-start flex-nowrap gap-1">
+                                <div class="d-flex flex-column align-items-center">
+                                    <label class="form-label mb-1 small text-muted align-self-start">開始日</label>
+                                    <input type="date" name="welfare_medical_start" id="welfare_medical_start" class="form-control form-control-sm"
+                                        value="{{ form.welfare_medical_start.value|date:'Y-m-d'|default:'' }}"
+                                        onchange="autoFillWelfareMedicalEnd()"
+                                        style="min-width:130px;">
+                                    <small class="wareki-label text-muted text-center d-block" style="font-size:0.8em; margin-top:2px; width:100%;"></small>
+                                </div>
+                                <div class="small text-muted" style="padding-top: 30px;">〜</div>
+                                <div class="d-flex flex-column align-items-center">
+                                    <label class="form-label mb-1 small text-muted align-self-start">終了日（自動）</label>
+                                    <input type="date" name="welfare_medical_end" id="welfare_medical_end" class="form-control form-control-sm"
+                                        value="{{ form.welfare_medical_end.value|date:'Y-m-d'|default:'' }}"
+                                        style="min-width:130px;">
+                                    <small class="wareki-label text-muted text-center d-block" style="font-size:0.8em; margin-top:2px; width:100%;"></small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <script>
+                function toggleWelfareMedicalPeriod() {
+                    var isYes = document.getElementById('welfare_medical_yes').checked;
+                    document.getElementById('welfare_medical_period_row').style.display = isYes ? 'block' : 'none';
+                    if (!isYes) {
+                        ['welfare_medical_start','welfare_medical_end'].forEach(function(id) {
+                            const el = document.getElementById(id);
+                            el.value = '';
+                            el.dispatchEvent(new Event('change', { bubbles: true }));
+                        });
+                    }
+                }
+                function autoFillWelfareMedicalEnd() {
+                    const startVal = document.getElementById('welfare_medical_start').value;
+                    if (!startVal) return;
+                    const end = new Date(startVal);
+                    end.setFullYear(end.getFullYear() + 1);
+                    end.setDate(end.getDate() - 1);
+                    const endInput = document.getElementById('welfare_medical_end');
+                    endInput.value = `${end.getFullYear()}-${String(end.getMonth()+1).padStart(2,'0')}-${String(end.getDate()).padStart(2,'0')}`;
+                    endInput.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+                </script>
 
                 <div style="border-top: 1px dashed #dee2e6; margin: 1rem 0;"></div>
 
@@ -557,13 +699,63 @@
                     </div>
                     <div class="col">
                         <div class="btn-group w-100" role="group">
-                            <input type="radio" name="nhi_limit_cert" value="yes" class="btn-check" id="nhi_limit_cert_yes" {% if form.nhi_limit_cert.value == 'yes' %}checked{% endif %}>
+                            <input type="radio" name="nhi_limit_cert" value="yes" class="btn-check" id="nhi_limit_cert_yes" {% if form.nhi_limit_cert.value == 'yes' %}checked{% endif %} onchange="toggleNhiLimitPeriod()">
                             <label class="btn btn-outline-secondary" for="nhi_limit_cert_yes" data-category="positive">あり</label>
-                            <input type="radio" name="nhi_limit_cert" value="no" class="btn-check" id="nhi_limit_cert_no" {% if form.nhi_limit_cert.value == 'no' %}checked{% endif %}>
+                            <input type="radio" name="nhi_limit_cert" value="no" class="btn-check" id="nhi_limit_cert_no" {% if form.nhi_limit_cert.value == 'no' %}checked{% endif %} onchange="toggleNhiLimitPeriod()">
                             <label class="btn btn-outline-secondary" for="nhi_limit_cert_no" data-category="negative">なし</label>
                         </div>
                     </div>
                 </div>
+
+                <div id="nhi_limit_period_row" style="display: {% if form.nhi_limit_cert.value == 'yes' %}block{% else %}none{% endif %};">
+                    <div class="row g-3 mb-2">
+                        <div class="col-xl-5 col-lg-5 col-md-6 col-sm-6"></div>
+                        <div class="col">
+                            <div class="d-flex align-items-start flex-nowrap gap-1">
+                                <div class="d-flex flex-column align-items-center">
+                                    <label class="form-label mb-1 small text-muted align-self-start">開始日</label>
+                                    <input type="date" name="nhi_limit_cert_start" id="nhi_limit_cert_start" class="form-control form-control-sm"
+                                        value="{{ form.nhi_limit_cert_start.value|date:'Y-m-d'|default:'' }}"
+                                        onchange="autoFillNhiLimitEnd()"
+                                        style="min-width:130px;">
+                                    <small class="wareki-label text-muted text-center d-block" style="font-size:0.8em; margin-top:2px; width:100%;"></small>
+                                </div>
+                                <div class="small text-muted" style="padding-top: 30px;">〜</div>
+                                <div class="d-flex flex-column align-items-center">
+                                    <label class="form-label mb-1 small text-muted align-self-start">終了日（自動）</label>
+                                    <input type="date" name="nhi_limit_cert_end" id="nhi_limit_cert_end" class="form-control form-control-sm"
+                                        value="{{ form.nhi_limit_cert_end.value|date:'Y-m-d'|default:'' }}"
+                                        style="min-width:130px;">
+                                    <small class="wareki-label text-muted text-center d-block" style="font-size:0.8em; margin-top:2px; width:100%;"></small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <script>
+                function toggleNhiLimitPeriod() {
+                    var isYes = document.getElementById('nhi_limit_cert_yes').checked;
+                    document.getElementById('nhi_limit_period_row').style.display = isYes ? 'block' : 'none';
+                    if (!isYes) {
+                        ['nhi_limit_cert_start','nhi_limit_cert_end'].forEach(function(id) {
+                            const el = document.getElementById(id);
+                            el.value = '';
+                            el.dispatchEvent(new Event('change', { bubbles: true }));
+                        });
+                    }
+                }
+                function autoFillNhiLimitEnd() {
+                    const startVal = document.getElementById('nhi_limit_cert_start').value;
+                    if (!startVal) return;
+                    const end = new Date(startVal);
+                    end.setFullYear(end.getFullYear() + 1);
+                    end.setDate(end.getDate() - 1);
+                    const endInput = document.getElementById('nhi_limit_cert_end');
+                    endInput.value = `${end.getFullYear()}-${String(end.getMonth()+1).padStart(2,'0')}-${String(end.getDate()).padStart(2,'0')}`;
+                    endInput.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+                </script>
 
                 <div style="border-top: 1px dashed #dee2e6; margin: 1rem 0;"></div>
 
@@ -1026,6 +1218,64 @@ function toggleLifeProtection() {
         }
     }, true);
 })();
+
+// 障害福祉サービス受給者証 期間表示切替
+function toggleDisabilityWelfarePeriod() {
+    const row = document.getElementById('disability_welfare_period_row');
+    const isYes = document.getElementById('disability_welfare_yes').checked;
+    row.style.display = isYes ? 'block' : 'none';
+    if (!isYes) {
+        ['disability_welfare_decision_start','disability_welfare_decision_end'].forEach(function(id) {
+            const el = document.getElementById(id);
+            el.value = '';
+            el.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+    }
+}
+
+function autoFillDisabilityWelfareDecisionEnd() {
+    const startVal = document.getElementById('disability_welfare_decision_start').value;
+    if (!startVal) return;
+    const end = new Date(startVal);
+    end.setFullYear(end.getFullYear() + 1);
+    end.setDate(end.getDate() - 1);
+    const endInput = document.getElementById('disability_welfare_decision_end');
+    endInput.value = `${end.getFullYear()}-${String(end.getMonth()+1).padStart(2,'0')}-${String(end.getDate()).padStart(2,'0')}`;
+    endInput.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
+// 介護保険負担限度額認定証 期間表示切替
+function toggleLimitCertPeriod() {
+    const row = document.getElementById('limit_cert_period_row');
+    const isYes = document.getElementById('limit_cert_yes').checked;
+    row.style.display = isYes ? 'flex' : 'none';
+    if (!isYes) {
+        const s = document.getElementById('limit_cert_start');
+        const e = document.getElementById('limit_cert_end');
+        s.value = '';
+        e.value = '';
+        s.dispatchEvent(new Event('change', { bubbles: true }));
+        e.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+}
+
+// 開始日から終了日を自動計算（1年後の前日 = 翌年7月31日パターン）
+function autoFillLimitCertEnd() {
+    const startVal = document.getElementById('limit_cert_start').value;
+    if (!startVal) return;
+    const start = new Date(startVal);
+    // 1年後の前日
+    const end = new Date(start);
+    end.setFullYear(end.getFullYear() + 1);
+    end.setDate(end.getDate() - 1);
+    const yyyy = end.getFullYear();
+    const mm = String(end.getMonth() + 1).padStart(2, '0');
+    const dd = String(end.getDate()).padStart(2, '0');
+    const endInput = document.getElementById('limit_cert_end');
+    endInput.value = `${yyyy}-${mm}-${dd}`;
+    // 和暦ラベルを更新するため change イベントを発火
+    endInput.dispatchEvent(new Event('change', { bubbles: true }));
+}
 </script>
 
 {% endblock %}

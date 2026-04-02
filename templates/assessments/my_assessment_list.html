@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load custom_filters %}
 
-{% block title %}アセスメント一覧 - {{ block.super }}{% endblock %}
+{% block title %}担当利用者のアセスメント一覧 - {{ block.super }}{% endblock %}
 
 {% block content %}
 
@@ -128,6 +128,16 @@
         }
     }
 
+    /* 削除ボタン */
+    a.btn-delete:hover,
+    .btn.btn-delete:hover {
+        background-color: #f8d7da !important;
+        border-color: #dc3545 !important;
+        color: #dc3545 !important;
+        transform: translateY(-1px) !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+    }
+
     /* ページネーションのスタイル統一（グレー枠、ホバー時青） */
     .pagination .page-link {
         color: #718096;
@@ -151,7 +161,12 @@
 <div class="row">
     <div class="col-12">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1><i class="fas fa-file-medical-alt"></i> すべてのアセスメント一覧</h1>
+            <h1><i class="fas fa-clipboard-list"></i> 担当利用者のアセスメント一覧</h1>
+            <div class="d-flex gap-2">
+                <a href="{% url 'assessment_list' %}" class="btn btn-outline-secondary btn-sm">
+                    <i class="fas fa-list"></i> すべて表示
+                </a>
+            </div>
         </div>
     </div>
 </div>
@@ -162,7 +177,7 @@
         <div class="card">
             <div class="card-body">
                 <div id="filterForm" class="row g-3">
-                    <div class="col-md-5">
+                    <div class="col-md-8">
                         <label for="search" class="form-label">
                             <i class="fas fa-search"></i> 検索
                         </label>
@@ -186,21 +201,7 @@
                         </select>
                     </div>
 
-                    <div class="col-md-3">
-                        <label for="assessor" class="form-label">
-                            <i class="fas fa-user-tie"></i> 作成者
-                        </label>
-                        <select class="form-select" id="assessor">
-                            <option value="">すべて</option>
-                            {% for user in all_assessors %}
-                                <option value="{{ user.id }}">
-                                    {{ user.profile.get_full_name }}
-                                </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-
-                    <div class="col-md-1 d-flex align-items-end">
+                    <div class="col-md-1 d-flex align-items-end" style="max-width: 60px;">
                         <button type="button" id="clearFilters" class="btn btn-outline-secondary w-100" title="クリア">
                             <i class="fas fa-times"></i>
                         </button>
@@ -217,7 +218,7 @@
         <div class="card" style="border: none; background-color: white;">
             <div class="card-header" style="background-color: white; border: none;">
                 <h5 class="mb-0">
-                    <i class="fas fa-list"></i> すべてのアセスメント
+                    <i class="fas fa-list"></i> 担当利用者のアセスメント
                     <span id="countBadge" class="badge" style="background-color: #f5f5f5; border: 1px solid #999; color: #333; vertical-align: middle;">{{ assessments|length }}件</span>
                 </h5>
             </div>
@@ -231,7 +232,6 @@
                                     <th style="background-color: #f5f5f5;" class="assessment-date-col">作成日</th>
                                     <th style="background-color: #f5f5f5;" class="assessment-type-col">理由</th>
                                     <th style="background-color: #f5f5f5;" class="interview-location-col">面談場所</th>
-                                    <th style="background-color: #f5f5f5;" class="assessor-col">作成者</th>
                                     <th style="background-color: #f5f5f5;" class="actions-col">操作</th>
                                 </tr>
                             </thead>
@@ -251,9 +251,11 @@
                                     </td>
                                     <td class="assessment-type-col">{{ assessment.get_assessment_type_display }}</td>
                                     <td class="interview-location-col">{{ assessment.get_interview_location_display }}</td>
-                                    <td class="assessor-col">{{ assessment.assessor.profile.get_full_name }}</td>
                                     <td class="actions-col">
                                         <div class="btn-group btn-group-sm d-flex justify-content-end">
+                                            <a href="{% url 'assessment_edit' assessment.pk %}" class="btn btn-outline-secondary btn-sm btn-edit" style="transition: all 0.2s ease;">
+                                                <i class="fas fa-edit me-1"></i>編集
+                                            </a>
                                             <button type="button" class="btn btn-outline-secondary btn-sm btn-preview" style="transition: all 0.2s ease; font-size: 0.7rem; line-height: 1.2;" disabled>
                                                 プレビュー<br>開発中
                                             </button>
@@ -263,6 +265,9 @@
                                                     style="transition: all 0.2s ease;">
                                                 <i class="fas fa-file-excel me-1"></i>Excel
                                             </button>
+                                            <a href="{% url 'assessment_delete' assessment.pk %}" class="btn btn-outline-danger btn-sm btn-delete" style="transition: all 0.2s ease;">
+                                                <i class="fas fa-trash me-1"></i>削除
+                                            </a>
                                         </div>
                                     </td>
                                 </tr>
@@ -272,8 +277,8 @@
                     </div>
                 {% else %}
                     <div class="text-center py-5">
-                        <i class="fas fa-file-medical-alt fa-3x text-muted mb-3"></i>
-                        <h5 class="text-muted">アセスメントがまだ作成されていません</h5>
+                        <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">担当利用者のアセスメントがまだ作成されていません</h5>
                     </div>
                 {% endif %}
             </div>
@@ -288,7 +293,6 @@
 document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.getElementById('search');
     const careLevelSelect = document.getElementById('care_level');
-    const assessorSelect = document.getElementById('assessor');
     const clearButton = document.getElementById('clearFilters');
     const rows = document.querySelectorAll('.assessment-row');
     const countBadge = document.getElementById('countBadge');
@@ -297,22 +301,19 @@ document.addEventListener('DOMContentLoaded', function() {
     function filterAssessments() {
         const searchText = searchInput.value.toLowerCase();
         const selectedCareLevel = careLevelSelect.value;
-        const selectedAssessor = assessorSelect.value;
         let visibleCount = 0;
 
         rows.forEach(function(row) {
             const name = row.getAttribute('data-name').toLowerCase();
             const furigana = row.getAttribute('data-furigana').toLowerCase();
             const careLevel = row.getAttribute('data-care-level');
-            const assessorId = row.getAttribute('data-assessor-id');
 
             const matchesSearch = !searchText ||
                 name.includes(searchText) ||
                 furigana.includes(searchText);
             const matchesCareLevel = !selectedCareLevel || careLevel === selectedCareLevel;
-            const matchesAssessor = !selectedAssessor || assessorId === selectedAssessor;
 
-            if (matchesSearch && matchesCareLevel && matchesAssessor) {
+            if (matchesSearch && matchesCareLevel) {
                 row.style.display = '';
                 visibleCount++;
             } else {
@@ -336,23 +337,18 @@ document.addEventListener('DOMContentLoaded', function() {
     if (careLevelSelect) {
         careLevelSelect.addEventListener('change', filterAssessments);
     }
-    if (assessorSelect) {
-        assessorSelect.addEventListener('change', filterAssessments);
-    }
 
     // クリアボタン
     if (clearButton) {
         clearButton.addEventListener('click', function() {
             searchInput.value = '';
             careLevelSelect.value = '';
-            assessorSelect.value = '';
             filterAssessments();
         });
     }
 });
 
 // ExcelをJavaScript（Blob）経由でダウンロードする関数
-// （Chrome拡張機能等による日本語ファイル名文字化けを回避しつつ、サーバー側で設定したファイル名を使用する）
 function exportListExcel(assessmentId, clientName, dateStr) {
     const url = `/assessments/${assessmentId}/excel/`;
     const filename = `アセスメント_${clientName}_${dateStr}.xlsm`;
