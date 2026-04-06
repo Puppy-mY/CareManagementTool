@@ -344,9 +344,36 @@ def schedule_management(request, pk):
                         fields=fields_to_update,
                         widgets={k: v for k, v in widgets.items() if k in fields_to_update}
                     )
+                    # POSTの認定期間とDBの現在値を文字列で比較（date型変換前）
+                    prev_cert_start_str = client.certification_period_start.strftime('%Y-%m-%d') if client.certification_period_start else ''
+                    prev_cert_end_str   = client.certification_period_end.strftime('%Y-%m-%d')   if client.certification_period_end   else ''
+                    posted_cert_start_str = request.POST.get('certification_period_start', '')
+                    posted_cert_end_str   = request.POST.get('certification_period_end', '')
                     form = DynamicForm(request.POST, instance=client)
                     if form.is_valid():
                         form.save()
+                        if item == 'daily_living':
+                            client.refresh_from_db()
+                            Client.objects.filter(pk=client.pk).update(
+                                daily_living_assessed_cert_end=client.certification_period_end,
+                                prev_disability_level='',
+                                prev_dementia_level='',
+                            )
+                        elif item in ('certification', 'care_insurance_all'):
+                            # 認定期間（開始・終了いずれか）が変わった場合は自立度をクリア（前回値を保持）
+                            # daily_living_assessed_cert_endに旧終了日をセット→JSが新旧差異を検出して要更新バッジを表示する
+                            cert_period_changed = (posted_cert_end_str != prev_cert_end_str) or (posted_cert_start_str != prev_cert_start_str)
+                            if cert_period_changed:
+                                client.refresh_from_db()
+                                import datetime
+                                old_cert_end_date = datetime.date.fromisoformat(prev_cert_end_str) if prev_cert_end_str else None
+                                Client.objects.filter(pk=client.pk).update(
+                                    prev_disability_level=client.disability_level,
+                                    prev_dementia_level=client.dementia_level,
+                                    disability_level='',
+                                    dementia_level='',
+                                    daily_living_assessed_cert_end=old_cert_end_date,
+                                )
                         messages.success(request, f'{client.name}様の{config["label"]}を更新しました。')
                     else:
                         messages.error(request, f'{config["label"]}の更新中にエラーが発生しました。入力内容を確認してください。')
@@ -370,6 +397,7 @@ def schedule_management(request, pk):
         'warn_date': warn_date,
         'disability_level_choices': Client.DISABILITY_LEVEL_CHOICES,
         'dementia_level_choices': Client.DEMENTIA_LEVEL_CHOICES,
+        'daily_living_needs_update': bool(client.prev_disability_level or client.prev_dementia_level),
     }
 
     return render(request, 'clients/schedule_management.html', context)

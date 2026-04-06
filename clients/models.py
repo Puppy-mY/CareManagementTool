@@ -118,6 +118,9 @@ class Client(models.Model):
     # 障がい・認知症自立度
     disability_level = models.CharField('障がい者日常生活自立度', max_length=20, choices=DISABILITY_LEVEL_CHOICES, blank=True)
     dementia_level = models.CharField('認知症日常生活自立度', max_length=20, choices=DEMENTIA_LEVEL_CHOICES, blank=True)
+    daily_living_assessed_cert_end = models.DateField('自立度判定時の認定期間終了日', blank=True, null=True)
+    prev_disability_level = models.CharField('前回の障がい者日常生活自立度', max_length=20, choices=DISABILITY_LEVEL_CHOICES, blank=True)
+    prev_dementia_level = models.CharField('前回の認知症日常生活自立度', max_length=20, choices=DEMENTIA_LEVEL_CHOICES, blank=True)
 
     # 手帳・申請・保護
     DISABILITY_TYPE_CHOICES = [
