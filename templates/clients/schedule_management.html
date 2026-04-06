@@ -1338,6 +1338,25 @@
                                     </td>
                                 </tr>
                                 <tr>
+                                    <th class="bg-light align-middle" style="vertical-align:middle;">被保険者番号<br><small class="text-muted fw-normal">（記号・番号・枝番）</small></th>
+                                    <td style="vertical-align:middle;">
+                                        <div class="d-flex align-items-center gap-2 flex-nowrap">
+                                            <span id="mi_modal_symbol_label" class="text-nowrap small text-muted">記号</span>
+                                            <div id="mi_modal_symbol_wrap" style="width:45px;">
+                                                <input type="text" name="medical_insurance_symbol" id="mi_modal_symbol" class="form-control form-control-sm" value="{{ client.medical_insurance_symbol|default:'' }}">
+                                            </div>
+                                            <span class="text-nowrap small text-muted">番号</span>
+                                            <div style="width:110px;">
+                                                <input type="text" name="medical_insurance_number" id="mi_modal_number" class="form-control form-control-sm" value="{{ client.medical_insurance_number|default:'' }}">
+                                            </div>
+                                            <span id="mi_modal_branch_label" class="text-nowrap small text-muted">枝番</span>
+                                            <div id="mi_modal_branch_wrap" style="width:45px;">
+                                                <input type="text" name="medical_insurance_branch" id="mi_modal_branch" class="form-control form-control-sm" value="{{ client.medical_insurance_branch|default:'' }}">
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
                                     <th class="bg-light align-middle">負担割合</th>
                                     <td>
                                         <select name="medical_burden" class="form-select form-select-sm">
@@ -1348,45 +1367,32 @@
                                     </td>
                                 </tr>
                                 <tr>
+                                    <th class="bg-light align-middle">有効期間（終了日）</th>
+                                    <td>
+                                        <input type="hidden" name="medical_insurance_start" value="{{ client.medical_insurance_start|date:'Y-m-d'|default:'' }}">
+                                        <div class="d-flex align-items-start justify-content-between">
+                                            <div>
+                                                <input type="date" name="medical_insurance_end" id="mi_end" class="form-control form-control-sm" value="{{ client.medical_insurance_end|date:'Y-m-d'|default:'' }}" style="width:210px;">
+                                                <small class="wareki-label text-muted d-block" style="font-size:0.8em; margin-top:2px;"></small>
+                                            </div>
+                                            <button type="button" class="btn btn-renew-period btn-sm text-nowrap" onclick="renewMiPeriod()"><i class="fas fa-sync-alt me-1"></i>翌年に更新</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
                                     <th class="bg-light align-middle">保険者名称</th>
-                                    <td><input type="text" name="medical_insurer_name_issuer" class="form-control form-control-sm" value="{{ client.medical_insurer_name_issuer|default:'' }}"></td>
+                                    <td>
+                                        <select id="mi_modal_insurer_preset" class="form-select form-select-sm mb-1" style="display:none;">
+                                            <option value="">選択してください</option>
+                                        </select>
+                                        <div id="mi_modal_insurer_manual">
+                                            <input type="text" name="medical_insurer_name_issuer" id="mi_modal_insurer_name" class="form-control form-control-sm" value="{{ client.medical_insurer_name_issuer|default:'' }}">
+                                        </div>
+                                    </td>
                                 </tr>
                                 <tr>
                                     <th class="bg-light align-middle">保険者番号</th>
-                                    <td><input type="text" name="medical_insurer_number" class="form-control form-control-sm" value="{{ client.medical_insurer_number|default:'' }}"></td>
-                                </tr>
-                                <tr>
-                                    <th class="bg-light align-middle">記号</th>
-                                    <td><input type="text" name="medical_insurance_symbol" class="form-control form-control-sm" value="{{ client.medical_insurance_symbol|default:'' }}"></td>
-                                </tr>
-                                <tr>
-                                    <th class="bg-light align-middle">番号</th>
-                                    <td><input type="text" name="medical_insurance_number" class="form-control form-control-sm" value="{{ client.medical_insurance_number|default:'' }}"></td>
-                                </tr>
-                                <tr>
-                                    <th class="bg-light align-middle">枝番</th>
-                                    <td><input type="text" name="medical_insurance_branch" class="form-control form-control-sm" value="{{ client.medical_insurance_branch|default:'' }}"></td>
-                                </tr>
-                                <tr>
-                                    <th class="bg-light align-middle">有効期間</th>
-                                    <td>
-                                        <div class="d-flex align-items-start flex-nowrap gap-2">
-                                            <div class="d-flex flex-column align-items-center">
-                                                <label class="form-label mb-1 small text-muted align-self-start">開始日</label>
-                                                <input type="date" name="medical_insurance_start" id="mi_start" class="form-control form-control-sm" value="{{ client.medical_insurance_start|date:'Y-m-d'|default:'' }}" onchange="autoFillMiEnd()" style="min-width:130px;">
-                                                <small class="wareki-label text-muted text-center d-block" style="font-size:0.8em; margin-top:2px; width:100%;"></small>
-                                            </div>
-                                            <div class="text-muted" style="padding-top:28px;">～</div>
-                                            <div class="d-flex flex-column align-items-center">
-                                                <label class="form-label mb-1 small text-muted align-self-start">終了日（自動）</label>
-                                                <input type="date" name="medical_insurance_end" id="mi_end" class="form-control form-control-sm" value="{{ client.medical_insurance_end|date:'Y-m-d'|default:'' }}" style="min-width:130px;">
-                                                <small class="wareki-label text-muted text-center d-block" style="font-size:0.8em; margin-top:2px; width:100%;"></small>
-                                            </div>
-                                        </div>
-                                        <div class="mt-2 text-end">
-                                            <button type="button" class="btn btn-renew-period btn-sm" onclick="renewMiPeriod()"><i class="fas fa-sync-alt me-1"></i>期間更新（翌年）</button>
-                                        </div>
-                                    </td>
+                                    <td><input type="text" name="medical_insurer_number" id="mi_modal_insurer_number" class="form-control form-control-sm" value="{{ client.medical_insurer_number|default:'' }}"></td>
                                 </tr>
                         </tbody>
                     </table>
@@ -2002,6 +2008,140 @@ window.addEventListener('resize', autoShrinkCertLabels);
         el.appendChild(badge);
     });
 })();
+
+// ========== 医療保険モーダル：保険種別連動 ==========
+(function() {
+    var PRESETS = {
+        'national_health': [
+            { text: '津市',     value: '三重県 津市',     number: '240010' },
+            { text: '鈴鹿市',   value: '三重県 鈴鹿市',   number: '240077' },
+            { text: '亀山市',   value: '三重県 亀山市',   number: '241075' },
+            { text: '松阪市',   value: '三重県 松阪市',   number: '240044' },
+            { text: '伊勢市',   value: '三重県 伊勢市',   number: '240051' },
+            { text: '手入力',   value: 'manual',           number: '' }
+        ],
+        'latter_stage_elderly': [
+            { text: '三重県後期高齢者医療広域連合', value: '三重県後期高齢者医療広域連合', number: '39240007' },
+            { text: '手入力', value: 'manual', number: '' }
+        ],
+        'health_insurance_association': [
+            { text: '全国健康保険協会 三重支部（協会けんぽ）', value: '全国健康保険協会 三重支部', number: '01240019' },
+            { text: '手入力', value: 'manual', number: '' }
+        ],
+        'health_insurance_union': [
+            { text: '手入力（保険証に記載の保険者名を入力）', value: 'manual', number: '' }
+        ],
+        'mutual_aid': [
+            { text: '三重県市町村職員共済組合',                     value: '三重県市町村職員共済組合',                     number: '32240418' },
+            { text: '地方職員共済組合 三重県支部（県職員）',         value: '地方職員共済組合 三重県支部',                   number: '32250110' },
+            { text: '国家公務員共済組合連合会（各省庁）',             value: '国家公務員共済組合連合会',                     number: '' },
+            { text: '日本私立学校振興・共済事業団（私学共済）',       value: '日本私立学校振興・共済事業団',                   number: '34130021' },
+            { text: '手入力', value: 'manual', number: '' }
+        ],
+        'seamen': [
+            { text: '全国健康保険協会（船員保険）', value: '全国健康保険協会（船員保険）', number: '02' },
+            { text: '手入力', value: 'manual', number: '' }
+        ]
+    };
+
+    var modal = document.getElementById('modalMedicalInsurance');
+    if (!modal) return;
+
+    var typeSelect    = modal.querySelector('select[name="medical_insurance_type"]');
+    var presetSelect  = document.getElementById('mi_modal_insurer_preset');
+    var manualWrapper = document.getElementById('mi_modal_insurer_manual');
+    var nameInput     = document.getElementById('mi_modal_insurer_name');
+    var numberInput   = document.getElementById('mi_modal_insurer_number');
+    var symbolLabel   = document.getElementById('mi_modal_symbol_label');
+    var symbolWrap    = document.getElementById('mi_modal_symbol_wrap');
+    var branchLabel   = document.getElementById('mi_modal_branch_label');
+    var branchWrap    = document.getElementById('mi_modal_branch_wrap');
+    var symbolInput   = document.getElementById('mi_modal_symbol');
+    var numberInsured = document.getElementById('mi_modal_number');
+    var branchInput   = document.getElementById('mi_modal_branch');
+
+    function updateSymbolBranch() {
+        var isLatter = typeSelect.value === 'latter_stage_elderly';
+        symbolLabel.style.display = isLatter ? 'none' : '';
+        symbolWrap.style.display  = isLatter ? 'none' : '';
+        branchLabel.style.display = isLatter ? 'none' : '';
+        branchWrap.style.display  = isLatter ? 'none' : '';
+        if (isLatter) { symbolInput.value = ''; branchInput.value = ''; }
+    }
+
+    function updatePreset() {
+        var type = typeSelect.value;
+        var currentName = nameInput.value.trim();
+        presetSelect.innerHTML = '<option value="">選択してください</option>';
+        if (PRESETS[type]) {
+            presetSelect.style.display = 'block';
+            var matched = false;
+            PRESETS[type].forEach(function(item) {
+                var opt = document.createElement('option');
+                opt.value = item.value;
+                opt.textContent = item.text;
+                opt.dataset.number = item.number;
+                if (currentName !== '' && currentName === item.value) { opt.selected = true; matched = true; }
+                presetSelect.appendChild(opt);
+            });
+            if (!matched && currentName !== '') {
+                presetSelect.value = 'manual';
+                manualWrapper.style.display = 'block';
+            } else {
+                manualWrapper.style.display = (presetSelect.value === 'manual') ? 'block' : 'none';
+            }
+        } else {
+            presetSelect.style.display = 'none';
+            manualWrapper.style.display = 'block';
+        }
+    }
+
+    typeSelect.addEventListener('change', function() {
+        nameInput.value = '';
+        numberInput.value = '';
+        symbolInput.value = '';
+        numberInsured.value = '';
+        branchInput.value = '';
+        updatePreset();
+        updateSymbolBranch();
+    });
+
+    presetSelect.addEventListener('change', function() {
+        if (this.value === 'manual') {
+            manualWrapper.style.display = 'block';
+            nameInput.value = '';
+            numberInput.value = '';
+        } else if (this.value) {
+            manualWrapper.style.display = 'none';
+            nameInput.value = this.value;
+            var sel = this.options[this.selectedIndex];
+            numberInput.value = sel.dataset.number || '';
+        } else {
+            manualWrapper.style.display = 'none';
+            nameInput.value = '';
+            numberInput.value = '';
+        }
+    });
+
+    // モーダルを開くたびに初期化
+    modal.addEventListener('show.bs.modal', function() {
+        updatePreset();
+        updateSymbolBranch();
+    });
+})();
+
+function renewMiPeriod() {
+    var endInput = document.getElementById('mi_end');
+    if (!endInput) return;
+    var val = endInput.value;
+    if (!val) return;
+    var d = new Date(val);
+    d.setFullYear(d.getFullYear() + 1);
+    var y = d.getFullYear();
+    var m = String(d.getMonth() + 1).padStart(2, '0');
+    var day = String(d.getDate()).padStart(2, '0');
+    endInput.value = y + '-' + m + '-' + day;
+}
 
 // ========== 保存確認・モーダル共通設定 ==========
 (function() {
