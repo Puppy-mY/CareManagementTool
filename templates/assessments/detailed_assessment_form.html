@@ -1842,7 +1842,7 @@ button[name="action"][value="save"]:hover {
                                         <input type="radio" name="bathing_restriction" value="no" class="btn-check" id="bathing_restriction_no" onchange="toggleBathingRestrictionInput()" {% if assessment.adl.bathing_restriction == 'no' %}checked{% endif %}>
                                         <label class="btn btn-outline-secondary" for="bathing_restriction_no" data-category="positive" style="background-color: white;">なし</label>
                                     </div>
-                                    <div id="bathing_restriction_input" class="mt-2" style="display: none;">
+                                    <div id="bathing_restriction_input" class="mt-2" style="{% if assessment.adl.bathing_restriction != 'yes' %}display: none;{% endif %}">
                                         <input type="text" name="bathing_restriction_detail" class="form-control" placeholder="制限内容を入力してください" value="{{ assessment.adl.bathing_restriction_detail|default:'' }}">
                                     </div>
                                 </div>
@@ -1927,7 +1927,7 @@ button[name="action"][value="save"]:hover {
                                             <label class="btn btn-outline-secondary" for="urinary_incontinence_no" data-category="positive" style="background-color: white;">なし</label>
                                         </div>
                                     </div>
-                                    <div id="urinary_incontinence_input" class="mt-2" style="display: none;">
+                                    <div id="urinary_incontinence_input" class="mt-2" style="{% if assessment.adl.urinary_incontinence != 'yes' %}display: none;{% endif %}">
                                         <input type="text" name="urinary_incontinence_frequency" class="form-control" placeholder="頻度を入力してください" value="{{ assessment.adl.urinary_incontinence_frequency|default:'' }}">
                                     </div>
                                 </div>
@@ -1950,7 +1950,7 @@ button[name="action"][value="save"]:hover {
                                             <label class="btn btn-outline-secondary" for="fecal_incontinence_no" data-category="positive" style="background-color: white;">なし</label>
                                         </div>
                                     </div>
-                                    <div id="fecal_incontinence_input" class="mt-2" style="display: none;">
+                                    <div id="fecal_incontinence_input" class="mt-2" style="{% if assessment.adl.fecal_incontinence != 'yes' %}display: none;{% endif %}">
                                         <input type="text" name="fecal_incontinence_frequency" class="form-control" placeholder="頻度を入力してください" value="{{ assessment.adl.fecal_incontinence_frequency|default:'' }}">
                                     </div>
                                 </div>
@@ -3331,8 +3331,10 @@ function applyPreviousAssessment() {
             // ラジオボタン（btn-check）
             const radioInputs = document.querySelectorAll('input[type="radio"][name="' + fieldName + '"]');
             if (radioInputs.length > 0) {
+                // boolean true/false → 'yes'/'no' に変換（旧データ対応）
+                var radioValue = fieldValue === true ? 'yes' : fieldValue === false ? 'no' : String(fieldValue);
                 radioInputs.forEach(function(radio) {
-                    if (radio.value === String(fieldValue)) {
+                    if (radio.value === radioValue) {
                         radio.checked = true;
                         radio.dispatchEvent(new Event('change', { bubbles: true }));
                     }
@@ -3349,6 +3351,7 @@ function applyPreviousAssessment() {
                 } else {
                     el.value = fieldValue;
                     el.dispatchEvent(new Event('change', { bubbles: true }));
+                    el.dispatchEvent(new Event('input', { bubbles: true }));
                 }
             }
         }
@@ -3361,6 +3364,17 @@ function applyPreviousAssessment() {
             cb.checked = values.includes(cb.value);
             cb.dispatchEvent(new Event('change', { bubbles: true }));
         });
+    }
+
+
+
+    // physical_status.notes → physical_status_notes の特別処理
+    if (data.physical_status && data.physical_status.notes) {
+        var psNotes = document.getElementById('physical_status_notes');
+        if (psNotes) {
+            psNotes.value = data.physical_status.notes;
+            psNotes.dispatchEvent(new Event('input', { bubbles: true }));
+        }
     }
 
     // トグル関数を再実行して条件付き表示を正しく設定
@@ -3384,6 +3398,104 @@ function applyPreviousAssessment() {
     document.querySelectorAll('select[onchange*="toggleOtherInput"]').forEach(function(sel) {
         sel.dispatchEvent(new Event('change', { bubbles: true }));
     });
+
+    // 条件付き子フィールドを明示的に再反映（表示状態と値の両方を保証）
+    // true/'yes' 両方対応（旧データはbooleanで保存されている場合がある）
+    var adlData = data.adl || {};
+    var basicData = data.basic_activities || {};
+
+    function isYes(val) { return val === 'yes' || val === true; }
+
+    // とろみの濃さ
+    if (isYes(adlData.water_thickening)) {
+        var wtLevel = document.getElementById('water_thickening_level');
+        if (wtLevel) wtLevel.style.display = 'block';
+        // water_thickening ラジオを yes に設定
+        var wtYes = document.getElementById('water_thickening_yes');
+        if (wtYes) { wtYes.checked = true; }
+        if (adlData.water_thickening_level) {
+            var wtRadio = document.querySelector('input[type="radio"][name="water_thickening_level"][value="' + adlData.water_thickening_level + '"]');
+            if (wtRadio) {
+                wtRadio.checked = true;
+                wtRadio.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        }
+    }
+
+    // 食事制限の詳細
+    if (adlData.eating_restriction === 'yes' || isYes(adlData.eating_restriction)) {
+        var erDiv = document.getElementById('eating_restriction_input');
+        if (erDiv) erDiv.style.display = 'block';
+        if (adlData.eating_restriction_detail) {
+            var erEl = document.querySelector('[name="eating_restriction_detail"]');
+            if (erEl) { erEl.value = adlData.eating_restriction_detail; erEl.dispatchEvent(new Event('input', { bubbles: true })); }
+        }
+    }
+
+    // 道具・用具のその他の内容（食事）
+    if (adlData.eating_utensils_other_detail) {
+        var euDiv = document.getElementById('utensil_other_input');
+        if (euDiv) euDiv.style.display = 'block';
+        var euEl = document.querySelector('[name="eating_utensils_other_detail"]');
+        if (euEl) { euEl.value = adlData.eating_utensils_other_detail; euEl.dispatchEvent(new Event('input', { bubbles: true })); }
+    }
+
+    // 入浴制限の詳細
+    if (isYes(adlData.bathing_restriction)) {
+        var brDiv = document.getElementById('bathing_restriction_input');
+        if (brDiv) brDiv.style.display = 'block';
+        // bathing_restriction ラジオを yes に設定
+        var brYes = document.getElementById('bathing_restriction_yes');
+        if (brYes) { brYes.checked = true; }
+        if (adlData.bathing_restriction_detail) {
+            var brEl = document.querySelector('[name="bathing_restriction_detail"]');
+            if (brEl) { brEl.value = adlData.bathing_restriction_detail; brEl.dispatchEvent(new Event('input', { bubbles: true })); }
+        }
+    }
+
+    // 尿失禁の頻度
+    if (isYes(adlData.urinary_incontinence)) {
+        var uiDiv = document.getElementById('urinary_incontinence_input');
+        if (uiDiv) uiDiv.style.display = 'block';
+        // urinary_incontinence ラジオを yes に設定
+        var uiYes = document.getElementById('urinary_incontinence_yes');
+        if (uiYes) { uiYes.checked = true; }
+        if (adlData.urinary_incontinence_frequency) {
+            var uiEl = document.querySelector('[name="urinary_incontinence_frequency"]');
+            if (uiEl) { uiEl.value = adlData.urinary_incontinence_frequency; uiEl.dispatchEvent(new Event('input', { bubbles: true })); }
+        }
+    }
+
+    // 便失禁の頻度
+    if (isYes(adlData.fecal_incontinence)) {
+        var fiDiv = document.getElementById('fecal_incontinence_input');
+        if (fiDiv) fiDiv.style.display = 'block';
+        // fecal_incontinence ラジオを yes に設定
+        var fiYes = document.getElementById('fecal_incontinence_yes');
+        if (fiYes) { fiYes.checked = true; }
+        if (adlData.fecal_incontinence_frequency) {
+            var fiEl = document.querySelector('[name="fecal_incontinence_frequency"]');
+            if (fiEl) { fiEl.value = adlData.fecal_incontinence_frequency; fiEl.dispatchEvent(new Event('input', { bubbles: true })); }
+        }
+    }
+
+    // 道具・用具のその他の内容
+    if (basicData.outdoor_mobility_equipment === 'other' && basicData.outdoor_mobility_equipment_other) {
+        var omeEl = document.getElementById('outdoor_mobility_equipment_other_input');
+        if (omeEl) { omeEl.style.display = 'block'; omeEl.value = basicData.outdoor_mobility_equipment_other; }
+    }
+    if (basicData.indoor_mobility_equipment === 'other' && basicData.indoor_mobility_equipment_other) {
+        var imeEl = document.getElementById('indoor_mobility_equipment_other_input');
+        if (imeEl) { imeEl.style.display = 'block'; imeEl.value = basicData.indoor_mobility_equipment_other; }
+    }
+
+    // BMI自動計算
+    if (typeof calculateBMI === 'function') calculateBMI();
+
+    // 疾患名フィールドの表示を再チェック（前回分反映後）
+    if (typeof checkDiseaseFields === 'function') {
+        checkDiseaseFields();
+    }
     {% endif %}
 }
 
@@ -3500,7 +3612,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // localStorageは使用しない
 
     // 疾患名と発症日の連動表示
-    function checkDiseaseFields() {
+    window.checkDiseaseFields = function checkDiseaseFields() {
         for (let i = 1; i <= 6; i++) {
             const currentField = document.querySelector('.disease-field[data-field="' + i + '"]');
             if (currentField && currentField.value.trim() !== '' && i < 6) {
@@ -3698,8 +3810,6 @@ function toggleEatingRestrictionInput() {
     if (yesRadio && inputElement) {
         if (yesRadio.checked) {
             inputElement.style.display = 'block';
-            const textInput = inputElement.querySelector('input[type="text"]');
-            if (textInput) textInput.focus();
         } else {
             inputElement.style.display = 'none';
             const textInput = inputElement.querySelector('input[type="text"]');
@@ -3716,8 +3826,6 @@ function toggleBathingRestrictionInput() {
     if (yesRadio && inputElement) {
         if (yesRadio.checked) {
             inputElement.style.display = 'block';
-            const textInput = inputElement.querySelector('input[type="text"]');
-            if (textInput) textInput.focus();
         } else {
             inputElement.style.display = 'none';
             const textInput = inputElement.querySelector('input[type="text"]');
@@ -3734,8 +3842,6 @@ function toggleUrinaryIncontinenceInput() {
     if (yesRadio && inputElement) {
         if (yesRadio.checked) {
             inputElement.style.display = 'block';
-            const textInput = inputElement.querySelector('input[type="text"]');
-            if (textInput) textInput.focus();
         } else {
             inputElement.style.display = 'none';
             const textInput = inputElement.querySelector('input[type="text"]');
@@ -3752,8 +3858,6 @@ function toggleFecalIncontinenceInput() {
     if (yesRadio && inputElement) {
         if (yesRadio.checked) {
             inputElement.style.display = 'block';
-            const textInput = inputElement.querySelector('input[type="text"]');
-            if (textInput) textInput.focus();
         } else {
             inputElement.style.display = 'none';
             const textInput = inputElement.querySelector('input[type="text"]');
