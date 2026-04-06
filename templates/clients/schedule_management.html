@@ -128,6 +128,18 @@
 
 /* ========== 詳細表示と共通スタイル ========== */
 .insurance-th { font-size: 0.85rem; white-space: normal; }
+#simple-tip {
+    position: fixed;
+    background: rgba(60,60,60,0.85);
+    color: #fff;
+    font-size: 0.72rem;
+    padding: 2px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 9999;
+    display: none;
+}
 .insurance-td-fit { font-size: 0.85rem; }
 
 /* ========== 編集ボタン ========== */
@@ -261,7 +273,7 @@
                 <li><h6 class="dropdown-header text-muted">医療関係</h6></li>
                 {% if client.specific_medical != 'yes' %}<li><a class="dropdown-item" href="#" onclick="showConfirmAdd('specific_medical', '特定医療費(指定難病)'); return false;"><i class="fas fa-notes-medical me-2 text-secondary"></i>特定医療費(指定難病)</a></li>{% endif %}
                 {% if client.welfare_medical != 'yes' %}<li><a class="dropdown-item" href="#" onclick="showConfirmAdd('welfare_medical', '福祉医療費受給者証'); return false;"><i class="fas fa-notes-medical me-2 text-secondary"></i>福祉医療費受給者証</a></li>{% endif %}
-                {% if client.nhi_limit_cert != 'yes' %}<li><a class="dropdown-item" href="#" onclick="showConfirmAdd('nhi_limit_cert', '国保限度額認定証'); return false;"><i class="fas fa-notes-medical me-2 text-secondary"></i>国保限度額認定証</a></li>{% endif %}
+                {% if client.nhi_limit_cert != 'yes' %}<li><a class="dropdown-item" href="#" onclick="showConfirmAdd('nhi_limit_cert', '限度額適用認定証（国民健康保険）'); return false;"><i class="fas fa-notes-medical me-2 text-secondary"></i>限度額適用認定証（国民健康保険）</a></li>{% endif %}
                 {% if client.high_cost_combined != 'yes' %}<li><a class="dropdown-item" href="#" onclick="showConfirmAdd('high_cost_combined', '高額医療合算療養費'); return false;"><i class="fas fa-notes-medical me-2 text-secondary"></i>高額医療合算療養費</a></li>{% endif %}
                 {% endif %}
             </ul>
@@ -350,14 +362,14 @@
                             <tr>
                                 <th class="bg-light text-muted align-middle insurance-th" style="width:40%;">身体障がい者日常生活自立度</th>
                                 <td class="align-middle">
-                                    <span id="daily-living-disability-val">{% if client.disability_level %}{{ client.get_disability_level_display }}{% endif %}</span>
+                                    <span id="daily-living-disability-val" style="display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:clamp(0.7rem, 1.5vw, 0.9rem);">{% if client.disability_level %}{{ client.get_disability_level_display }}{% endif %}</span>
                                     <div id="daily-living-badge" class="d-none" style="font-size:0.72rem; margin-top:3px; padding:1px 5px; border-radius:3px; display:none; background:#f8d7da; color:#842029; cursor:pointer;" data-bs-toggle="modal" data-bs-target="#modalDailyLiving"><i class="fas fa-exclamation-circle me-1"></i>要更新</div>
                                 </td>
                             </tr>
                             <tr>
                                 <th class="bg-light text-muted align-middle insurance-th">認知症日常生活自立度</th>
                                 <td class="align-middle">
-                                    <span id="daily-living-dementia-val">{% if client.dementia_level %}{{ client.get_dementia_level_display }}{% endif %}</span>
+                                    <span id="daily-living-dementia-val" style="display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:clamp(0.7rem, 1.5vw, 0.9rem);">{% if client.dementia_level %}{{ client.get_dementia_level_display }}{% endif %}</span>
                                     <div id="daily-living-badge-dementia" class="d-none" style="font-size:0.72rem; margin-top:3px; padding:1px 5px; border-radius:3px; display:none; background:#f8d7da; color:#842029; cursor:pointer;" data-bs-toggle="modal" data-bs-target="#modalDailyLiving"><i class="fas fa-exclamation-circle me-1"></i>要更新</div>
                                 </td>
                             </tr>
@@ -579,7 +591,7 @@
                             </tr>
                             <tr>
                                 <th class="bg-light text-muted align-middle" style="border-left: none; padding: 10px 12px; overflow: hidden;">
-                                    <span class="cert-label">国保限度額認定証</span>
+                                    <span class="cert-label">限度額適用認定証（国民健康保険）</span>
                                 </th>
                                 <td class="align-middle" style="border-right: none;">
                                     <span class="text-dark">{% if client.nhi_limit_cert == 'yes' or client.nhi_limit_cert == '有' or client.nhi_limit_cert == 'あり' %}あり{% elif client.nhi_limit_cert == 'no' or client.nhi_limit_cert == '無' or client.nhi_limit_cert == 'なし' %}なし{% elif client.nhi_limit_cert %}{{ client.nhi_limit_cert }}{% else %}なし{% endif %}</span>
@@ -613,7 +625,7 @@
                         <tbody>
                             <tr>
                                 <th class="bg-light text-muted align-middle" style="width: 40%; border-top: none; border-left: none; border-bottom: none; padding: 10px 12px; overflow: hidden;">
-                                    <span class="cert-label">生活保護受給</span>
+                                    <span class="cert-label">生活保護</span>
                                 </th>
                                 <td class="align-middle" style="border-top: none; border-right: none; border-bottom: none;">
                                     <span class="text-dark">{% if client.life_protection %}あり{% else %}なし{% endif %}</span>
@@ -631,22 +643,25 @@
 
 <!-- ========== 統合モーダル：介護保険関係（公的制度） ========== -->
 <div class="modal fade" id="modalCarePublic" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
-            <form method="post" novalidate>
+            <form method="post" novalidate style="display:flex; flex-direction:column; max-height:100%; overflow:hidden;">
                 {% csrf_token %}
                 <input type="hidden" name="item" value="care_public">
-                <div class="modal-header">
+                <div class="modal-header" style="flex-shrink:0;">
                     <h5 class="modal-title"><i class="fas fa-heart me-2"></i>介護保険関係（公的制度）の修正</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body p-3">
-                    <h6 class="text-secondary fw-bold mb-2 pb-1" style="border-bottom:1px solid #dee2e6;"><i class="fas fa-file-contract me-2"></i>負担限度額認定証</h6>
+                <div class="modal-body p-3" style="flex:1; overflow-y:auto; scrollbar-width:none;">
+                    <div class="mb-2 pb-1" style="border-bottom:1px solid #dee2e6;">
+                        <h6 class="text-secondary fw-bold mb-0"><i class="fas fa-file-contract me-2"></i>介護保険負担限度額認定証</h6>
+                    </div>
                     <table class="table table-bordered table-sm mb-3" style="font-size:0.9rem; table-layout:fixed;">
                         <tbody>
                             <tr>
-                                <th class="bg-light align-middle" style="width:30%;">認定証の有無</th>
+                                <th class="bg-light align-middle" style="width:30%;">負担限度額認定証</th>
                                 <td>
+                                    <div class="text-muted mb-1" style="font-size:0.82rem;">認定証の有無</div>
                                     <div class="btn-group w-100" role="group">
                                         <input type="radio" name="limit_cert" value="yes" class="btn-check" id="cp_limit_cert_yes" {% if client.limit_cert == 'yes' %}checked{% endif %} onchange="toggleCpLimitPeriod()">
                                         <label class="btn btn-outline-secondary btn-sm" for="cp_limit_cert_yes" data-category="positive">あり</label>
@@ -654,17 +669,25 @@
                                         <label class="btn btn-outline-secondary btn-sm" for="cp_limit_cert_no" data-category="negative">なし</label>
                                     </div>
                                     <div id="cp_limit_cert_period_row" style="display:{% if client.limit_cert == 'yes' %}block{% else %}none{% endif %}; overflow:hidden;">
-                                        <div class="d-flex align-items-start flex-nowrap gap-2 mt-2">
+                                        <div class="text-muted mb-1 mt-2" style="font-size:0.82rem;">有効期限</div>
+                                        <div class="d-flex align-items-start flex-nowrap gap-2">
                                             <div class="d-flex flex-column align-items-center">
                                                 <label class="form-label mb-1 small text-muted align-self-start">開始日</label>
-                                                <input type="date" name="limit_cert_start" id="cp_limit_cert_start" class="form-control form-control-sm" value="{{ client.limit_cert_start|date:'Y-m-d'|default:'' }}" onchange="autoFillCpLimitEnd()" style="min-width:130px;">
-                                                <small class="wareki-label text-muted text-center d-block" style="font-size:0.8em; margin-top:2px; width:100%;"></small>
+                                                <div>
+                                                    <input type="date" name="limit_cert_start" id="cp_limit_cert_start" class="form-control form-control-sm" value="{{ client.limit_cert_start|date:'Y-m-d'|default:'' }}" onchange="autoFillCpLimitEnd()" style="width:118px;">
+                                                    <small class="wareki-label text-muted d-block" style="font-size:0.8em; margin-top:2px;"></small>
+                                                </div>
                                             </div>
                                             <div class="text-muted" style="padding-top:28px;">～</div>
                                             <div class="d-flex flex-column align-items-center">
                                                 <label class="form-label mb-1 small text-muted align-self-start">終了日（自動）</label>
-                                                <input type="date" name="limit_cert_end" id="cp_limit_cert_end" class="form-control form-control-sm" value="{{ client.limit_cert_end|date:'Y-m-d'|default:'' }}" style="min-width:130px;">
-                                                <small class="wareki-label text-muted text-center d-block" style="font-size:0.8em; margin-top:2px; width:100%;"></small>
+                                                <div class="d-flex align-items-start gap-2">
+                                                    <div style="flex-shrink:0;">
+                                                        <input type="date" name="limit_cert_end" id="cp_limit_cert_end" class="form-control form-control-sm" value="{{ client.limit_cert_end|date:'Y-m-d'|default:'' }}" style="width:118px;">
+                                                        <small class="wareki-label text-muted d-block" style="font-size:0.8em; margin-top:2px;"></small>
+                                                    </div>
+                                                    <button type="button" class="btn btn-renew-period btn-sm" onclick="renewPeriodOneYear('cp_limit_cert_start','cp_limit_cert_end')" data-tip="期間更新（翌年）"><i class="fas fa-sync-alt"></i></button>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -672,12 +695,15 @@
                             </tr>
                         </tbody>
                     </table>
-                    <h6 class="text-secondary fw-bold mb-2 pb-1" style="border-bottom:1px solid #dee2e6;"><i class="fas fa-file-contract me-2"></i>高額介護サービス費</h6>
+                    <div class="mb-2 pb-1" style="border-bottom:1px solid #dee2e6;">
+                        <h6 class="text-secondary fw-bold mb-0"><i class="fas fa-file-contract me-2"></i>高額介護サービス費</h6>
+                    </div>
                     <table class="table table-bordered table-sm mb-0" style="font-size:0.9rem; table-layout:fixed;">
                         <tbody>
                             <tr>
-                                <th class="bg-light align-middle" style="width:30%;">該当の有無</th>
+                                <th class="bg-light align-middle" style="width:30%;">高額介護サービス費</th>
                                 <td>
+                                    <div class="text-muted mb-1" style="font-size:0.82rem;">該当の有無</div>
                                     <div class="btn-group w-100" role="group">
                                         <input type="radio" name="high_cost_care" value="yes" class="btn-check" id="cp_high_cost_care_yes" {% if client.high_cost_care == 'yes' %}checked{% endif %}>
                                         <label class="btn btn-outline-secondary btn-sm" for="cp_high_cost_care_yes" data-category="positive">あり</label>
@@ -689,7 +715,7 @@
                         </tbody>
                     </table>
                 </div>
-                <div class="modal-footer">
+                <div class="modal-footer" style="flex-shrink:0;">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">キャンセル</button>
                     <button type="submit" class="btn btn-save-modal"><i class="fas fa-save me-1"></i>保存</button>
                 </div>
@@ -700,60 +726,64 @@
 
 <!-- ========== 統合モーダル：障害福祉関係 ========== -->
 <div class="modal fade" id="modalDisabilityAll" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
-            <form method="post" novalidate>
+            <form method="post" novalidate style="display:flex; flex-direction:column; max-height:100%; overflow:hidden;">
                 {% csrf_token %}
                 <input type="hidden" name="item" value="disability_all">
-                <div class="modal-header">
+                <div class="modal-header" style="flex-shrink:0;">
                     <h5 class="modal-title"><i class="fas fa-wheelchair me-2"></i>障害福祉関係の修正</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body p-3">
-                    <h6 class="text-secondary fw-bold mb-2 pb-1" style="border-bottom:1px solid #dee2e6;"><i class="fas fa-wheelchair me-2"></i>身体障がい者手帳</h6>
+                <div class="modal-body p-3" style="flex:1; overflow-y:auto; scrollbar-width:none;">
+                    <div class="mb-2 pb-1" style="border-bottom:1px solid #dee2e6;">
+                        <h6 class="text-secondary fw-bold mb-0"><i class="fas fa-wheelchair me-2"></i>身体障がい者手帳</h6>
+                    </div>
                     <table class="table table-bordered table-sm mb-3" style="font-size:0.9rem; table-layout:fixed;">
                         <tbody>
                             <tr>
-                                <th class="bg-light align-middle" style="width:30%;">手帳の有無</th>
+                                <th class="bg-light align-middle" style="width:30%;">身体障がい者手帳</th>
                                 <td>
+                                    <div class="text-muted mb-1" style="font-size:0.82rem;">手帳の有無</div>
                                     <div class="btn-group w-100" role="group">
                                         <input type="radio" name="disability_handbook" value="True" class="btn-check" id="dh_yes" {% if client.disability_handbook %}checked{% endif %} onchange="toggleDhFields()">
                                         <label class="btn btn-outline-secondary btn-sm" for="dh_yes" data-category="positive">あり</label>
                                         <input type="radio" name="disability_handbook" value="False" class="btn-check" id="dh_no" {% if not client.disability_handbook %}checked{% endif %} onchange="toggleDhFields()">
                                         <label class="btn btn-outline-secondary btn-sm" for="dh_no" data-category="negative">なし</label>
                                     </div>
-                                </td>
-                            </tr>
-                            <tr id="dh_type_row" style="display: {% if client.disability_handbook %}table-row{% else %}none{% endif %};">
-                                <th class="bg-light align-middle">障害種別</th>
-                                <td>
-                                    <select name="disability_handbook_type" class="form-select form-select-sm">
-                                        <option value="">-- 選択 --</option>
-                                        {% for val, label in client.DISABILITY_TYPE_CHOICES %}
-                                        <option value="{{ val }}" {% if client.disability_handbook_type == val %}selected{% endif %}>{{ label }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </td>
-                            </tr>
-                            <tr id="dh_grade_row" style="display: {% if client.disability_handbook %}table-row{% else %}none{% endif %};">
-                                <th class="bg-light align-middle">障害等級</th>
-                                <td>
-                                    <select name="disability_handbook_grade" class="form-select form-select-sm">
-                                        <option value="">-- 選択 --</option>
-                                        {% for val, label in client.DISABILITY_GRADE_CHOICES %}
-                                        <option value="{{ val }}" {% if client.disability_handbook_grade == val %}selected{% endif %}>{{ label }}</option>
-                                        {% endfor %}
-                                    </select>
+                                    <div id="dh_type_row" style="display:{% if client.disability_handbook %}flex{% else %}none{% endif %}; gap:0.75rem; margin-top:0.5rem; align-items:flex-end; flex-wrap:nowrap;">
+                                        <div style="flex:1; min-width:0; overflow:hidden;">
+                                            <div class="text-muted mb-1" style="font-size:0.82rem;">障害種別</div>
+                                            <select name="disability_handbook_type" class="form-select form-select-sm" style="text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">
+                                                <option value="">----------</option>
+                                                {% for val, label in client.DISABILITY_TYPE_CHOICES %}
+                                                <option value="{{ val }}" {% if client.disability_handbook_type == val %}selected{% endif %}>{{ label }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div id="dh_grade_row" style="width:110px; flex-shrink:0;">
+                                            <div class="text-muted mb-1" style="font-size:0.82rem;">障害等級</div>
+                                            <select name="disability_handbook_grade" class="form-select form-select-sm">
+                                                <option value="">----------</option>
+                                                {% for val, label in client.DISABILITY_GRADE_CHOICES %}
+                                                <option value="{{ val }}" {% if client.disability_handbook_grade == val %}selected{% endif %}>{{ label }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
                                 </td>
                             </tr>
                         </tbody>
                     </table>
-                    <h6 class="text-secondary fw-bold mb-2 pb-1" style="border-bottom:1px solid #dee2e6;"><i class="fas fa-wheelchair me-2"></i>障害福祉サービス受給者証</h6>
+                    <div class="mb-2 pb-1" style="border-bottom:1px solid #dee2e6;">
+                        <h6 class="text-secondary fw-bold mb-0"><i class="fas fa-wheelchair me-2"></i>障害福祉サービス受給者証</h6>
+                    </div>
                     <table class="table table-bordered table-sm mb-0" style="font-size:0.9rem; table-layout:fixed;">
                         <tbody>
                             <tr>
-                                <th class="bg-light align-middle" style="width:30%;">受給者証の有無</th>
+                                <th class="bg-light align-middle" style="width:30%; font-size:0.72rem;">障害福祉サービス受給者証</th>
                                 <td>
+                                    <div class="text-muted mb-1" style="font-size:0.82rem;">受給者証の有無</div>
                                     <div class="btn-group w-100" role="group">
                                         <input type="radio" name="disability_welfare" value="yes" class="btn-check" id="da_disability_yes" {% if client.disability_welfare == 'yes' %}checked{% endif %} onchange="toggleDaPeriod()">
                                         <label class="btn btn-outline-secondary btn-sm" for="da_disability_yes" data-category="positive">あり</label>
@@ -761,22 +791,30 @@
                                         <label class="btn btn-outline-secondary btn-sm" for="da_disability_no" data-category="negative">なし</label>
                                     </div>
                                     <div id="da_period_row" style="display:{% if client.disability_welfare == 'yes' %}block{% else %}none{% endif %}; overflow:hidden;">
-                                        <div class="alert alert-warning py-1 px-2 mb-2 mt-2" style="font-size:0.8rem;">
-                                            <i class="fas fa-exclamation-triangle me-1"></i>
-                                            <strong>支給決定期間</strong>はサービス利用の有効期間です。障害支援区分の<strong>認定期間とは異なります</strong>。
-                                        </div>
+                                        <div class="text-muted mb-1 mt-2" style="font-size:0.82rem;">有効期限</div>
                                         <div class="d-flex align-items-start flex-nowrap gap-2">
                                             <div class="d-flex flex-column align-items-center">
                                                 <label class="form-label mb-1 small text-muted align-self-start">開始日</label>
-                                                <input type="date" name="disability_welfare_decision_start" id="da_dec_start" class="form-control form-control-sm" value="{{ client.disability_welfare_decision_start|date:'Y-m-d'|default:'' }}" onchange="autoFillDaDecEnd()" style="min-width:130px;">
-                                                <small class="wareki-label text-muted text-center d-block" style="font-size:0.8em; margin-top:2px; width:100%;"></small>
+                                                <div>
+                                                    <input type="date" name="disability_welfare_decision_start" id="da_dec_start" class="form-control form-control-sm" value="{{ client.disability_welfare_decision_start|date:'Y-m-d'|default:'' }}" onchange="autoFillDaDecEnd()" style="width:118px;">
+                                                    <small class="wareki-label text-muted d-block" style="font-size:0.8em; margin-top:2px;"></small>
+                                                </div>
                                             </div>
                                             <div class="text-muted" style="padding-top:28px;">～</div>
                                             <div class="d-flex flex-column align-items-center">
                                                 <label class="form-label mb-1 small text-muted align-self-start">終了日（自動）</label>
-                                                <input type="date" name="disability_welfare_decision_end" id="da_dec_end" class="form-control form-control-sm" value="{{ client.disability_welfare_decision_end|date:'Y-m-d'|default:'' }}" style="min-width:130px;">
-                                                <small class="wareki-label text-muted text-center d-block" style="font-size:0.8em; margin-top:2px; width:100%;"></small>
+                                                <div class="d-flex align-items-start gap-2">
+                                                    <div style="flex-shrink:0;">
+                                                        <input type="date" name="disability_welfare_decision_end" id="da_dec_end" class="form-control form-control-sm" value="{{ client.disability_welfare_decision_end|date:'Y-m-d'|default:'' }}" style="width:118px;">
+                                                        <small class="wareki-label text-muted d-block" style="font-size:0.8em; margin-top:2px;"></small>
+                                                    </div>
+                                                    <button type="button" class="btn btn-renew-period btn-sm" onclick="renewPeriodOneYear('da_dec_start','da_dec_end')" data-tip="期間更新（翌年）"><i class="fas fa-sync-alt"></i></button>
+                                                </div>
                                             </div>
+                                        </div>
+                                        <div class="alert alert-warning py-1 px-2 mb-0 mt-2" style="font-size:0.8rem;">
+                                            <i class="fas fa-exclamation-triangle me-1"></i>
+                                            <strong>支給決定期間</strong>はサービス利用の有効期間です。障害支援区分の<strong>認定期間とは異なります</strong>。
                                         </div>
                                     </div>
                                 </td>
@@ -784,7 +822,7 @@
                         </tbody>
                     </table>
                 </div>
-                <div class="modal-footer">
+                <div class="modal-footer" style="flex-shrink:0;">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">キャンセル</button>
                     <button type="submit" class="btn btn-save-modal"><i class="fas fa-save me-1"></i>保存</button>
                 </div>
@@ -795,22 +833,25 @@
 
 <!-- ========== 統合モーダル：医療関係全部 ========== -->
 <div class="modal fade" id="modalMedicalAll" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
-            <form method="post" novalidate>
+            <form method="post" novalidate style="display:flex; flex-direction:column; max-height:100%; overflow:hidden;">
                 {% csrf_token %}
                 <input type="hidden" name="item" value="medical_all">
-                <div class="modal-header">
+                <div class="modal-header" style="flex-shrink:0;">
                     <h5 class="modal-title"><i class="fas fa-notes-medical me-2"></i>医療関係の修正</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body p-3">
-                    <h6 class="text-secondary fw-bold mb-2 pb-1" style="border-bottom:1px solid #dee2e6;"><i class="fas fa-notes-medical me-2"></i>特定医療費（指定難病）</h6>
+                <div class="modal-body p-3" style="flex:1; overflow-y:auto; scrollbar-width:none;">
+                    <div class="mb-2 pb-1" style="border-bottom:1px solid #dee2e6;">
+                        <h6 class="text-secondary fw-bold mb-0"><i class="fas fa-notes-medical me-2"></i>特定医療費（指定難病）受給者証</h6>
+                    </div>
                     <table class="table table-bordered table-sm mb-3" style="font-size:0.9rem; table-layout:fixed;">
                         <tbody>
                             <tr>
-                                <th class="bg-light align-middle" style="width:30%; padding:5px 8px;">受給者証の有無</th>
+                                <th class="bg-light align-middle" style="width:30%; padding:5px 8px; font-size:0.65rem;">特定医療費（指定難病）</th>
                                 <td style="padding:5px 8px;">
+                                    <div class="text-muted mb-1" style="font-size:0.82rem;">受給者証の有無</div>
                                     <div class="btn-group w-100" role="group">
                                         <input type="radio" name="specific_medical" value="yes" class="btn-check" id="ma_specific_yes" {% if client.specific_medical == 'yes' %}checked{% endif %} onchange="toggleMaSpecificPeriod()">
                                         <label class="btn btn-outline-secondary btn-sm" for="ma_specific_yes" data-category="positive">あり</label>
@@ -818,21 +859,26 @@
                                         <label class="btn btn-outline-secondary btn-sm" for="ma_specific_no" data-category="negative">なし</label>
                                     </div>
                                     <div id="ma_specific_period_row" style="display:{% if client.specific_medical == 'yes' %}block{% else %}none{% endif %}; overflow:hidden;">
-                                        <div class="d-flex align-items-start flex-nowrap gap-2 mt-2">
+                                        <div class="text-muted mb-1 mt-2" style="font-size:0.82rem;">有効期限</div>
+                                        <div class="d-flex align-items-start flex-nowrap gap-2">
                                             <div class="d-flex flex-column align-items-center">
                                                 <label class="form-label mb-1 small text-muted align-self-start">開始日</label>
-                                                <input type="date" name="specific_medical_start" id="ma_specific_start" class="form-control form-control-sm" value="{{ client.specific_medical_start|date:'Y-m-d'|default:'' }}" onchange="autoFillMaSpecificEnd()" style="min-width:130px;">
-                                                <small class="wareki-label text-muted text-center d-block" style="font-size:0.8em; margin-top:2px; width:100%;"></small>
+                                                <div>
+                                                    <input type="date" name="specific_medical_start" id="ma_specific_start" class="form-control form-control-sm" value="{{ client.specific_medical_start|date:'Y-m-d'|default:'' }}" onchange="autoFillMaSpecificEnd()" style="width:118px;">
+                                                    <small class="wareki-label text-muted d-block" style="font-size:0.8em; margin-top:2px;"></small>
+                                                </div>
                                             </div>
                                             <div class="text-muted" style="padding-top:28px;">～</div>
                                             <div class="d-flex flex-column align-items-center">
                                                 <label class="form-label mb-1 small text-muted align-self-start">終了日（自動）</label>
-                                                <input type="date" name="specific_medical_end" id="ma_specific_end" class="form-control form-control-sm" value="{{ client.specific_medical_end|date:'Y-m-d'|default:'' }}" style="min-width:130px;">
-                                                <small class="wareki-label text-muted text-center d-block" style="font-size:0.8em; margin-top:2px; width:100%;"></small>
+                                                <div class="d-flex align-items-start gap-2">
+                                                    <div style="flex-shrink:0;">
+                                                        <input type="date" name="specific_medical_end" id="ma_specific_end" class="form-control form-control-sm" value="{{ client.specific_medical_end|date:'Y-m-d'|default:'' }}" style="width:118px;">
+                                                        <small class="wareki-label text-muted d-block" style="font-size:0.8em; margin-top:2px;"></small>
+                                                    </div>
+                                                    <button type="button" class="btn btn-renew-period btn-sm simple-tooltip" onclick="renewMaSpecificPeriod()" data-tip="期間更新（翌年）"><i class="fas fa-sync-alt"></i></button>
+                                                </div>
                                             </div>
-                                        </div>
-                                        <div class="mt-2 text-end">
-                                            <button type="button" class="btn btn-renew-period btn-sm" onclick="renewMaSpecificPeriod()"><i class="fas fa-sync-alt me-1"></i>期間更新（翌年）</button>
                                         </div>
                                     </div>
                                 </td>
@@ -843,8 +889,9 @@
                     <table class="table table-bordered table-sm mb-3" style="font-size:0.9rem; table-layout:fixed;">
                         <tbody>
                             <tr>
-                                <th class="bg-light align-middle" style="width:30%; padding:5px 8px;">受給者証の有無</th>
+                                <th class="bg-light align-middle" style="width:30%; padding:5px 8px; font-size:0.8rem;">福祉医療費受給者証</th>
                                 <td style="padding:5px 8px;">
+                                    <div class="text-muted mb-1" style="font-size:0.82rem;">受給者証の有無</div>
                                     <div class="btn-group w-100" role="group">
                                         <input type="radio" name="welfare_medical" value="yes" class="btn-check" id="ma_welfare_yes" {% if client.welfare_medical == 'yes' %}checked{% endif %} onchange="toggleMaWelfarePeriod()">
                                         <label class="btn btn-outline-secondary btn-sm" for="ma_welfare_yes" data-category="positive">あり</label>
@@ -852,33 +899,39 @@
                                         <label class="btn btn-outline-secondary btn-sm" for="ma_welfare_no" data-category="negative">なし</label>
                                     </div>
                                     <div id="ma_welfare_period_row" style="display:{% if client.welfare_medical == 'yes' %}block{% else %}none{% endif %}; overflow:hidden;">
-                                        <div class="d-flex align-items-start flex-nowrap gap-2 mt-2">
+                                        <div class="text-muted mb-1 mt-2" style="font-size:0.82rem;">有効期限</div>
+                                        <div class="d-flex align-items-start flex-nowrap gap-2">
                                             <div class="d-flex flex-column align-items-center">
                                                 <label class="form-label mb-1 small text-muted align-self-start">開始日</label>
-                                                <input type="date" name="welfare_medical_start" id="ma_welfare_start" class="form-control form-control-sm" value="{{ client.welfare_medical_start|date:'Y-m-d'|default:'' }}" onchange="autoFillMaWelfareEnd()" style="min-width:130px;">
-                                                <small class="wareki-label text-muted text-center d-block" style="font-size:0.8em; margin-top:2px; width:100%;"></small>
+                                                <div>
+                                                    <input type="date" name="welfare_medical_start" id="ma_welfare_start" class="form-control form-control-sm" value="{{ client.welfare_medical_start|date:'Y-m-d'|default:'' }}" onchange="autoFillMaWelfareEnd()" style="width:118px;">
+                                                    <small class="wareki-label text-muted d-block" style="font-size:0.8em; margin-top:2px;"></small>
+                                                </div>
                                             </div>
                                             <div class="text-muted" style="padding-top:28px;">～</div>
                                             <div class="d-flex flex-column align-items-center">
                                                 <label class="form-label mb-1 small text-muted align-self-start">終了日（自動）</label>
-                                                <input type="date" name="welfare_medical_end" id="ma_welfare_end" class="form-control form-control-sm" value="{{ client.welfare_medical_end|date:'Y-m-d'|default:'' }}" style="min-width:130px;">
-                                                <small class="wareki-label text-muted text-center d-block" style="font-size:0.8em; margin-top:2px; width:100%;"></small>
+                                                <div class="d-flex align-items-start gap-2">
+                                                    <div style="flex-shrink:0;">
+                                                        <input type="date" name="welfare_medical_end" id="ma_welfare_end" class="form-control form-control-sm" value="{{ client.welfare_medical_end|date:'Y-m-d'|default:'' }}" style="width:118px;">
+                                                        <small class="wareki-label text-muted d-block" style="font-size:0.8em; margin-top:2px;"></small>
+                                                    </div>
+                                                    <button type="button" class="btn btn-renew-period btn-sm" onclick="renewMaWelfarePeriod()" data-tip="期間更新（翌年）"><i class="fas fa-sync-alt"></i></button>
+                                                </div>
                                             </div>
-                                        </div>
-                                        <div class="mt-2 text-end">
-                                            <button type="button" class="btn btn-renew-period btn-sm" onclick="renewMaWelfarePeriod()"><i class="fas fa-sync-alt me-1"></i>期間更新（翌年）</button>
                                         </div>
                                     </div>
                                 </td>
                             </tr>
                         </tbody>
                     </table>
-                    <h6 class="text-secondary fw-bold mb-2 pb-1" style="border-bottom:1px solid #dee2e6;"><i class="fas fa-notes-medical me-2"></i>国保限度額認定証</h6>
+                    <h6 class="text-secondary fw-bold mb-2 pb-1" style="border-bottom:1px solid #dee2e6;"><i class="fas fa-notes-medical me-2"></i>限度額適用認定証（国民健康保険）</h6>
                     <table class="table table-bordered table-sm mb-3" style="font-size:0.9rem; table-layout:fixed;">
                         <tbody>
                             <tr>
-                                <th class="bg-light align-middle" style="width:30%; padding:5px 8px;">認定証の有無</th>
+                                <th class="bg-light align-middle" style="width:30%; padding:5px 8px;">限度額適用認定証（国民健康保険）</th>
                                 <td style="padding:5px 8px;">
+                                    <div class="text-muted mb-1" style="font-size:0.82rem;">受給者証の有無</div>
                                     <div class="btn-group w-100" role="group">
                                         <input type="radio" name="nhi_limit_cert" value="yes" class="btn-check" id="ma_nhi_yes" {% if client.nhi_limit_cert == 'yes' %}checked{% endif %} onchange="toggleMaNhiPeriod()">
                                         <label class="btn btn-outline-secondary btn-sm" for="ma_nhi_yes" data-category="positive">あり</label>
@@ -886,33 +939,39 @@
                                         <label class="btn btn-outline-secondary btn-sm" for="ma_nhi_no" data-category="negative">なし</label>
                                     </div>
                                     <div id="ma_nhi_period_row" style="display:{% if client.nhi_limit_cert == 'yes' %}block{% else %}none{% endif %}; overflow:hidden;">
-                                        <div class="d-flex align-items-start flex-nowrap gap-2 mt-2">
+                                        <div class="text-muted mb-1 mt-2" style="font-size:0.82rem;">有効期限</div>
+                                        <div class="d-flex align-items-start flex-nowrap gap-2">
                                             <div class="d-flex flex-column align-items-center">
                                                 <label class="form-label mb-1 small text-muted align-self-start">開始日</label>
-                                                <input type="date" name="nhi_limit_cert_start" id="ma_nhi_start" class="form-control form-control-sm" value="{{ client.nhi_limit_cert_start|date:'Y-m-d'|default:'' }}" onchange="autoFillMaNhiEnd()" style="min-width:130px;">
-                                                <small class="wareki-label text-muted text-center d-block" style="font-size:0.8em; margin-top:2px; width:100%;"></small>
+                                                <div>
+                                                    <input type="date" name="nhi_limit_cert_start" id="ma_nhi_start" class="form-control form-control-sm" value="{{ client.nhi_limit_cert_start|date:'Y-m-d'|default:'' }}" onchange="autoFillMaNhiEnd()" style="width:118px;">
+                                                    <small class="wareki-label text-muted d-block" style="font-size:0.8em; margin-top:2px;"></small>
+                                                </div>
                                             </div>
                                             <div class="text-muted" style="padding-top:28px;">～</div>
                                             <div class="d-flex flex-column align-items-center">
                                                 <label class="form-label mb-1 small text-muted align-self-start">終了日（自動）</label>
-                                                <input type="date" name="nhi_limit_cert_end" id="ma_nhi_end" class="form-control form-control-sm" value="{{ client.nhi_limit_cert_end|date:'Y-m-d'|default:'' }}" style="min-width:130px;">
-                                                <small class="wareki-label text-muted text-center d-block" style="font-size:0.8em; margin-top:2px; width:100%;"></small>
+                                                <div class="d-flex align-items-start gap-2">
+                                                    <div style="flex-shrink:0;">
+                                                        <input type="date" name="nhi_limit_cert_end" id="ma_nhi_end" class="form-control form-control-sm" value="{{ client.nhi_limit_cert_end|date:'Y-m-d'|default:'' }}" style="width:118px;">
+                                                        <small class="wareki-label text-muted d-block" style="font-size:0.8em; margin-top:2px;"></small>
+                                                    </div>
+                                                    <button type="button" class="btn btn-renew-period btn-sm" onclick="renewMaNhiPeriod()" data-tip="期間更新（翌年）"><i class="fas fa-sync-alt"></i></button>
+                                                </div>
                                             </div>
-                                        </div>
-                                        <div class="mt-2 text-end">
-                                            <button type="button" class="btn btn-renew-period btn-sm" onclick="renewMaNhiPeriod()"><i class="fas fa-sync-alt me-1"></i>期間更新（翌年）</button>
                                         </div>
                                     </div>
                                 </td>
                             </tr>
                         </tbody>
                     </table>
-                    <h6 class="text-secondary fw-bold mb-2 pb-1" style="border-bottom:1px solid #dee2e6;"><i class="fas fa-notes-medical me-2"></i>高額医療・介護合算</h6>
+                    <h6 class="text-secondary fw-bold mb-2 pb-1" style="border-bottom:1px solid #dee2e6;"><i class="fas fa-notes-medical me-2"></i>高額医療・介護合算療養費</h6>
                     <table class="table table-bordered table-sm mb-0" style="font-size:0.9rem; table-layout:fixed;">
                         <tbody>
                             <tr>
-                                <th class="bg-light align-middle" style="width:30%; padding:5px 8px;">該当の有無</th>
+                                <th class="bg-light align-middle" style="width:30%; padding:5px 8px;">高額医療・介護合算</th>
                                 <td style="padding:5px 8px;">
+                                    <div class="text-muted mb-1" style="font-size:0.82rem;">該当の有無</div>
                                     <div class="btn-group w-100" role="group">
                                         <input type="radio" name="high_cost_combined" value="yes" class="btn-check" id="ma_combined_yes" {% if client.high_cost_combined == 'yes' %}checked{% endif %}>
                                         <label class="btn btn-outline-secondary btn-sm" for="ma_combined_yes" data-category="positive">あり</label>
@@ -924,7 +983,7 @@
                         </tbody>
                     </table>
                 </div>
-                <div class="modal-footer">
+                <div class="modal-footer" style="flex-shrink:0;">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">キャンセル</button>
                     <button type="submit" class="btn btn-save-modal"><i class="fas fa-save me-1"></i>保存</button>
                 </div>
@@ -1049,8 +1108,8 @@
                             <tr id="dh_type_row" style="display: {% if client.disability_handbook %}table-row{% else %}none{% endif %};">
                                 <th class="bg-light align-middle">障害種別</th>
                                 <td>
-                                    <select name="disability_handbook_type" class="form-select form-select-sm">
-                                        <option value="">-- 選択 --</option>
+                                    <select name="disability_handbook_type" class="form-select form-select-sm" style="text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">
+                                        <option value="">----------</option>
                                         {% for val, label in client.DISABILITY_TYPE_CHOICES %}
                                         <option value="{{ val }}" {% if client.disability_handbook_type == val %}selected{% endif %}>{{ label }}</option>
                                         {% endfor %}
@@ -1061,7 +1120,7 @@
                                 <th class="bg-light align-middle">障害等級</th>
                                 <td>
                                     <select name="disability_handbook_grade" class="form-select form-select-sm">
-                                        <option value="">-- 選択 --</option>
+                                        <option value="">----------</option>
                                         {% for val, label in client.DISABILITY_GRADE_CHOICES %}
                                         <option value="{{ val }}" {% if client.disability_handbook_grade == val %}selected{% endif %}>{{ label }}</option>
                                         {% endfor %}
@@ -1157,20 +1216,29 @@
                                 </div>
                             </div>
                         </div>
-                        <div id="wm_period" class="row g-3 mb-1" style="display: {% if client.welfare_medical == 'yes' %}flex{% else %}none{% endif %};">
-                            <div class="col-5"></div>
-                            <div class="col">
-                                <div class="d-flex align-items-start flex-nowrap gap-2">
-                                    <div class="d-flex flex-column align-items-center">
-                                        <label class="form-label mb-1 small text-muted align-self-start">開始日</label>
-                                        <input type="date" name="welfare_medical_start" id="wm_start" class="form-control form-control-sm" value="{{ client.welfare_medical_start|date:'Y-m-d'|default:'' }}" onchange="autoFillWmEnd()" style="min-width:130px;">
-                                        <small class="wareki-label text-muted text-center d-block" style="font-size:0.8em; margin-top:2px; width:100%;"></small>
-                                    </div>
-                                    <div class="text-muted" style="padding-top:28px;">～</div>
-                                    <div class="d-flex flex-column align-items-center">
-                                        <label class="form-label mb-1 small text-muted align-self-start">終了日（自動）</label>
-                                        <input type="date" name="welfare_medical_end" id="wm_end" class="form-control form-control-sm" value="{{ client.welfare_medical_end|date:'Y-m-d'|default:'' }}" style="min-width:130px;">
-                                        <small class="wareki-label text-muted text-center d-block" style="font-size:0.8em; margin-top:2px; width:100%;"></small>
+                        <div id="wm_period" style="display: {% if client.welfare_medical == 'yes' %}block{% else %}none{% endif %};">
+                            <div class="row g-3 mb-1">
+                                <div class="col-5"><label class="form-label mb-0 text-muted" style="font-size:0.82rem;">有効期限</label></div>
+                                <div class="col">
+                                    <div class="d-flex align-items-start flex-nowrap gap-2">
+                                        <div class="d-flex flex-column align-items-center">
+                                            <label class="form-label mb-1 small text-muted align-self-start">開始日</label>
+                                            <div>
+                                                <input type="date" name="welfare_medical_start" id="wm_start" class="form-control form-control-sm" value="{{ client.welfare_medical_start|date:'Y-m-d'|default:'' }}" onchange="autoFillWmEnd()" style="width:130px;">
+                                                <small class="wareki-label text-muted d-block" style="font-size:0.8em; margin-top:2px;"></small>
+                                            </div>
+                                        </div>
+                                        <div class="text-muted" style="padding-top:28px;">～</div>
+                                        <div class="d-flex flex-column align-items-center">
+                                            <label class="form-label mb-1 small text-muted align-self-start">終了日（自動）</label>
+                                            <div class="d-flex align-items-start gap-2">
+                                                <div style="flex-shrink:0;">
+                                                    <input type="date" name="welfare_medical_end" id="wm_end" class="form-control form-control-sm" value="{{ client.welfare_medical_end|date:'Y-m-d'|default:'' }}" style="width:130px;">
+                                                    <small class="wareki-label text-muted d-block" style="font-size:0.8em; margin-top:2px;"></small>
+                                                </div>
+                                                <button type="button" class="btn btn-renew-period btn-sm" onclick="renewWmPeriod()" data-tip="期間更新（翌年）"><i class="fas fa-sync-alt"></i></button>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -1186,7 +1254,7 @@
     </div>
 </div>
 
-<!-- ========== モーダル：国保限度額認定証 ========== -->
+<!-- ========== モーダル：限度額適用認定証（国民健康保険） ========== -->
 <div class="modal fade" id="modalNhiLimitCert" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -1194,7 +1262,7 @@
                 {% csrf_token %}
                 <input type="hidden" name="item" value="nhi_limit_cert">
                 <div class="modal-header">
-                    <h5 class="modal-title"><i class="fas fa-notes-medical me-2"></i>国保限度額認定証の修正</h5>
+                    <h5 class="modal-title"><i class="fas fa-notes-medical me-2"></i>限度額適用認定証（国民健康保険）の修正</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-3">
@@ -1210,20 +1278,29 @@
                                 </div>
                             </div>
                         </div>
-                        <div id="nl_period" class="row g-3 mb-1" style="display: {% if client.nhi_limit_cert == 'yes' %}flex{% else %}none{% endif %};">
-                            <div class="col-5"></div>
-                            <div class="col">
-                                <div class="d-flex align-items-start flex-nowrap gap-2">
-                                    <div class="d-flex flex-column align-items-center">
-                                        <label class="form-label mb-1 small text-muted align-self-start">開始日</label>
-                                        <input type="date" name="nhi_limit_cert_start" id="nl_start" class="form-control form-control-sm" value="{{ client.nhi_limit_cert_start|date:'Y-m-d'|default:'' }}" onchange="autoFillNlEnd()" style="min-width:130px;">
-                                        <small class="wareki-label text-muted text-center d-block" style="font-size:0.8em; margin-top:2px; width:100%;"></small>
-                                    </div>
-                                    <div class="text-muted" style="padding-top:28px;">～</div>
-                                    <div class="d-flex flex-column align-items-center">
-                                        <label class="form-label mb-1 small text-muted align-self-start">終了日（自動）</label>
-                                        <input type="date" name="nhi_limit_cert_end" id="nl_end" class="form-control form-control-sm" value="{{ client.nhi_limit_cert_end|date:'Y-m-d'|default:'' }}" style="min-width:130px;">
-                                        <small class="wareki-label text-muted text-center d-block" style="font-size:0.8em; margin-top:2px; width:100%;"></small>
+                        <div id="nl_period" style="display: {% if client.nhi_limit_cert == 'yes' %}block{% else %}none{% endif %};">
+                            <div class="row g-3 mb-1">
+                                <div class="col-5"><label class="form-label mb-0 text-muted" style="font-size:0.82rem;">有効期限</label></div>
+                                <div class="col">
+                                    <div class="d-flex align-items-start flex-nowrap gap-2">
+                                        <div class="d-flex flex-column align-items-center">
+                                            <label class="form-label mb-1 small text-muted align-self-start">開始日</label>
+                                            <div>
+                                                <input type="date" name="nhi_limit_cert_start" id="nl_start" class="form-control form-control-sm" value="{{ client.nhi_limit_cert_start|date:'Y-m-d'|default:'' }}" onchange="autoFillNlEnd()" style="width:130px;">
+                                                <small class="wareki-label text-muted d-block" style="font-size:0.8em; margin-top:2px;"></small>
+                                            </div>
+                                        </div>
+                                        <div class="text-muted" style="padding-top:28px;">～</div>
+                                        <div class="d-flex flex-column align-items-center">
+                                            <label class="form-label mb-1 small text-muted align-self-start">終了日（自動）</label>
+                                            <div class="d-flex align-items-start gap-2">
+                                                <div style="flex-shrink:0;">
+                                                    <input type="date" name="nhi_limit_cert_end" id="nl_end" class="form-control form-control-sm" value="{{ client.nhi_limit_cert_end|date:'Y-m-d'|default:'' }}" style="width:130px;">
+                                                    <small class="wareki-label text-muted d-block" style="font-size:0.8em; margin-top:2px;"></small>
+                                                </div>
+                                                <button type="button" class="btn btn-renew-period btn-sm" onclick="renewNlPeriod()" data-tip="期間更新（翌年）"><i class="fas fa-sync-alt"></i></button>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -1290,8 +1367,9 @@
                     <table class="table table-bordered table-sm mb-0" style="font-size:0.9rem;">
                         <tbody>
                             <tr>
-                                <th class="bg-light align-middle" style="width:30%;">生活保護受給</th>
+                                <th class="bg-light align-middle" style="width:30%;">生活保護</th>
                                 <td>
+                                    <div class="text-muted mb-1" style="font-size:0.82rem;">受給の有無</div>
                                     <div class="btn-group w-100" role="group">
                                         <input type="radio" name="life_protection" value="True" class="btn-check" id="lp_yes" {% if client.life_protection %}checked{% endif %}>
                                         <label class="btn btn-outline-secondary btn-sm" for="lp_yes" data-category="positive">あり</label>
@@ -1325,75 +1403,77 @@
                 </div>
                 <div class="modal-body p-3">
                     <h6 class="text-secondary fw-bold mb-2 pb-1" style="border-bottom:1px solid #dee2e6;"><i class="fas fa-notes-medical me-2"></i>医療保険証</h6>
-                    <table class="table table-bordered table-sm mb-0" style="font-size:0.9rem;">
+                    <table class="table table-bordered table-sm mb-0" style="font-size:0.9rem; table-layout:fixed;">
                         <tbody>
-                                <tr>
-                                    <th class="bg-light align-middle" style="width:30%;">保険種別</th>
-                                    <td>
-                                        <select name="medical_insurance_type" class="form-select form-select-sm">
-                                            {% for value, label in care_form.fields.medical_insurance_type.choices %}
-                                            <option value="{{ value }}" {% if client.medical_insurance_type == value %}selected{% endif %}>{{ label }}</option>
-                                            {% endfor %}
-                                        </select>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <th class="bg-light align-middle" style="vertical-align:middle;">被保険者番号<br><small class="text-muted fw-normal">（記号・番号・枝番）</small></th>
-                                    <td style="vertical-align:middle;">
-                                        <div class="d-flex align-items-center gap-2 flex-nowrap">
-                                            <span id="mi_modal_symbol_label" class="text-nowrap small text-muted">記号</span>
-                                            <div id="mi_modal_symbol_wrap" style="width:45px;">
-                                                <input type="text" name="medical_insurance_symbol" id="mi_modal_symbol" class="form-control form-control-sm" value="{{ client.medical_insurance_symbol|default:'' }}">
-                                            </div>
-                                            <span class="text-nowrap small text-muted">番号</span>
-                                            <div style="width:110px;">
-                                                <input type="text" name="medical_insurance_number" id="mi_modal_number" class="form-control form-control-sm" value="{{ client.medical_insurance_number|default:'' }}">
-                                            </div>
-                                            <span id="mi_modal_branch_label" class="text-nowrap small text-muted">枝番</span>
-                                            <div id="mi_modal_branch_wrap" style="width:45px;">
-                                                <input type="text" name="medical_insurance_branch" id="mi_modal_branch" class="form-control form-control-sm" value="{{ client.medical_insurance_branch|default:'' }}">
-                                            </div>
+                            <tr>
+                                <th class="bg-light align-middle" style="width:30%;">医療保険証</th>
+                                <td>
+                                    <div class="text-muted mb-1" style="font-size:0.82rem;">保険種別</div>
+                                    <select name="medical_insurance_type" class="form-select form-select-sm mb-2">
+                                        {% for value, label in care_form.fields.medical_insurance_type.choices %}
+                                        <option value="{{ value }}" {% if client.medical_insurance_type == value %}selected{% endif %}>{{ label }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <div class="text-muted mb-1" style="font-size:0.82rem;">被保険者番号（記号・番号・枝番）</div>
+                                    <div class="d-flex align-items-center gap-2 flex-nowrap mb-2">
+                                        <span id="mi_modal_symbol_label" class="text-nowrap small text-muted">記号</span>
+                                        <div id="mi_modal_symbol_wrap" style="width:45px;">
+                                            <input type="text" name="medical_insurance_symbol" id="mi_modal_symbol" class="form-control form-control-sm" value="{{ client.medical_insurance_symbol|default:'' }}">
                                         </div>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <th class="bg-light align-middle">負担割合</th>
-                                    <td>
-                                        <select name="medical_burden" class="form-select form-select-sm">
-                                            {% for value, label in care_form.fields.medical_burden.choices %}
-                                            <option value="{{ value }}" {% if client.medical_burden == value %}selected{% endif %}>{{ label }}</option>
-                                            {% endfor %}
-                                        </select>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <th class="bg-light align-middle">有効期間（終了日）</th>
-                                    <td>
-                                        <input type="hidden" name="medical_insurance_start" value="{{ client.medical_insurance_start|date:'Y-m-d'|default:'' }}">
-                                        <div class="d-flex align-items-start justify-content-between">
+                                        <span class="text-nowrap small text-muted">番号</span>
+                                        <div style="width:110px;">
+                                            <input type="text" name="medical_insurance_number" id="mi_modal_number" class="form-control form-control-sm" value="{{ client.medical_insurance_number|default:'' }}">
+                                        </div>
+                                        <span id="mi_modal_branch_label" class="text-nowrap small text-muted">枝番</span>
+                                        <div id="mi_modal_branch_wrap" style="width:45px;">
+                                            <input type="text" name="medical_insurance_branch" id="mi_modal_branch" class="form-control form-control-sm" value="{{ client.medical_insurance_branch|default:'' }}">
+                                        </div>
+                                    </div>
+                                    <div class="text-muted mb-1" style="font-size:0.82rem;">負担割合</div>
+                                    <select name="medical_burden" class="form-select form-select-sm mb-2">
+                                        {% for value, label in care_form.fields.medical_burden.choices %}
+                                        <option value="{{ value }}" {% if client.medical_burden == value %}selected{% endif %}>{{ label }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <div class="text-muted mb-1" style="font-size:0.82rem;">有効期限</div>
+                                    <div class="d-flex align-items-start flex-nowrap gap-2 mb-2">
+                                        <div class="d-flex flex-column align-items-center">
+                                            <label class="form-label mb-1 small text-muted align-self-start">開始日（自動）</label>
                                             <div>
-                                                <input type="date" name="medical_insurance_end" id="mi_end" class="form-control form-control-sm" value="{{ client.medical_insurance_end|date:'Y-m-d'|default:'' }}" style="width:210px;">
+                                                <input type="date" name="medical_insurance_start" id="mi_start" class="form-control form-control-sm" value="{{ client.medical_insurance_start|date:'Y-m-d'|default:'' }}" readonly style="width:118px; background-color:#f8f9fa;">
                                                 <small class="wareki-label text-muted d-block" style="font-size:0.8em; margin-top:2px;"></small>
                                             </div>
-                                            <button type="button" class="btn btn-renew-period btn-sm text-nowrap" onclick="renewMiPeriod()"><i class="fas fa-sync-alt me-1"></i>翌年に更新</button>
                                         </div>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <th class="bg-light align-middle">保険者名称</th>
-                                    <td>
-                                        <select id="mi_modal_insurer_preset" class="form-select form-select-sm mb-1" style="display:none;">
-                                            <option value="">選択してください</option>
-                                        </select>
-                                        <div id="mi_modal_insurer_manual">
-                                            <input type="text" name="medical_insurer_name_issuer" id="mi_modal_insurer_name" class="form-control form-control-sm" value="{{ client.medical_insurer_name_issuer|default:'' }}">
+                                        <div class="text-muted" style="padding-top:28px;">～</div>
+                                        <div class="d-flex flex-column align-items-center">
+                                            <label class="form-label mb-1 small text-muted align-self-start">終了日</label>
+                                            <div class="d-flex align-items-start gap-2">
+                                                <div style="flex-shrink:0;">
+                                                    <input type="date" name="medical_insurance_end" id="mi_end" class="form-control form-control-sm" value="{{ client.medical_insurance_end|date:'Y-m-d'|default:'' }}" onchange="autoCalcMiStart()" style="width:118px;">
+                                                    <small class="wareki-label text-muted d-block" style="font-size:0.8em; margin-top:2px;"></small>
+                                                </div>
+                                                <button type="button" class="btn btn-renew-period btn-sm" onclick="renewMiPeriod()" data-tip="期間更新（翌年）"><i class="fas fa-sync-alt"></i></button>
+                                            </div>
                                         </div>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <th class="bg-light align-middle">保険者番号</th>
-                                    <td><input type="text" name="medical_insurer_number" id="mi_modal_insurer_number" class="form-control form-control-sm" value="{{ client.medical_insurer_number|default:'' }}"></td>
-                                </tr>
+                                    </div>
+                                    <div class="d-flex align-items-start gap-3 mb-0">
+                                        <div style="flex:1; min-width:0; overflow:hidden;">
+                                            <div class="text-muted mb-1" style="font-size:0.82rem;">保険者名称</div>
+                                            <select id="mi_modal_insurer_preset" class="form-select form-select-sm mb-1" style="display:none;">
+                                                <option value="">選択してください</option>
+                                            </select>
+                                            <div id="mi_modal_insurer_manual" style="width:100%;">
+                                                <div id="mi_insurer_display" class="form-control form-control-sm" onclick="miInsurerStartEdit()" style="overflow:hidden; white-space:nowrap; text-overflow:ellipsis; cursor:text;">{{ client.medical_insurer_name_issuer|default:'' }}</div>
+                                                <input type="text" name="medical_insurer_name_issuer" id="mi_modal_insurer_name" class="form-control form-control-sm" value="{{ client.medical_insurer_name_issuer|default:'' }}" style="display:none;" onblur="miInsurerEndEdit()">
+                                            </div>
+                                        </div>
+                                        <div style="width:33%;">
+                                            <div class="text-muted mb-1" style="font-size:0.82rem;">保険者番号</div>
+                                            <input type="text" name="medical_insurer_number" id="mi_modal_insurer_number" class="form-control form-control-sm" value="{{ client.medical_insurer_number|default:'' }}">
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -1419,43 +1499,47 @@
                 </div>
                 <div class="modal-body p-3">
                     <h6 class="text-secondary fw-bold mb-2 pb-1" style="border-bottom:1px solid #dee2e6;"><i class="fas fa-heart me-2"></i>介護保険被保険者証</h6>
-                    <table class="table table-bordered table-sm mb-3" style="font-size:0.9rem;">
+                    <table class="table table-bordered table-sm mb-3" style="font-size:0.9rem; table-layout:fixed;">
                         <tbody>
                             <tr>
-                                <th class="bg-light align-middle" style="width:30%;">被保険者番号</th>
-                                <td><input type="text" name="insurance_number" class="form-control form-control-sm" value="{{ client.insurance_number|default:'' }}"></td>
-                            </tr>
-                            <tr>
-                                <th class="bg-light align-middle">要介護度</th>
+                                <th class="bg-light align-middle" style="width:30%;">介護保険被保険者証</th>
                                 <td>
-                                    <select name="care_level" class="form-select form-select-sm">
-                                        {% for value, label in care_form.fields.care_level.choices %}
-                                        <option value="{{ value }}" {% if client.care_level == value %}selected{% endif %}>{{ label }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </td>
-                            </tr>
-                            <tr>
-                                <th class="bg-light align-middle">認定日</th>
-                                <td>
-                                    <input type="date" name="certification_date" class="form-control form-control-sm" value="{{ client.certification_date|date:'Y-m-d'|default:'' }}">
-                                    <small class="wareki-label text-muted d-block" style="font-size:0.8em; margin-top:2px;"></small>
-                                </td>
-                            </tr>
-                            <tr>
-                                <th class="bg-light align-middle">認定期間</th>
-                                <td>
+                                    <div class="text-muted mb-1" style="font-size:0.82rem;">被保険者番号</div>
+                                    <input type="text" name="insurance_number" class="form-control form-control-sm mb-2" value="{{ client.insurance_number|default:'' }}">
+                                    <div class="d-flex align-items-start gap-2 mb-2">
+                                        <div style="flex:1;">
+                                            <div class="text-muted mb-1" style="font-size:0.82rem;">認定区分</div>
+                                            <select name="care_level" class="form-select form-select-sm">
+                                                {% for value, label in care_form.fields.care_level.choices %}
+                                                <option value="{{ value }}" {% if client.care_level == value %}selected{% endif %}>{{ label }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div style="flex:1;">
+                                            <div class="text-muted mb-1" style="font-size:0.82rem;">認定年月日</div>
+                                            <input type="date" name="certification_date" class="form-control form-control-sm" value="{{ client.certification_date|date:'Y-m-d'|default:'' }}">
+                                            <small class="wareki-label text-muted d-block" style="font-size:0.8em; margin-top:2px;"></small>
+                                        </div>
+                                    </div>
+                                    <div class="text-muted mb-1" style="font-size:0.82rem;">認定期間</div>
                                     <div class="d-flex align-items-start flex-nowrap gap-2">
                                         <div class="d-flex flex-column align-items-center">
                                             <label class="form-label mb-1 small text-muted align-self-start">開始日</label>
-                                            <input type="date" name="certification_period_start" id="cia_cert_start" class="form-control form-control-sm" value="{{ client.certification_period_start|date:'Y-m-d'|default:'' }}" onchange="autoFillCiaCertEnd()" style="min-width:130px;">
-                                            <small class="wareki-label text-muted text-center d-block" style="font-size:0.8em; margin-top:2px; width:100%;"></small>
+                                            <div>
+                                                <input type="date" name="certification_period_start" id="cia_cert_start" class="form-control form-control-sm" value="{{ client.certification_period_start|date:'Y-m-d'|default:'' }}" onchange="autoFillCiaCertEnd()" style="width:118px;">
+                                                <small class="wareki-label text-muted d-block" style="font-size:0.8em; margin-top:2px;"></small>
+                                            </div>
                                         </div>
                                         <div class="text-muted" style="padding-top:28px;">～</div>
                                         <div class="d-flex flex-column align-items-center">
                                             <label class="form-label mb-1 small text-muted align-self-start">終了日（自動）</label>
-                                            <input type="date" name="certification_period_end" id="cia_cert_end" class="form-control form-control-sm" value="{{ client.certification_period_end|date:'Y-m-d'|default:'' }}" style="min-width:130px;">
-                                            <small class="wareki-label text-muted text-center d-block" style="font-size:0.8em; margin-top:2px; width:100%;"></small>
+                                            <div class="d-flex align-items-start gap-2">
+                                                <div style="flex-shrink:0;">
+                                                    <input type="date" name="certification_period_end" id="cia_cert_end" class="form-control form-control-sm" value="{{ client.certification_period_end|date:'Y-m-d'|default:'' }}" style="width:118px;">
+                                                    <small class="wareki-label text-muted d-block" style="font-size:0.8em; margin-top:2px;"></small>
+                                                </div>
+                                                <button type="button" class="btn btn-renew-period btn-sm" onclick="renewPeriodOneYear('cia_cert_start','cia_cert_end')" data-tip="期間更新（翌年）"><i class="fas fa-sync-alt"></i></button>
+                                            </div>
                                         </div>
                                     </div>
                                 </td>
@@ -1463,36 +1547,37 @@
                         </tbody>
                     </table>
                     <h6 class="text-secondary fw-bold mb-2 pb-1" style="border-bottom:1px solid #dee2e6;"><i class="fas fa-heart me-2"></i>介護保険負担割合証</h6>
-                    <table class="table table-bordered table-sm mb-0" style="font-size:0.9rem;">
+                    <table class="table table-bordered table-sm mb-0" style="font-size:0.9rem; table-layout:fixed;">
                         <tbody>
                             <tr>
-                                <th class="bg-light align-middle" style="width:30%;">負担割合</th>
+                                <th class="bg-light align-middle" style="width:30%;">介護保険負担割合証</th>
                                 <td>
-                                    <select name="care_burden" class="form-select form-select-sm">
+                                    <div class="text-muted mb-1" style="font-size:0.82rem;">負担割合</div>
+                                    <select name="care_burden" class="form-select form-select-sm mb-2">
                                         {% for value, label in care_form.fields.care_burden.choices %}
                                         <option value="{{ value }}" {% if client.care_burden == value %}selected{% endif %}>{{ label }}</option>
                                         {% endfor %}
                                     </select>
-                                </td>
-                            </tr>
-                            <tr>
-                                <th class="bg-light align-middle">有効期間</th>
-                                <td>
+                                    <div class="text-muted mb-1" style="font-size:0.82rem;">有効期間</div>
                                     <div class="d-flex align-items-start flex-nowrap gap-2">
                                         <div class="d-flex flex-column align-items-center">
                                             <label class="form-label mb-1 small text-muted align-self-start">開始日</label>
-                                            <input type="date" name="burden_period_start" id="cia_burden_start" class="form-control form-control-sm" value="{{ client.burden_period_start|date:'Y-m-d'|default:'' }}" onchange="autoFillCiaBurdenEnd()" style="min-width:130px;">
-                                            <small class="wareki-label text-muted text-center d-block" style="font-size:0.8em; margin-top:2px; width:100%;"></small>
+                                            <div>
+                                                <input type="date" name="burden_period_start" id="cia_burden_start" class="form-control form-control-sm" value="{{ client.burden_period_start|date:'Y-m-d'|default:'' }}" onchange="autoFillCiaBurdenEnd()" style="width:118px;">
+                                                <small class="wareki-label text-muted d-block" style="font-size:0.8em; margin-top:2px;"></small>
+                                            </div>
                                         </div>
                                         <div class="text-muted" style="padding-top:28px;">～</div>
                                         <div class="d-flex flex-column align-items-center">
                                             <label class="form-label mb-1 small text-muted align-self-start">終了日（自動）</label>
-                                            <input type="date" name="burden_period_end" id="cia_burden_end" class="form-control form-control-sm" value="{{ client.burden_period_end|date:'Y-m-d'|default:'' }}" style="min-width:130px;">
-                                            <small class="wareki-label text-muted text-center d-block" style="font-size:0.8em; margin-top:2px; width:100%;"></small>
+                                            <div class="d-flex align-items-start gap-2">
+                                                <div style="flex-shrink:0;">
+                                                    <input type="date" name="burden_period_end" id="cia_burden_end" class="form-control form-control-sm" value="{{ client.burden_period_end|date:'Y-m-d'|default:'' }}" style="width:118px;">
+                                                    <small class="wareki-label text-muted d-block" style="font-size:0.8em; margin-top:2px;"></small>
+                                                </div>
+                                                <button type="button" class="btn btn-renew-period btn-sm" onclick="renewBurdenPeriod()" data-tip="期間更新（翌年）"><i class="fas fa-sync-alt"></i></button>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div class="mt-2 text-end">
-                                        <button type="button" class="btn btn-renew-period btn-sm" onclick="renewBurdenPeriod()"><i class="fas fa-sync-alt me-1"></i>期間更新（翌年）</button>
                                     </div>
                                 </td>
                             </tr>
@@ -1524,18 +1609,18 @@
                     <div class="alert alert-info py-1 px-2 mb-2" style="font-size:0.8rem;">
                         <i class="fas fa-info-circle me-1"></i>介護保険の認定期間（{% if client.certification_period_start and client.certification_period_end %}{{ client.certification_period_start|wareki }}～{{ client.certification_period_end|wareki }}{% else %}未登録{% endif %}）における判定です。
                     </div>
-                    <table class="table table-bordered table-sm mb-0" style="font-size:0.9rem;">
+                    <table class="table table-bordered table-sm mb-0" style="font-size:0.9rem; table-layout:fixed; width:100%;">
                         <tbody>
                             <tr>
-                                <th class="bg-light align-middle" style="width:30%;">身体障がい者日常生活自立度</th>
+                                <th class="bg-light align-middle" style="width:30%; font-size:0.75rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">身体障がい者日常生活自立度</th>
                                 <td>
-                                    <div class="d-flex align-items-center gap-2">
-                                        <select name="disability_level" id="dl_disability_select" class="form-select form-select-sm" style="max-width:160px;">
+                                    <div class="d-flex align-items-center gap-1 flex-nowrap">
+                                        <select name="disability_level" id="dl_disability_select" class="form-select form-select-sm">
                                             {% for value, label in disability_level_choices %}
                                             <option value="{{ value }}" {% if client.disability_level == value %}selected{% endif %}>{{ label }}</option>
                                             {% endfor %}
                                         </select>
-                                        <button type="button" class="btn btn-outline-secondary btn-sm text-nowrap"
+                                        <button type="button" class="btn btn-outline-secondary btn-sm flex-shrink-0 text-nowrap"
                                             {% if client.prev_disability_level %}onclick="document.getElementById('dl_disability_select').value='{{ client.prev_disability_level }}';"{% else %}disabled{% endif %}>
                                             <i class="fas fa-history me-1"></i>前回反映
                                         </button>
@@ -1543,15 +1628,15 @@
                                 </td>
                             </tr>
                             <tr>
-                                <th class="bg-light align-middle">認知症日常生活自立度</th>
+                                <th class="bg-light align-middle" style="font-size:0.75rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">認知症日常生活自立度</th>
                                 <td>
-                                    <div class="d-flex align-items-center gap-2">
-                                        <select name="dementia_level" id="dl_dementia_select" class="form-select form-select-sm" style="max-width:160px;">
+                                    <div class="d-flex align-items-center gap-1 flex-nowrap">
+                                        <select name="dementia_level" id="dl_dementia_select" class="form-select form-select-sm">
                                             {% for value, label in dementia_level_choices %}
                                             <option value="{{ value }}" {% if client.dementia_level == value %}selected{% endif %}>{{ label }}</option>
                                             {% endfor %}
                                         </select>
-                                        <button type="button" class="btn btn-outline-secondary btn-sm text-nowrap"
+                                        <button type="button" class="btn btn-outline-secondary btn-sm flex-shrink-0 text-nowrap"
                                             {% if client.prev_dementia_level %}onclick="document.getElementById('dl_dementia_select').value='{{ client.prev_dementia_level }}';"{% else %}disabled{% endif %}>
                                             <i class="fas fa-history me-1"></i>前回反映
                                         </button>
@@ -1705,16 +1790,7 @@ function toggleMaSpecificPeriod() {
     else _slideUpDiv('ma_specific_period_row', ['ma_specific_start', 'ma_specific_end']);
 }
 function autoFillMaSpecificEnd() { autoFillOnePrevYear('ma_specific_start', 'ma_specific_end'); }
-function renewMaSpecificPeriod() {
-    ['ma_specific_start', 'ma_specific_end'].forEach(function(id) {
-        var el = document.getElementById(id);
-        if (!el || !el.value) return;
-        var d = new Date(el.value);
-        d.setFullYear(d.getFullYear() + 1);
-        el.value = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
-        updateWarekilabel(el);
-    });
-}
+function renewMaSpecificPeriod() { renewPeriodOneYear('ma_specific_start', 'ma_specific_end'); }
 
 function toggleMaWelfarePeriod() {
     var yes = document.getElementById('ma_welfare_yes');
@@ -1722,16 +1798,7 @@ function toggleMaWelfarePeriod() {
     else _slideUpDiv('ma_welfare_period_row', ['ma_welfare_start', 'ma_welfare_end']);
 }
 function autoFillMaWelfareEnd() { autoFillOnePrevYear('ma_welfare_start', 'ma_welfare_end'); }
-function renewMaWelfarePeriod() {
-    ['ma_welfare_start', 'ma_welfare_end'].forEach(function(id) {
-        var el = document.getElementById(id);
-        if (!el || !el.value) return;
-        var d = new Date(el.value);
-        d.setFullYear(d.getFullYear() + 1);
-        el.value = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
-        updateWarekilabel(el);
-    });
-}
+function renewMaWelfarePeriod() { renewPeriodOneYear('ma_welfare_start', 'ma_welfare_end'); }
 
 function toggleMaNhiPeriod() {
     var yes = document.getElementById('ma_nhi_yes');
@@ -1739,16 +1806,7 @@ function toggleMaNhiPeriod() {
     else _slideUpDiv('ma_nhi_period_row', ['ma_nhi_start', 'ma_nhi_end']);
 }
 function autoFillMaNhiEnd() { autoFillOnePrevYear('ma_nhi_start', 'ma_nhi_end'); }
-function renewMaNhiPeriod() {
-    ['ma_nhi_start', 'ma_nhi_end'].forEach(function(id) {
-        var el = document.getElementById(id);
-        if (!el || !el.value) return;
-        var d = new Date(el.value);
-        d.setFullYear(d.getFullYear() + 1);
-        el.value = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
-        updateWarekilabel(el);
-    });
-}
+function renewMaNhiPeriod() { renewPeriodOneYear('ma_nhi_start', 'ma_nhi_end'); }
 
 function toggleLcPeriod() {
     var yes = document.getElementById('lc_yes');
@@ -1763,9 +1821,13 @@ function toggleDhFields() {
     var el = document.getElementById('dh_fields');
     if (el) el.style.display = show ? 'block' : 'none';
     var typeRow = document.getElementById('dh_type_row');
-    if (typeRow) typeRow.style.display = show ? 'table-row' : 'none';
-    var gradeRow = document.getElementById('dh_grade_row');
-    if (gradeRow) gradeRow.style.display = show ? 'table-row' : 'none';
+    if (typeRow) typeRow.style.display = show ? 'flex' : 'none';
+    if (!show) {
+        var typeSelect = document.querySelector('#dh_type_row select[name="disability_handbook_type"]');
+        var gradeSelect = document.querySelector('select[name="disability_handbook_grade"]');
+        if (typeSelect) typeSelect.value = '';
+        if (gradeSelect) gradeSelect.value = '';
+    }
 }
 
 function toggleSmPeriod() {
@@ -1777,17 +1839,23 @@ function autoFillSmEnd() { autoFillOnePrevYear('sm_start', 'sm_end'); }
 
 function toggleWmPeriod() {
     var yes = document.getElementById('wm_yes');
-    if (yes && yes.checked) _slideDownDiv('wm_period', 'flex');
+    if (yes && yes.checked) _slideDownDiv('wm_period', 'block');
     else _slideUpDiv('wm_period', ['wm_start', 'wm_end']);
 }
 function autoFillWmEnd() { autoFillOnePrevYear('wm_start', 'wm_end'); }
+function renewWmPeriod() {
+    renewPeriodOneYear('wm_start', 'wm_end');
+}
 
 function toggleNlPeriod() {
     var yes = document.getElementById('nl_yes');
-    if (yes && yes.checked) _slideDownDiv('nl_period', 'flex');
+    if (yes && yes.checked) _slideDownDiv('nl_period', 'block');
     else _slideUpDiv('nl_period', ['nl_start', 'nl_end']);
 }
 function autoFillNlEnd() { autoFillOnePrevYear('nl_start', 'nl_end'); }
+function renewNlPeriod() {
+    renewPeriodOneYear('nl_start', 'nl_end');
+}
 function autoFillCiaBurdenEnd() { autoFillOnePrevYear('cia_burden_start', 'cia_burden_end'); }
 function autoFillMiEnd() { autoFillOnePrevYear('mi_start', 'mi_end'); }
 
@@ -1813,28 +1881,8 @@ function autoFillCiaCertEnd() {
 }
 
 // 負担割合証の有効期間を翌年に更新
-function renewBurdenPeriod() {
-    ['cia_burden_start', 'cia_burden_end'].forEach(function(id) {
-        var el = document.getElementById(id);
-        if (!el || !el.value) return;
-        var d = new Date(el.value);
-        d.setFullYear(d.getFullYear() + 1);
-        el.value = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
-        updateWarekilabel(el);
-    });
-}
+function renewBurdenPeriod() { renewPeriodOneYear('cia_burden_start', 'cia_burden_end'); }
 
-// 医療保険の有効期間を翌年に更新
-function renewMiPeriod() {
-    ['mi_start', 'mi_end'].forEach(function(id) {
-        var el = document.getElementById(id);
-        if (!el || !el.value) return;
-        var d = new Date(el.value);
-        d.setFullYear(d.getFullYear() + 1);
-        el.value = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
-        updateWarekilabel(el);
-    });
-}
 
 function autoShrinkCertLabels() {
     document.querySelectorAll('.cert-label').forEach(function(span) {
@@ -2102,15 +2150,25 @@ window.addEventListener('resize', autoShrinkCertLabels);
         symbolInput.value = '';
         numberInsured.value = '';
         branchInput.value = '';
+        // 負担割合をクリア
+        var burdenSel = modal.querySelector('select[name="medical_burden"]');
+        if (burdenSel) burdenSel.value = '';
+        // 有効期限をクリア
+        var startEl = document.getElementById('mi_start');
+        var endEl = document.getElementById('mi_end');
+        if (startEl) { startEl.value = ''; updateWarekilabel(startEl); }
+        if (endEl) { endEl.value = ''; updateWarekilabel(endEl); }
         updatePreset();
         updateSymbolBranch();
     });
 
     presetSelect.addEventListener('change', function() {
+        var disp = document.getElementById('mi_insurer_display');
         if (this.value === 'manual') {
             manualWrapper.style.display = 'block';
             nameInput.value = '';
             numberInput.value = '';
+            if (disp) { disp.textContent = ''; disp.style.display = ''; document.getElementById('mi_modal_insurer_name').style.display = 'none'; }
         } else if (this.value) {
             manualWrapper.style.display = 'none';
             nameInput.value = this.value;
@@ -2127,20 +2185,85 @@ window.addEventListener('resize', autoShrinkCertLabels);
     modal.addEventListener('show.bs.modal', function() {
         updatePreset();
         updateSymbolBranch();
+        // 保険者名称の表示用divを同期
+        var disp = document.getElementById('mi_insurer_display');
+        var inp2 = document.getElementById('mi_modal_insurer_name');
+        if (disp && inp2) { disp.textContent = inp2.value; disp.style.display = ''; inp2.style.display = 'none'; }
     });
 })();
 
+function renewPeriodOneYear(startId, endId) {
+    var fmt = function(d) {
+        return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+    };
+    var endEl = endId ? document.getElementById(endId) : null;
+    var startEl = startId ? document.getElementById(startId) : null;
+    if (!endEl || !endEl.value) return;
+
+    var oldEnd = new Date(endEl.value);
+
+    if (startEl) {
+        // 新開始日 = 旧終了日の翌日（月末の翌日 = 翌月1日）
+        var newStart = new Date(oldEnd);
+        newStart.setDate(newStart.getDate() + 1);
+        // 新終了日 = 新開始日の1年後の前日
+        var newEnd = new Date(newStart);
+        newEnd.setFullYear(newEnd.getFullYear() + 1);
+        newEnd.setDate(newEnd.getDate() - 1);
+
+        startEl.value = fmt(newStart);
+        updateWarekilabel(startEl);
+        startEl.dispatchEvent(new Event('change'));
+        endEl.value = fmt(newEnd);
+        updateWarekilabel(endEl);
+        endEl.dispatchEvent(new Event('change'));
+    } else {
+        // 終了日のみ（医療保険など）: 終了日を1年後に
+        var newEndOnly = new Date(oldEnd);
+        newEndOnly.setFullYear(newEndOnly.getFullYear() + 1);
+        endEl.value = fmt(newEndOnly);
+        updateWarekilabel(endEl);
+        endEl.dispatchEvent(new Event('change'));
+    }
+}
+
+function autoCalcMiStart() {
+    var endEl = document.getElementById('mi_end');
+    var startEl = document.getElementById('mi_start');
+    if (!endEl || !endEl.value || !startEl) return;
+    // +1日してから-1年（うるう年対策）
+    var d = new Date(endEl.value);
+    d.setDate(d.getDate() + 1);
+    d.setFullYear(d.getFullYear() - 1);
+    startEl.value = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+    updateWarekilabel(startEl);
+}
+function miInsurerStartEdit() {
+    var disp = document.getElementById('mi_insurer_display');
+    var inp = document.getElementById('mi_modal_insurer_name');
+    if (!disp || !inp) return;
+    disp.style.display = 'none';
+    inp.style.display = '';
+    inp.focus();
+    inp.select();
+}
+function miInsurerEndEdit() {
+    var disp = document.getElementById('mi_insurer_display');
+    var inp = document.getElementById('mi_modal_insurer_name');
+    if (!disp || !inp) return;
+    disp.textContent = inp.value;
+    inp.style.display = 'none';
+    disp.style.display = '';
+}
+
 function renewMiPeriod() {
-    var endInput = document.getElementById('mi_end');
-    if (!endInput) return;
-    var val = endInput.value;
-    if (!val) return;
-    var d = new Date(val);
+    var endEl = document.getElementById('mi_end');
+    if (!endEl || !endEl.value) return;
+    var d = new Date(endEl.value);
     d.setFullYear(d.getFullYear() + 1);
-    var y = d.getFullYear();
-    var m = String(d.getMonth() + 1).padStart(2, '0');
-    var day = String(d.getDate()).padStart(2, '0');
-    endInput.value = y + '-' + m + '-' + day;
+    endEl.value = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+    updateWarekilabel(endEl);
+    autoCalcMiStart();
 }
 
 // ========== 保存確認・モーダル共通設定 ==========
@@ -2174,7 +2297,7 @@ var FIELD_LABELS = {
     'welfare_medical': '福祉医療費受給者証',
     'welfare_medical_start': '福祉医療費 開始日',
     'welfare_medical_end': '福祉医療費 終了日',
-    'nhi_limit_cert': '国保限度額認定証',
+    'nhi_limit_cert': '限度額適用認定証（国民健康保険）',
     'nhi_limit_cert_start': '国保限度額 開始日',
     'nhi_limit_cert_end': '国保限度額 終了日',
     'high_cost_combined': '高額医療・介護合算',
@@ -2404,5 +2527,26 @@ function showConfirmAdd(itemId, itemName) {
     <input type="hidden" name="action" id="quick-action-input" value="">
     <input type="hidden" name="item" id="quick-action-item" value="">
 </form>
+
+<div id="simple-tip"></div>
+<script>
+(function() {
+    var tip = document.getElementById('simple-tip');
+    document.addEventListener('mouseover', function(e) {
+        var el = e.target.closest('[data-tip]');
+        if (!el) return;
+        tip.textContent = el.dataset.tip;
+        tip.style.display = 'block';
+    });
+    document.addEventListener('mousemove', function(e) {
+        tip.style.left = (e.clientX + 12) + 'px';
+        tip.style.top  = (e.clientY - 20) + 'px';
+    });
+    document.addEventListener('mouseout', function(e) {
+        if (!e.target.closest('[data-tip]')) return;
+        tip.style.display = 'none';
+    });
+})();
+</script>
 
 {% endblock %}

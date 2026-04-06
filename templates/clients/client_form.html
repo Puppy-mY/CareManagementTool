@@ -303,22 +303,6 @@
                     </div>
                 </div>
                 <div class="row g-3 mb-3">
-                    <div class="col-xl-8 col-lg-7 col-md-7 col-sm-6">
-                        <label for="{{ form.medical_insurer_name_issuer.id_for_label }}" class="form-label">保険者名称・交付者</label>
-                        <!-- 動的プルダウン用セレクトボックス -->
-                        <select id="insurer_preset" class="form-select mb-2" style="display: none;">
-                            <option value="">選択してください</option>
-                        </select>
-                        <div id="insurer_manual_wrapper">
-                            {% bootstrap_field form.medical_insurer_name_issuer show_label=False %}
-                        </div>
-                    </div>
-                    <div class="col-xl-4 col-lg-5 col-md-5 col-sm-6">
-                        <label for="{{ form.medical_insurer_number.id_for_label }}" class="form-label">保険者番号</label>
-                        {% bootstrap_field form.medical_insurer_number show_label=False %}
-                    </div>
-                </div>
-                <div class="row g-3">
                     <div class="col-12">
                         <div class="mb-2">
                             <span class="form-label">被保険者番号</span>
@@ -343,10 +327,26 @@
                         </div>
                     </div>
                 </div>
-                <div class="row g-3 mt-1">
+                <div class="row g-3 mb-3">
                     <div class="col-xl-4 col-lg-4 col-md-4 col-sm-6">
                         <label for="{{ form.medical_burden.id_for_label }}" class="form-label">負担割合</label>
                         {% bootstrap_field form.medical_burden show_label=False %}
+                    </div>
+                </div>
+                <div class="row g-3">
+                    <div class="col-xl-8 col-lg-7 col-md-7 col-sm-6">
+                        <label for="{{ form.medical_insurer_name_issuer.id_for_label }}" class="form-label">保険者名称・交付者</label>
+                        <!-- 動的プルダウン用セレクトボックス -->
+                        <select id="insurer_preset" class="form-select mb-2" style="display: none;">
+                            <option value="">選択してください</option>
+                        </select>
+                        <div id="insurer_manual_wrapper">
+                            {% bootstrap_field form.medical_insurer_name_issuer show_label=False %}
+                        </div>
+                    </div>
+                    <div class="col-xl-4 col-lg-5 col-md-5 col-sm-6">
+                        <label for="{{ form.medical_insurer_number.id_for_label }}" class="form-label">保険者番号</label>
+                        {% bootstrap_field form.medical_insurer_number show_label=False %}
                     </div>
                 </div>
             </div>
