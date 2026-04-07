@@ -1756,7 +1756,7 @@ def generate_assessment_excel(assessment, request=None):
 
             # 身体障がい者手帳
             if client.disability_handbook:
-                handbook_text = f"あり（{client.disability_handbook_type}）" if client.disability_handbook_type else "あり"
+                handbook_text = f"あり（{client.get_disability_handbook_type_display()}）" if client.disability_handbook_type else "あり"
                 safe_write_cell(coords.get("disability_handbook"), handbook_text)
             else:
                 safe_write_cell(coords.get("disability_handbook"), "なし")
