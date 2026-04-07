@@ -23,10 +23,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get(
-    "SECRET_KEY",
-    "django-insecure-6rjn52!*91)i0$l5cf6fahaca_sbpjmvc+t_^$ayy0!g51#7d2",
-)
+SECRET_KEY = os.environ.get("SECRET_KEY", "django-insecure-local-dev-only-do-not-use-in-production")
 
 # Anthropic API Key（Excel AI取り込み機能で使用）
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
