@@ -1,5 +1,8 @@
 from django.shortcuts import render, get_object_or_404, redirect
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
+
+def staff_required(user):
+    return user.is_active and (user.is_staff or user.is_superuser)
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q
@@ -1385,6 +1388,7 @@ def generate_document_excel(request, client, document_type, document_name, form_
 
 
 @login_required
+@user_passes_test(staff_required)
 def color_theme_settings(request):
     """カラーテーマ設定画面"""
     from .models import UserProfile
@@ -1434,6 +1438,7 @@ def document_history_excel(request, pk):
 
 
 @login_required
+@user_passes_test(staff_required)
 def color_reference(request):
     """カラー参照画面"""
     # ベースの色データ

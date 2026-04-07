@@ -76,6 +76,7 @@
     .table th {
         vertical-align: middle;
         font-size: 14px;
+        text-align: center;
     }
 
     /* 作成日の文字サイズを小さく */
@@ -102,12 +103,12 @@
 
     /* アセスメント理由の列幅 */
     .assessment-type-col {
-        width: 10%;
+        width: 12%;
     }
 
     /* 面談場所の列幅 */
     .interview-location-col {
-        width: 15%;
+        width: 12%;
     }
 
     /* 作成者の列幅 */
@@ -252,8 +253,9 @@
                                     <td class="assessment-type-col">{{ assessment.get_assessment_type_display }}</td>
                                     <td class="interview-location-col">{{ assessment.get_interview_location_display }}</td>
                                     <td class="assessor-col">{{ assessment.assessor.profile.get_full_name }}</td>
-                                    <td class="actions-col">
-                                        <div class="btn-group btn-group-sm d-flex justify-content-end">
+                                    <td class="actions-col text-end">
+                                        <!-- デスクトップ用：ボタン並び（sm以上） -->
+                                        <div class="btn-group btn-group-sm d-none d-sm-inline-flex">
                                             <button type="button" class="btn btn-outline-secondary btn-sm btn-preview" style="transition: all 0.2s ease; font-size: 0.7rem; line-height: 1.2;" disabled>
                                                 プレビュー<br>開発中
                                             </button>
@@ -263,6 +265,24 @@
                                                     style="transition: all 0.2s ease;">
                                                 <i class="fas fa-file-excel me-1"></i>Excel
                                             </button>
+                                        </div>
+                                        <!-- スマホ用：ドロップダウン（sm未満） -->
+                                        <div class="dropdown d-sm-none">
+                                            <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                                <i class="fas fa-ellipsis-h"></i> 操作
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-end">
+                                                <li>
+                                                    <span class="dropdown-item disabled text-muted" style="font-size:0.85rem;">
+                                                        <i class="fas fa-eye me-2"></i>プレビュー（開発中）
+                                                    </span>
+                                                </li>
+                                                <li>
+                                                    <button class="dropdown-item" onclick="exportListExcel({{ assessment.pk }}, '{{ assessment.client.name|escapejs }}', '{{ assessment.assessment_date|date:'Ymd' }}')">
+                                                        <i class="fas fa-file-excel me-2 text-success"></i>Excel出力
+                                                    </button>
+                                                </li>
+                                            </ul>
                                         </div>
                                     </td>
                                 </tr>

@@ -503,8 +503,8 @@ button[name="action"][value="save"]:hover {
 
 <div class="row">
     <div class="col-12">
-        <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
-            <div class="d-flex align-items-center gap-3">
+        <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom flex-wrap gap-2">
+            <div class="d-flex align-items-center gap-2 flex-wrap">
                 <h1 class="h3 mb-0 text-dark">
                     <i class="fas fa-file-medical-alt me-2 text-secondary"></i>{% if is_edit %}アセスメント編集{% else %}アセスメント作成{% endif %}
                 </h1>
@@ -518,10 +518,10 @@ button[name="action"][value="save"]:hover {
                 </span>
                 {% endif %}
             </div>
-            <div class="d-flex gap-2">
+            <div class="d-flex gap-2 flex-shrink-0 ms-auto">
                 {% if not is_edit and has_previous_assessment %}
                 <button type="button" id="loadPreviousBtn" class="btn btn-outline-secondary px-4 py-2" onclick="loadPreviousAssessment()" style="transition: all 0.2s ease;">
-                    <i class="fas fa-history me-1"></i> 前回分を反映
+                    <i class="fas fa-history me-1"></i><span class="d-none d-sm-inline">前回分を反映</span><span class="d-sm-none">前回反映</span>
                 </button>
                 {% endif %}
                 <button type="button" class="btn btn-outline-secondary btn-back px-4 py-2" onclick="goBack()" style="transition: all 0.2s ease;">
@@ -3239,18 +3239,16 @@ button[name="action"][value="save"]:hover {
         </div>
 
         <!-- 保存・キャンセルボタン -->
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <div>
-                <button type="button" class="btn btn-outline-secondary btn-back px-4 py-2" onclick="goBack()" style="transition: all 0.2s ease;">
-                    <i class="fas fa-arrow-left me-1"></i> 戻る
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+            <button type="button" class="btn btn-outline-secondary btn-back px-3 px-sm-4 py-2 flex-shrink-0" onclick="goBack()" style="transition: all 0.2s ease;">
+                <i class="fas fa-arrow-left me-1"></i> 戻る
+            </button>
+            <div class="d-flex gap-2 flex-shrink-0">
+                <button type="button" onclick="exportAssessmentExcel()" class="btn btn-outline-secondary px-3 px-sm-4 py-2" style="transition: all 0.2s ease;">
+                    <i class="fas fa-file-excel me-1"></i><span class="d-none d-sm-inline"> Excel出力</span><span class="d-sm-none">Excel</span>
                 </button>
-            </div>
-            <div>
-                <button type="button" onclick="exportAssessmentExcel()" class="btn btn-outline-secondary px-4 py-2 me-2" style="transition: all 0.2s ease;">
-                    <i class="fas fa-file-excel me-1"></i> Excel出力
-                </button>
-                <button type="submit" name="action" value="save" class="btn btn-outline-secondary btn-save px-5 py-2" style="transition: all 0.2s ease;">
-                    <i class="fas fa-save me-1"></i> 保存して戻る
+                <button type="submit" name="action" value="save" class="btn btn-outline-secondary btn-save px-3 px-sm-4 py-2" style="transition: all 0.2s ease;">
+                    <i class="fas fa-save me-1"></i><span class="d-none d-sm-inline"> 保存して戻る</span><span class="d-sm-none">保存</span>
                 </button>
             </div>
         </div>

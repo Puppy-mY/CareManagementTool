@@ -107,7 +107,7 @@
             <div class="card-body p-0">
                 {% if clients %}
                     <div class="table-responsive">
-                        <table class="table mb-0" id="clientTable" style="border-collapse: collapse;">
+                        <table class="table mb-0" id="clientTable" style="border-collapse: collapse; table-layout: fixed; width: 100%;">
                             <thead class="table-light" id="tableHeader">
                                 <!-- 動的に生成される -->
                             </thead>
@@ -518,6 +518,60 @@
         border-color: #d2b48c !important;
         color: #8b7355 !important;
     }
+    @media (min-width: 576px) {
+        #clientTable th[data-column="care_level"],
+        #clientTable td[data-column="care_level"],
+        #clientTable th[data-column="care_manager"],
+        #clientTable td[data-column="care_manager"],
+        #clientTable th[data-column="name"],
+        #clientTable td[data-column="name"],
+        #clientTable th[data-column="certification_period_end"],
+        #clientTable td[data-column="certification_period_end"],
+        #clientTable th.action-col-header,
+        #clientTable td.action-col-td {
+            text-align: center;
+        }
+    }
+    @media (max-width: 575px) {
+        #clientTable th[data-column="name"],
+        #clientTable td[data-column="name"] {
+            width: 26% !important;
+        }
+        #clientTable th[data-column="certification_period_end"],
+        #clientTable td[data-column="certification_period_end"] {
+            width: 23% !important;
+        }
+        #clientTable th[data-column="care_level"],
+        #clientTable td[data-column="care_level"] {
+            width: 15%;
+            min-width: 0;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+        #clientTable th[data-column="care_manager"],
+        #clientTable td[data-column="care_manager"] {
+            width: 15%;
+            min-width: 0;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+        #clientTable th {
+            text-align: center;
+        }
+        #clientTable td[data-column="name"],
+        #clientTable td[data-column="care_level"],
+        #clientTable td[data-column="certification_period_end"] {
+            text-align: center;
+        }
+        .care-level-badge {
+            padding: 2px 5px !important;
+            font-size: 11px !important;
+        }
+        .action-toggle {
+            padding: 2px 6px !important;
+            font-size: 0.78rem !important;
+        }
+    }
 </style>
 
 <!-- 書類選択モーダル -->
@@ -651,9 +705,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const columnConfig = {
         name: { label: '氏名', required: true, default: true, order: 1 },
         care_level: { label: '介護度', required: false, default: true, order: 2 },
-        certification_period_end: { label: '認定期間（終了）', required: false, default: true, order: 3 },
+        certification_period_end: { label: '認定期間<span class="d-none d-sm-inline">（終了）</span><span class="d-sm-none"><br>（終了）</span>', required: false, default: true, order: 3 },
         {% if is_all_clients %}
-        care_manager: { label: 'ケアマネ担当者', required: false, default: true, order: 4 },
+        care_manager: { label: 'ケアマネ<span class="d-none d-sm-inline">担当者</span><span class="d-sm-none"><br>担当者</span>', required: false, default: true, order: 4 },
         {% endif %}
 
         age: { label: '年齢', required: false, default: false, order: 6 },
@@ -732,16 +786,28 @@ document.addEventListener('DOMContentLoaded', function() {
         order.forEach(column => {
             if (settings[column]) {
                 const th = document.createElement('th');
-
-                th.textContent = columnConfig[column].label;
-
+                th.innerHTML = columnConfig[column].label;
+                th.dataset.column = column;
+                if (columnConfig[column].width) {
+                    th.style.width = columnConfig[column].width;
+                    th.style.minWidth = '0';
+                    th.style.overflow = 'hidden';
+                }
+                const mobileWidths = { name: '26%', certification_period_end: '23%', care_level: '15%', care_manager: '15%' };
+                if (window.innerWidth < 576 && mobileWidths[column]) {
+                    th.style.width = mobileWidths[column];
+                }
                 headerRow.appendChild(th);
             }
         });
 
         // 操作カラムは常に表示
         const actionTh = document.createElement('th');
+        actionTh.className = 'action-col-header';
         actionTh.textContent = '操作';
+        if (window.innerWidth < 576) {
+            actionTh.style.width = '12%';
+        }
         headerRow.appendChild(actionTh);
 
         return headerRow;
@@ -755,6 +821,7 @@ document.addEventListener('DOMContentLoaded', function() {
         order.forEach(column => {
             if (settings[column]) {
                 const td = document.createElement('td');
+                td.dataset.column = column;
                 td.innerHTML = getCellContent(client, column);
                 
 
@@ -765,6 +832,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // 操作カラム
         const actionTd = document.createElement('td');
+        actionTd.className = 'action-col-td';
         actionTd.innerHTML = `
             <button class="btn btn-outline-secondary btn-sm action-toggle" type="button" style="padding: 4px 8px;" data-client-id="${client.pk}">
                 <i class="fas fa-chevron-down"></i> 操作
@@ -946,7 +1014,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     } else {
                         bgColor = '#f8f9fa'; // グレー（その他）
                     }
-                    return `<span style="background-color: ${bgColor}; padding: 4px 8px; border: 1px solid #999; border-radius: 4px; font-size: 13px;">${client.care_level}</span>`;
+                    return `<span class="care-level-badge" style="background-color: ${bgColor}; padding: 4px 8px; border: 1px solid #999; border-radius: 4px; font-size: 13px;">${client.care_level}</span>`;
                 } else {
                     return '<span class="text-muted">未設定</span>';
                 }
@@ -988,7 +1056,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                     
                     if (statusIcon) {
-                        return `${client.certification_period_end} <span style="margin-left: 6px;">${statusIcon}</span>`;
+                        return `${client.certification_period_end}<span class="d-none d-sm-inline" style="margin-left: 6px;">${statusIcon}</span><span class="d-sm-none" style="display: block; margin-top: 2px;">${statusIcon}</span>`;
                     } else {
                         return client.certification_period_end;
                     }
@@ -997,7 +1065,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             {% if is_all_clients %}
             case 'care_manager':
-                return client.care_manager_name ? `<span class="badge bg-light text-dark border"><i class="fas fa-user-tie me-1"></i>${client.care_manager_name}</span>` : '<small class="text-muted">未設定</small>';
+                if (!client.care_manager_name) return '<small class="text-muted">未設定</small>';
+                const lastName = client.care_manager_name.split(/[\s　]/)[0];
+                return `<span class="badge bg-light text-dark border"><i class="fas fa-user-tie me-1 d-none d-sm-inline"></i><span class="d-sm-none">${lastName}</span><span class="d-none d-sm-inline">${client.care_manager_name}</span></span>`;
             {% endif %}
             case 'care_burden':
                 return client.care_burden || '<small class="text-muted">未設定</small>';

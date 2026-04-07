@@ -76,6 +76,7 @@
     .table th {
         vertical-align: middle;
         font-size: 14px;
+        text-align: center;
     }
 
     /* 作成日の文字サイズを小さく */
@@ -251,8 +252,9 @@
                                     </td>
                                     <td class="assessment-type-col">{{ assessment.get_assessment_type_display }}</td>
                                     <td class="interview-location-col">{{ assessment.get_interview_location_display }}</td>
-                                    <td class="actions-col">
-                                        <div class="btn-group btn-group-sm d-flex justify-content-end">
+                                    <td class="actions-col text-end">
+                                        <!-- デスクトップ用：ボタン並び（sm以上） -->
+                                        <div class="btn-group btn-group-sm d-none d-sm-inline-flex">
                                             <a href="{% url 'assessment_edit' assessment.pk %}" class="btn btn-outline-secondary btn-sm btn-edit" style="transition: all 0.2s ease;">
                                                 <i class="fas fa-edit me-1"></i>編集
                                             </a>
@@ -268,6 +270,35 @@
                                             <a href="{% url 'assessment_delete' assessment.pk %}" class="btn btn-outline-danger btn-sm btn-delete" style="transition: all 0.2s ease;">
                                                 <i class="fas fa-trash me-1"></i>削除
                                             </a>
+                                        </div>
+                                        <!-- スマホ用：ドロップダウン（sm未満） -->
+                                        <div class="dropdown d-sm-none">
+                                            <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                                <i class="fas fa-ellipsis-h"></i> 操作
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-end">
+                                                <li>
+                                                    <a class="dropdown-item" href="{% url 'assessment_edit' assessment.pk %}">
+                                                        <i class="fas fa-edit me-2 text-secondary"></i>編集
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <span class="dropdown-item disabled text-muted" style="font-size:0.85rem;">
+                                                        <i class="fas fa-eye me-2"></i>プレビュー（開発中）
+                                                    </span>
+                                                </li>
+                                                <li>
+                                                    <button class="dropdown-item" onclick="exportListExcel({{ assessment.pk }}, '{{ assessment.client.name|escapejs }}', '{{ assessment.assessment_date|date:'Ymd' }}')">
+                                                        <i class="fas fa-file-excel me-2 text-success"></i>Excel出力
+                                                    </button>
+                                                </li>
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li>
+                                                    <a class="dropdown-item text-danger" href="{% url 'assessment_delete' assessment.pk %}">
+                                                        <i class="fas fa-trash me-2"></i>削除
+                                                    </a>
+                                                </li>
+                                            </ul>
                                         </div>
                                     </td>
                                 </tr>
