@@ -1,12 +1,13 @@
 import json
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy
 from django.contrib import messages
 from .models import Facility
 from .forms import FacilityForm
 
 
-class FacilityListView(ListView):
+class FacilityListView(LoginRequiredMixin, ListView):
     model = Facility
     template_name = "facilities/facility_list.html"
     context_object_name = "facilities"
@@ -51,7 +52,7 @@ class FacilityListView(ListView):
         return context
 
 
-class FacilityCreateView(CreateView):
+class FacilityCreateView(LoginRequiredMixin, CreateView):
     model = Facility
     form_class = FacilityForm
     template_name = "facilities/facility_form.html"
@@ -65,7 +66,7 @@ class FacilityCreateView(CreateView):
         return reverse_lazy("facilities:facility_list") + f"?type={ft}"
 
 
-class FacilityUpdateView(UpdateView):
+class FacilityUpdateView(LoginRequiredMixin, UpdateView):
     model = Facility
     form_class = FacilityForm
     template_name = "facilities/facility_form.html"
@@ -79,7 +80,7 @@ class FacilityUpdateView(UpdateView):
         return reverse_lazy("facilities:facility_list") + f"?type={ft}"
 
 
-class FacilityDeleteView(DeleteView):
+class FacilityDeleteView(LoginRequiredMixin, DeleteView):
     model = Facility
     template_name = "facilities/facility_confirm_delete.html"
     success_url = reverse_lazy("facilities:facility_list")
