@@ -131,6 +131,36 @@
 .invalid-feedback {
     display: none !important;
 }
+
+/* 西暦/和暦トグル */
+.birth-era-toggle {
+    display: inline-flex;
+    border: 1px solid #ced4da;
+    border-radius: 0.375rem;
+    overflow: hidden;
+    font-size: 0.72rem;
+    flex-shrink: 0;
+}
+.birth-era-toggle .era-btn {
+    background: #fff;
+    border: none;
+    padding: 2px 7px;
+    cursor: pointer;
+    color: #6c757d;
+    font-size: 0.72rem;
+    line-height: 1.5;
+    transition: background 0.15s, color 0.15s;
+}
+.birth-era-toggle .era-btn:not(:last-child) {
+    border-right: 1px solid #ced4da;
+}
+.birth-era-toggle .era-btn.active {
+    background: #6c757d;
+    color: #fff;
+}
+.birth-era-toggle .era-btn:hover:not(.active) {
+    background: #f0f0f0;
+}
 </style>
 
 <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
@@ -190,11 +220,34 @@
                     <label for="{{ form.furigana.id_for_label }}" class="form-label">ふりがな <span class="badge-required">*</span></label>
                     {% bootstrap_field form.furigana show_label=False %}
                 </div>
-                <div class="col-xl-3 col-lg-3 col-md-3 col-sm-6">
-                    <label for="{{ form.birth_date.id_for_label }}" class="form-label">生年月日 <span class="badge-required">*</span></label>
-                    {% bootstrap_field form.birth_date show_label=False %}
+                <div class="col-xl-4 col-lg-4 col-md-4 col-sm-6">
+                    <!-- 生年月日ラベル + 西暦/和暦トグル -->
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <label class="form-label mb-0">生年月日 <span class="badge-required">*</span></label>
+                        <div class="birth-era-toggle" id="birthEraToggle" title="和暦 / 西暦を切り替え">
+                            <button type="button" class="era-btn active" id="eraJapanese" onclick="switchBirthEra('japanese')">和暦</button>
+                            <button type="button" class="era-btn" id="eraWestern" onclick="switchBirthEra('western')">西暦</button>
+                        </div>
+                    </div>
+
+                    <!-- 西暦入力 (非表示、JSで切り替え) -->
+                    <div id="birthWesternInput" style="display:none;">
+                        {{ form.birth_date }}
+                        {% if form.birth_date.errors %}
+                            <div class="text-danger small mt-1">{{ form.birth_date.errors|join:", " }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- 和暦入力（デフォルト表示） -->
+                    <div id="birthJapaneseInput">
+                        <input type="text" id="warekiText" class="form-control"
+                            placeholder="例: 昭和40年3月15日"
+                            autocomplete="off"
+                            oninput="syncBirthDateFromWareki()">
+                        <small id="birthWarekiPreview" style="font-size:0.78em; display:block; margin-top:2px;"></small>
+                    </div>
                 </div>
-                <div class="col-xl-3 col-lg-3 col-md-3 col-sm-6">
+                <div class="col-xl-2 col-lg-2 col-md-2 col-sm-6">
                     <label for="{{ form.gender.id_for_label }}" class="form-label">性別 <span class="badge-required">*</span></label>
                     {% bootstrap_field form.gender show_label=False %}
                 </div>
@@ -258,18 +311,66 @@
                         {% bootstrap_field form.care_level show_label=False %}
                     </div>
                     <div class="col-xl-4 col-lg-4 col-md-4 col-sm-6">
-                        <label for="{{ form.certification_date.id_for_label }}" class="form-label">認定日</label>
-                        {% bootstrap_field form.certification_date show_label=False %}
+                        <!-- 認定日 -->
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <label class="form-label mb-0">認定日</label>
+                            <div class="birth-era-toggle" title="和暦 / 西暦を切り替え">
+                                <button type="button" class="era-btn active" id="certDate_era_japanese" onclick="switchDateEra('certDate', 'japanese')">和暦</button>
+                                <button type="button" class="era-btn" id="certDate_era_western" onclick="switchDateEra('certDate', 'western')">西暦</button>
+                            </div>
+                        </div>
+                        <div id="certDate_western" style="display:none;">
+                            {{ form.certification_date }}
+                        </div>
+                        <div id="certDate_japanese">
+                            <input type="text" id="certDate_wareki_text" class="form-control"
+                                placeholder="例: 令和6年4月1日"
+                                autocomplete="off"
+                                oninput="syncDateFromWareki('certDate', 'id_certification_date')">
+                            <small id="certDate_wareki_preview" style="font-size:0.78em; display:block; margin-top:2px;"></small>
+                        </div>
                     </div>
                 </div>
                 <div class="row g-3 mb-4">
                     <div class="col-lg-6 col-md-6 col-sm-6">
-                        <label for="{{ form.certification_period_start.id_for_label }}" class="form-label">認定期間（開始）</label>
-                        {% bootstrap_field form.certification_period_start show_label=False %}
+                        <!-- 認定期間（開始） -->
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <label class="form-label mb-0">認定期間（開始）</label>
+                            <div class="birth-era-toggle" title="和暦 / 西暦を切り替え">
+                                <button type="button" class="era-btn active" id="certStart_era_japanese" onclick="switchDateEra('certStart', 'japanese')">和暦</button>
+                                <button type="button" class="era-btn" id="certStart_era_western" onclick="switchDateEra('certStart', 'western')">西暦</button>
+                            </div>
+                        </div>
+                        <div id="certStart_western" style="display:none;">
+                            {{ form.certification_period_start }}
+                        </div>
+                        <div id="certStart_japanese">
+                            <input type="text" id="certStart_wareki_text" class="form-control"
+                                placeholder="例: 令和6年4月1日"
+                                autocomplete="off"
+                                oninput="syncDateFromWareki('certStart', 'id_certification_period_start')">
+                            <small id="certStart_wareki_preview" style="font-size:0.78em; display:block; margin-top:2px;"></small>
+                        </div>
                     </div>
                     <div class="col-lg-6 col-md-6 col-sm-6">
-                        <label for="{{ form.certification_period_end.id_for_label }}" class="form-label">認定期間（終了）</label>
-                        {% bootstrap_field form.certification_period_end show_label=False %}
+                        <!-- 認定期間（終了） -->
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <label class="form-label mb-0">認定期間（終了）</label>
+                            <div class="birth-era-toggle" title="和暦 / 西暦を切り替え">
+                                <button type="button" class="era-btn active" id="certEnd_era_japanese" onclick="switchDateEra('certEnd', 'japanese')">和暦</button>
+                                <button type="button" class="era-btn" id="certEnd_era_western" onclick="switchDateEra('certEnd', 'western')">西暦</button>
+                            </div>
+                        </div>
+                        <div id="certEnd_western" style="display:none;">
+                            {{ form.certification_period_end }}
+                        </div>
+                        <div id="certEnd_japanese">
+                            <input type="text" id="certEnd_wareki_text" class="form-control"
+                                placeholder="例: 令和8年3月31日"
+                                autocomplete="off"
+                                oninput="syncDateFromWareki('certEnd', 'id_certification_period_end')">
+                            <small id="certEnd_wareki_preview" style="font-size:0.78em; display:block; margin-top:2px;"></small>
+                        </div>
                     </div>
                 </div>
 
@@ -372,26 +473,47 @@
                         </div>
                     </div>
                 </div>
-                <div id="limit_cert_period_row" class="row g-3 mb-2" style="display: {% if form.limit_cert.value == 'yes' %}flex{% else %}none{% endif %};">
-                    <div class="col-xl-5 col-lg-5 col-md-6 col-sm-6"></div>
-                    <div class="col">
-                        <div class="d-flex align-items-start flex-nowrap gap-1">
-                            <div class="d-flex flex-column align-items-center">
-                                <label class="form-label mb-1 small text-muted align-self-start">開始日</label>
-                                <input type="date" name="limit_cert_start" id="limit_cert_start" class="form-control form-control-sm"
-                                    value="{{ form.limit_cert_start.value|date:'Y-m-d'|default:'' }}"
-                                    onchange="autoFillLimitCertEnd()"
-                                    style="min-width:130px;">
-                                <small class="wareki-label text-muted text-center d-block" style="font-size:0.8em; margin-top:2px; width:100%;"></small>
+                <div id="limit_cert_period_row" class="row g-3 mb-2 justify-content-end" style="display: {% if form.limit_cert.value == 'yes' %}flex{% else %}none{% endif %};">
+                    <!-- 開始日 -->
+                    <div class="col-xl-4 col-lg-4 col-md-4 col-sm-6">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <label class="form-label mb-0">開始日</label>
+                            <div class="birth-era-toggle" title="和暦 / 西暦を切り替え">
+                                <button type="button" class="era-btn active" id="limitCertCombined_era_japanese" onclick="switchLimitCertEra('japanese')">和暦</button>
+                                <button type="button" class="era-btn" id="limitCertCombined_era_western" onclick="switchLimitCertEra('western')">西暦</button>
                             </div>
-                            <div class="small text-muted" style="padding-top: 30px;">〜</div>
-                            <div class="d-flex flex-column align-items-center">
-                                <label class="form-label mb-1 small text-muted align-self-start">終了日（自動）</label>
-                                <input type="date" name="limit_cert_end" id="limit_cert_end" class="form-control form-control-sm"
-                                    value="{{ form.limit_cert_end.value|date:'Y-m-d'|default:'' }}"
-                                    style="min-width:130px;">
-                                <small class="wareki-label text-muted text-center d-block" style="font-size:0.8em; margin-top:2px; width:100%;"></small>
-                            </div>
+                        </div>
+                        <div id="limitCertStart_western" style="display:none;">
+                            <input type="date" name="limit_cert_start" id="limit_cert_start" class="form-control"
+                                value="{{ form.limit_cert_start.value|date:'Y-m-d'|default:'' }}"
+                                onchange="autoFillLimitCertEnd()">
+                        </div>
+                        <div id="limitCertStart_japanese">
+                            <input type="text" id="limitCertStart_wareki_text" class="form-control"
+                                placeholder="例: 令和6年4月1日" autocomplete="off"
+                                oninput="syncDateFromWareki('limitCertStart', 'limit_cert_start'); autoFillLimitCertEnd();">
+                            <small id="limitCertStart_wareki_preview" style="font-size:0.75em; display:block; margin-top:2px;"></small>
+                        </div>
+                    </div>
+                    
+                    <div class="col-auto d-flex align-items-center justify-content-center text-muted" style="padding-top: 35px;">
+                        〜
+                    </div>
+                    
+                    <!-- 終了日 -->
+                    <div class="col-xl-4 col-lg-4 col-md-4 col-sm-6">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <label class="form-label mb-0">終了日（自動）</label>
+                        </div>
+                        <div id="limitCertEnd_western" style="display:none;">
+                            <input type="date" name="limit_cert_end" id="limit_cert_end" class="form-control"
+                                value="{{ form.limit_cert_end.value|date:'Y-m-d'|default:'' }}">
+                        </div>
+                        <div id="limitCertEnd_japanese">
+                            <input type="text" id="limitCertEnd_wareki_text" class="form-control"
+                                placeholder="例: 令和7年3月31日" autocomplete="off"
+                                oninput="syncDateFromWareki('limitCertEnd', 'limit_cert_end')">
+                            <small id="limitCertEnd_wareki_preview" style="font-size:0.75em; display:block; margin-top:2px;"></small>
                         </div>
                     </div>
                 </div>
@@ -505,28 +627,47 @@
                         </div>
                     </div>
                     <!-- 支給決定期間 -->
-                    <div class="row g-3 mb-2">
-                        <div class="col-xl-5 col-lg-5 col-md-6 col-sm-6 text-end">
-                            <label class="form-label mb-0 small text-muted" style="padding-top: 20px;">支給決定期間：</label>
+                    <div class="row g-3 mb-2 justify-content-end">
+                        <div class="col-12 text-end mb-n2 mt-3 pe-4"><span class="small text-muted fw-bold" style="color: #6c757d;">▼ 支給決定期間</span></div>
+
+                        <div class="col-xl-4 col-lg-4 col-md-4 col-sm-6">
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <label class="form-label mb-0">開始日</label>
+                                <div class="birth-era-toggle" title="和暦 / 西暦を切り替え">
+                                    <button type="button" class="era-btn active" id="disabilityWelfareDecisionCombined_era_japanese" onclick="switchDisabilityWelfareDecisionEra('japanese')">和暦</button>
+                                    <button type="button" class="era-btn" id="disabilityWelfareDecisionCombined_era_western" onclick="switchDisabilityWelfareDecisionEra('western')">西暦</button>
+                                </div>
+                            </div>
+                            <div id="disabilityWelfareDecisionStart_western" style="display:none;">
+                                <input type="date" name="disability_welfare_decision_start" id="disability_welfare_decision_start" class="form-control"
+                                    value="{{ form.disability_welfare_decision_start.value|date:'Y-m-d'|default:'' }}"
+                                    onchange="autoFillDisabilityWelfareDecisionEnd()">
+                            </div>
+                            <div id="disabilityWelfareDecisionStart_japanese">
+                                <input type="text" id="disabilityWelfareDecisionStart_wareki_text" class="form-control"
+                                    placeholder="例: 令和6年4月1日" autocomplete="off"
+                                    oninput="syncDateFromWareki('disabilityWelfareDecisionStart', 'disability_welfare_decision_start'); autoFillDisabilityWelfareDecisionEnd();">
+                                <small id="disabilityWelfareDecisionStart_wareki_preview" style="font-size:0.75em; display:block; margin-top:2px;"></small>
+                            </div>
                         </div>
-                        <div class="col">
-                            <div class="d-flex align-items-start flex-nowrap gap-1">
-                                <div class="d-flex flex-column align-items-center">
-                                    <label class="form-label mb-1 small text-muted align-self-start">開始日</label>
-                                    <input type="date" name="disability_welfare_decision_start" id="disability_welfare_decision_start" class="form-control form-control-sm"
-                                        value="{{ form.disability_welfare_decision_start.value|date:'Y-m-d'|default:'' }}"
-                                        onchange="autoFillDisabilityWelfareDecisionEnd()"
-                                        style="min-width:130px;">
-                                    <small class="wareki-label text-muted text-center d-block" style="font-size:0.8em; margin-top:2px; width:100%;"></small>
-                                </div>
-                                <div class="small text-muted" style="padding-top: 30px;">〜</div>
-                                <div class="d-flex flex-column align-items-center">
-                                    <label class="form-label mb-1 small text-muted align-self-start">終了日（自動）</label>
-                                    <input type="date" name="disability_welfare_decision_end" id="disability_welfare_decision_end" class="form-control form-control-sm"
-                                        value="{{ form.disability_welfare_decision_end.value|date:'Y-m-d'|default:'' }}"
-                                        style="min-width:130px;">
-                                    <small class="wareki-label text-muted text-center d-block" style="font-size:0.8em; margin-top:2px; width:100%;"></small>
-                                </div>
+                        
+                        <div class="col-auto d-flex align-items-center justify-content-center text-muted" style="padding-top: 35px;">
+                            〜
+                        </div>
+                        
+                        <div class="col-xl-4 col-lg-4 col-md-4 col-sm-6">
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <label class="form-label mb-0">終了日（自動）</label>
+                            </div>
+                            <div id="disabilityWelfareDecisionEnd_western" style="display:none;">
+                                <input type="date" name="disability_welfare_decision_end" id="disability_welfare_decision_end" class="form-control"
+                                    value="{{ form.disability_welfare_decision_end.value|date:'Y-m-d'|default:'' }}">
+                            </div>
+                            <div id="disabilityWelfareDecisionEnd_japanese">
+                                <input type="text" id="disabilityWelfareDecisionEnd_wareki_text" class="form-control"
+                                    placeholder="例: 令和7年3月31日" autocomplete="off"
+                                    oninput="syncDateFromWareki('disabilityWelfareDecisionEnd', 'disability_welfare_decision_end')">
+                                <small id="disabilityWelfareDecisionEnd_wareki_preview" style="font-size:0.75em; display:block; margin-top:2px;"></small>
                             </div>
                         </div>
                     </div>
@@ -555,38 +696,62 @@
                     </div>
                 </div>
 
-                <div id="difficult-disease-detail" class="row g-3 mb-3 {% if form.specific_medical.value != 'yes' %}d-none{% endif %}">
-                    <div class="col-xl-5 col-lg-5 col-md-6 col-sm-6"></div>
-                    <div class="col d-flex flex-column gap-2">
-                        <!-- 疾患名 -->
-                        <div class="p-3 border rounded shadow-sm bg-white">
-                            <label class="form-label small text-muted mb-1">難病の疾患名</label>
-                            <select class="form-select border-primary-subtle" name="{{ form.difficult_disease_name.html_name }}" id="{{ form.difficult_disease_name.id_for_label }}" onchange="toggleDiseaseOther(this.value)">
-                                {% for value, label in form.fields.difficult_disease_name.choices %}
-                                <option value="{{ value }}" {% if form.difficult_disease_name.value == value %}selected{% endif %}>{{ label }}</option>
-                                {% endfor %}
-                            </select>
-                            <div id="disease-other-wrap" class="mt-2 {% if form.difficult_disease_name.value != 'other' %}d-none{% endif %}">
-                                <input type="text" class="form-control border-primary-subtle" name="{{ form.difficult_disease_other.html_name }}" id="{{ form.difficult_disease_other.id_for_label }}" placeholder="疾患名を入力" value="{{ form.difficult_disease_other.value|default:'' }}">
+                <div id="difficult-disease-detail" class="{% if form.specific_medical.value != 'yes' %}d-none{% endif %}">
+                    <div class="row g-3 mb-3 justify-content-end">
+                        <div class="col-xl-8 col-lg-8 col-md-8 col-sm-12">
+                            <!-- 疾患名 -->
+                            <div class="p-3 border rounded shadow-sm bg-white">
+                                <label class="form-label small text-muted mb-1">難病の疾患名</label>
+                                <select class="form-select border-primary-subtle" name="{{ form.difficult_disease_name.html_name }}" id="{{ form.difficult_disease_name.id_for_label }}" onchange="toggleDiseaseOther(this.value)">
+                                    {% for value, label in form.fields.difficult_disease_name.choices %}
+                                    <option value="{{ value }}" {% if form.difficult_disease_name.value == value %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                                <div id="disease-other-wrap" class="mt-2 {% if form.difficult_disease_name.value != 'other' %}d-none{% endif %}">
+                                    <input type="text" class="form-control border-primary-subtle" name="{{ form.difficult_disease_other.html_name }}" id="{{ form.difficult_disease_other.id_for_label }}" placeholder="疾患名を入力" value="{{ form.difficult_disease_other.value|default:'' }}">
+                                </div>
                             </div>
                         </div>
-                        <!-- 有効期間 -->
-                        <div class="d-flex align-items-start flex-nowrap gap-1">
-                            <div class="d-flex flex-column align-items-center">
-                                <label class="form-label mb-1 small text-muted align-self-start">開始日</label>
-                                <input type="date" name="specific_medical_start" id="specific_medical_start" class="form-control form-control-sm"
-                                    value="{{ form.specific_medical_start.value|date:'Y-m-d'|default:'' }}"
-                                    onchange="autoFillSpecificMedicalEnd()"
-                                    style="min-width:130px;">
-                                <small class="wareki-label text-muted text-center d-block" style="font-size:0.8em; margin-top:2px; width:100%;"></small>
+                    </div>
+                    <div class="row g-3 mb-2 justify-content-end">
+                        <div class="col-xl-4 col-lg-4 col-md-4 col-sm-6">
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <label class="form-label mb-0">開始日</label>
+                                <div class="birth-era-toggle" title="和暦 / 西暦を切り替え">
+                                    <button type="button" class="era-btn active" id="specificMedicalCombined_era_japanese" onclick="switchSpecificMedicalEra('japanese')">和暦</button>
+                                    <button type="button" class="era-btn" id="specificMedicalCombined_era_western" onclick="switchSpecificMedicalEra('western')">西暦</button>
+                                </div>
                             </div>
-                            <div class="small text-muted" style="padding-top: 30px;">〜</div>
-                            <div class="d-flex flex-column align-items-center">
-                                <label class="form-label mb-1 small text-muted align-self-start">終了日（自動）</label>
-                                <input type="date" name="specific_medical_end" id="specific_medical_end" class="form-control form-control-sm"
-                                    value="{{ form.specific_medical_end.value|date:'Y-m-d'|default:'' }}"
-                                    style="min-width:130px;">
-                                <small class="wareki-label text-muted text-center d-block" style="font-size:0.8em; margin-top:2px; width:100%;"></small>
+                            <div id="specificMedicalStart_western" style="display:none;">
+                                <input type="date" name="specific_medical_start" id="specific_medical_start" class="form-control"
+                                    value="{{ form.specific_medical_start.value|date:'Y-m-d'|default:'' }}"
+                                    onchange="autoFillSpecificMedicalEnd()">
+                            </div>
+                            <div id="specificMedicalStart_japanese">
+                                <input type="text" id="specificMedicalStart_wareki_text" class="form-control"
+                                    placeholder="例: 令和6年4月1日" autocomplete="off"
+                                    oninput="syncDateFromWareki('specificMedicalStart', 'specific_medical_start'); autoFillSpecificMedicalEnd();">
+                                <small id="specificMedicalStart_wareki_preview" style="font-size:0.75em; display:block; margin-top:2px;"></small>
+                            </div>
+                        </div>
+                        
+                        <div class="col-auto d-flex align-items-center justify-content-center text-muted" style="padding-top: 35px;">
+                            〜
+                        </div>
+                        
+                        <div class="col-xl-4 col-lg-4 col-md-4 col-sm-6">
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <label class="form-label mb-0">終了日（自動）</label>
+                            </div>
+                            <div id="specificMedicalEnd_western" style="display:none;">
+                                <input type="date" name="specific_medical_end" id="specific_medical_end" class="form-control"
+                                    value="{{ form.specific_medical_end.value|date:'Y-m-d'|default:'' }}">
+                            </div>
+                            <div id="specificMedicalEnd_japanese">
+                                <input type="text" id="specificMedicalEnd_wareki_text" class="form-control"
+                                    placeholder="例: 令和7年3月31日" autocomplete="off"
+                                    oninput="syncDateFromWareki('specificMedicalEnd', 'specific_medical_end')">
+                                <small id="specificMedicalEnd_wareki_preview" style="font-size:0.75em; display:block; margin-top:2px;"></small>
                             </div>
                         </div>
                     </div>
@@ -642,26 +807,45 @@
                 </div>
 
                 <div id="welfare_medical_period_row" style="display: {% if form.welfare_medical.value == 'yes' %}block{% else %}none{% endif %};">
-                    <div class="row g-3 mb-2">
-                        <div class="col-xl-5 col-lg-5 col-md-6 col-sm-6"></div>
-                        <div class="col">
-                            <div class="d-flex align-items-start flex-nowrap gap-1">
-                                <div class="d-flex flex-column align-items-center">
-                                    <label class="form-label mb-1 small text-muted align-self-start">開始日</label>
-                                    <input type="date" name="welfare_medical_start" id="welfare_medical_start" class="form-control form-control-sm"
-                                        value="{{ form.welfare_medical_start.value|date:'Y-m-d'|default:'' }}"
-                                        onchange="autoFillWelfareMedicalEnd()"
-                                        style="min-width:130px;">
-                                    <small class="wareki-label text-muted text-center d-block" style="font-size:0.8em; margin-top:2px; width:100%;"></small>
+                    <div class="row g-3 mb-2 justify-content-end">
+                        <div class="col-xl-4 col-lg-4 col-md-4 col-sm-6">
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <label class="form-label mb-0">開始日</label>
+                                <div class="birth-era-toggle" title="和暦 / 西暦を切り替え">
+                                    <button type="button" class="era-btn active" id="welfareMedicalCombined_era_japanese" onclick="switchWelfareMedicalEra('japanese')">和暦</button>
+                                    <button type="button" class="era-btn" id="welfareMedicalCombined_era_western" onclick="switchWelfareMedicalEra('western')">西暦</button>
                                 </div>
-                                <div class="small text-muted" style="padding-top: 30px;">〜</div>
-                                <div class="d-flex flex-column align-items-center">
-                                    <label class="form-label mb-1 small text-muted align-self-start">終了日（自動）</label>
-                                    <input type="date" name="welfare_medical_end" id="welfare_medical_end" class="form-control form-control-sm"
-                                        value="{{ form.welfare_medical_end.value|date:'Y-m-d'|default:'' }}"
-                                        style="min-width:130px;">
-                                    <small class="wareki-label text-muted text-center d-block" style="font-size:0.8em; margin-top:2px; width:100%;"></small>
-                                </div>
+                            </div>
+                            <div id="welfareMedicalStart_western" style="display:none;">
+                                <input type="date" name="welfare_medical_start" id="welfare_medical_start" class="form-control"
+                                    value="{{ form.welfare_medical_start.value|date:'Y-m-d'|default:'' }}"
+                                    onchange="autoFillWelfareMedicalEnd()">
+                            </div>
+                            <div id="welfareMedicalStart_japanese">
+                                <input type="text" id="welfareMedicalStart_wareki_text" class="form-control"
+                                    placeholder="例: 令和6年4月1日" autocomplete="off"
+                                    oninput="syncDateFromWareki('welfareMedicalStart', 'welfare_medical_start'); autoFillWelfareMedicalEnd();">
+                                <small id="welfareMedicalStart_wareki_preview" style="font-size:0.75em; display:block; margin-top:2px;"></small>
+                            </div>
+                        </div>
+                        
+                        <div class="col-auto d-flex align-items-center justify-content-center text-muted" style="padding-top: 35px;">
+                            〜
+                        </div>
+                        
+                        <div class="col-xl-4 col-lg-4 col-md-4 col-sm-6">
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <label class="form-label mb-0">終了日（自動）</label>
+                            </div>
+                            <div id="welfareMedicalEnd_western" style="display:none;">
+                                <input type="date" name="welfare_medical_end" id="welfare_medical_end" class="form-control"
+                                    value="{{ form.welfare_medical_end.value|date:'Y-m-d'|default:'' }}">
+                            </div>
+                            <div id="welfareMedicalEnd_japanese">
+                                <input type="text" id="welfareMedicalEnd_wareki_text" class="form-control"
+                                    placeholder="例: 令和7年3月31日" autocomplete="off"
+                                    oninput="syncDateFromWareki('welfareMedicalEnd', 'welfare_medical_end')">
+                                <small id="welfareMedicalEnd_wareki_preview" style="font-size:0.75em; display:block; margin-top:2px;"></small>
                             </div>
                         </div>
                     </div>
@@ -708,26 +892,45 @@
                 </div>
 
                 <div id="nhi_limit_period_row" style="display: {% if form.nhi_limit_cert.value == 'yes' %}block{% else %}none{% endif %};">
-                    <div class="row g-3 mb-2">
-                        <div class="col-xl-5 col-lg-5 col-md-6 col-sm-6"></div>
-                        <div class="col">
-                            <div class="d-flex align-items-start flex-nowrap gap-1">
-                                <div class="d-flex flex-column align-items-center">
-                                    <label class="form-label mb-1 small text-muted align-self-start">開始日</label>
-                                    <input type="date" name="nhi_limit_cert_start" id="nhi_limit_cert_start" class="form-control form-control-sm"
-                                        value="{{ form.nhi_limit_cert_start.value|date:'Y-m-d'|default:'' }}"
-                                        onchange="autoFillNhiLimitEnd()"
-                                        style="min-width:130px;">
-                                    <small class="wareki-label text-muted text-center d-block" style="font-size:0.8em; margin-top:2px; width:100%;"></small>
+                    <div class="row g-3 mb-2 justify-content-end">
+                        <div class="col-xl-4 col-lg-4 col-md-4 col-sm-6">
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <label class="form-label mb-0">開始日</label>
+                                <div class="birth-era-toggle" title="和暦 / 西暦を切り替え">
+                                    <button type="button" class="era-btn active" id="nhiLimitCertCombined_era_japanese" onclick="switchNhiLimitCertEra('japanese')">和暦</button>
+                                    <button type="button" class="era-btn" id="nhiLimitCertCombined_era_western" onclick="switchNhiLimitCertEra('western')">西暦</button>
                                 </div>
-                                <div class="small text-muted" style="padding-top: 30px;">〜</div>
-                                <div class="d-flex flex-column align-items-center">
-                                    <label class="form-label mb-1 small text-muted align-self-start">終了日（自動）</label>
-                                    <input type="date" name="nhi_limit_cert_end" id="nhi_limit_cert_end" class="form-control form-control-sm"
-                                        value="{{ form.nhi_limit_cert_end.value|date:'Y-m-d'|default:'' }}"
-                                        style="min-width:130px;">
-                                    <small class="wareki-label text-muted text-center d-block" style="font-size:0.8em; margin-top:2px; width:100%;"></small>
-                                </div>
+                            </div>
+                            <div id="nhiLimitCertStart_western" style="display:none;">
+                                <input type="date" name="nhi_limit_cert_start" id="nhi_limit_cert_start" class="form-control"
+                                    value="{{ form.nhi_limit_cert_start.value|date:'Y-m-d'|default:'' }}"
+                                    onchange="autoFillNhiLimitEnd()">
+                            </div>
+                            <div id="nhiLimitCertStart_japanese">
+                                <input type="text" id="nhiLimitCertStart_wareki_text" class="form-control"
+                                    placeholder="例: 令和6年4月1日" autocomplete="off"
+                                    oninput="syncDateFromWareki('nhiLimitCertStart', 'nhi_limit_cert_start'); autoFillNhiLimitEnd();">
+                                <small id="nhiLimitCertStart_wareki_preview" style="font-size:0.75em; display:block; margin-top:2px;"></small>
+                            </div>
+                        </div>
+                        
+                        <div class="col-auto d-flex align-items-center justify-content-center text-muted" style="padding-top: 35px;">
+                            〜
+                        </div>
+                        
+                        <div class="col-xl-4 col-lg-4 col-md-4 col-sm-6">
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <label class="form-label mb-0">終了日（自動）</label>
+                            </div>
+                            <div id="nhiLimitCertEnd_western" style="display:none;">
+                                <input type="date" name="nhi_limit_cert_end" id="nhi_limit_cert_end" class="form-control"
+                                    value="{{ form.nhi_limit_cert_end.value|date:'Y-m-d'|default:'' }}">
+                            </div>
+                            <div id="nhiLimitCertEnd_japanese">
+                                <input type="text" id="nhiLimitCertEnd_wareki_text" class="form-control"
+                                    placeholder="例: 令和7年3月31日" autocomplete="off"
+                                    oninput="syncDateFromWareki('nhiLimitCertEnd', 'nhi_limit_cert_end')">
+                                <small id="nhiLimitCertEnd_wareki_preview" style="font-size:0.75em; display:block; margin-top:2px;"></small>
                             </div>
                         </div>
                     </div>
@@ -1250,12 +1453,21 @@ function toggleLimitCertPeriod() {
     const isYes = document.getElementById('limit_cert_yes').checked;
     row.style.display = isYes ? 'flex' : 'none';
     if (!isYes) {
-        const s = document.getElementById('limit_cert_start');
-        const e = document.getElementById('limit_cert_end');
-        s.value = '';
-        e.value = '';
-        s.dispatchEvent(new Event('change', { bubbles: true }));
-        e.dispatchEvent(new Event('change', { bubbles: true }));
+        ['limit_cert_start', 'limit_cert_end'].forEach(function(id) {
+            const el = document.getElementById(id);
+            if(el) {
+                el.value = '';
+                el.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        });
+        ['limitCertStart_wareki_text', 'limitCertEnd_wareki_text'].forEach(function(id) {
+            const el = document.getElementById(id);
+            if(el) el.value = '';
+        });
+        ['limitCertStart_wareki_preview', 'limitCertEnd_wareki_preview'].forEach(function(id) {
+            const el = document.getElementById(id);
+            if(el) el.textContent = '';
+        });
     }
 }
 
@@ -1273,9 +1485,391 @@ function autoFillLimitCertEnd() {
     const dd = String(end.getDate()).padStart(2, '0');
     const endInput = document.getElementById('limit_cert_end');
     endInput.value = `${yyyy}-${mm}-${dd}`;
-    // 和暦ラベルを更新するため change イベントを発火
+    // 和暦テキストが存在すれば更新
+    const warekiInput = document.getElementById('limitCertEnd_wareki_text');
+    if (warekiInput && window.toWarekiText) {
+        warekiInput.value = window.toWarekiText(endInput.value);
+        if (typeof window.syncDateFromWareki === 'function') {
+            window.syncDateFromWareki('limitCertEnd', 'limit_cert_end');
+        }
+    }
+    
     endInput.dispatchEvent(new Event('change', { bubbles: true }));
 }
+</script>
+
+<script>
+// ============================================================
+// 生年月日 西暦 / 和暦 切り替えロジック
+// ============================================================
+(function() {
+    // 元号ごとの西暦開始年
+    var ERA_INFO = [
+        { keys: ['令和', 'R', 'r'],  start: 2019, label: '令和' },
+        { keys: ['平成', 'H', 'h'],  start: 1989, label: '平成' },
+        { keys: ['昭和', 'S', 's'],  start: 1926, label: '昭和' },
+        { keys: ['大正', 'T', 't'],  start: 1912, label: '大正' },
+        { keys: ['明治', 'M', 'm'],  start: 1868, label: '明治' },
+    ];
+
+    // 和暦テキストをパースして西暦年・月・日を返す
+    function parseWareki(text) {
+        if (!text) return null;
+        text = text.replace(/\s/g, '');
+
+        // 対応フォーマット:
+        //   令和8年2月1日 / 昭和40年3月15日
+        //   R8.2.1 / S40/3/15 / H3-1-1
+        var era = null;
+        var rest = text;
+
+        // 元号マッチ
+        for (var i = 0; i < ERA_INFO.length; i++) {
+            var info = ERA_INFO[i];
+            for (var k = 0; k < info.keys.length; k++) {
+                if (text.indexOf(info.keys[k]) === 0) {
+                    era = info;
+                    rest = text.slice(info.keys[k].length);
+                    break;
+                }
+            }
+            if (era) break;
+        }
+        if (!era) return null;
+
+        // 年・月・日を抽出
+        // パターン1: 数字 年 数字 月 数字 日
+        var m1 = rest.match(/^(\d{1,2})年(\d{1,2})月(\d{1,2})日?$/);
+        if (m1) {
+            return { era: era, year: parseInt(m1[1]), month: parseInt(m1[2]), day: parseInt(m1[3]) };
+        }
+        // パターン2: 数字 . / - 数字 . / - 数字
+        var m2 = rest.match(/^(\d{1,2})[.\-\/](\d{1,2})[.\-\/](\d{1,2})$/);
+        if (m2) {
+            return { era: era, year: parseInt(m2[1]), month: parseInt(m2[2]), day: parseInt(m2[3]) };
+        }
+        // パターン3: 年だけ途中まで入力中（プレビュー生成しないがエラーも出さない）
+        return null;
+    }
+
+    // 和暦テキスト → 西暦変換してhidden inputに反映
+    window.syncBirthDateFromWareki = function() {
+        var text = (document.getElementById('warekiText') || {}).value || '';
+        var hiddenInput = document.getElementById('id_birth_date');
+        var preview = document.getElementById('birthWarekiPreview');
+        var result = parseWareki(text);
+
+        if (result) {
+            var westernYear = result.era.start + result.year - 1;
+            var dateStr = westernYear + '-'
+                + String(result.month).padStart(2,'0') + '-'
+                + String(result.day).padStart(2,'0');
+            hiddenInput.value = dateStr;
+            preview.textContent = '→ 西暦 ' + westernYear + '年'
+                + result.month + '月' + result.day + '日';
+            preview.style.color = '#6c757d';
+        } else {
+            // 何か入力されているがまだパースできない場合
+            if (text.length > 0) {
+                preview.textContent = '例: 昭和40年3月15日　または　S40.3.15';
+                preview.style.color = '#aaa';
+            } else {
+                preview.textContent = '';
+            }
+        }
+    };
+
+    // 西暦 → 和暦テキスト変換（切り替え時に既存値を反映）
+    function westernToWarekiText(dateStr) {
+        if (!dateStr) return '';
+        var parts = dateStr.split('-');
+        if (parts.length < 3) return '';
+        var y = parseInt(parts[0]);
+        var m = parseInt(parts[1]);
+        var d = parseInt(parts[2]);
+        for (var i = 0; i < ERA_INFO.length; i++) {
+            var info = ERA_INFO[i];
+            if (y >= info.start) {
+                var eraYear = y - info.start + 1;
+                return info.label + eraYear + '年' + m + '月' + d + '日';
+            }
+        }
+        return '';
+    }
+
+    // 切り替え処理
+    window.switchBirthEra = function(mode) {
+        var westernDiv  = document.getElementById('birthWesternInput');
+        var japaneseDiv = document.getElementById('birthJapaneseInput');
+        var btnW = document.getElementById('eraWestern');
+        var btnJ = document.getElementById('eraJapanese');
+        var hiddenInput = document.getElementById('id_birth_date');
+        var warekiInput = document.getElementById('warekiText');
+
+        if (mode === 'western') {
+            westernDiv.style.display  = '';
+            japaneseDiv.style.display = 'none';
+            btnW.classList.add('active');
+            btnJ.classList.remove('active');
+        } else {
+            // 和暦モードへ切替：現在の西暦値から和暦テキストを逆算してセット
+            var warekiText = westernToWarekiText(hiddenInput.value);
+            warekiInput.value = warekiText;
+            syncBirthDateFromWareki();
+            westernDiv.style.display  = 'none';
+            japaneseDiv.style.display = '';
+            btnJ.classList.add('active');
+            btnW.classList.remove('active');
+            // 入力欄にフォーカス
+            warekiInput.focus();
+        }
+    };
+})();
+
+// ============================================================
+// 汎用 日付フィールド 西暦 / 和暦 切り替えロジック
+// prefix: フィールド識別子 (例: 'certDate')
+// hiddenId: Djangoが生成するinputのid (例: 'id_certification_date')
+// ============================================================
+(function() {
+    var ERA_INFO = [
+        { keys: ['令和', 'R', 'r'],  start: 2019, label: '令和' },
+        { keys: ['平成', 'H', 'h'],  start: 1989, label: '平成' },
+        { keys: ['昭和', 'S', 's'],  start: 1926, label: '昭和' },
+        { keys: ['大正', 'T', 't'],  start: 1912, label: '大正' },
+        { keys: ['明治', 'M', 'm'],  start: 1868, label: '明治' },
+    ];
+
+    // 和暦テキストをパース
+    function parseWareki(text) {
+        if (!text) return null;
+        text = text.replace(/\s/g, '');
+        var era = null, rest = text;
+        for (var i = 0; i < ERA_INFO.length; i++) {
+            var info = ERA_INFO[i];
+            for (var k = 0; k < info.keys.length; k++) {
+                if (text.indexOf(info.keys[k]) === 0) {
+                    era = info;
+                    rest = text.slice(info.keys[k].length);
+                    break;
+                }
+            }
+            if (era) break;
+        }
+        if (!era) return null;
+        var m1 = rest.match(/^(\d{1,2})年(\d{1,2})月(\d{1,2})日?$/);
+        if (m1) return { era: era, year: parseInt(m1[1]), month: parseInt(m1[2]), day: parseInt(m1[3]) };
+        var m2 = rest.match(/^(\d{1,2})[.\-\/](\d{1,2})[.\-\/](\d{1,2})$/);
+        if (m2) return { era: era, year: parseInt(m2[1]), month: parseInt(m2[2]), day: parseInt(m2[3]) };
+        return null;
+    }
+
+    // 西暦 → 和暦テキスト変換
+    window.toWarekiText = function(dateStr) {
+        if (!dateStr) return '';
+        var parts = dateStr.split('-');
+        if (parts.length < 3) return '';
+        var y = parseInt(parts[0]), m = parseInt(parts[1]), d = parseInt(parts[2]);
+        for (var i = 0; i < ERA_INFO.length; i++) {
+            var info = ERA_INFO[i];
+            if (y >= info.start) {
+                return info.label + (y - info.start + 1) + '年' + m + '月' + d + '日';
+            }
+        }
+        return '';
+    };
+
+    // 和暦テキスト → 西暦hidden inputに反映（汎用）
+    window.syncDateFromWareki = function(prefix, hiddenId) {
+        var text = (document.getElementById(prefix + '_wareki_text') || {}).value || '';
+        var hidden = document.getElementById(hiddenId);
+        var preview = document.getElementById(prefix + '_wareki_preview');
+        if (!hidden || !preview) return;
+        var result = parseWareki(text);
+        if (result) {
+            var wy = result.era.start + result.year - 1;
+            hidden.value = wy + '-' + String(result.month).padStart(2,'0') + '-' + String(result.day).padStart(2,'0');
+            preview.textContent = '→ 西暦 ' + wy + '年' + result.month + '月' + result.day + '日';
+            preview.style.color = '#6c757d';
+        } else {
+            if (text.length > 0) {
+                preview.textContent = '例: 令和6年4月1日　または　R6.4.1';
+                preview.style.color = '#aaa';
+            } else {
+                preview.textContent = '';
+            }
+        }
+    };
+
+    // 切り替え（汎用）
+    window.switchDateEra = function(prefix, mode) {
+        var westernDiv  = document.getElementById(prefix + '_western');
+        var japaneseDiv = document.getElementById(prefix + '_japanese');
+        var btnW = document.getElementById(prefix + '_era_western');
+        var btnJ = document.getElementById(prefix + '_era_japanese');
+        if (!westernDiv || !japaneseDiv) return;
+
+        // 各フィールドのhiddenId をdata属性から取得（または固定マップ）
+        var hiddenMap = {
+            disabilityWelfareDecisionStart: 'disability_welfare_decision_start',
+            disabilityWelfareDecisionEnd: 'disability_welfare_decision_end',
+            specificMedicalStart: 'specific_medical_start',
+            specificMedicalEnd: 'specific_medical_end',
+            welfareMedicalStart: 'welfare_medical_start',
+            welfareMedicalEnd: 'welfare_medical_end',
+            nhiLimitCertStart: 'nhi_limit_cert_start',
+            nhiLimitCertEnd: 'nhi_limit_cert_end',
+            certDate:  'id_certification_date',
+            certStart: 'id_certification_period_start',
+            certEnd:   'id_certification_period_end',
+            limitCertStart: 'limit_cert_start',
+            limitCertEnd:   'limit_cert_end',
+        };
+        var hiddenId = hiddenMap[prefix];
+
+        if (mode === 'western') {
+            westernDiv.style.display  = '';
+            japaneseDiv.style.display = 'none';
+            if (btnW) { btnW.classList.add('active'); }
+            if (btnJ) { btnJ.classList.remove('active'); }
+        } else {
+            // 和暦モードへ：既存の西暦値を逆算
+            var hidden = document.getElementById(hiddenId);
+            var warekiInput = document.getElementById(prefix + '_wareki_text');
+            if (hidden && warekiInput) {
+                var wt = toWarekiText(hidden.value);
+                warekiInput.value = wt;
+                syncDateFromWareki(prefix, hiddenId);
+            }
+            westernDiv.style.display  = 'none';
+            japaneseDiv.style.display = '';
+            if (btnJ) { btnJ.classList.add('active'); }
+            if (btnW) { btnW.classList.remove('active'); }
+            if (warekiInput) warekiInput.focus();
+        }
+    };
+
+    // 介護保険負担限度額認定証用の統合トグルJS
+    
+    window.switchDisabilityWelfareDecisionEra = function(mode) {
+        var btnW = document.getElementById('disabilityWelfareDecisionCombined_era_western');
+        var btnJ = document.getElementById('disabilityWelfareDecisionCombined_era_japanese');
+        if (mode === 'western') {
+            if (btnW) btnW.classList.add('active');
+            if (btnJ) btnJ.classList.remove('active');
+        } else {
+            if (btnJ) btnJ.classList.add('active');
+            if (btnW) btnW.classList.remove('active');
+        }
+        if (typeof window.switchDateEra === 'function') {
+            window.switchDateEra('disabilityWelfareDecisionStart', mode);
+            window.switchDateEra('disabilityWelfareDecisionEnd', mode);
+        }
+    };
+    
+    window.switchSpecificMedicalEra = function(mode) {
+        var btnW = document.getElementById('specificMedicalCombined_era_western');
+        var btnJ = document.getElementById('specificMedicalCombined_era_japanese');
+        if (mode === 'western') {
+            if (btnW) btnW.classList.add('active');
+            if (btnJ) btnJ.classList.remove('active');
+        } else {
+            if (btnJ) btnJ.classList.add('active');
+            if (btnW) btnW.classList.remove('active');
+        }
+        if (typeof window.switchDateEra === 'function') {
+            window.switchDateEra('specificMedicalStart', mode);
+            window.switchDateEra('specificMedicalEnd', mode);
+        }
+    };
+    
+    window.switchWelfareMedicalEra = function(mode) {
+        var btnW = document.getElementById('welfareMedicalCombined_era_western');
+        var btnJ = document.getElementById('welfareMedicalCombined_era_japanese');
+        if (mode === 'western') {
+            if (btnW) btnW.classList.add('active');
+            if (btnJ) btnJ.classList.remove('active');
+        } else {
+            if (btnJ) btnJ.classList.add('active');
+            if (btnW) btnW.classList.remove('active');
+        }
+        if (typeof window.switchDateEra === 'function') {
+            window.switchDateEra('welfareMedicalStart', mode);
+            window.switchDateEra('welfareMedicalEnd', mode);
+        }
+    };
+    
+    window.switchNhiLimitCertEra = function(mode) {
+        var btnW = document.getElementById('nhiLimitCertCombined_era_western');
+        var btnJ = document.getElementById('nhiLimitCertCombined_era_japanese');
+        if (mode === 'western') {
+            if (btnW) btnW.classList.add('active');
+            if (btnJ) btnJ.classList.remove('active');
+        } else {
+            if (btnJ) btnJ.classList.add('active');
+            if (btnW) btnW.classList.remove('active');
+        }
+        if (typeof window.switchDateEra === 'function') {
+            window.switchDateEra('nhiLimitCertStart', mode);
+            window.switchDateEra('nhiLimitCertEnd', mode);
+        }
+    };
+
+    window.switchLimitCertEra = function(mode) {
+        var btnW = document.getElementById('limitCertCombined_era_western');
+        var btnJ = document.getElementById('limitCertCombined_era_japanese');
+        if (mode === 'western') {
+            if (btnW) btnW.classList.add('active');
+            if (btnJ) btnJ.classList.remove('active');
+        } else {
+            if (btnJ) btnJ.classList.add('active');
+            if (btnW) btnW.classList.remove('active');
+        }
+        if (typeof window.switchDateEra === 'function') {
+            window.switchDateEra('limitCertStart', mode);
+            window.switchDateEra('limitCertEnd', mode);
+        }
+    };
+
+    // ページ読み込み時: 编集モードで既存値がある場合、和暦テキストに変換してセット
+    document.addEventListener('DOMContentLoaded', function() {
+        // 生年月日の初期化処理
+        var hiddenBirth = document.getElementById('id_birth_date');
+        var warekiBirth = document.getElementById('warekiText');
+        if (hiddenBirth && hiddenBirth.value && warekiBirth && !warekiBirth.value) {
+            warekiBirth.value = toWarekiText(hiddenBirth.value);
+            // プレビューとhiddenの同期
+            if (typeof window.syncBirthDateFromWareki === 'function') {
+                window.syncBirthDateFromWareki();
+            }
+        }
+
+        // 認定日等の初期化処理
+        var fields = [
+            { prefix: 'disabilityWelfareDecisionStart', hiddenId: 'disability_welfare_decision_start' },
+            { prefix: 'disabilityWelfareDecisionEnd',   hiddenId: 'disability_welfare_decision_end' },
+            { prefix: 'specificMedicalStart', hiddenId: 'specific_medical_start' },
+            { prefix: 'specificMedicalEnd',   hiddenId: 'specific_medical_end' },
+            { prefix: 'welfareMedicalStart', hiddenId: 'welfare_medical_start' },
+            { prefix: 'welfareMedicalEnd',   hiddenId: 'welfare_medical_end' },
+            { prefix: 'nhiLimitCertStart', hiddenId: 'nhi_limit_cert_start' },
+            { prefix: 'nhiLimitCertEnd',   hiddenId: 'nhi_limit_cert_end' },
+            { prefix: 'certDate',  hiddenId: 'id_certification_date' },
+            { prefix: 'certStart', hiddenId: 'id_certification_period_start' },
+            { prefix: 'certEnd',   hiddenId: 'id_certification_period_end' },
+            { prefix: 'limitCertStart', hiddenId: 'limit_cert_start' },
+            { prefix: 'limitCertEnd',   hiddenId: 'limit_cert_end' },
+        ];
+        fields.forEach(function(f) {
+            var hidden = document.getElementById(f.hiddenId);
+            var warekiInput = document.getElementById(f.prefix + '_wareki_text');
+            if (hidden && hidden.value && warekiInput) {
+                warekiInput.value = toWarekiText(hidden.value);
+                syncDateFromWareki(f.prefix, f.hiddenId);
+            }
+        });
+    });
+})();
 </script>
 
 {% endblock %}
