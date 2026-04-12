@@ -965,6 +965,43 @@
     </script>
     {% endif %}
 
+    <script>
+    // Enterキー：次フィールドへ移動 / Ctrl+Enter：フォーム送信
+    document.addEventListener('keydown', function(e) {
+        if (e.key !== 'Enter') return;
+
+        var tag = e.target.tagName;
+        // textarea は通常のEnterを許可
+        if (tag === 'TEXTAREA') return;
+        // ボタン・送信ボタンはそのまま
+        if (tag === 'BUTTON' || (tag === 'INPUT' && e.target.type === 'submit')) return;
+
+        if (e.ctrlKey) {
+            // Ctrl+Enter → フォーム送信
+            var form = e.target.closest('form');
+            if (form) {
+                e.preventDefault();
+                // submit ボタンを探してクリック（バリデーション等を通すため）
+                var submitBtn = form.querySelector('[type="submit"]');
+                if (submitBtn) submitBtn.click();
+                else form.submit();
+            }
+        } else {
+            // Enter → 次のフォーカス可能要素へ
+            e.preventDefault();
+            var focusable = Array.from(document.querySelectorAll(
+                'input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), button:not([disabled])'
+            )).filter(function(el) {
+                return el.offsetParent !== null; // 表示されているもののみ
+            });
+            var idx = focusable.indexOf(e.target);
+            if (idx >= 0 && idx < focusable.length - 1) {
+                focusable[idx + 1].focus();
+            }
+        }
+    });
+    </script>
+
     <footer class="site-footer">
         <div class="container">
             <div class="site-footer-inner">

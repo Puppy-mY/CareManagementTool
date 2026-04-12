@@ -810,12 +810,42 @@ button[name="action"][value="save"]:hover {
                             </div>
                             <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 mb-3">
                                 <label class="form-label">発症日</label>
-                                <input type="date" name="onset_date_1" class="form-control mb-2 onset-field" data-field="1" value="{{ form.onset_date_1.value|default:'' }}">
-                                <input type="date" name="onset_date_2" class="form-control mb-2 onset-field" data-field="2" value="{{ form.onset_date_2.value|default:'' }}" style="display: none;">
-                                <input type="date" name="onset_date_3" class="form-control mb-2 onset-field" data-field="3" value="{{ form.onset_date_3.value|default:'' }}" style="display: none;">
-                                <input type="date" name="onset_date_4" class="form-control mb-2 onset-field" data-field="4" value="{{ form.onset_date_4.value|default:'' }}" style="display: none;">
-                                <input type="date" name="onset_date_5" class="form-control mb-2 onset-field" data-field="5" value="{{ form.onset_date_5.value|default:'' }}" style="display: none;">
-                                <input type="date" name="onset_date_6" class="form-control onset-field" data-field="6" value="{{ form.onset_date_6.value|default:'' }}" style="display: none;">
+                                <div class="onset-field mb-2" data-field="1">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <input type="date" name="onset_date_1" id="onset_date_1" class="form-control" style="max-width:200px;" value="{{ form.onset_date_1.value|default:'' }}">
+                                        <button type="button" class="btn btn-outline-secondary btn-sm onset-unknown-btn" data-target="onset_date_1" onclick="toggleOnsetUnknown(this)">時期不詳</button>
+                                    </div>
+                                </div>
+                                <div class="onset-field mb-2" data-field="2" style="display:none;">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <input type="date" name="onset_date_2" id="onset_date_2" class="form-control" style="max-width:200px;" value="{{ form.onset_date_2.value|default:'' }}">
+                                        <button type="button" class="btn btn-outline-secondary btn-sm onset-unknown-btn" data-target="onset_date_2" onclick="toggleOnsetUnknown(this)">時期不詳</button>
+                                    </div>
+                                </div>
+                                <div class="onset-field mb-2" data-field="3" style="display:none;">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <input type="date" name="onset_date_3" id="onset_date_3" class="form-control" style="max-width:200px;" value="{{ form.onset_date_3.value|default:'' }}">
+                                        <button type="button" class="btn btn-outline-secondary btn-sm onset-unknown-btn" data-target="onset_date_3" onclick="toggleOnsetUnknown(this)">時期不詳</button>
+                                    </div>
+                                </div>
+                                <div class="onset-field mb-2" data-field="4" style="display:none;">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <input type="date" name="onset_date_4" id="onset_date_4" class="form-control" style="max-width:200px;" value="{{ form.onset_date_4.value|default:'' }}">
+                                        <button type="button" class="btn btn-outline-secondary btn-sm onset-unknown-btn" data-target="onset_date_4" onclick="toggleOnsetUnknown(this)">時期不詳</button>
+                                    </div>
+                                </div>
+                                <div class="onset-field mb-2" data-field="5" style="display:none;">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <input type="date" name="onset_date_5" id="onset_date_5" class="form-control" style="max-width:200px;" value="{{ form.onset_date_5.value|default:'' }}">
+                                        <button type="button" class="btn btn-outline-secondary btn-sm onset-unknown-btn" data-target="onset_date_5" onclick="toggleOnsetUnknown(this)">時期不詳</button>
+                                    </div>
+                                </div>
+                                <div class="onset-field" data-field="6" style="display:none;">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <input type="date" name="onset_date_6" id="onset_date_6" class="form-control" style="max-width:200px;" value="{{ form.onset_date_6.value|default:'' }}">
+                                        <button type="button" class="btn btn-outline-secondary btn-sm onset-unknown-btn" data-target="onset_date_6" onclick="toggleOnsetUnknown(this)">時期不詳</button>
+                                    </div>
+                                </div>
                             </div>
                             <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 mb-3">
                                 <label class="form-label">既往歴</label>
@@ -831,15 +861,15 @@ button[name="action"][value="save"]:hover {
                             <!-- あり/なし選択ボタン -->
                             <div class="mb-3">
                                 <div class="btn-group" role="group" style="min-width: 300px;">
-                                    <input type="radio" name="special_medical_treatment_status" value="available" class="btn-check" id="medical_status_available" onchange="handleMedicalTreatmentStatus(this)">
+                                    <input type="radio" name="special_medical_treatment_status" value="available" class="btn-check" id="medical_status_available" onchange="handleMedicalTreatmentStatus(this)" {% if assessment.health_status.special_medical_treatment_status == 'available' %}checked{% endif %}>
                                     <label class="btn btn-outline-secondary" for="medical_status_available" data-category="negative" style="min-width: 150px; background-color: white;">あり</label>
-                                    <input type="radio" name="special_medical_treatment_status" value="none" class="btn-check" id="medical_status_none" onchange="handleMedicalTreatmentStatus(this)">
+                                    <input type="radio" name="special_medical_treatment_status" value="none" class="btn-check" id="medical_status_none" onchange="handleMedicalTreatmentStatus(this)" {% if assessment.health_status.special_medical_treatment_status == 'none' %}checked{% endif %}>
                                     <label class="btn btn-outline-secondary" for="medical_status_none" data-category="positive" style="min-width: 150px; background-color: white;">なし</label>
                                 </div>
                             </div>
 
                             <!-- 詳細チェックボックス（ありが選択された場合のみ表示） -->
-                            <div id="medical_treatment_details" class="border rounded bg-light p-3" style="border: 1px solid #dee2e6; display: none;">
+                            <div id="medical_treatment_details" class="border rounded bg-light p-3" style="border: 1px solid #dee2e6; display: {% if assessment.health_status.special_medical_treatment_status == 'available' %}block{% else %}none{% endif %};">
                                 <div class="row g-2">
                         <div class="col-xl-3 col-lg-4 col-md-4 col-sm-6">
                             <div class="form-check">
@@ -3169,10 +3199,10 @@ button[name="action"][value="save"]:hover {
                             <label class="form-label fw-bold">就寝環境</label>
                             <div class="btn-group w-100" role="group">
                                 <input type="radio" name="sleeping_arrangement" value="tatami_floor" class="btn-check" id="tatami_floor" onchange="toggleOtherDetail(this, 'other_sleeping_detail')" {% if assessment.living_situation.sleeping_arrangement == 'tatami_floor' %}checked{% endif %}>
-                                <label class="btn btn-outline-secondary" for="tatami_floor" data-category="neutral" style="font-size: 0.8rem; background-color: white;">畳・床</label>
+                                <label class="btn btn-outline-secondary" for="tatami_floor" data-category="negative" style="font-size: 0.8rem; background-color: white;">畳・床</label>
 
                                 <input type="radio" name="sleeping_arrangement" value="regular_bed" class="btn-check" id="regular_bed" onchange="toggleOtherDetail(this, 'other_sleeping_detail')" {% if assessment.living_situation.sleeping_arrangement == 'regular_bed' %}checked{% endif %}>
-                                <label class="btn btn-outline-secondary" for="regular_bed" data-category="neutral" style="font-size: 0.8rem; background-color: white;">ベッド</label>
+                                <label class="btn btn-outline-secondary" for="regular_bed" data-category="positive" style="font-size: 0.8rem; background-color: white;">ベッド</label>
 
                                 <input type="radio" name="sleeping_arrangement" value="care_bed" class="btn-check" id="care_bed" onchange="toggleOtherDetail(this, 'other_sleeping_detail')" {% if assessment.living_situation.sleeping_arrangement == 'care_bed' %}checked{% endif %}>
                                 <label class="btn btn-outline-secondary" for="care_bed" data-category="positive" style="font-size: 0.8rem; background-color: white;">介護用ベッド</label>
@@ -3499,29 +3529,10 @@ document.addEventListener('DOMContentLoaded', function() {
     {% if assessment.health_status.special_medical_treatment %}
     const savedTreatments = {{ assessment.health_status.special_medical_treatment|safe }};
     if (Array.isArray(savedTreatments)) {
-        // 保存されたデータに基づいてあり/なしを設定
-        const hasTreatment = savedTreatments.length > 0 && savedTreatments[0] !== 'none';
-        if (hasTreatment) {
-            // あり を選択
-            const availableRadio = document.getElementById('medical_status_available');
-            if (availableRadio) {
-                availableRadio.checked = true;
-                document.getElementById('medical_treatment_details').style.display = 'block';
-            }
-            // チェックボックスを設定
-            savedTreatments.forEach(function(treatment) {
-                const checkbox = document.querySelector(`input[name="special_medical_treatment"][value="${treatment}"]`);
-                if (checkbox) {
-                    checkbox.checked = true;
-                }
-            });
-        } else {
-            // なし を選択
-            const noneRadio = document.getElementById('medical_status_none');
-            if (noneRadio) {
-                noneRadio.checked = true;
-            }
-        }
+        savedTreatments.forEach(function(treatment) {
+            const checkbox = document.querySelector('input[name="special_medical_treatment"][value="' + treatment + '"]');
+            if (checkbox) checkbox.checked = true;
+        });
     }
     {% endif %}
 
@@ -3611,10 +3622,8 @@ document.addEventListener('DOMContentLoaded', function() {
         for (let i = 1; i <= 6; i++) {
             const currentField = document.querySelector('.disease-field[data-field="' + i + '"]');
             if (currentField && currentField.value.trim() !== '' && i < 6) {
-                // 次のフィールドを表示
                 const nextDiseaseField = document.querySelector('.disease-field[data-field="' + (i + 1) + '"]');
                 const nextOnsetField = document.querySelector('.onset-field[data-field="' + (i + 1) + '"]');
-
                 if (nextDiseaseField && nextOnsetField) {
                     nextDiseaseField.style.display = 'block';
                     nextOnsetField.style.display = 'block';
@@ -3630,12 +3639,9 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.disease-field').forEach((field) => {
         field.addEventListener('input', function() {
             const fieldNumber = parseInt(this.getAttribute('data-field'));
-
             if (this.value.trim() !== '' && fieldNumber < 6) {
-                // 対応する発症日フィールドと次の疾患名・発症日フィールドを表示
                 const nextDiseaseField = document.querySelector('.disease-field[data-field="' + (fieldNumber + 1) + '"]');
                 const nextOnsetField = document.querySelector('.onset-field[data-field="' + (fieldNumber + 1) + '"]');
-
                 if (nextDiseaseField && nextOnsetField) {
                     nextDiseaseField.style.display = 'block';
                     nextOnsetField.style.display = 'block';
@@ -3643,6 +3649,26 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+
+    // 時期不詳ボタン
+    window.toggleOnsetUnknown = function(btn) {
+        var targetId = btn.getAttribute('data-target');
+        var input = document.getElementById(targetId);
+        if (!input) return;
+        var isActive = btn.classList.contains('active');
+        if (isActive) {
+            btn.classList.remove('active', 'btn-secondary');
+            btn.classList.add('btn-outline-secondary');
+            input.disabled = false;
+            input.style.opacity = '';
+        } else {
+            btn.classList.add('active', 'btn-secondary');
+            btn.classList.remove('btn-outline-secondary');
+            input.value = '';
+            input.disabled = true;
+            input.style.opacity = '0.4';
+        }
+    };
 
 
     // ページロード時に「その他」フィールドの表示状態をチェック
