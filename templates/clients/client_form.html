@@ -616,21 +616,12 @@
                 </div>
 
                 <div id="disability_welfare_period_row" style="display: {% if form.disability_welfare.value == 'yes' %}block{% else %}none{% endif %};">
-                    <!-- 注意喚起 -->
-                    <div class="row g-3 mb-1">
-                        <div class="col-xl-5 col-lg-5 col-md-6 col-sm-6"></div>
-                        <div class="col">
-                            <div class="alert alert-warning py-1 px-2 mb-0" style="font-size: 0.8rem;">
-                                <i class="fas fa-exclamation-triangle me-1"></i>
-                                <strong>支給決定期間</strong>はサービス利用の有効期間です。障害支援区分の<strong>認定期間とは異なります</strong>のでご注意ください。
-                            </div>
-                        </div>
-                    </div>
                     <!-- 支給決定期間 -->
                     <div class="row g-3 mb-2 justify-content-end">
-                        <div class="col-12 text-end mb-n2 mt-3 pe-4"><span class="small text-muted fw-bold" style="color: #6c757d;">▼ 支給決定期間</span></div>
-
                         <div class="col-xl-4 col-lg-4 col-md-4 col-sm-6">
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <span class="small text-muted fw-bold">▼ 支給決定期間</span>
+                            </div>
                             <div class="d-flex align-items-center gap-2 mb-2">
                                 <label class="form-label mb-0">開始日</label>
                                 <div class="birth-era-toggle" title="和暦 / 西暦を切り替え">
@@ -650,12 +641,13 @@
                                 <small id="disabilityWelfareDecisionStart_wareki_preview" style="font-size:0.75em; display:block; margin-top:2px;"></small>
                             </div>
                         </div>
-                        
-                        <div class="col-auto d-flex align-items-center justify-content-center text-muted" style="padding-top: 35px;">
+
+                        <div class="col-auto d-flex align-items-center justify-content-center text-muted" style="padding-top: 50px;">
                             〜
                         </div>
-                        
+
                         <div class="col-xl-4 col-lg-4 col-md-4 col-sm-6">
+                            <div style="height:21px; margin-bottom:4px;"></div>
                             <div class="d-flex align-items-center gap-2 mb-2">
                                 <label class="form-label mb-0">終了日（自動）</label>
                             </div>
@@ -668,6 +660,15 @@
                                     placeholder="例: 令和7年3月31日" autocomplete="off"
                                     oninput="syncDateFromWareki('disabilityWelfareDecisionEnd', 'disability_welfare_decision_end')">
                                 <small id="disabilityWelfareDecisionEnd_wareki_preview" style="font-size:0.75em; display:block; margin-top:2px;"></small>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- 注意喚起 -->
+                    <div class="row g-3 mt-1">
+                        <div class="col-12">
+                            <div class="alert alert-warning py-1 px-2 mb-0" style="font-size: 0.8rem;">
+                                <i class="fas fa-exclamation-triangle me-1"></i>
+                                <strong>支給決定期間</strong>はサービス利用の有効期間です。障害支援区分の<strong>認定期間とは異なります</strong>のでご注意ください。
                             </div>
                         </div>
                     </div>
@@ -921,7 +922,7 @@ function autoFillWelfareMedicalEnd() {
 
                 <div class="row g-3 mb-3 align-items-center">
                     <div class="col-xl-5 col-lg-5 col-md-6 col-sm-6">
-                        <label class="form-label mb-0 fw-bold">国民健康保険限度額適用・標準負担額減額認定証 <button type="button" class="btn btn-link p-0 ms-1 align-baseline text-secondary opacity-50" onclick="showCertInfo('nhi_limit_cert')"><i class="fas fa-info-circle"></i></button></label>
+                        <label class="form-label mb-0 fw-bold" style="font-size:clamp(0.72rem, 1.5vw, 0.95rem); white-space:nowrap;">国民健康保険限度額適用・標準負担額減額認定証 <button type="button" class="btn btn-link p-0 ms-1 align-baseline text-secondary opacity-50" onclick="showCertInfo('nhi_limit_cert')"><i class="fas fa-info-circle"></i></button></label>
                     </div>
                     <div class="col">
                         <div class="btn-group w-100" role="group">
@@ -1503,15 +1504,17 @@ function toggleDisabilityWelfarePeriod() {
     const isYes = document.getElementById('disability_welfare_yes').checked;
     row.style.display = isYes ? 'block' : 'none';
     if (!isYes) {
-        ['disability_welfare_decision_start','disability_welfare_decision_end'].forEach(function(id) {
+        ['disability_welfare_cert_start','disability_welfare_cert_end',
+         'disability_welfare_decision_start','disability_welfare_decision_end'].forEach(function(id) {
             const el = document.getElementById(id);
-            el.value = '';
-            el.dispatchEvent(new Event('change', { bubbles: true }));
+            if (el) { el.value = ''; el.dispatchEvent(new Event('change', { bubbles: true })); }
         });
-        ['disabilityWelfareDecisionStart_wareki_text','disabilityWelfareDecisionEnd_wareki_text'].forEach(function(id) {
+        ['disabilityWelfareCertStart_wareki_text','disabilityWelfareCertEnd_wareki_text',
+         'disabilityWelfareDecisionStart_wareki_text','disabilityWelfareDecisionEnd_wareki_text'].forEach(function(id) {
             const el = document.getElementById(id); if (el) el.value = '';
         });
-        ['disabilityWelfareDecisionStart_wareki_preview','disabilityWelfareDecisionEnd_wareki_preview'].forEach(function(id) {
+        ['disabilityWelfareCertStart_wareki_preview','disabilityWelfareCertEnd_wareki_preview',
+         'disabilityWelfareDecisionStart_wareki_preview','disabilityWelfareDecisionEnd_wareki_preview'].forEach(function(id) {
             const el = document.getElementById(id); if (el) el.textContent = '';
         });
     }
@@ -1815,6 +1818,8 @@ function autoFillLimitCertEnd() {
 
         // 各フィールドのhiddenId をdata属性から取得（または固定マップ）
         var hiddenMap = {
+            disabilityWelfareCertStart: 'disability_welfare_cert_start',
+            disabilityWelfareCertEnd: 'disability_welfare_cert_end',
             disabilityWelfareDecisionStart: 'disability_welfare_decision_start',
             disabilityWelfareDecisionEnd: 'disability_welfare_decision_end',
             specificMedicalStart: 'specific_medical_start',
@@ -1855,6 +1860,22 @@ function autoFillLimitCertEnd() {
 
     // 介護保険負担限度額認定証用の統合トグルJS
     
+    window.switchDisabilityWelfareCertEra = function(mode) {
+        var btnW = document.getElementById('disabilityWelfareCertCombined_era_western');
+        var btnJ = document.getElementById('disabilityWelfareCertCombined_era_japanese');
+        if (mode === 'western') {
+            if (btnW) btnW.classList.add('active');
+            if (btnJ) btnJ.classList.remove('active');
+        } else {
+            if (btnJ) btnJ.classList.add('active');
+            if (btnW) btnW.classList.remove('active');
+        }
+        if (typeof window.switchDateEra === 'function') {
+            window.switchDateEra('disabilityWelfareCertStart', mode);
+            window.switchDateEra('disabilityWelfareCertEnd', mode);
+        }
+    };
+
     window.switchDisabilityWelfareDecisionEra = function(mode) {
         var btnW = document.getElementById('disabilityWelfareDecisionCombined_era_western');
         var btnJ = document.getElementById('disabilityWelfareDecisionCombined_era_japanese');
@@ -1950,6 +1971,8 @@ function autoFillLimitCertEnd() {
 
         // 認定日等の初期化処理
         var fields = [
+            { prefix: 'disabilityWelfareCertStart',     hiddenId: 'disability_welfare_cert_start' },
+            { prefix: 'disabilityWelfareCertEnd',       hiddenId: 'disability_welfare_cert_end' },
             { prefix: 'disabilityWelfareDecisionStart', hiddenId: 'disability_welfare_decision_start' },
             { prefix: 'disabilityWelfareDecisionEnd',   hiddenId: 'disability_welfare_decision_end' },
             { prefix: 'specificMedicalStart', hiddenId: 'specific_medical_start' },
