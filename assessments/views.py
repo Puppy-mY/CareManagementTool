@@ -1294,13 +1294,14 @@ def generate_assessment_excel(assessment, request=None):
         import tempfile
         import shutil
 
-        # 一時ファイルを作成
+        # 一時ファイルを作成（読み込み用 .xlsm と 書き出し用 .xlsx の2つ）
         with tempfile.NamedTemporaryFile(suffix=".xlsm", delete=False) as temp_file:
             temp_filepath = temp_file.name
+        with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as out_file:
+            out_filepath = out_file.name
 
         # ベースファイルのコピー
         if os.path.exists(existing_file_path):
-            # 既にファイルが存在する場合、それを一時ファイルにコピーして更新のベースにする
             shutil.copy2(existing_file_path, temp_filepath)
             print(f"INFO: Using existing file as template: {existing_file_path}")
         else:
@@ -1310,9 +1311,9 @@ def generate_assessment_excel(assessment, request=None):
             shutil.copy2(default_template_path, temp_filepath)
             print(f"INFO: Using default template: {default_template_path}")
 
-        # openpyxlでVBAマクロを保持したまま開く
+        # openpyxlで開く（VBAは保持しないがLinux/PythonAnywhereで確実に動作する）
         try:
-            workbook = load_workbook(temp_filepath, keep_vba=True)
+            workbook = load_workbook(temp_filepath, keep_vba=False)
 
             # --- 和暦変換関数 ---
             def to_wareki(date):
@@ -3212,12 +3213,12 @@ def generate_assessment_excel(assessment, request=None):
             write_kyotaku("kyotaku_todoke_yobou")
 
             # Excelファイルを保存
-            workbook.save(temp_filepath)
+            # .xlsxとして保存（VBAなし・Linux環境でも確実に動作）
+            workbook.save(out_filepath)
 
             # --- ネットワークドライブへの自動保存ロジック ---
             try:
                 if os.path.exists(network_base_path):
-                    # サブフォルダが存在しない場合は作成（target_dirは関数冒頭で特定済み）
                     if not os.path.exists(target_dir):
                         try:
                             os.makedirs(target_dir)
@@ -3225,46 +3226,38 @@ def generate_assessment_excel(assessment, request=None):
                         except Exception as e:
                             print(f"WARNING: Failed to create directory {target_dir}: {str(e)}")
                             target_dir = network_base_path
-
-                    # target_pathを最終決定
                     target_path = os.path.join(target_dir, save_filename)
                     import shutil
-
-                    shutil.copy2(temp_filepath, target_path)
-                    print(f"SUCCESS: Network save (overwrite/create) completed to {target_path}")
+                    shutil.copy2(out_filepath, target_path)
+                    print(f"SUCCESS: Network save completed to {target_path}")
                 else:
                     print(f"WARNING: Network base path not found: {network_base_path}")
             except Exception as e:
                 print(f"WARNING: Network save failed: {str(e)}")
             # --------------------------------------------
 
-
             # HTTPレスポンスの準備
-            with open(temp_filepath, "rb") as f:
+            with open(out_filepath, "rb") as f:
                 excel_data = f.read()
 
             # 一時ファイルの削除
-            try:
-                os.unlink(temp_filepath)
-            except OSError:
-                pass
+            for _f in [temp_filepath, out_filepath]:
+                try:
+                    os.unlink(_f)
+                except OSError:
+                    pass
 
             response = HttpResponse(
                 excel_data,
-                content_type="application/vnd.ms-excel.sheet.macroEnabled.12",
+                content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             )
-            # クライアントのふりがな（苗字）と氏名を組み合わせてファイル名を生成
-            # 例: やまかわ_山川夏楓様.xlsm
             from urllib.parse import quote
 
             furigana = assessment.client.furigana or ""
-            # スペースで分割して最初の要素（苗字）を取得
             last_name_kana = furigana.split()[0] if furigana.split() else ""
-            # 名前から空白を削除
             full_name = (assessment.client.name or "").replace(" ", "").replace("　", "")
 
-            filename = f"{last_name_kana}_{full_name}様.xlsm"
-            # 日本語ファイル名を正しく扱うためのエンコーディング
+            filename = f"{last_name_kana}_{full_name}様.xlsx"
             response["Content-Disposition"] = (
                 f"attachment; filename*=UTF-8''{quote(filename)}"
             )
@@ -3283,11 +3276,13 @@ def generate_assessment_excel(assessment, request=None):
 
         finally:
             # エラー時も一時ファイルを確実に削除する
-            try:
-                if "temp_filepath" in locals() and os.path.exists(temp_filepath):
-                    os.unlink(temp_filepath)
-            except Exception:
-                pass
+            for _fp in ["temp_filepath", "out_filepath"]:
+                try:
+                    _path = locals().get(_fp)
+                    if _path and os.path.exists(_path):
+                        os.unlink(_path)
+                except Exception:
+                    pass
 
     except Exception as e:
         print(f"ERROR: Excel出力エラー: {str(e)}")
