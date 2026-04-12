@@ -770,16 +770,37 @@
                             el.value = '';
                             el.dispatchEvent(new Event('change', { bubbles: true }));
                         });
+                        ['specificMedicalStart_wareki_text','specificMedicalEnd_wareki_text'].forEach(function(id) {
+                            const el = document.getElementById(id); if (el) el.value = '';
+                        });
+                        ['specificMedicalStart_wareki_preview','specificMedicalEnd_wareki_preview'].forEach(function(id) {
+                            const el = document.getElementById(id); if (el) el.textContent = '';
+                        });
                     }
                 }
-                function autoFillSpecificMedicalEnd() {
+function autoFillSpecificMedicalEnd() {
                     const startVal = document.getElementById('specific_medical_start').value;
-                    if (!startVal) return;
+                    if (!startVal) {
+                        const endInput = document.getElementById('specific_medical_end');
+                        endInput.value = '';
+                        const warekiInput = document.getElementById('specificMedicalEnd_wareki_text');
+                        if (warekiInput) warekiInput.value = '';
+                        endInput.dispatchEvent(new Event('change', { bubbles: true }));
+                        return;
+                    }
                     const end = new Date(startVal);
                     end.setFullYear(end.getFullYear() + 1);
                     end.setDate(end.getDate() - 1);
                     const endInput = document.getElementById('specific_medical_end');
                     endInput.value = `${end.getFullYear()}-${String(end.getMonth()+1).padStart(2,'0')}-${String(end.getDate()).padStart(2,'0')}`;
+                    // 和暦テキストが存在すれば更新
+                    const warekiInput = document.getElementById('specificMedicalEnd_wareki_text');
+                    if (warekiInput && window.toWarekiText) {
+                        warekiInput.value = window.toWarekiText(endInput.value);
+                        if (typeof window.syncDateFromWareki === 'function') {
+                            window.syncDateFromWareki('specificMedicalEnd', 'specific_medical_end');
+                        }
+                    }
                     endInput.dispatchEvent(new Event('change', { bubbles: true }));
                 }
                 function toggleDiseaseOther(val) {
@@ -861,16 +882,37 @@
                             el.value = '';
                             el.dispatchEvent(new Event('change', { bubbles: true }));
                         });
+                        ['welfareMedicalStart_wareki_text','welfareMedicalEnd_wareki_text'].forEach(function(id) {
+                            const el = document.getElementById(id); if (el) el.value = '';
+                        });
+                        ['welfareMedicalStart_wareki_preview','welfareMedicalEnd_wareki_preview'].forEach(function(id) {
+                            const el = document.getElementById(id); if (el) el.textContent = '';
+                        });
                     }
                 }
-                function autoFillWelfareMedicalEnd() {
+function autoFillWelfareMedicalEnd() {
                     const startVal = document.getElementById('welfare_medical_start').value;
-                    if (!startVal) return;
+                    if (!startVal) {
+                        const endInput = document.getElementById('welfare_medical_end');
+                        endInput.value = '';
+                        const warekiInput = document.getElementById('welfareMedicalEnd_wareki_text');
+                        if (warekiInput) warekiInput.value = '';
+                        endInput.dispatchEvent(new Event('change', { bubbles: true }));
+                        return;
+                    }
                     const end = new Date(startVal);
                     end.setFullYear(end.getFullYear() + 1);
                     end.setDate(end.getDate() - 1);
                     const endInput = document.getElementById('welfare_medical_end');
                     endInput.value = `${end.getFullYear()}-${String(end.getMonth()+1).padStart(2,'0')}-${String(end.getDate()).padStart(2,'0')}`;
+                    // 和暦テキストが存在すれば更新
+                    const warekiInput = document.getElementById('welfareMedicalEnd_wareki_text');
+                    if (warekiInput && window.toWarekiText) {
+                        warekiInput.value = window.toWarekiText(endInput.value);
+                        if (typeof window.syncDateFromWareki === 'function') {
+                            window.syncDateFromWareki('welfareMedicalEnd', 'welfare_medical_end');
+                        }
+                    }
                     endInput.dispatchEvent(new Event('change', { bubbles: true }));
                 }
                 </script>
@@ -946,16 +988,37 @@
                             el.value = '';
                             el.dispatchEvent(new Event('change', { bubbles: true }));
                         });
+                        ['nhiLimitCertStart_wareki_text','nhiLimitCertEnd_wareki_text'].forEach(function(id) {
+                            const el = document.getElementById(id); if (el) el.value = '';
+                        });
+                        ['nhiLimitCertStart_wareki_preview','nhiLimitCertEnd_wareki_preview'].forEach(function(id) {
+                            const el = document.getElementById(id); if (el) el.textContent = '';
+                        });
                     }
                 }
-                function autoFillNhiLimitEnd() {
+function autoFillNhiLimitEnd() {
                     const startVal = document.getElementById('nhi_limit_cert_start').value;
-                    if (!startVal) return;
+                    if (!startVal) {
+                        const endInput = document.getElementById('nhi_limit_cert_end');
+                        endInput.value = '';
+                        const warekiInput = document.getElementById('nhiLimitCertEnd_wareki_text');
+                        if (warekiInput) warekiInput.value = '';
+                        endInput.dispatchEvent(new Event('change', { bubbles: true }));
+                        return;
+                    }
                     const end = new Date(startVal);
                     end.setFullYear(end.getFullYear() + 1);
                     end.setDate(end.getDate() - 1);
                     const endInput = document.getElementById('nhi_limit_cert_end');
                     endInput.value = `${end.getFullYear()}-${String(end.getMonth()+1).padStart(2,'0')}-${String(end.getDate()).padStart(2,'0')}`;
+                    // 和暦テキストが存在すれば更新
+                    const warekiInput = document.getElementById('nhiLimitCertEnd_wareki_text');
+                    if (warekiInput && window.toWarekiText) {
+                        warekiInput.value = window.toWarekiText(endInput.value);
+                        if (typeof window.syncDateFromWareki === 'function') {
+                            window.syncDateFromWareki('nhiLimitCertEnd', 'nhi_limit_cert_end');
+                        }
+                    }
                     endInput.dispatchEvent(new Event('change', { bubbles: true }));
                 }
                 </script>
@@ -1028,13 +1091,19 @@
             <div class="insurance-subsection">
                 <h6 class="text-muted mb-3 pb-1" style="border-bottom: 1px solid #dee2e6; width: 50%;"><i class="fas fa-user me-2"></i>家族1</h6>
                 <div class="row g-3 mb-3">
-                    <div class="col-xl-8 col-lg-7 col-md-7 col-sm-6">
+                    <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12">
                         <label for="{{ form.family_name1.id_for_label }}" class="form-label">氏名</label>
                         {% bootstrap_field form.family_name1 show_label=False %}
                     </div>
-                    <div class="col-xl-4 col-lg-5 col-md-5 col-sm-6">
+                    <div class="col-xl-3 col-lg-3 col-md-3 col-sm-6">
                         <label for="{{ form.family_relationship1.id_for_label }}" class="form-label">続柄</label>
                         {% bootstrap_field form.family_relationship1 show_label=False %}
+                    </div>
+                    <div class="col-xl-3 col-lg-3 col-md-3 col-sm-6">
+                        <label for="{{ form.family_relationship_detail1.id_for_label }}" class="form-label">続柄の詳細</label>
+                        <select name="{{ form.family_relationship_detail1.html_name }}" id="{{ form.family_relationship_detail1.id_for_label }}" class="form-select" data-current-val="{{ form.family_relationship_detail1.value|default:'' }}">
+                            <option value="">---------</option>
+                        </select>
                     </div>
                 </div>
                 <div class="row g-3 mb-3">
@@ -1076,13 +1145,19 @@
             <div class="insurance-subsection">
                 <h6 class="text-muted mb-3 pb-1" style="border-bottom: 1px solid #dee2e6; width: 50%;"><i class="fas fa-user me-2"></i>家族2</h6>
                 <div class="row g-3 mb-3">
-                    <div class="col-xl-8 col-lg-7 col-md-7 col-sm-6">
+                    <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12">
                         <label for="{{ form.family_name2.id_for_label }}" class="form-label">氏名</label>
                         {% bootstrap_field form.family_name2 show_label=False %}
                     </div>
-                    <div class="col-xl-4 col-lg-5 col-md-5 col-sm-6">
+                    <div class="col-xl-3 col-lg-3 col-md-3 col-sm-6">
                         <label for="{{ form.family_relationship2.id_for_label }}" class="form-label">続柄</label>
                         {% bootstrap_field form.family_relationship2 show_label=False %}
+                    </div>
+                    <div class="col-xl-3 col-lg-3 col-md-3 col-sm-6">
+                        <label for="{{ form.family_relationship_detail2.id_for_label }}" class="form-label">続柄の詳細</label>
+                        <select name="{{ form.family_relationship_detail2.html_name }}" id="{{ form.family_relationship_detail2.id_for_label }}" class="form-select" data-current-val="{{ form.family_relationship_detail2.value|default:'' }}">
+                            <option value="">---------</option>
+                        </select>
                     </div>
                 </div>
                 <div class="row g-3 mb-3">
@@ -1433,19 +1508,40 @@ function toggleDisabilityWelfarePeriod() {
             el.value = '';
             el.dispatchEvent(new Event('change', { bubbles: true }));
         });
+        ['disabilityWelfareDecisionStart_wareki_text','disabilityWelfareDecisionEnd_wareki_text'].forEach(function(id) {
+            const el = document.getElementById(id); if (el) el.value = '';
+        });
+        ['disabilityWelfareDecisionStart_wareki_preview','disabilityWelfareDecisionEnd_wareki_preview'].forEach(function(id) {
+            const el = document.getElementById(id); if (el) el.textContent = '';
+        });
     }
 }
 
 function autoFillDisabilityWelfareDecisionEnd() {
     const startVal = document.getElementById('disability_welfare_decision_start').value;
-    if (!startVal) return;
+    if (!startVal) {
+        const endInput = document.getElementById('disability_welfare_decision_end');
+        endInput.value = '';
+        const warekiInput = document.getElementById('disabilityWelfareDecisionEnd_wareki_text');
+        if (warekiInput) warekiInput.value = '';
+        endInput.dispatchEvent(new Event('change', { bubbles: true }));
+        return;
+    }
     const end = new Date(startVal);
     end.setFullYear(end.getFullYear() + 1);
     end.setDate(end.getDate() - 1);
     const endInput = document.getElementById('disability_welfare_decision_end');
     endInput.value = `${end.getFullYear()}-${String(end.getMonth()+1).padStart(2,'0')}-${String(end.getDate()).padStart(2,'0')}`;
+    // 和暦テキストが存在すれば更新
+    const warekiInput = document.getElementById('disabilityWelfareDecisionEnd_wareki_text');
+    if (warekiInput && window.toWarekiText) {
+        warekiInput.value = window.toWarekiText(endInput.value);
+        if (typeof window.syncDateFromWareki === 'function') {
+            window.syncDateFromWareki('disabilityWelfareDecisionEnd', 'disability_welfare_decision_end');
+        }
+    }
     endInput.dispatchEvent(new Event('change', { bubbles: true }));
-}
+                }
 
 // 介護保険負担限度額認定証 期間表示切替
 function toggleLimitCertPeriod() {
@@ -1474,7 +1570,14 @@ function toggleLimitCertPeriod() {
 // 開始日から終了日を自動計算（1年後の前日 = 翌年7月31日パターン）
 function autoFillLimitCertEnd() {
     const startVal = document.getElementById('limit_cert_start').value;
-    if (!startVal) return;
+    if (!startVal) {
+        const endInput = document.getElementById('limit_cert_end');
+        endInput.value = '';
+        const warekiInput = document.getElementById('limitCertEnd_wareki_text');
+        if (warekiInput) warekiInput.value = '';
+        endInput.dispatchEvent(new Event('change', { bubbles: true }));
+        return;
+    }
     const start = new Date(startVal);
     // 1年後の前日
     const end = new Date(start);
@@ -1692,6 +1795,7 @@ function autoFillLimitCertEnd() {
             preview.textContent = '→ 西暦 ' + wy + '年' + result.month + '月' + result.day + '日';
             preview.style.color = '#6c757d';
         } else {
+            hidden.value = '';
             if (text.length > 0) {
                 preview.textContent = '例: 令和6年4月1日　または　R6.4.1';
                 preview.style.color = '#aaa';
@@ -1869,6 +1973,71 @@ function autoFillLimitCertEnd() {
             }
         });
     });
+
+    // 続柄の分類連動ロジック
+    const RELATIONSHIP_DETAILS = {
+        'spouse': ['夫', '妻', '内縁', 'パートナー'],
+        'child': ['息子', '娘', '長男', '次男', '長女', '次女'],
+        'child_in_law': ['嫁', '婿', '長男の妻', '長女の夫'],
+        'parent': ['父', '母', '実父', '実母', '養父', '養母'],
+        'parent_in_law': ['義父', '義母', '舅', '姑'],
+        'sibling': ['兄', '姉', '弟', '妹', '義兄弟姉妹'],
+        'grandchild': ['孫', '孫息子', '孫娘'],
+        'other_relative': ['祖父母', 'おい', 'めい', 'いとこ', 'おじ', 'おば'],
+        'non_family': ['後見人', '身元保証人', '友人', '近隣住民', '同居人', '施設職員']
+    };
+
+    function updateRelationshipDetailOptions(mainSelectId, detailSelectId) {
+        const mainSelect = document.getElementById(mainSelectId);
+        const detailSelect = document.getElementById(detailSelectId);
+        if (!mainSelect || !detailSelect) return;
+
+        const currentDetailVal = detailSelect.dataset.currentVal || detailSelect.value;
+        const category = mainSelect.value;
+        const options = RELATIONSHIP_DETAILS[category] || [];
+
+        // Clear existing, keep the default empty option
+        detailSelect.innerHTML = '<option value="">---------</option>';
+        
+        options.forEach(opt => {
+            const optionEl = document.createElement('option');
+            optionEl.value = opt;
+            optionEl.textContent = opt;
+            if (opt === currentDetailVal) {
+                optionEl.selected = true;
+            }
+            detailSelect.appendChild(optionEl);
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const main1 = document.getElementById('id_family_relationship1');
+        const main2 = document.getElementById('id_family_relationship2');
+
+        if (main1) {
+            main1.addEventListener('change', () => {
+                const detail1 = document.getElementById('id_family_relationship_detail1');
+                if (detail1) {
+                    detail1.dataset.currentVal = ''; 
+                    detail1.value = '';
+                }
+                updateRelationshipDetailOptions('id_family_relationship1', 'id_family_relationship_detail1');
+            });
+            updateRelationshipDetailOptions('id_family_relationship1', 'id_family_relationship_detail1');
+        }
+        if (main2) {
+            main2.addEventListener('change', () => {
+                const detail2 = document.getElementById('id_family_relationship_detail2');
+                if (detail2) {
+                    detail2.dataset.currentVal = ''; 
+                    detail2.value = '';
+                }
+                updateRelationshipDetailOptions('id_family_relationship2', 'id_family_relationship_detail2');
+            });
+            updateRelationshipDetailOptions('id_family_relationship2', 'id_family_relationship_detail2');
+        }
+    });
+
 })();
 </script>
 
