@@ -1291,6 +1291,7 @@ def generate_assessment_excel(assessment, request=None):
             settings.BASE_DIR, "templates", "forms", "assessment_sheet_genpon.xlsm"
         )
         
+        import xlwings as xw
         import tempfile
         import shutil
 
@@ -1300,47 +1301,22 @@ def generate_assessment_excel(assessment, request=None):
 
         # ベースファイルのコピー
         if os.path.exists(existing_file_path):
+            # 既にファイルが存在する場合、それを一時ファイルにコピーして更新のベースにする
             shutil.copy2(existing_file_path, temp_filepath)
             print(f"INFO: Using existing file as template: {existing_file_path}")
         else:
+            # 存在しない場合は原本テンプレートを使用
             if not os.path.exists(default_template_path):
                 raise Exception(f"Excelテンプレートが見つかりません: {default_template_path}")
             shutil.copy2(default_template_path, temp_filepath)
             print(f"INFO: Using default template: {default_template_path}")
 
-        # openpyxl でワークブックを読み込み（マクロ付きファイルに対応）
-        workbook = load_workbook(temp_filepath, keep_vba=True)
+        # Excelアプリケーションをバックグラウンドで起動
+        app = xw.App(visible=False, add_book=False)
+        app.display_alerts = False
 
-        # シート名 → ワークシートオブジェクト取得ヘルパー
-        def get_sheet(name):
-            if name in workbook.sheetnames:
-                return workbook[name]
-            return None
-
-        # セルへの書き込みヘルパー（openpyxl の MergedCell には直接書き込めないため上位セルに書く）
-        def write_cell(ws, cell_ref, value):
-            """openpyxl 用セル書き込み。結合セルの場合は左上セルに書き込む。"""
-            if not cell_ref or ws is None:
-                return
-            if value is None:
-                value = ""
-            if isinstance(value, list):
-                value = "、".join([str(v) for v in value])
-            try:
-                cell = ws[cell_ref]
-                if isinstance(cell, MergedCell):
-                    # 結合セルの左上セルを特定して書き込む
-                    for merged_range in ws.merged_cells.ranges:
-                        if cell_ref in merged_range:
-                            top_left = ws.cell(merged_range.min_row, merged_range.min_col)
-                            top_left.value = value
-                            return
-                else:
-                    cell.value = value
-            except Exception as e:
-                print(f"DEBUG: セル {cell_ref} への書き込みエラー (シート: {ws.title}, 値: {value}): {str(e)}")
-
-
+        try:
+            workbook = app.books.open(temp_filepath)
 
             # --- 和暦変換関数 ---
             def to_wareki(date):
@@ -1637,13 +1613,13 @@ def generate_assessment_excel(assessment, request=None):
 
             # --- アセスメントシートのワークシート設定と書き込み関数 ---
             assessment_sheet_name = coords.get("sheet_name", "（最新）アセスメントシート")
-            worksheet = get_sheet(assessment_sheet_name)
+            worksheet = workbook.sheets[assessment_sheet_name]
 
             # 既存データをクリア（空白データが前回の値を残さないよう）
             for _key, _cell_ref in coords.items():
                 if _key != "sheet_name" and _cell_ref:
                     try:
-                        write_cell(worksheet, _cell_ref, "")
+                        worksheet.range(_cell_ref).value = ""
                     except Exception:
                         pass
 
@@ -1653,20 +1629,20 @@ def generate_assessment_excel(assessment, request=None):
                         if value is None: value = ""
                         if isinstance(value, list):
                             value = "、".join([str(v) for v in value])
-                        write_cell(worksheet, cell_ref, value)
+                        worksheet.range(cell_ref).value = value
                 except Exception as e:
                     print(f"DEBUG: セル {cell_ref} への書き込みエラー (シート: {assessment_sheet_name}, 値: {value}): {str(e)}")
 
             def safe_write_wareki_cell(cell_ref, value):
-                """和暦文字列を書き込む（openpyxlはテキストとして書き込む）"""
+                """和暦文字列を書き込む（セル書式をテキストに強制してから書き込み）"""
                 try:
                     if cell_ref:
                         if value is None: value = ""
-                        write_cell(worksheet, cell_ref, str(value))
+                        worksheet.range(cell_ref).number_format = "@"
+                        worksheet.range(cell_ref).value = str(value)
                 except Exception as e:
                     print(f"DEBUG: セル {cell_ref} への和暦書き込みエラー (値: {value}): {str(e)}")
 
-            
             # クライアント基本情報
             safe_write_cell(coords.get("client_name"), assessment.client.name)
             safe_write_cell(coords.get("client_furigana"), assessment.client.furigana)
@@ -2569,15 +2545,15 @@ def generate_assessment_excel(assessment, request=None):
             # --- 救急医療情報シートへの書き込み ---
             ei_coords = coordinates.get("emergency_info", {})
             ei_sheet_name = ei_coords.get("sheet_name", "救急医療情報")
-            all_sheet_names = workbook.sheetnames
+            all_sheet_names = [s.name for s in workbook.sheets]
             if ei_sheet_name in all_sheet_names:
-                ei_sheet = get_sheet(ei_sheet_name)
+                ei_sheet = workbook.sheets[ei_sheet_name]
 
                 # 既存データをクリア（空白データが前回の値を残さないよう）
                 for _key, _cell_ref in ei_coords.items():
                     if _key != "sheet_name" and _cell_ref:
                         try:
-                            write_cell(ei_sheet, _cell_ref, "")
+                            ei_sheet.range(_cell_ref).value = ""
                         except Exception:
                             pass
 
@@ -2585,7 +2561,7 @@ def generate_assessment_excel(assessment, request=None):
                     try:
                         if cell_ref:
                             if value is None: value = ""
-                            write_cell(ei_sheet, cell_ref, value)
+                            ei_sheet.range(cell_ref).value = value
                     except Exception as e:
                         print(f"DEBUG: 救急医療情報 セル {cell_ref} 書き込みエラー: {str(e)}")
 
@@ -2593,10 +2569,12 @@ def generate_assessment_excel(assessment, request=None):
                     try:
                         if cell_ref:
                             if value is None: value = ""
-                            write_cell(ei_sheet, cell_ref, str(value))
+                            ei_sheet.range(cell_ref).number_format = "@"
+                            # 均等割り付けを左揃えに変更してから書き込み
+                            ei_sheet.range(cell_ref).api.HorizontalAlignment = -4131  # xlLeft
+                            ei_sheet.range(cell_ref).value = str(value)
                     except Exception as e:
                         print(f"DEBUG: 救急医療情報 セル {cell_ref} 和暦書き込みエラー: {str(e)}")
-
 
                 safe_write_ei(ei_coords.get("client_name"), assessment.client.name)
                 safe_write_ei(ei_coords.get("client_furigana"), assessment.client.furigana)
@@ -2682,20 +2660,21 @@ def generate_assessment_excel(assessment, request=None):
             # --- 医療・介護連携シートへの書き込み ---
             mcc_coords = coordinates.get("medical_care_coordination", {})
             mcc_sheet_name = mcc_coords.get("sheet_name", "医療・介護連携シート")
-            if mcc_sheet_name in workbook.sheetnames:
-                mcc_sheet = get_sheet(mcc_sheet_name)
+            if mcc_sheet_name in [s.name for s in workbook.sheets]:
+                mcc_sheet = workbook.sheets[mcc_sheet_name]
 
                 def safe_write_mcc(cell_ref, value):
                     try:
                         if cell_ref and value is not None:
-                            write_cell(mcc_sheet, cell_ref, value)
+                            mcc_sheet.range(cell_ref).value = value
                     except Exception as e:
                         print(f"DEBUG: {mcc_sheet_name} セル {cell_ref} 書き込みエラー: {e}")
 
                 def safe_write_mcc_wareki(cell_ref, value):
                     try:
                         if cell_ref and value is not None:
-                                                        write_cell(mcc_sheet, cell_ref, str(value))
+                            mcc_sheet.range(cell_ref).number_format = "@"
+                            mcc_sheet.range(cell_ref).value = str(value)
                     except Exception as e:
                         print(f"DEBUG: {mcc_sheet_name} セル {cell_ref} 和暦書き込みエラー: {e}")
 
@@ -2713,20 +2692,21 @@ def generate_assessment_excel(assessment, request=None):
             # --- (貼付作成)入院時情報提供シートへの書き込み ---
             hai_coords = coordinates.get("hospital_admission_info", {})
             hai_sheet_name = hai_coords.get("sheet_name", "(貼付作成)入院時情報提供")
-            if hai_sheet_name in workbook.sheetnames:
-                hai_sheet = get_sheet(hai_sheet_name)
+            if hai_sheet_name in [s.name for s in workbook.sheets]:
+                hai_sheet = workbook.sheets[hai_sheet_name]
 
                 def safe_write_hai(cell_ref, value):
                     try:
                         if cell_ref and value is not None:
-                            write_cell(hai_sheet, cell_ref, value)
+                            hai_sheet.range(cell_ref).value = value
                     except Exception as e:
                         print(f"DEBUG: {hai_sheet_name} セル {cell_ref} 書き込みエラー: {e}")
 
                 def safe_write_hai_wareki(cell_ref, value):
                     try:
                         if cell_ref and value is not None:
-                                                        write_cell(hai_sheet, cell_ref, str(value))
+                            hai_sheet.range(cell_ref).number_format = "@"
+                            hai_sheet.range(cell_ref).value = str(value)
                     except Exception as e:
                         print(f"DEBUG: {hai_sheet_name} セル {cell_ref} 和暦書き込みエラー: {e}")
 
@@ -2868,20 +2848,21 @@ def generate_assessment_excel(assessment, request=None):
             # --- (手入力)入院時情報提供シートへの書き込み ---
             hai_m_coords = coordinates.get("hospital_admission_info_manual", {})
             hai_m_sheet_name = hai_m_coords.get("sheet_name", "(手入力)入院時情報提供")
-            if hai_m_sheet_name in workbook.sheetnames:
-                hai_m_sheet = get_sheet(hai_m_sheet_name)
+            if hai_m_sheet_name in [s.name for s in workbook.sheets]:
+                hai_m_sheet = workbook.sheets[hai_m_sheet_name]
 
                 def safe_write_haim(cell_ref, value):
                     try:
                         if cell_ref and value is not None:
-                            write_cell(hai_m_sheet, cell_ref, value)
+                            hai_m_sheet.range(cell_ref).value = value
                     except Exception as e:
                         print(f"DEBUG: {hai_m_sheet_name} セル {cell_ref} 書き込みエラー: {e}")
 
                 def safe_write_haim_wareki(cell_ref, value):
                     try:
                         if cell_ref and value is not None:
-                                                        write_cell(hai_m_sheet, cell_ref, str(value))
+                            hai_m_sheet.range(cell_ref).number_format = "@"
+                            hai_m_sheet.range(cell_ref).value = str(value)
                     except Exception as e:
                         print(f"DEBUG: {hai_m_sheet_name} セル {cell_ref} 和暦書き込みエラー: {e}")
 
@@ -2928,20 +2909,21 @@ def generate_assessment_excel(assessment, request=None):
             # --- 更新・新規申請書シートへの書き込み ---
             ks_coords = coordinates.get("koshin_shinki_shinsei", {})
             ks_sheet_name = ks_coords.get("sheet_name", "更新・新規申請書")
-            if ks_sheet_name in workbook.sheetnames:
-                ks_sheet = get_sheet(ks_sheet_name)
+            if ks_sheet_name in [s.name for s in workbook.sheets]:
+                ks_sheet = workbook.sheets[ks_sheet_name]
 
                 def safe_write_ks(cell_ref, value):
                     try:
                         if cell_ref and value is not None:
-                            write_cell(ks_sheet, cell_ref, value)
+                            ks_sheet.range(cell_ref).value = value
                     except Exception as e:
                         print(f"DEBUG: 更新・新規申請書 セル {cell_ref} 書き込みエラー: {e}")
 
                 def safe_write_ks_wareki(cell_ref, value):
                     try:
                         if cell_ref and value is not None:
-                                                        write_cell(ks_sheet, cell_ref, str(value))
+                            ks_sheet.range(cell_ref).number_format = "@"
+                            ks_sheet.range(cell_ref).value = str(value)
                     except Exception as e:
                         print(f"DEBUG: 更新・新規申請書 セル {cell_ref} 和暦書き込みエラー: {e}")
 
@@ -2994,20 +2976,21 @@ def generate_assessment_excel(assessment, request=None):
             # --- 区分変更申請書シートへの書き込み ---
             kb_coords = coordinates.get("kubun_henkou_shinsei", {})
             kb_sheet_name = kb_coords.get("sheet_name", "区分変更申請書")
-            if kb_sheet_name in workbook.sheetnames:
-                kb_sheet = get_sheet(kb_sheet_name)
+            if kb_sheet_name in [s.name for s in workbook.sheets]:
+                kb_sheet = workbook.sheets[kb_sheet_name]
 
                 def safe_write_kb(cell_ref, value):
                     if cell_ref:
                         try:
-                            write_cell(kb_sheet, cell_ref, value)
+                            kb_sheet.range(cell_ref).value = value
                         except Exception as e:
                             print(f"DEBUG: 区分変更申請書 セル {cell_ref} 書き込みエラー: {e}")
 
                 def safe_write_kb_wareki(cell_ref, value):
                     if cell_ref:
                         try:
-                                                        write_cell(kb_sheet, cell_ref, str(value))
+                            kb_sheet.range(cell_ref).number_format = "@"
+                            kb_sheet.range(cell_ref).value = str(value)
                         except Exception as e:
                             print(f"DEBUG: 区分変更申請書 セル {cell_ref} 和暦書き込みエラー: {e}")
 
@@ -3050,20 +3033,21 @@ def generate_assessment_excel(assessment, request=None):
             # --- 資料提供申請書シートへの書き込み ---
             st_coords = coordinates.get("shiryo_teikyou", {})
             st_sheet_name = st_coords.get("sheet_name", "資料提供申請書")
-            if st_sheet_name in workbook.sheetnames:
-                st_sheet = get_sheet(st_sheet_name)
+            if st_sheet_name in [s.name for s in workbook.sheets]:
+                st_sheet = workbook.sheets[st_sheet_name]
 
                 def safe_write_st(cell_ref, value):
                     if cell_ref:
                         try:
-                            write_cell(st_sheet, cell_ref, value)
+                            st_sheet.range(cell_ref).value = value
                         except Exception as e:
                             print(f"DEBUG: 資料提供申請書 セル {cell_ref} 書き込みエラー: {e}")
 
                 def safe_write_st_wareki(cell_ref, value):
                     if cell_ref:
                         try:
-                                                        write_cell(st_sheet, cell_ref, str(value))
+                            st_sheet.range(cell_ref).number_format = "@"
+                            st_sheet.range(cell_ref).value = str(value)
                         except Exception as e:
                             print(f"DEBUG: 資料提供申請書 セル {cell_ref} 和暦書き込みエラー: {e}")
 
@@ -3075,20 +3059,21 @@ def generate_assessment_excel(assessment, request=None):
             # --- 入退去連絡シートへの書き込み ---
             ntr_coords = coordinates.get("nyutaikyo_renraku", {})
             ntr_sheet_name = ntr_coords.get("sheet_name", "入退去連絡")
-            if ntr_sheet_name in workbook.sheetnames:
-                ntr_sheet = get_sheet(ntr_sheet_name)
+            if ntr_sheet_name in [s.name for s in workbook.sheets]:
+                ntr_sheet = workbook.sheets[ntr_sheet_name]
                 try:
-                    write_cell(ntr_sheet, ntr_coords.get("client_name"), client.name)
+                    ntr_sheet.range(ntr_coords.get("client_name")).value = client.name
                 except Exception as e:
                     print(f"DEBUG: 入退去連絡 セル {ntr_coords.get('client_name')} 書き込みエラー: {e}")
 
             # --- 確認書（原本）シートへの書き込み ---
             kg_coords = coordinates.get("kakuninsho_genpon", {})
             kg_sheet_name = kg_coords.get("sheet_name", "確認書（原本）")
-            if kg_sheet_name in workbook.sheetnames:
-                kg_sheet = get_sheet(kg_sheet_name)
+            if kg_sheet_name in [s.name for s in workbook.sheets]:
+                kg_sheet = workbook.sheets[kg_sheet_name]
                 try:
-                    write_cell(kg_sheet, kg_coords.get("certification_period_start"), to_wareki(client.certification_period_start) if client.certification_period_start else "")
+                    kg_sheet.range(kg_coords.get("certification_period_start")).number_format = "@"
+                    kg_sheet.range(kg_coords.get("certification_period_start")).value = to_wareki(client.certification_period_start) if client.certification_period_start else ""
                 except Exception as e:
                     print(f"DEBUG: 確認書（原本） セル {kg_coords.get('certification_period_start')} 書き込みエラー: {e}")
 
@@ -3096,22 +3081,22 @@ def generate_assessment_excel(assessment, request=None):
             for kakuninsho_key in ["kakuninsho_helper", "kakuninsho_day", "kakuninsho_fukushi"]:
                 kk_coords = coordinates.get(kakuninsho_key, {})
                 kk_sheet_name = kk_coords.get("sheet_name", "")
-                if kk_sheet_name and kk_sheet_name in workbook.sheetnames:
-                    kk_sheet = get_sheet(kk_sheet_name)
+                if kk_sheet_name and kk_sheet_name in [s.name for s in workbook.sheets]:
+                    kk_sheet = workbook.sheets[kk_sheet_name]
                     try:
-                        write_cell(kk_sheet, kk_coords.get("care_manager"), assessor_name)
-                        write_cell(kk_sheet, kk_coords.get("client_name"), client.name)
+                        kk_sheet.range(kk_coords.get("care_manager")).value = assessor_name
+                        kk_sheet.range(kk_coords.get("client_name")).value = client.name
                     except Exception as e:
                         print(f"DEBUG: {kk_sheet_name} 書き込みエラー: {e}")
 
             # --- モニタリングシートへの書き込み ---
             mon_coords = coordinates.get("monitoring_sheet", {})
             mon_sheet_name = mon_coords.get("sheet_name", "モニタリングシート")
-            if mon_sheet_name in workbook.sheetnames:
-                mon_sheet = get_sheet(mon_sheet_name)
+            if mon_sheet_name in [s.name for s in workbook.sheets]:
+                mon_sheet = workbook.sheets[mon_sheet_name]
                 try:
-                    write_cell(mon_sheet, mon_coords["client_name"], assessment.client.name)
-                    write_cell(mon_sheet, mon_coords["care_manager"], assessor_name)
+                    mon_sheet.range(mon_coords["client_name"]).value = assessment.client.name
+                    mon_sheet.range(mon_coords["care_manager"]).value = assessor_name
                 except Exception as e:
                     print(f"DEBUG: モニタリングシート 書き込みエラー: {e}")
 
@@ -3119,49 +3104,50 @@ def generate_assessment_excel(assessment, request=None):
             from django.conf import settings as dj_settings
             tk_coords = coordinates.get("tankai_annai", {})
             tk_sheet_name = tk_coords.get("sheet_name", "担会案内")
-            if tk_sheet_name in workbook.sheetnames:
-                tk_sheet = get_sheet(tk_sheet_name)
+            if tk_sheet_name in [s.name for s in workbook.sheets]:
+                tk_sheet = workbook.sheets[tk_sheet_name]
                 office_name = getattr(dj_settings, "OFFICE_NAME", "居宅介護支援事業所")
                 try:
-                    write_cell(tk_sheet, tk_coords["care_manager"], assessor_name)
-                    write_cell(tk_sheet, tk_coords["client_name"], assessment.client.name)
-                    write_cell(tk_sheet, tk_coords["office_name"], office_name)
+                    tk_sheet.range(tk_coords["care_manager"]).value = assessor_name
+                    tk_sheet.range(tk_coords["client_name"]).value = assessment.client.name
+                    tk_sheet.range(tk_coords["office_name"]).value = office_name
                 except Exception as e:
                     print(f"DEBUG: 担会案内 書き込みエラー: {e}")
 
             # --- チェックシートへの書き込み ---
             cs_coords = coordinates.get("check_sheet", {})
             cs_sheet_name = cs_coords.get("sheet_name", "チェックシート")
-            if cs_sheet_name in workbook.sheetnames:
-                cs_sheet = get_sheet(cs_sheet_name)
-                write_cell(cs_sheet, cs_coords["client_name"], assessment.client.name)
+            if cs_sheet_name in [s.name for s in workbook.sheets]:
+                cs_sheet = workbook.sheets[cs_sheet_name]
+                cs_sheet.range(cs_coords["client_name"]).value = assessment.client.name
 
             # --- HOMEシートへの書き込み ---
             home_coords = coordinates.get("home_sheet", {})
             home_sheet_name = home_coords.get("sheet_name", "HOME")
-            if home_sheet_name in workbook.sheetnames:
-                home_sheet = get_sheet(home_sheet_name)
-                write_cell(home_sheet, home_coords["client_name"], assessment.client.name)
+            if home_sheet_name in [s.name for s in workbook.sheets]:
+                home_sheet = workbook.sheets[home_sheet_name]
+                home_sheet.range(home_coords["client_name"]).value = assessment.client.name
 
             # --- 居宅届シートへの書き込み ---
             def write_kyotaku(sheet_key):
                 kt_coords = coordinates.get(sheet_key, {})
                 kt_sheet_name = kt_coords.get("sheet_name", "")
-                if not kt_sheet_name or kt_sheet_name not in workbook.sheetnames:
+                if not kt_sheet_name or kt_sheet_name not in [s.name for s in workbook.sheets]:
                     return
-                kt_sheet = get_sheet(kt_sheet_name)
+                kt_sheet = workbook.sheets[kt_sheet_name]
 
                 def sw(cell_ref, value):
                     try:
                         if cell_ref and value is not None:
-                            write_cell(kt_sheet, cell_ref, value)
+                            kt_sheet.range(cell_ref).value = value
                     except Exception as e:
                         print(f"DEBUG: {kt_sheet_name} セル {cell_ref} 書き込みエラー: {e}")
 
                 def sw_wareki(cell_ref, value):
                     try:
                         if cell_ref and value is not None:
-                                                        write_cell(kt_sheet, cell_ref, str(value))
+                            kt_sheet.range(cell_ref).number_format = "@"
+                            kt_sheet.range(cell_ref).value = str(value)
                     except Exception as e:
                         print(f"DEBUG: {kt_sheet_name} セル {cell_ref} 和暦書き込みエラー: {e}")
 
@@ -3176,7 +3162,7 @@ def generate_assessment_excel(assessment, request=None):
             write_kyotaku("kyotaku_todoke_yobou")
 
             # Excelファイルを保存
-            workbook.save(temp_filepath)
+            workbook.save()
 
             # --- ネットワークドライブへの自動保存ロジック ---
             try:
@@ -3201,6 +3187,10 @@ def generate_assessment_excel(assessment, request=None):
             except Exception as e:
                 print(f"WARNING: Network save failed: {str(e)}")
             # --------------------------------------------
+
+            workbook.close()
+            app.quit()
+
             # HTTPレスポンスの準備
             with open(temp_filepath, "rb") as f:
                 excel_data = f.read()
@@ -3242,6 +3232,17 @@ def generate_assessment_excel(assessment, request=None):
                 )
 
             return response
+
+        finally:
+            # エラー時も確実にExcelプロセスを終了する
+            try:
+                if "app" in locals():
+                    app.quit()
+                if "temp_filepath" in locals() and os.path.exists(temp_filepath):
+                    os.unlink(temp_filepath)
+            except Exception:
+                pass
+
     except Exception as e:
         print(f"ERROR: Excel出力エラー: {str(e)}")
         import traceback
