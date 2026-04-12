@@ -3386,7 +3386,7 @@ function exportAssessmentExcel() {
     if (form.checkValidity()) {
         const formData = new FormData(form);
         formData.append('action', 'excel');
-        handleExcelDownload(window.location.href, 'アセスメント.xlsx', formData);
+        handleExcelDownload(window.location.href, 'アセスメント.xlsm', formData);
     } else {
         form.reportValidity();
     }

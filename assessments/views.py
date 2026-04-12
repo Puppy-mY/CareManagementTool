@@ -1294,10 +1294,10 @@ def generate_assessment_excel(assessment, request=None):
         import tempfile
         import shutil
 
-        # 一時ファイルを作成（読み込み用 .xlsm と 書き出し用 .xlsx の2つ）
+        # 一時ファイルを作成（読み込み用・書き出し用ともに .xlsm）
         with tempfile.NamedTemporaryFile(suffix=".xlsm", delete=False) as temp_file:
             temp_filepath = temp_file.name
-        with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as out_file:
+        with tempfile.NamedTemporaryFile(suffix=".xlsm", delete=False) as out_file:
             out_filepath = out_file.name
 
         # ベースファイルのコピー
@@ -1311,9 +1311,9 @@ def generate_assessment_excel(assessment, request=None):
             shutil.copy2(default_template_path, temp_filepath)
             print(f"INFO: Using default template: {default_template_path}")
 
-        # openpyxlで開く（VBAは保持しないがLinux/PythonAnywhereで確実に動作する）
+        # openpyxlで開く（VBAを保持して .xlsm として出力）
         try:
-            workbook = load_workbook(temp_filepath, keep_vba=False)
+            workbook = load_workbook(temp_filepath, keep_vba=True)
 
             # --- 和暦変換関数 ---
             def to_wareki(date):
@@ -3212,8 +3212,7 @@ def generate_assessment_excel(assessment, request=None):
             write_kyotaku("kyotaku_todoke")
             write_kyotaku("kyotaku_todoke_yobou")
 
-            # Excelファイルを保存
-            # .xlsxとして保存（VBAなし・Linux環境でも確実に動作）
+            # Excelファイルを保存（VBA保持のため .xlsm として保存）
             workbook.save(out_filepath)
 
             # --- ネットワークドライブへの自動保存ロジック ---
@@ -3249,7 +3248,7 @@ def generate_assessment_excel(assessment, request=None):
 
             response = HttpResponse(
                 excel_data,
-                content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                content_type="application/vnd.ms-excel.sheet.macroEnabled.12",
             )
             from urllib.parse import quote
 
@@ -3257,7 +3256,7 @@ def generate_assessment_excel(assessment, request=None):
             last_name_kana = furigana.split()[0] if furigana.split() else ""
             full_name = (assessment.client.name or "").replace(" ", "").replace("　", "")
 
-            filename = f"{last_name_kana}_{full_name}様.xlsx"
+            filename = f"{last_name_kana}_{full_name}様.xlsm"
             response["Content-Disposition"] = (
                 f"attachment; filename*=UTF-8''{quote(filename)}"
             )
