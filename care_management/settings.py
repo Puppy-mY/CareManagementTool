@@ -76,6 +76,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "care_management.context_processors.app_version",
             ],
         },
     },
@@ -178,3 +179,18 @@ LOGGING = {
 # 事業所情報
 OFFICE_NAME = os.environ.get("OFFICE_NAME", "居宅介護支援事業所")
 OFFICE_NAME_FURIGANA = os.environ.get("OFFICE_NAME_FURIGANA", "")
+
+# アプリバージョン・更新情報
+APP_VERSION = "1.3.0"
+RELEASE_NOTES = [
+    {
+        "version": "1.3.0",
+        "date": "2026-04-12",
+        "title": "受給者証・認定証 期間入力の改善",
+        "items": [
+            "開始日を1文字でも削除すると終了日も自動でクリアされるよう修正",
+            "「なし」に切り替えた際に期間（開始日・終了日）が自動クリアされるよう修正",
+            "対象：障害福祉サービス受給者証・特定医療費受給者証・福祉医療費受給者証・国民健康保険限度額認定証・介護保険負担限度額認定証",
+        ],
+    },
+]
