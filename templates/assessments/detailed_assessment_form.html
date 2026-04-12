@@ -3386,7 +3386,7 @@ function exportAssessmentExcel() {
     if (form.checkValidity()) {
         const formData = new FormData(form);
         formData.append('action', 'excel');
-        handleExcelDownload(window.location.href, 'アセスメント.xlsm', formData);
+        handleExcelDownload(window.location.href, 'アセスメント.xlsx', formData);
     } else {
         form.reportValidity();
     }
@@ -4586,7 +4586,27 @@ document.addEventListener('DOMContentLoaded', function() {
             makeRadioToggleable(groupName);
         });
 
+        // 編集時：表示中のtextareaの高さを初期化
+        document.querySelectorAll('textarea').forEach(function(ta) {
+            if (ta.value && ta.offsetParent !== null) {
+                autoResizeTextarea(ta);
+            }
+        });
+
     }, 100);
+
+    // タブが開かれた時に、そのタブ内のtextareaを高さ初期化
+    document.querySelectorAll('[data-bs-toggle="tab"]').forEach(function(tab) {
+        tab.addEventListener('shown.bs.tab', function(e) {
+            var targetId = e.target.getAttribute('data-bs-target');
+            if (!targetId) return;
+            var pane = document.querySelector(targetId);
+            if (!pane) return;
+            pane.querySelectorAll('textarea').forEach(function(ta) {
+                if (ta.value) autoResizeTextarea(ta);
+            });
+        });
+    });
 
     // タブの色を設定（setTimeoutの外で即座に実行）
     // 現在のテーマを取得
