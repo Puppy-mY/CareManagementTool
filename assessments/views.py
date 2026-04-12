@@ -1311,9 +1311,9 @@ def generate_assessment_excel(assessment, request=None):
             shutil.copy2(default_template_path, temp_filepath)
             print(f"INFO: Using default template: {default_template_path}")
 
-        # openpyxlで開く（VBAを保持して .xlsm として出力）
+        # openpyxlで開く（keep_vba=Falseで安定書き込み、VBAは後から手動注入）
         try:
-            workbook = load_workbook(temp_filepath, keep_vba=True)
+            workbook = load_workbook(temp_filepath, keep_vba=False)
 
             # --- 和暦変換関数 ---
             def to_wareki(date):
@@ -3212,8 +3212,53 @@ def generate_assessment_excel(assessment, request=None):
             write_kyotaku("kyotaku_todoke")
             write_kyotaku("kyotaku_todoke_yobou")
 
-            # Excelファイルを保存（VBA保持のため .xlsm として保存）
-            workbook.save(out_filepath)
+            # openpyxlの出力をメモリに保存後、VBAを手動注入してxlsmを生成
+            import zipfile as _zf, io as _io
+            _xlsx_buf = _io.BytesIO()
+            workbook.save(_xlsx_buf)
+            _xlsx_buf.seek(0)
+
+            # テンプレートからVBAバイナリを抽出
+            _vba_data = None
+            try:
+                with _zf.ZipFile(temp_filepath, 'r') as _tmpl:
+                    if 'xl/vbaProject.bin' in _tmpl.namelist():
+                        _vba_data = _tmpl.read('xl/vbaProject.bin')
+                        print(f"INFO: VBA extracted ({len(_vba_data)} bytes)")
+            except Exception as _ve:
+                print(f"WARNING: VBA extraction failed: {_ve}")
+
+            if _vba_data:
+                # VBAをxlsxに注入してxlsmバイナリを生成
+                _out_buf = _io.BytesIO()
+                with _zf.ZipFile(_xlsx_buf, 'r') as _src:
+                    with _zf.ZipFile(_out_buf, 'w', compression=_zf.ZIP_DEFLATED) as _dst:
+                        for _zi in _src.infolist():
+                            _zd = _src.read(_zi.filename)
+                            if _zi.filename == '[Content_Types].xml':
+                                _zd = _zd.replace(
+                                    b'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml',
+                                    b'application/vnd.ms-excel.sheet.macroEnabled.main+xml'
+                                )
+                                if b'vbaProject' not in _zd:
+                                    _zd = _zd.replace(b'</Types>',
+                                        b'<Override PartName="/xl/vbaProject.bin" ContentType="application/vnd.ms-office.vbaProject"/></Types>')
+                            elif _zi.filename == 'xl/_rels/workbook.xml.rels':
+                                if b'vbaProject' not in _zd:
+                                    _zd = _zd.replace(b'</Relationships>',
+                                        b'<Relationship Id="rIdVBA" Type="http://schemas.microsoft.com/office/2006/relationships/vbaProject" Target="vbaProject.bin"/></Relationships>')
+                            _dst.writestr(_zi, _zd)
+                        _dst.writestr('xl/vbaProject.bin', _vba_data)
+                _out_buf.seek(0)
+                with open(out_filepath, 'wb') as _wf:
+                    _wf.write(_out_buf.read())
+                print("INFO: VBA injection successful, saved as xlsm")
+            else:
+                # VBAなし → xlsxとして保存
+                _xlsx_buf.seek(0)
+                with open(out_filepath, 'wb') as _wf:
+                    _wf.write(_xlsx_buf.read())
+                print("WARNING: No VBA found, saved as xlsx")
 
             # --- ネットワークドライブへの自動保存ロジック ---
             try:
