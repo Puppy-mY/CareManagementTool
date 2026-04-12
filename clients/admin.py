@@ -18,12 +18,12 @@ class ClientAdmin(admin.ModelAdmin):
                       'care_burden', 'burden_period_start', 'burden_period_end')
         }),
         ('家族情報（1人目）', {
-            'fields': ('family_name1', 'family_relationship1', 'family_address1', 'family_living_status1',
+            'fields': ('family_name1', 'family_relationship1', 'family_relationship_detail1', 'family_address1', 'family_living_status1',
                       'family_care_status1', 'family_employment1', 'family_contact1', 'family_notes1'),
             'classes': ('collapse',)
         }),
         ('家族情報（2人目）', {
-            'fields': ('family_name2', 'family_relationship2', 'family_address2', 'family_living_status2',
+            'fields': ('family_name2', 'family_relationship2', 'family_relationship_detail2', 'family_address2', 'family_living_status2',
                       'family_care_status2', 'family_employment2', 'family_contact2', 'family_notes2'),
             'classes': ('collapse',)
         }),

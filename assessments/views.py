@@ -1790,7 +1790,7 @@ def generate_assessment_excel(assessment, request=None):
             )
             safe_write_cell(
                 coords.get("family_member1_relation"),
-                assessment.client.get_family_relationship1_display(),
+                assessment.client.full_family_relationship1,
             )
             safe_write_cell(
                 coords.get("family_member1_address"), assessment.client.family_address1
@@ -1819,7 +1819,7 @@ def generate_assessment_excel(assessment, request=None):
             )
             safe_write_cell(
                 coords.get("family_member2_relation"),
-                assessment.client.get_family_relationship2_display(),
+                assessment.client.full_family_relationship2,
             )
             safe_write_cell(
                 coords.get("family_member2_address"), assessment.client.family_address2
@@ -2592,11 +2592,11 @@ def generate_assessment_excel(assessment, request=None):
                 # 緊急連絡先①②
                 client = assessment.client
                 safe_write_ei(ei_coords.get("emergency_contact1_name"), client.family_name1)
-                safe_write_ei(ei_coords.get("emergency_contact1_relationship"), client.get_family_relationship1_display() if client.family_relationship1 else "")
+                safe_write_ei(ei_coords.get("emergency_contact1_relationship"), client.full_family_relationship1)
                 safe_write_ei(ei_coords.get("emergency_contact1_address"), client.family_address1)
                 safe_write_ei(ei_coords.get("emergency_contact1_phone"), client.family_contact1)
                 safe_write_ei(ei_coords.get("emergency_contact2_name"), client.family_name2)
-                safe_write_ei(ei_coords.get("emergency_contact2_relationship"), client.get_family_relationship2_display() if client.family_relationship2 else "")
+                safe_write_ei(ei_coords.get("emergency_contact2_relationship"), client.full_family_relationship2)
                 safe_write_ei(ei_coords.get("emergency_contact2_address"), client.family_address2)
                 safe_write_ei(ei_coords.get("emergency_contact2_phone"), client.family_contact2)
 
@@ -2730,7 +2730,7 @@ def generate_assessment_excel(assessment, request=None):
                 safe_write_hai(hai_coords.get("client_gender"), client.get_gender_display() if client.gender else "")
                 safe_write_hai_wareki(hai_coords.get("birth_date"), to_wareki(client.birth_date) if client.birth_date else "")
                 safe_write_hai(hai_coords.get("family_name1"), client.family_name1)
-                safe_write_hai(hai_coords.get("family_relationship1"), client.get_family_relationship1_display() if client.family_relationship1 else "")
+                safe_write_hai(hai_coords.get("family_relationship1"), client.full_family_relationship1)
                 safe_write_hai(hai_coords.get("family_living_status1"), client.get_family_living_status1_display() if client.family_living_status1 else "")
                 safe_write_hai(hai_coords.get("family_address1"), client.family_address1)
                 safe_write_hai(hai_coords.get("family_contact1"), client.family_contact1)
@@ -2871,7 +2871,7 @@ def generate_assessment_excel(assessment, request=None):
                 safe_write_haim_wareki(hai_m_coords.get("birth_date"), to_wareki(client.birth_date) if client.birth_date else "")
                 safe_write_haim(hai_m_coords.get("client_address"), client.address)
                 safe_write_haim(hai_m_coords.get("family_name1"), client.family_name1)
-                safe_write_haim(hai_m_coords.get("family_relationship1"), client.get_family_relationship1_display() if client.family_relationship1 else "")
+                safe_write_haim(hai_m_coords.get("family_relationship1"), client.full_family_relationship1)
                 safe_write_haim(hai_m_coords.get("family_living_status1"), client.get_family_living_status1_display() if client.family_living_status1 else "")
                 safe_write_haim(hai_m_coords.get("family_address1"), client.family_address1)
                 safe_write_haim(hai_m_coords.get("family_contact1"), client.family_contact1)

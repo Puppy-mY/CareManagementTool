@@ -421,11 +421,11 @@
                                         </tr>
                                         <tr>
                                             <th class="bg-light text-muted">住所</th>
-                                            <td>{{ client.address|default:"未登録" }}</td>
+                                            <td>{{ client.address|default:"----------" }}</td>
                                         </tr>
                                         <tr>
                                             <th class="bg-light text-muted">連絡先</th>
-                                            <td>{{ client.phone|default:"未登録" }}</td>
+                                            <td>{{ client.phone|default:"----------" }}</td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -466,35 +466,35 @@
                                         <tbody>
                                             <tr>
                                                 <th class="bg-light text-muted" style="width: 35%;">氏名</th>
-                                                <td>{{ client.family_name1|default:"未登録" }}</td>
+                                                <td>{{ client.family_name1|default:"----------" }}</td>
                                             </tr>
                                             <tr>
                                                 <th class="bg-light text-muted">続柄</th>
-                                                <td>{{ client.get_family_relationship1_display|default:"未登録" }}</td>
+                                                <td>{{ client.full_family_relationship1|default:"----------" }}</td>
                                             </tr>
                                             <tr>
                                                 <th class="bg-light text-muted">住所</th>
-                                                <td>{{ client.family_address1|default:"未登録" }}</td>
+                                                <td>{{ client.family_address1|default:"----------" }}</td>
                                             </tr>
                                             <tr>
                                                 <th class="bg-light text-muted">連絡先</th>
-                                                <td>{{ client.family_contact1|default:"未登録" }}</td>
+                                                <td>{{ client.family_contact1|default:"----------" }}</td>
                                             </tr>
                                             <tr>
                                                 <th class="bg-light text-muted">同居の有無</th>
-                                                <td>{{ client.get_family_living_status1_display|default:"未登録" }}</td>
+                                                <td>{{ client.get_family_living_status1_display|default:"----------" }}</td>
                                             </tr>
                                             <tr>
                                                 <th class="bg-light text-muted">介護状況</th>
-                                                <td>{{ client.get_family_care_status1_display|default:"未登録" }}</td>
+                                                <td>{{ client.get_family_care_status1_display|default:"----------" }}</td>
                                             </tr>
                                             <tr>
                                                 <th class="bg-light text-muted">就労状況</th>
-                                                <td>{{ client.get_family_employment1_display|default:"未登録" }}</td>
+                                                <td>{{ client.get_family_employment1_display|default:"----------" }}</td>
                                             </tr>
                                             <tr>
                                                 <th class="bg-light text-muted">備考</th>
-                                                <td>{{ client.family_notes1|default:"未登録" }}</td>
+                                                <td>{{ client.family_notes1|default:"----------" }}</td>
                                             </tr>
                                         </tbody>
                                     </table>
@@ -513,35 +513,35 @@
                                         <tbody>
                                             <tr>
                                                 <th class="bg-light text-muted" style="width: 35%;">氏名</th>
-                                                <td>{{ client.family_name2|default:"未登録" }}</td>
+                                                <td>{{ client.family_name2|default:"----------" }}</td>
                                             </tr>
                                             <tr>
                                                 <th class="bg-light text-muted">続柄</th>
-                                                <td>{{ client.get_family_relationship2_display|default:"未登録" }}</td>
+                                                <td>{{ client.full_family_relationship2|default:"----------" }}</td>
                                             </tr>
                                             <tr>
                                                 <th class="bg-light text-muted">住所</th>
-                                                <td>{{ client.family_address2|default:"未登録" }}</td>
+                                                <td>{{ client.family_address2|default:"----------" }}</td>
                                             </tr>
                                             <tr>
                                                 <th class="bg-light text-muted">連絡先</th>
-                                                <td>{{ client.family_contact2|default:"未登録" }}</td>
+                                                <td>{{ client.family_contact2|default:"----------" }}</td>
                                             </tr>
                                             <tr>
                                                 <th class="bg-light text-muted">同居の有無</th>
-                                                <td>{{ client.get_family_living_status2_display|default:"未登録" }}</td>
+                                                <td>{{ client.get_family_living_status2_display|default:"----------" }}</td>
                                             </tr>
                                             <tr>
                                                 <th class="bg-light text-muted">介護状況</th>
-                                                <td>{{ client.get_family_care_status2_display|default:"未登録" }}</td>
+                                                <td>{{ client.get_family_care_status2_display|default:"----------" }}</td>
                                             </tr>
                                             <tr>
                                                 <th class="bg-light text-muted">就労状況</th>
-                                                <td>{{ client.get_family_employment2_display|default:"未登録" }}</td>
+                                                <td>{{ client.get_family_employment2_display|default:"----------" }}</td>
                                             </tr>
                                             <tr>
                                                 <th class="bg-light text-muted">備考</th>
-                                                <td>{{ client.family_notes2|default:"未登録" }}</td>
+                                                <td>{{ client.family_notes2|default:"----------" }}</td>
                                             </tr>
                                         </tbody>
                                     </table>
@@ -570,11 +570,11 @@
                                             <tbody>
                                                 <tr>
                                                     <th class="bg-light text-muted insurance-th" style="width: 40%;">被保険者番号</th>
-                                                    <td>{{ client.insurance_number|default:"未登録" }}</td>
+                                                    <td>{{ client.insurance_number|default:"----------" }}</td>
                                                 </tr>
                                                 <tr>
                                                     <th class="bg-light text-muted insurance-th">介護度</th>
-                                                    <td>{{ client.get_care_level_display|default:"未設定" }}</td>
+                                                    <td>{{ client.get_care_level_display|default:"----------" }}</td>
                                                 </tr>
                                                 <tr>
                                                     <th class="bg-light text-muted insurance-th">認定日</th>
@@ -601,18 +601,18 @@
                                                 </tr>
                                                 <tr>
                                                     <th class="bg-light text-muted insurance-th">負担割合</th>
-                                                    <td>{{ client.care_burden|default:"未設定" }}</td>
+                                                    <td>{{ client.care_burden|default:"----------" }}</td>
                                                 </tr>
                                                 <tr>
                                                     <th colspan="2" class="bg-light text-muted small py-1 text-center">日常生活の自立度等について</th>
                                                 </tr>
                                                 <tr>
                                                     <th class="bg-light text-muted align-middle insurance-th">身体障がい者日常生活自立度</th>
-                                                    <td class="align-middle">{{ client.get_disability_level_display|default:"未設定" }}</td>
+                                                    <td class="align-middle">{{ client.get_disability_level_display|default:"----------" }}</td>
                                                 </tr>
                                                 <tr>
                                                     <th class="bg-light text-muted align-middle insurance-th">認知症日常生活自立度</th>
-                                                    <td class="align-middle">{{ client.get_dementia_level_display|default:"未設定" }}</td>
+                                                    <td class="align-middle">{{ client.get_dementia_level_display|default:"----------" }}</td>
                                                 </tr>
                                             </tbody>
                                         </table>
@@ -630,7 +630,7 @@
                                             <tbody>
                                                 <tr>
                                                     <th class="bg-light text-muted align-middle insurance-th" style="width: 40%;">保険種別</th>
-                                                    <td class="align-middle">{{ client.get_medical_insurance_type_display|default:"未登録" }}</td>
+                                                    <td class="align-middle">{{ client.get_medical_insurance_type_display|default:"----------" }}</td>
                                                 </tr>
                                                 <tr>
                                                     <th class="bg-light text-muted align-middle insurance-th"><span class="text-nowrap">被保険者番号</span><br><span class="text-nowrap">記号・番号・枝番</span></th>
@@ -646,7 +646,7 @@
                                                 </tr>
                                                 <tr>
                                                     <th class="bg-light text-muted align-middle insurance-th">負担割合</th>
-                                                    <td class="align-middle">{{ client.medical_burden|default:"未設定" }}</td>
+                                                    <td class="align-middle">{{ client.medical_burden|default:"----------" }}</td>
                                                 </tr>
                                                 <tr>
                                                     <th class="bg-light text-muted align-middle insurance-th"><span class="text-nowrap">保険者の名称及び</span><br><span class="text-nowrap">交付者名（番号）</span></th>

@@ -55,12 +55,13 @@ class Client(models.Model):
     RELATIONSHIP_CHOICES = [
         ('spouse', '配偶者'),
         ('child', '子'),
-        ('parent', '親'),
+        ('child_in_law', '子の配偶者'),
+        ('parent', '父母'),
+        ('parent_in_law', '義父母'),
         ('sibling', '兄弟姉妹'),
         ('grandchild', '孫'),
-        ('grandparent', '祖父母'),
         ('other_relative', 'その他親族'),
-        ('other', 'その他'),
+        ('non_family', '家族以外'),
     ]
 
     LIVING_STATUS_CHOICES = [
@@ -212,6 +213,7 @@ class Client(models.Model):
     # 家族情報（1人目）
     family_name1 = models.CharField('家族氏名（1人目）', max_length=100, blank=True)
     family_relationship1 = models.CharField('続柄（1人目）', max_length=20, choices=RELATIONSHIP_CHOICES, blank=True)
+    family_relationship_detail1 = models.CharField('続柄詳細（1人目）', max_length=50, blank=True)
     family_address1 = models.TextField('住所（1人目）', blank=True)
     family_living_status1 = models.CharField('同居有無（1人目）', max_length=10, choices=LIVING_STATUS_CHOICES, blank=True)
     family_care_status1 = models.CharField('介護状況（1人目）', max_length=20, choices=CARE_STATUS_CHOICES, blank=True)
@@ -222,6 +224,7 @@ class Client(models.Model):
     # 家族情報（2人目）
     family_name2 = models.CharField('家族氏名（2人目）', max_length=100, blank=True)
     family_relationship2 = models.CharField('続柄（2人目）', max_length=20, choices=RELATIONSHIP_CHOICES, blank=True)
+    family_relationship_detail2 = models.CharField('続柄詳細（2人目）', max_length=50, blank=True)
     family_address2 = models.TextField('住所（2人目）', blank=True)
     family_living_status2 = models.CharField('同居有無（2人目）', max_length=10, choices=LIVING_STATUS_CHOICES, blank=True)
     family_care_status2 = models.CharField('介護状況（2人目）', max_length=20, choices=CARE_STATUS_CHOICES, blank=True)
@@ -246,6 +249,26 @@ class Client(models.Model):
     def client_id(self):
         # 後方互換性のために被保険者番号をclient_idとして返す
         return self.insurance_number
+
+    @property
+    def full_family_relationship1(self):
+        main = self.get_family_relationship1_display() or ""
+        detail = self.family_relationship_detail1 or ""
+        if main and detail:
+            return f"{main}（{detail}）"
+        elif main:
+            return main
+        return ""
+
+    @property
+    def full_family_relationship2(self):
+        main = self.get_family_relationship2_display() or ""
+        detail = self.family_relationship_detail2 or ""
+        if main and detail:
+            return f"{main}（{detail}）"
+        elif main:
+            return main
+        return ""
     
     @property
     def age(self):

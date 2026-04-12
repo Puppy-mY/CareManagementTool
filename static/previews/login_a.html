@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>案A - ディープブルーヘッダー</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, 'Helvetica Neue', 'Hiragino Sans', sans-serif;
+  background: #f1f3f5;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.card {
+  width: 360px;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(15,23,42,0.14), 0 2px 8px rgba(15,23,42,0.08);
+}
+.card-header {
+  background: linear-gradient(135deg, #64748b 0%, #94a3b8 100%);
+  padding: 28px 32px 24px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.icon {
+  width: 44px; height: 44px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+}
+.header-text h1 {
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.header-text p {
+  color: rgba(255,255,255,0.65);
+  font-size: 0.72rem;
+  margin-top: 2px;
+}
+.card-body {
+  background: #fff;
+  padding: 28px 32px 32px;
+}
+.field { margin-bottom: 18px; }
+label {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 6px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  color: #1e293b;
+  background: #f8fafc;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+input:focus {
+  border-color: #4a5568;
+  box-shadow: 0 0 0 3px rgba(74,85,104,0.15);
+  background: #fff;
+}
+button {
+  width: 100%;
+  margin-top: 8px;
+  padding: 12px;
+  background: linear-gradient(135deg, #64748b 0%, #94a3b8 100%);
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.note {
+  text-align: center;
+  font-size: 0.72rem;
+  color: #94a3b8;
+  margin-top: 20px;
+}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="card-header">
+    <div class="icon">🏥</div>
+    <div class="header-text">
+      <h1>ケア管理</h1>
+      <p>介護ケアマネジメントシステム</p>
+    </div>
+  </div>
+  <div class="card-body">
+    <div class="field">
+      <label>ユーザー名</label>
+      <input type="text" placeholder="username">
+    </div>
+    <div class="field">
+      <label>パスワード</label>
+      <input type="password" placeholder="••••••••">
+    </div>
+    <button>ログイン</button>
+    <p class="note">アカウントはシステム管理者にお問い合わせください</p>
+  </div>
+</div>
+</body>
+</html>

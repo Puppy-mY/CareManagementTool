@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>案C - 左アクセント</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, 'Helvetica Neue', 'Hiragino Sans', sans-serif;
+  background: #eff6ff;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.card {
+  width: 360px;
+  background: #fff;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 24px rgba(30,64,175,0.12), 0 1px 4px rgba(0,0,0,0.06);
+  display: flex;
+}
+.accent {
+  width: 6px;
+  background: linear-gradient(180deg, #1d4ed8 0%, #60a5fa 100%);
+  flex-shrink: 0;
+}
+.content { flex: 1; padding: 32px 28px; }
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 28px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #f1f5f9;
+}
+.icon {
+  width: 40px; height: 40px;
+  background: #dbeafe;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+h1 { font-size: 1rem; font-weight: 700; color: #1e3a5f; }
+.sub { font-size: 0.68rem; color: #94a3b8; margin-top: 2px; }
+
+.field { margin-bottom: 16px; }
+label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 5px;
+}
+input {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 7px;
+  font-size: 0.9rem;
+  color: #1e293b;
+  background: #f8fafc;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+  background: #fff;
+}
+button {
+  width: 100%;
+  margin-top: 6px;
+  padding: 11px;
+  background: #2563eb;
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  border: none;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+button:hover { background: #1d4ed8; }
+.note { text-align: center; font-size: 0.68rem; color: #94a3b8; margin-top: 16px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="accent"></div>
+  <div class="content">
+    <div class="brand">
+      <div class="icon">🏥</div>
+      <div>
+        <h1>ケア管理</h1>
+        <p class="sub">介護ケアマネジメントシステム</p>
+      </div>
+    </div>
+    <div class="field">
+      <label>ユーザー名</label>
+      <input type="text" placeholder="username">
+    </div>
+    <div class="field">
+      <label>パスワード</label>
+      <input type="password" placeholder="••••••••">
+    </div>
+    <button>ログイン</button>
+    <p class="note">アカウントはシステム管理者にお問い合わせください</p>
+  </div>
+</div>
+</body>
+</html>

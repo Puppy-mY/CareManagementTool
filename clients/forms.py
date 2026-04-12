@@ -24,10 +24,10 @@ class ClientForm(forms.ModelForm):
             'nhi_limit_cert', 'nhi_limit_cert_start', 'nhi_limit_cert_end',
             'high_cost_combined',
             # 家族情報（1人目）
-            'family_name1', 'family_relationship1', 'family_address1', 'family_contact1',
+            'family_name1', 'family_relationship1', 'family_relationship_detail1', 'family_address1', 'family_contact1',
             'family_living_status1', 'family_care_status1', 'family_employment1', 'family_notes1',
             # 家族情報（2人目）
-            'family_name2', 'family_relationship2', 'family_address2', 'family_contact2',
+            'family_name2', 'family_relationship2', 'family_relationship_detail2', 'family_address2', 'family_contact2',
             'family_living_status2', 'family_care_status2', 'family_employment2', 'family_notes2',
         ]
         
@@ -91,6 +91,7 @@ class ClientForm(forms.ModelForm):
             # 家族情報（1人目）
             'family_name1': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '例: 介護　花子'}),
             'family_relationship1': forms.Select(attrs={'class': 'form-select'}),
+            'family_relationship_detail1': forms.Select(attrs={'class': 'form-select'}),
             'family_address1': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '例: 三重県津市神戸154-9'}),
             'family_living_status1': forms.Select(attrs={'class': 'form-select'}),
             'family_care_status1': forms.Select(attrs={'class': 'form-select'}),
@@ -101,6 +102,7 @@ class ClientForm(forms.ModelForm):
             # 家族情報（2人目）
             'family_name2': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '例: 介護　次郎'}),
             'family_relationship2': forms.Select(attrs={'class': 'form-select'}),
+            'family_relationship_detail2': forms.Select(attrs={'class': 'form-select'}),
             'family_address2': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '例: 三重県津市神戸154-9'}),
             'family_living_status2': forms.Select(attrs={'class': 'form-select'}),
             'family_care_status2': forms.Select(attrs={'class': 'form-select'}),

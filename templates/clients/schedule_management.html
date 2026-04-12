@@ -329,11 +329,11 @@
                         <tbody>
                             <tr>
                                 <th class="bg-light text-muted insurance-th" style="width:40%;">被保険者番号</th>
-                                <td>{{ client.insurance_number|default:"未登録" }}</td>
+                                <td>{{ client.insurance_number|default:"----------" }}</td>
                             </tr>
                             <tr>
                                 <th class="bg-light text-muted insurance-th">介護度</th>
-                                <td>{{ client.get_care_level_display|default:"未設定" }}</td>
+                                <td>{{ client.get_care_level_display|default:"----------" }}</td>
                             </tr>
                             <tr>
                                 <th class="bg-light text-muted insurance-th">認定日</th>
@@ -351,7 +351,7 @@
                             <tr>
                                 <th class="bg-light text-muted align-middle insurance-th">負担割合証</th>
                                 <td class="align-middle">
-                                    {{ client.care_burden|default:"未設定" }}
+                                    {{ client.care_burden|default:"----------" }}
                                     {% if client.burden_period_start and client.burden_period_end %}
                                         <div class="insurance-td-fit text-muted mt-1">{{ client.burden_period_start|wareki }}～{{ client.burden_period_end|wareki }}</div>
                                         {% if client.burden_period_end %}<div class="cert-renewal-warn" data-end-date="{{ client.burden_period_end|date:'Y-m-d' }}" data-auto-renew="false"></div>{% endif %}
@@ -441,7 +441,7 @@
                         <tbody>
                             <tr>
                                 <th class="bg-light text-muted align-middle insurance-th" style="width:40%;">保険種別</th>
-                                <td class="align-middle">{{ client.get_medical_insurance_type_display|default:"未登録" }}</td>
+                                <td class="align-middle">{{ client.get_medical_insurance_type_display|default:"----------" }}</td>
                             </tr>
                             <tr>
                                 <th class="bg-light text-muted align-middle insurance-th"><span class="text-nowrap">被保険者番号</span><br><span class="text-nowrap">記号・番号・枝番</span></th>
@@ -455,7 +455,7 @@
                             </tr>
                             <tr>
                                 <th class="bg-light text-muted align-middle insurance-th">負担割合</th>
-                                <td class="align-middle">{{ client.medical_burden|default:"未設定" }}</td>
+                                <td class="align-middle">{{ client.medical_burden|default:"----------" }}</td>
                             </tr>
                             <tr>
                                 <th class="bg-light text-muted align-middle insurance-th"><span class="text-nowrap">保険者の名称及び</span><br><span class="text-nowrap">交付者名（番号）</span></th>
