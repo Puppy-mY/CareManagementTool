@@ -132,7 +132,7 @@ def all_client_list(request):
 @login_required
 def client_detail(request, pk):
     client = get_object_or_404(Client, pk=pk)
-    recent_assessments = client.assessments.order_by('-assessment_date')
+    recent_assessments = client.assessments.order_by('-assessment_date', '-id')
 
     # 書類作成履歴を取得
     document_histories = client.document_histories.order_by('-created_at')

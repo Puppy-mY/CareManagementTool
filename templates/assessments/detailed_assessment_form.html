@@ -499,6 +499,35 @@ button[name="action"][value="save"]:hover {
     transform: translateY(-1px);
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
+
+/* 西暦/和暦トグル */
+.birth-era-toggle {
+    display: inline-flex;
+    border: 1px solid #ced4da;
+    border-radius: 0.375rem;
+    overflow: hidden;
+    font-size: 0.72rem;
+    flex-shrink: 0;
+}
+.birth-era-toggle .era-btn {
+    background: #fff;
+    border: none;
+    padding: 2px 7px;
+    cursor: pointer;
+    color: #6c757d;
+    line-height: 1.5;
+    transition: background 0.15s, color 0.15s;
+}
+.birth-era-toggle .era-btn:not(:last-child) {
+    border-right: 1px solid #ced4da;
+}
+.birth-era-toggle .era-btn.active {
+    background: #6c757d;
+    color: #fff;
+}
+.birth-era-toggle .era-btn:hover:not(.active) {
+    background: #f0f0f0;
+}
 </style>
 
 <div class="row">
@@ -809,41 +838,95 @@ button[name="action"][value="save"]:hover {
                                 <input type="text" name="disease_name_6" class="form-control disease-field" data-field="6" placeholder="疾患名6" value="{{ form.disease_name_6.value|default:'' }}" style="display: none;">
                             </div>
                             <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 mb-3">
-                                <label class="form-label">発症日</label>
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    <label class="form-label mb-0">発症日</label>
+                                    <div class="birth-era-toggle" title="和暦 / 西暦を切り替え">
+                                        <button type="button" class="era-btn active" id="onsetDate_era_japanese" onclick="switchAllOnsetEra('japanese')">和暦</button>
+                                        <button type="button" class="era-btn" id="onsetDate_era_western" onclick="switchAllOnsetEra('western')">西暦</button>
+                                    </div>
+                                </div>
                                 <div class="onset-field mb-2" data-field="1">
                                     <div class="d-flex align-items-center gap-2">
-                                        <input type="date" name="onset_date_1" id="onset_date_1" class="form-control" style="max-width:200px;" value="{{ form.onset_date_1.value|default:'' }}">
-                                        <button type="button" class="btn btn-outline-secondary btn-sm onset-unknown-btn" data-target="onset_date_1" onclick="toggleOnsetUnknown(this)">時期不詳</button>
+                                        <div style="width:200px;">
+                                            <div id="onset_1_western" style="display:none;">
+                                                <input type="date" name="onset_date_1" id="onset_date_1" class="form-control" style="width:100%;" value="{{ form.onset_date_1.value|default:'' }}">
+                                            </div>
+                                            <div id="onset_1_japanese">
+                                                <input type="text" id="onset_1_wareki_text" class="form-control" style="width:100%;" placeholder="例: 令和6年4月1日" autocomplete="off" oninput="syncOnsetDateFromWareki(1)">
+                                                <small id="onset_1_wareki_preview" style="font-size:0.78em; display:block; margin-top:2px;"></small>
+                                            </div>
+                                        </div>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm onset-unknown-btn" data-target="1" onclick="toggleOnsetUnknown(this)">時期不詳</button>
                                     </div>
                                 </div>
                                 <div class="onset-field mb-2" data-field="2" style="display:none;">
                                     <div class="d-flex align-items-center gap-2">
-                                        <input type="date" name="onset_date_2" id="onset_date_2" class="form-control" style="max-width:200px;" value="{{ form.onset_date_2.value|default:'' }}">
-                                        <button type="button" class="btn btn-outline-secondary btn-sm onset-unknown-btn" data-target="onset_date_2" onclick="toggleOnsetUnknown(this)">時期不詳</button>
+                                        <div style="width:200px;">
+                                            <div id="onset_2_western" style="display:none;">
+                                                <input type="date" name="onset_date_2" id="onset_date_2" class="form-control" style="width:100%;" value="{{ form.onset_date_2.value|default:'' }}">
+                                            </div>
+                                            <div id="onset_2_japanese">
+                                                <input type="text" id="onset_2_wareki_text" class="form-control" style="width:100%;" placeholder="例: 令和6年4月1日" autocomplete="off" oninput="syncOnsetDateFromWareki(2)">
+                                                <small id="onset_2_wareki_preview" style="font-size:0.78em; display:block; margin-top:2px;"></small>
+                                            </div>
+                                        </div>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm onset-unknown-btn" data-target="2" onclick="toggleOnsetUnknown(this)">時期不詳</button>
                                     </div>
                                 </div>
                                 <div class="onset-field mb-2" data-field="3" style="display:none;">
                                     <div class="d-flex align-items-center gap-2">
-                                        <input type="date" name="onset_date_3" id="onset_date_3" class="form-control" style="max-width:200px;" value="{{ form.onset_date_3.value|default:'' }}">
-                                        <button type="button" class="btn btn-outline-secondary btn-sm onset-unknown-btn" data-target="onset_date_3" onclick="toggleOnsetUnknown(this)">時期不詳</button>
+                                        <div style="width:200px;">
+                                            <div id="onset_3_western" style="display:none;">
+                                                <input type="date" name="onset_date_3" id="onset_date_3" class="form-control" style="width:100%;" value="{{ form.onset_date_3.value|default:'' }}">
+                                            </div>
+                                            <div id="onset_3_japanese">
+                                                <input type="text" id="onset_3_wareki_text" class="form-control" style="width:100%;" placeholder="例: 令和6年4月1日" autocomplete="off" oninput="syncOnsetDateFromWareki(3)">
+                                                <small id="onset_3_wareki_preview" style="font-size:0.78em; display:block; margin-top:2px;"></small>
+                                            </div>
+                                        </div>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm onset-unknown-btn" data-target="3" onclick="toggleOnsetUnknown(this)">時期不詳</button>
                                     </div>
                                 </div>
                                 <div class="onset-field mb-2" data-field="4" style="display:none;">
                                     <div class="d-flex align-items-center gap-2">
-                                        <input type="date" name="onset_date_4" id="onset_date_4" class="form-control" style="max-width:200px;" value="{{ form.onset_date_4.value|default:'' }}">
-                                        <button type="button" class="btn btn-outline-secondary btn-sm onset-unknown-btn" data-target="onset_date_4" onclick="toggleOnsetUnknown(this)">時期不詳</button>
+                                        <div style="width:200px;">
+                                            <div id="onset_4_western" style="display:none;">
+                                                <input type="date" name="onset_date_4" id="onset_date_4" class="form-control" style="width:100%;" value="{{ form.onset_date_4.value|default:'' }}">
+                                            </div>
+                                            <div id="onset_4_japanese">
+                                                <input type="text" id="onset_4_wareki_text" class="form-control" style="width:100%;" placeholder="例: 令和6年4月1日" autocomplete="off" oninput="syncOnsetDateFromWareki(4)">
+                                                <small id="onset_4_wareki_preview" style="font-size:0.78em; display:block; margin-top:2px;"></small>
+                                            </div>
+                                        </div>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm onset-unknown-btn" data-target="4" onclick="toggleOnsetUnknown(this)">時期不詳</button>
                                     </div>
                                 </div>
                                 <div class="onset-field mb-2" data-field="5" style="display:none;">
                                     <div class="d-flex align-items-center gap-2">
-                                        <input type="date" name="onset_date_5" id="onset_date_5" class="form-control" style="max-width:200px;" value="{{ form.onset_date_5.value|default:'' }}">
-                                        <button type="button" class="btn btn-outline-secondary btn-sm onset-unknown-btn" data-target="onset_date_5" onclick="toggleOnsetUnknown(this)">時期不詳</button>
+                                        <div style="width:200px;">
+                                            <div id="onset_5_western" style="display:none;">
+                                                <input type="date" name="onset_date_5" id="onset_date_5" class="form-control" style="width:100%;" value="{{ form.onset_date_5.value|default:'' }}">
+                                            </div>
+                                            <div id="onset_5_japanese">
+                                                <input type="text" id="onset_5_wareki_text" class="form-control" style="width:100%;" placeholder="例: 令和6年4月1日" autocomplete="off" oninput="syncOnsetDateFromWareki(5)">
+                                                <small id="onset_5_wareki_preview" style="font-size:0.78em; display:block; margin-top:2px;"></small>
+                                            </div>
+                                        </div>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm onset-unknown-btn" data-target="5" onclick="toggleOnsetUnknown(this)">時期不詳</button>
                                     </div>
                                 </div>
                                 <div class="onset-field" data-field="6" style="display:none;">
                                     <div class="d-flex align-items-center gap-2">
-                                        <input type="date" name="onset_date_6" id="onset_date_6" class="form-control" style="max-width:200px;" value="{{ form.onset_date_6.value|default:'' }}">
-                                        <button type="button" class="btn btn-outline-secondary btn-sm onset-unknown-btn" data-target="onset_date_6" onclick="toggleOnsetUnknown(this)">時期不詳</button>
+                                        <div style="width:200px;">
+                                            <div id="onset_6_western" style="display:none;">
+                                                <input type="date" name="onset_date_6" id="onset_date_6" class="form-control" style="width:100%;" value="{{ form.onset_date_6.value|default:'' }}">
+                                            </div>
+                                            <div id="onset_6_japanese">
+                                                <input type="text" id="onset_6_wareki_text" class="form-control" style="width:100%;" placeholder="例: 令和6年4月1日" autocomplete="off" oninput="syncOnsetDateFromWareki(6)">
+                                                <small id="onset_6_wareki_preview" style="font-size:0.78em; display:block; margin-top:2px;"></small>
+                                            </div>
+                                        </div>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm onset-unknown-btn" data-target="6" onclick="toggleOnsetUnknown(this)">時期不詳</button>
                                     </div>
                                 </div>
                             </div>
@@ -1109,13 +1192,6 @@ button[name="action"][value="save"]:hover {
                         </div>
                     </div>
                         
-                        <!-- 服薬・アレルギーの詳細 -->
-                        <div class="row g-3 mt-4">
-                            <div class="col-12">
-                            <h6 class="text-muted mb-3 pb-1" style="border-bottom: 1px solid #dee2e6; width: 50%;">服薬・アレルギーの詳細</h6>
-                                <textarea name="medication_allergy_notes" id="medication_allergy_notes" class="form-control" rows="3" placeholder="服薬管理上の注意点、アレルギー対応、副作用の経験等を記載" oninput="autoResizeTextarea(this)">{{ form.medication_allergy_notes.value|default:'' }}</textarea>
-                            </div>
-                        </div>
                         
                         </div>
                     </div>
@@ -3652,21 +3728,26 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 時期不詳ボタン
     window.toggleOnsetUnknown = function(btn) {
-        var targetId = btn.getAttribute('data-target');
-        var input = document.getElementById(targetId);
-        if (!input) return;
+        var n = btn.getAttribute('data-target');
+        var hiddenInput = document.getElementById('onset_date_' + n);
+        var warekiInput = document.getElementById('onset_' + n + '_wareki_text');
+        var preview = document.getElementById('onset_' + n + '_wareki_preview');
+        if (!hiddenInput) return;
         var isActive = btn.classList.contains('active');
         if (isActive) {
             btn.classList.remove('active', 'btn-secondary');
             btn.classList.add('btn-outline-secondary');
-            input.disabled = false;
-            input.style.opacity = '';
+            hiddenInput.disabled = false;
+            hiddenInput.style.opacity = '';
+            if (warekiInput) { warekiInput.disabled = false; warekiInput.style.opacity = ''; }
         } else {
             btn.classList.add('active', 'btn-secondary');
             btn.classList.remove('btn-outline-secondary');
-            input.value = '';
-            input.disabled = true;
-            input.style.opacity = '0.4';
+            hiddenInput.value = '';
+            hiddenInput.disabled = true;
+            hiddenInput.style.opacity = '0.4';
+            if (warekiInput) { warekiInput.value = ''; warekiInput.disabled = true; warekiInput.style.opacity = '0.4'; }
+            if (preview) preview.textContent = '';
         }
     };
 
@@ -4580,6 +4661,132 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
+// ============================================================
+// 発症日 西暦 / 和暦 切り替えロジック
+// ============================================================
+(function() {
+    var ERA_INFO = [
+        { keys: ['令和', 'R', 'r'],  start: 2019, label: '令和' },
+        { keys: ['平成', 'H', 'h'],  start: 1989, label: '平成' },
+        { keys: ['昭和', 'S', 's'],  start: 1926, label: '昭和' },
+        { keys: ['大正', 'T', 't'],  start: 1912, label: '大正' },
+        { keys: ['明治', 'M', 'm'],  start: 1868, label: '明治' },
+    ];
+
+    function parseWareki(text) {
+        if (!text) return null;
+        text = text.replace(/\s/g, '');
+        var era = null, rest = text;
+        for (var i = 0; i < ERA_INFO.length; i++) {
+            var info = ERA_INFO[i];
+            for (var k = 0; k < info.keys.length; k++) {
+                if (text.indexOf(info.keys[k]) === 0) {
+                    era = info;
+                    rest = text.slice(info.keys[k].length);
+                    break;
+                }
+            }
+            if (era) break;
+        }
+        if (!era) return null;
+        var m1 = rest.match(/^(\d{1,2})年(\d{1,2})月(\d{1,2})日?$/);
+        if (m1) return { era: era, year: parseInt(m1[1]), month: parseInt(m1[2]), day: parseInt(m1[3]) };
+        var m2 = rest.match(/^(\d{1,2})[.\-\/](\d{1,2})[.\-\/](\d{1,2})$/);
+        if (m2) return { era: era, year: parseInt(m2[1]), month: parseInt(m2[2]), day: parseInt(m2[3]) };
+        return null;
+    }
+
+    function toWarekiText(dateStr) {
+        if (!dateStr) return '';
+        var parts = dateStr.split('-');
+        if (parts.length < 3) return '';
+        var y = parseInt(parts[0]), m = parseInt(parts[1]), d = parseInt(parts[2]);
+        for (var i = 0; i < ERA_INFO.length; i++) {
+            var info = ERA_INFO[i];
+            if (y >= info.start) {
+                return info.label + (y - info.start + 1) + '年' + m + '月' + d + '日';
+            }
+        }
+        return '';
+    }
+
+    // 和暦テキスト → 西暦 hidden input に反映
+    window.syncOnsetDateFromWareki = function(n) {
+        var warekiInput = document.getElementById('onset_' + n + '_wareki_text');
+        var hidden = document.getElementById('onset_date_' + n);
+        var preview = document.getElementById('onset_' + n + '_wareki_preview');
+        if (!warekiInput || !hidden || !preview) return;
+        var text = warekiInput.value;
+        var result = parseWareki(text);
+        if (result) {
+            var wy = result.era.start + result.year - 1;
+            hidden.value = wy + '-' + String(result.month).padStart(2,'0') + '-' + String(result.day).padStart(2,'0');
+            preview.textContent = '→ 西暦 ' + wy + '年' + result.month + '月' + result.day + '日';
+            preview.style.color = '#6c757d';
+        } else {
+            hidden.value = '';
+            if (text.length > 0) {
+                preview.textContent = '例: 令和6年4月1日　または　R6.4.1';
+                preview.style.color = '#aaa';
+            } else {
+                preview.textContent = '';
+            }
+        }
+    };
+
+    // 全発症日フィールドを一括切り替え
+    window.switchAllOnsetEra = function(mode) {
+        var btnJ = document.getElementById('onsetDate_era_japanese');
+        var btnW = document.getElementById('onsetDate_era_western');
+        if (mode === 'western') {
+            if (btnW) btnW.classList.add('active');
+            if (btnJ) btnJ.classList.remove('active');
+        } else {
+            if (btnJ) btnJ.classList.add('active');
+            if (btnW) btnW.classList.remove('active');
+        }
+        for (var n = 1; n <= 6; n++) {
+            var westernDiv  = document.getElementById('onset_' + n + '_western');
+            var japaneseDiv = document.getElementById('onset_' + n + '_japanese');
+            if (!westernDiv || !japaneseDiv) continue;
+            if (mode === 'western') {
+                westernDiv.style.display  = '';
+                japaneseDiv.style.display = 'none';
+            } else {
+                // 和暦モード：既存の西暦値から和暦テキストを逆算
+                var hidden = document.getElementById('onset_date_' + n);
+                var warekiInput = document.getElementById('onset_' + n + '_wareki_text');
+                if (hidden && warekiInput && hidden.value) {
+                    warekiInput.value = toWarekiText(hidden.value);
+                    window.syncOnsetDateFromWareki(n);
+                }
+                westernDiv.style.display  = 'none';
+                japaneseDiv.style.display = '';
+            }
+        }
+    };
+
+    // ページロード時：保存済みの日付があれば和暦テキストに変換して表示
+    document.addEventListener('DOMContentLoaded', function() {
+        for (var n = 1; n <= 6; n++) {
+            var hidden = document.getElementById('onset_date_' + n);
+            var warekiInput = document.getElementById('onset_' + n + '_wareki_text');
+            var preview = document.getElementById('onset_' + n + '_wareki_preview');
+            if (hidden && warekiInput && hidden.value) {
+                var wt = toWarekiText(hidden.value);
+                warekiInput.value = wt;
+                if (wt && preview) {
+                    var parts = hidden.value.split('-');
+                    if (parts.length === 3) {
+                        preview.textContent = '→ 西暦 ' + parseInt(parts[0]) + '年' + parseInt(parts[1]) + '月' + parseInt(parts[2]) + '日';
+                        preview.style.color = '#6c757d';
+                    }
+                }
+            }
+        }
+    });
+})();
 </script>
 
 {% endblock %}

@@ -1591,6 +1591,9 @@ def generate_assessment_excel(assessment, request=None):
                 # リストや辞書の場合はそのまま返す（変換しない）
                 if isinstance(value, (list, dict)):
                     return value
+                # f"prefix_{value}" パターンで value が空だった場合（例: "vision_"）は空文字を返す
+                if isinstance(value, str) and value.endswith('_'):
+                    return ""
                 # 文字列の場合のみ変換
                 return CHOICE_LABELS.get(value, value)
 
@@ -1790,7 +1793,7 @@ def generate_assessment_excel(assessment, request=None):
             )
             safe_write_cell(
                 coords.get("family_member1_relation"),
-                assessment.client.full_family_relationship1,
+                assessment.client.family_relationship_detail1,
             )
             safe_write_cell(
                 coords.get("family_member1_address"), assessment.client.family_address1
@@ -1819,7 +1822,7 @@ def generate_assessment_excel(assessment, request=None):
             )
             safe_write_cell(
                 coords.get("family_member2_relation"),
-                assessment.client.full_family_relationship2,
+                assessment.client.family_relationship_detail2,
             )
             safe_write_cell(
                 coords.get("family_member2_address"), assessment.client.family_address2
