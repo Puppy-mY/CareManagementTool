@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}更新履歴 - CareManagement SYSTEM{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8 col-md-10">
+        <div class="d-flex align-items-center gap-2 mb-4">
+            <i class="fas fa-history" style="color:#4a5568; font-size:1.3rem;"></i>
+            <h4 class="mb-0 fw-bold" style="color:#2d3748;">更新履歴</h4>
+        </div>
+
+        {% for note in release_notes %}
+        <div class="card mb-3" style="border-color:#e2e8f0;">
+            <div class="card-header d-flex align-items-center justify-content-between py-2" style="background:#f8f9fa;">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge" style="background:#4a5568; font-size:0.8rem;">v{{ note.version }}</span>
+                    <span class="fw-semibold" style="color:#2d3748; font-size:0.95rem;">{{ note.title }}</span>
+                </div>
+                <span class="text-muted" style="font-size:0.8rem;">{{ note.date }}</span>
+            </div>
+            <div class="card-body py-3">
+                <ul class="mb-0" style="color:#4a5568; font-size:0.875rem; line-height:1.8; padding-left:1.25rem;">
+                    {% for item in note.items %}
+                    <li>{{ item }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        {% empty %}
+        <p class="text-muted">更新履歴はまだありません。</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

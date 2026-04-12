@@ -1,6 +1,8 @@
 from django.shortcuts import render
 from django.http import HttpResponse, FileResponse, Http404
+from django.contrib.auth.decorators import login_required
 from django.contrib.staticfiles import finders
+from django.conf import settings
 import os
 import markdown
 
@@ -130,3 +132,9 @@ def view_memo(request):
             "<h1>エラー</h1><p>MEMO_20251010.mdファイルが見つかりません。</p>",
             status=404
         )
+
+
+@login_required
+def release_notes(request):
+    notes = getattr(settings, 'RELEASE_NOTES', [])
+    return render(request, 'release_notes.html', {'release_notes': notes})

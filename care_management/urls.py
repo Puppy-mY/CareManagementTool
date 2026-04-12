@@ -30,5 +30,6 @@ urlpatterns = [
     path("clients/", include("clients.urls")),
     path("assessments/", include("assessments.urls")),
     path("memo/", views.view_memo, name="view_memo"),
+    path("release-notes/", views.release_notes, name="release_notes"),
     path("facilities/", include("facilities.urls")),
 ]
