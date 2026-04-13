@@ -228,6 +228,50 @@
 </div>
 <div id="drawerOverlay" class="drawer-overlay" onclick="closeMasterDrawer()"></div>
 
+<!-- 利用者マスタ編集モーダル（form タグなし：documentForm のネスト回避） -->
+<div class="modal fade" id="clientMasterModal" tabindex="-1" aria-labelledby="clientMasterModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="clientMasterModalLabel">
+                    <i class="fas fa-user-edit me-2"></i>利用者マスタデータ編集
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">氏名 <span class="text-danger">*</span></label>
+                        <input type="text" id="edit_client_name" class="form-control" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">ふりがな <span class="text-danger">*</span></label>
+                        <input type="text" id="edit_client_furigana" class="form-control" required placeholder="ひらがなで入力">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">生年月日 <span class="text-danger">*</span></label>
+                        <input type="date" id="edit_client_birth_date" class="form-control" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">介護保険被保険者番号 <span class="text-danger">*</span></label>
+                        <input type="text" id="edit_client_insurance_number" class="form-control" required>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">住所 <span class="text-danger">*</span></label>
+                        <input type="text" id="edit_client_address" class="form-control" required>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                <button type="button" class="btn btn-primary" onclick="saveClientMasterData()">
+                    <i class="fas fa-save me-1"></i>保存して反映
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 // グローバル変数
 let currentDrawerType = null; // 'client' or 'office'
@@ -260,42 +304,23 @@ function closeMasterDrawer() {
     currentDrawerType = null;
 }
 
-// 利用者マスタデータ編集ドロワーを開く
+// 利用者マスタデータ編集ドロワーを開く（今回はモーダルに変更）
 function openClientMasterDrawer() {
-    currentDrawerType = 'client';
-    document.getElementById('drawerTitle').innerHTML = '<i class="fas fa-user-edit me-2"></i>利用者マスタデータ編集';
-
     const clientName = document.querySelector('input[name="client_name"]').value;
     const clientFurigana = document.querySelector('input[name="client_furigana"]').value;
     const clientBirthDate = document.querySelector('input[name="client_birth_date"]').value;
     const clientAddress = document.querySelector('input[name="client_address"]').value;
     const clientInsuranceNumber = document.querySelector('input[name="client_insurance_number"]').value;
 
-    const drawerBody = document.getElementById('drawerBody');
-    drawerBody.innerHTML = `
-        <div class="mb-3">
-            <label class="form-label">氏名 <span class="text-danger">*</span></label>
-            <input type="text" id="edit_client_name" class="form-control" value="${clientName}" required>
-        </div>
-        <div class="mb-3">
-            <label class="form-label">ふりがな <span class="text-danger">*</span></label>
-            <input type="text" id="edit_client_furigana" class="form-control" value="${clientFurigana}" required placeholder="ひらがなで入力">
-        </div>
-        <div class="mb-3">
-            <label class="form-label">生年月日 <span class="text-danger">*</span></label>
-            <input type="date" id="edit_client_birth_date" class="form-control" value="${clientBirthDate}" required>
-        </div>
-        <div class="mb-3">
-            <label class="form-label">住所 <span class="text-danger">*</span></label>
-            <input type="text" id="edit_client_address" class="form-control" value="${clientAddress}" required>
-        </div>
-        <div class="mb-3">
-            <label class="form-label">介護保険被保険者番号 <span class="text-danger">*</span></label>
-            <input type="text" id="edit_client_insurance_number" class="form-control" value="${clientInsuranceNumber}" required>
-        </div>
-    `;
+    document.getElementById('edit_client_name').value = clientName;
+    document.getElementById('edit_client_furigana').value = clientFurigana;
+    document.getElementById('edit_client_birth_date').value = clientBirthDate;
+    document.getElementById('edit_client_address').value = clientAddress;
+    document.getElementById('edit_client_insurance_number').value = clientInsuranceNumber;
 
-    openMasterDrawer();
+    const modalEl = document.getElementById('clientMasterModal');
+    const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+    modal.show();
 }
 
 // 事業所マスタデータ編集ドロワーを開く
@@ -376,7 +401,7 @@ function saveClientMasterData() {
             document.querySelector('input[name="client_address"]').value = data.address;
             document.querySelector('input[name="client_insurance_number"]').value = data.insurance_number;
 
-            closeMasterDrawer();
+            bootstrap.Modal.getInstance(document.getElementById('clientMasterModal')).hide();
             alert('利用者マスタデータを更新しました。');
         } else {
             alert('エラー: ' + (result.error || '更新に失敗しました。'));

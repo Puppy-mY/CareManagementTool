@@ -63,6 +63,9 @@ urlpatterns = [
     path('home-care-offices/<int:pk>/edit/', views.home_care_office_edit, name='home_care_office_edit'),
     path('home-care-offices/<int:pk>/delete/', views.home_care_office_delete, name='home_care_office_delete'),
 
+    # 更新認定申請書
+    path('<str:client_id>/document/ltc-renewal/', views.document_create_ltc_renewal, name='document_ltc_renewal'),
+
     # マスタデータ更新API
     path('office/<int:pk>/update-master/', api_views.update_office_master, name='update_office_master'),
     path('center/<int:pk>/update-master/', api_views.update_center_master, name='update_center_master'),

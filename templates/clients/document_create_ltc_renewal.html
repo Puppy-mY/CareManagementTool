@@ -1,0 +1,543 @@
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+
+{% block title %}更新認定申請書 - {{ client.name }}様 - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="mb-4 pb-2 border-bottom">
+                <h1 class="h4 mb-1 text-dark fw-bold">
+                    <i class="fas fa-file-alt me-2 text-secondary"></i>更新認定申請書
+                </h1>
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="text-muted small">
+                        <i class="fas fa-user me-1"></i>{{ client.name }} 様
+                    </span>
+                    <button type="button" class="btn btn-outline-secondary btn-back" onclick="goBack()">
+                        <i class="fas fa-arrow-left"></i> 戻る
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <form method="post" id="documentForm">
+                {% csrf_token %}
+
+                <!-- 利用者基本情報（アコーディオン） -->
+                <div class="accordion mb-4" id="basicInfoAccordion">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button"
+                                    data-bs-toggle="collapse" data-bs-target="#basicInfoCollapse">
+                                <i class="fas fa-user-circle me-2"></i>
+                                <strong>利用者基本情報（自動反映）</strong>
+                                <small class="text-muted ms-2">※利用者データから自動入力</small>
+                            </button>
+                        </h2>
+                        <div id="basicInfoCollapse" class="accordion-collapse collapse">
+                            <div class="accordion-body">
+                                <div class="row g-3 mb-3">
+                                    <div class="col-md-3">
+                                        <label class="form-label">氏名</label>
+                                        <input type="text" name="client_name" class="form-control"
+                                               value="{{ initial.client_name }}" readonly>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">フリガナ</label>
+                                        <input type="text" name="client_furigana" class="form-control"
+                                               value="{{ initial.client_furigana }}" readonly>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">生年月日</label>
+                                        <input type="date" name="birth_date" class="form-control"
+                                               value="{{ initial.birth_date }}" readonly>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label">性別</label>
+                                        <input type="text" name="client_gender" class="form-control"
+                                               value="{{ initial.client_gender }}" readonly>
+                                    </div>
+                                </div>
+                                <div class="row g-3 mb-3">
+                                    <div class="col-md-2">
+                                        <label class="form-label">郵便番号</label>
+                                        <input type="text" name="postal_code" class="form-control"
+                                               value="{{ initial.postal_code }}" readonly>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">住所</label>
+                                        <input type="text" name="client_address" class="form-control"
+                                               value="{{ initial.client_address }}" readonly>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">電話番号</label>
+                                        <input type="text" name="client_phone" class="form-control"
+                                               value="{{ initial.client_phone }}" readonly>
+                                    </div>
+                                </div>
+                                <div class="row g-3 mb-3">
+                                    <div class="col-md-4">
+                                        <label class="form-label">被保険者番号</label>
+                                        <input type="text" name="insurance_number" class="form-control"
+                                               value="{{ initial.insurance_number }}" readonly>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label">要介護度</label>
+                                        <input type="text" name="care_level" class="form-control"
+                                               value="{{ initial.care_level }}" readonly>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">認定期間（開始）</label>
+                                        <input type="text" name="cert_start" class="form-control"
+                                               value="{{ initial.cert_start }}" readonly>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">認定期間（終了）</label>
+                                        <input type="text" name="cert_end" class="form-control"
+                                               value="{{ initial.cert_end }}" readonly>
+                                    </div>
+                                </div>
+                                <div class="row g-3 mb-3">
+                                    <div class="col-md-8">
+                                        <label class="form-label">医療保険者名</label>
+                                        <input type="text" name="medical_insurer_name" class="form-control"
+                                               value="{{ initial.medical_insurer_name }}" readonly>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">保険者番号</label>
+                                        <input type="text" name="medical_insurer_number" class="form-control"
+                                               value="{{ initial.medical_insurer_number }}" readonly>
+                                    </div>
+                                </div>
+                                <div class="row g-3 mb-3">
+                                    <div class="col-md-4">
+                                        <label class="form-label">被保険者証 記号</label>
+                                        <input type="text" name="medical_insurance_symbol" class="form-control"
+                                               value="{{ initial.medical_insurance_symbol }}" readonly>
+                                    </div>
+                                    <div class="col-md-8">
+                                        <label class="form-label">被保険者証 番号</label>
+                                        <input type="text" name="medical_insurance_number" class="form-control"
+                                               value="{{ initial.medical_insurance_number }}" readonly>
+                                    </div>
+                                </div>
+                                <div class="mt-3 text-end">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm"
+                                            onclick="openClientMasterDrawer()">
+                                        <i class="fas fa-edit me-1"></i>利用者マスタデータを編集
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 入力項目 -->
+                <div class="card mb-4">
+                    <div class="card-header d-flex align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-edit me-2"></i>入力項目</h5>
+                        <small class="text-muted ms-2">※以下の項目をご入力ください</small>
+                    </div>
+                    <div class="card-body">
+
+                        <!-- 申請書提出者（事業所情報） -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-12">
+                                <label class="form-label fw-bold">申請書提出者（事業所情報）</label>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">事業所フリガナ</label>
+                                <input type="text" name="office_furigana" class="form-control"
+                                       value="{{ initial.office_furigana }}" readonly>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">事業所名</label>
+                                <input type="text" name="office_name" class="form-control"
+                                       value="{{ initial.office_name }}" readonly>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">郵便番号</label>
+                                <input type="text" name="office_postal_code" class="form-control"
+                                       value="{{ initial.office_postal_code }}" readonly>
+                            </div>
+                            <div class="col-md-9">
+                                <label class="form-label">住所</label>
+                                <input type="text" name="office_address" class="form-control"
+                                       value="{{ initial.office_address }}" readonly>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">電話番号</label>
+                                <input type="text" name="office_phone" class="form-control"
+                                       value="{{ initial.office_phone }}" readonly>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">事業所番号</label>
+                                <input type="text" name="office_number" class="form-control"
+                                       value="{{ initial.office_number }}" readonly>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">本人との関係</label>
+                                <input type="text" name="relation" class="form-control"
+                                       value="{{ initial.relation }}" readonly>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">担当者氏名</label>
+                                <input type="text" name="staff_name" class="form-control"
+                                       value="{{ initial.staff_name }}" readonly>
+                            </div>
+                            <div class="col-12 text-end">
+                                <button type="button" class="btn btn-outline-secondary btn-sm"
+                                        onclick="openOfficeMasterDrawer()">
+                                    <i class="fas fa-edit me-1"></i>事業所マスタデータを編集
+                                </button>
+                            </div>
+                        </div>
+
+                        <div style="border-top: 1px solid #dee2e6; width: 50%; margin: 1.5rem 0;"></div>
+
+                        <!-- 申請年月日 -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-12">
+                                <label class="form-label fw-bold">申請年月日 <span class="text-danger">*</span></label>
+                            </div>
+                            <div class="col-md-3">
+                                <input type="date" name="application_date" class="form-control"
+                                       value="{{ initial.application_date }}" required>
+                            </div>
+                        </div>
+
+                        <div style="border-top: 1px solid #dee2e6; width: 50%; margin: 1.5rem 0;"></div>
+
+                        <!-- 特定疾病名（第2号被保険者のみ） -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-12">
+                                <label class="form-label fw-bold">特定疾病名
+                                    <span class="badge bg-secondary ms-1" style="font-weight:normal; font-size:0.72rem;">第２号被保険者のみ</span>
+                                </label>
+                                <div class="mt-1">
+                                    <small class="text-muted">40〜64歳の方のみ記入してください</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <input type="text" name="specific_disease" class="form-control"
+                                       value="{{ initial.specific_disease }}"
+                                       placeholder="例: 初老期における認知症">
+                            </div>
+                        </div>
+
+                        <div style="border-top: 1px solid #dee2e6; width: 50%; margin: 1.5rem 0;"></div>
+
+                        <!-- 認定調査 連絡先 -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-12">
+                                <label class="form-label fw-bold">認定調査 連絡先</label>
+                                <div class="mt-1">
+                                    <small class="text-muted">調査日程の連絡先となる方の情報を入力してください</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">氏名（フリガナ含む）</label>
+                                <input type="text" name="survey_contact_name" class="form-control"
+                                       value="{{ initial.survey_contact_name }}"
+                                       placeholder="例: ヤマカワ ナツカ / 山川 夏楓">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">本人との関係</label>
+                                <input type="text" name="survey_contact_relation" class="form-control"
+                                       value="{{ initial.survey_contact_relation }}"
+                                       placeholder="例: 長女、介護支援専門員">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">電話番号（携帯可）</label>
+                                <input type="text" name="survey_contact_phone" class="form-control"
+                                       value="{{ initial.survey_contact_phone }}"
+                                       placeholder="例: 090-1234-5678">
+                            </div>
+                            <div class="col-md-8">
+                                <label class="form-label">連絡希望時間</label>
+                                <input type="text" name="survey_preferred_time" class="form-control"
+                                       value="{{ initial.survey_preferred_time }}"
+                                       placeholder="例: 毎週水曜日不可、午前中希望">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">備考</label>
+                                <input type="text" name="survey_notes" class="form-control"
+                                       value="{{ initial.survey_notes }}"
+                                       placeholder="例: 家族が立ち会いたい等">
+                            </div>
+                        </div>
+
+                        <div style="border-top: 1px solid #dee2e6; width: 50%; margin: 1.5rem 0;"></div>
+
+                        <!-- 主治医 -->
+                        <div class="row g-3 mb-2">
+                            <div class="col-12">
+                                <label class="form-label fw-bold">主治医</label>
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label">医療機関名</label>
+                                <input type="text" name="doctor_hospital" class="form-control"
+                                       value="{{ initial.doctor_hospital }}"
+                                       placeholder="例: 津市民病院">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">主治医氏名</label>
+                                <input type="text" name="doctor_name" class="form-control"
+                                       value="{{ initial.doctor_name }}"
+                                       placeholder="例: 田中 一郎">
+                            </div>
+                            <div class="col-md-9">
+                                <label class="form-label">備考（最終診察日など）</label>
+                                <input type="text" name="doctor_notes" class="form-control"
+                                       value="{{ initial.doctor_notes }}"
+                                       placeholder="例: 最終診察日：令和○年○月○日">
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- アクションボタン -->
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <button type="button" class="btn btn-outline-secondary btn-back px-4 py-2"
+                                        onclick="goBack()">
+                                    <i class="fas fa-arrow-left me-1"></i> 戻る
+                                </button>
+                            </div>
+                            <div>
+                                <button type="submit" class="btn btn-outline-secondary excel-btn px-4 py-2">
+                                    <i class="fas fa-file-excel me-1"></i> Excel出力
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- マスタデータ編集ドロワー -->
+<div id="masterDataDrawer" class="master-drawer">
+    <div class="master-drawer-content">
+        <div class="master-drawer-header">
+            <h5 id="drawerTitle"><i class="fas fa-edit me-2"></i>マスタデータ編集</h5>
+            <button type="button" class="btn-close-drawer" onclick="closeMasterDrawer()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="master-drawer-body" id="drawerBody"></div>
+        <div class="master-drawer-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeMasterDrawer()">
+                <i class="fas fa-times me-1"></i>キャンセル
+            </button>
+            <button type="button" class="btn btn-primary" onclick="saveMasterData()">
+                <i class="fas fa-save me-1"></i>保存
+            </button>
+        </div>
+    </div>
+</div>
+<div id="drawerOverlay" class="drawer-overlay" onclick="closeMasterDrawer()"></div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentDrawerType = null;
+
+function goBack() {
+    showConfirmModal({
+        icon: 'fa-arrow-left',
+        title: '戻る',
+        message: '入力中のデータがすべて失われます。<br>本当に戻りますか？',
+        okText: '戻る',
+        okClass: 'btn-secondary'
+    }).then(function(ok) {
+        if (ok) window.location.href = "{% url 'client_detail' client.pk %}";
+    });
+}
+
+function openMasterDrawer() {
+    document.getElementById('masterDataDrawer').classList.add('open');
+    document.getElementById('drawerOverlay').classList.add('show');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeMasterDrawer() {
+    document.getElementById('masterDataDrawer').classList.remove('open');
+    document.getElementById('drawerOverlay').classList.remove('show');
+    document.body.style.overflow = '';
+    currentDrawerType = null;
+}
+
+function saveMasterData() {
+    if (currentDrawerType === 'client') saveClientMasterData();
+    else if (currentDrawerType === 'office') saveOfficeMasterData();
+}
+
+function openClientMasterDrawer() {
+    currentDrawerType = 'client';
+    document.getElementById('drawerTitle').innerHTML = '<i class="fas fa-user-edit me-2"></i>利用者マスタデータ編集';
+    document.getElementById('drawerBody').innerHTML = `
+        <div class="mb-3">
+            <label class="form-label">被保険者番号</label>
+            <input type="text" id="edit_insurance_number" class="form-control"
+                   value="${document.querySelector('[name=insurance_number]').value}">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">フリガナ</label>
+            <input type="text" id="edit_client_furigana" class="form-control"
+                   value="${document.querySelector('[name=client_furigana]').value}">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">氏名</label>
+            <input type="text" id="edit_client_name" class="form-control"
+                   value="${document.querySelector('[name=client_name]').value}">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">生年月日</label>
+            <input type="date" id="edit_birth_date" class="form-control"
+                   value="${document.querySelector('[name=birth_date]').value}">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">郵便番号</label>
+            <input type="text" id="edit_postal_code_client" class="form-control"
+                   value="${document.querySelector('[name=postal_code]').value}">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">住所</label>
+            <input type="text" id="edit_client_address" class="form-control"
+                   value="${document.querySelector('[name=client_address]').value}">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">電話番号</label>
+            <input type="text" id="edit_client_phone" class="form-control"
+                   value="${document.querySelector('[name=client_phone]').value}">
+        </div>
+    `;
+    openMasterDrawer();
+}
+
+function saveClientMasterData() {
+    document.querySelector('[name=insurance_number]').value = document.getElementById('edit_insurance_number').value;
+    document.querySelector('[name=client_furigana]').value = document.getElementById('edit_client_furigana').value;
+    document.querySelector('[name=client_name]').value = document.getElementById('edit_client_name').value;
+    document.querySelector('[name=birth_date]').value = document.getElementById('edit_birth_date').value;
+    document.querySelector('[name=postal_code]').value = document.getElementById('edit_postal_code_client').value;
+    document.querySelector('[name=client_address]').value = document.getElementById('edit_client_address').value;
+    document.querySelector('[name=client_phone]').value = document.getElementById('edit_client_phone').value;
+    closeMasterDrawer();
+}
+
+function openOfficeMasterDrawer() {
+    currentDrawerType = 'office';
+    document.getElementById('drawerTitle').innerHTML = '<i class="fas fa-building me-2"></i>事業所マスタデータ編集';
+    document.getElementById('drawerBody').innerHTML = `
+        <div class="mb-3">
+            <label class="form-label">事業所フリガナ</label>
+            <input type="text" id="edit_office_furigana" class="form-control"
+                   value="${document.querySelector('[name=office_furigana]').value}">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">事業所名</label>
+            <input type="text" id="edit_office_name" class="form-control"
+                   value="${document.querySelector('[name=office_name]').value}">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">事業所番号</label>
+            <input type="text" id="edit_office_number" class="form-control"
+                   value="${document.querySelector('[name=office_number]').value}">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">郵便番号</label>
+            <input type="text" id="edit_office_postal_code" class="form-control"
+                   value="${document.querySelector('[name=office_postal_code]').value}" maxlength="8">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">住所</label>
+            <input type="text" id="edit_office_address" class="form-control"
+                   value="${document.querySelector('[name=office_address]').value}">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">電話番号</label>
+            <input type="text" id="edit_office_phone" class="form-control"
+                   value="${document.querySelector('[name=office_phone]').value}">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">担当者氏名</label>
+            <input type="text" id="edit_staff_name" class="form-control"
+                   value="${document.querySelector('[name=staff_name]').value}">
+        </div>
+    `;
+    openMasterDrawer();
+}
+
+function saveOfficeMasterData() {
+    document.querySelector('[name=office_furigana]').value = document.getElementById('edit_office_furigana').value;
+    document.querySelector('[name=office_name]').value = document.getElementById('edit_office_name').value;
+    document.querySelector('[name=office_number]').value = document.getElementById('edit_office_number').value;
+    document.querySelector('[name=office_postal_code]').value = document.getElementById('edit_office_postal_code').value;
+    document.querySelector('[name=office_address]').value = document.getElementById('edit_office_address').value;
+    document.querySelector('[name=office_phone]').value = document.getElementById('edit_office_phone').value;
+    document.querySelector('[name=staff_name]').value = document.getElementById('edit_staff_name').value;
+    closeMasterDrawer();
+}
+</script>
+
+<style>
+.btn { transition: all 0.2s ease; }
+.btn:hover { transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+.btn.btn-outline-secondary.btn-back:hover {
+    background-color: #f5f5f5 !important; border-color: #999 !important; color: #333 !important;
+}
+.btn.btn-outline-secondary.excel-btn:hover {
+    background-color: #d1f2d1 !important; border-color: #198754 !important; color: #198754 !important;
+}
+.card-header { border-bottom: 2px solid #dee2e6; }
+input[readonly], textarea[readonly] {
+    background-color: #f0f0f0 !important; cursor: not-allowed !important; color: #6c757d !important;
+}
+input[readonly]:focus, textarea[readonly]:focus {
+    background-color: #f0f0f0 !important; box-shadow: none !important;
+}
+.master-drawer {
+    position: fixed; top: 0; right: -500px; width: 500px; height: 100vh;
+    background-color: white; box-shadow: -2px 0 10px rgba(0,0,0,0.3);
+    z-index: 1050; transition: right 0.3s ease-in-out; overflow: hidden;
+}
+.master-drawer.open { right: 0; }
+.master-drawer-content { display: flex; flex-direction: column; height: 100%; }
+.master-drawer-header {
+    padding: 1.5rem; border-bottom: 1px solid #dee2e6;
+    display: flex; justify-content: space-between; align-items: center;
+    background-color: #f8f9fa;
+}
+.master-drawer-header h5 { margin: 0; font-size: 1.25rem; font-weight: 600; }
+.btn-close-drawer {
+    background: none; border: none; font-size: 1.5rem; cursor: pointer;
+    color: #6c757d; padding: 0; width: 30px; height: 30px;
+    display: flex; align-items: center; justify-content: center; transition: color 0.2s;
+}
+.btn-close-drawer:hover { color: #000; }
+.master-drawer-body { flex: 1; padding: 1.5rem; overflow-y: auto; }
+.master-drawer-footer {
+    padding: 1rem 1.5rem; border-top: 1px solid #dee2e6;
+    display: flex; justify-content: flex-end; gap: 0.5rem; background-color: #f8f9fa;
+}
+.drawer-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
+    background-color: rgba(0,0,0,0.5); z-index: 1040; display: none; opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+}
+.drawer-overlay.show { display: block; opacity: 1; }
+</style>
+{% endblock %}

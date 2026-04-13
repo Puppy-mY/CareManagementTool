@@ -5,576 +5,768 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ client.name }}様 - アセスメントシート</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-family: 'MS Gothic', 'MS Mincho', monospace;
-            font-size: 9pt;
-            line-height: 1.2;
+            font-family: 'MS Gothic', 'ＭＳ ゴシック', monospace;
+            font-size: 8pt;
+            line-height: 1.3;
             color: #000;
             background: #fff;
         }
 
-        .container {
-            max-width: 297mm; /* A4横向き */
-            margin: 0 auto;
-            padding: 5mm;
-        }
-
-        .print-button {
+        /* ---- 画面上部の操作バー ---- */
+        .action-bar {
             position: fixed;
-            top: 20px;
-            right: 20px;
-            background: #007bff;
-            color: white;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: #343a40;
+            color: #fff;
+            padding: 6px 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 9999;
+            font-size: 13px;
+        }
+        .action-bar .title { flex: 1; font-weight: bold; }
+        .btn-print {
+            background: #0d6efd;
+            color: #fff;
             border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
+            padding: 5px 14px;
+            border-radius: 4px;
             cursor: pointer;
-            font-size: 14px;
-            z-index: 1000;
+            font-size: 13px;
         }
-
-        .back-button {
-            position: fixed;
-            top: 20px;
-            left: 20px;
+        .btn-back {
             background: #6c757d;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-            z-index: 1000;
+            color: #fff;
+            padding: 5px 14px;
+            border-radius: 4px;
             text-decoration: none;
-            display: inline-block;
+            font-size: 13px;
         }
 
-        /* Excel様式のテーブル */
-        .excel-table {
+        /* ---- 本体コンテナ ---- */
+        .container {
+            margin-top: 44px;
+            padding: 4mm 6mm 6mm;
+        }
+
+        /* ---- 共通テーブルスタイル ---- */
+        table.at {
             width: 100%;
             border-collapse: collapse;
-            font-size: 9pt;
-            margin-bottom: 0;
+            table-layout: fixed;
         }
-
-        .excel-table td,
-        .excel-table th {
-            border: 1px solid #000;
-            padding: 2px 4px;
-            vertical-align: top;
-            height: 20px;
-            font-weight: normal;
+        table.at td, table.at th {
+            border: 0.5px solid #999;
+            padding: 1px 3px;
+            vertical-align: middle;
+            overflow-wrap: break-word;
+            word-break: break-all;
         }
-
-        /* ヘッダー */
-        .title-cell {
-            background-color: #d9d9d9;
+        .lb {  /* ラベルセル */
+            background: #e8e8e8;
             font-weight: bold;
+            font-size: 7.5pt;
             text-align: center;
-            font-size: 14pt;
-            height: 30px;
+            white-space: nowrap;
         }
-
-        .section-header {
-            background-color: #e6e6e6;
-            font-weight: bold;
-            padding: 4px;
-            height: 25px;
-        }
-
-        .label-cell {
-            background-color: #f2f2f2;
-            font-weight: bold;
-            text-align: center;
-            width: 80px;
+        .vl {  /* 値セル */
+            background: #fff;
             font-size: 8pt;
         }
-
-        .input-cell {
-            background-color: #ffffff;
-            min-height: 20px;
+        .sh {  /* セクションヘッダー */
+            background: #c0c0c0;
+            font-weight: bold;
+            font-size: 8pt;
             padding: 2px 4px;
         }
+        .min-h { min-height: 18px; }
+        .h2 { height: 28px; }
+        .h3 { height: 42px; }
+        .h4 { height: 56px; }
+        .nowrap { white-space: nowrap; }
 
-        .wide-input {
-            width: 200px;
+        /* ---- セクション間隔 ---- */
+        .sec {
+            margin-bottom: 2px;
+            page-break-inside: avoid;
         }
 
-        .narrow-input {
-            width: 100px;
+        /* ---- ヘッダーブロック ---- */
+        .doc-header {
+            display: flex;
+            align-items: flex-end;
+            margin-bottom: 3px;
+        }
+        .doc-title {
+            font-size: 14pt;
+            font-weight: bold;
+            letter-spacing: 0.1em;
+            flex: 1;
+        }
+        .doc-meta {
+            font-size: 7.5pt;
+            text-align: right;
+            line-height: 1.6;
         }
 
-        /* 複数列にまたがるセル */
-        .span-2 { width: 160px; }
-        .span-3 { width: 240px; }
-        .span-4 { width: 320px; }
-        .span-5 { width: 400px; }
-
-        /* セクション間の余白 */
-        .section-break {
-            height: 10px;
-        }
-
-        /* 印刷用スタイル */
+        /* ---- 印刷スタイル ---- */
         @media print {
-            body {
-                margin: 0;
-                padding: 0;
-                background: white;
-                font-size: 8pt;
-            }
-
-            .container {
-                max-width: none;
-                margin: 0;
-                padding: 10mm;
-            }
-
-            .print-button,
-            .back-button {
-                display: none;
-            }
-
-            .excel-table {
-                font-size: 8pt;
-            }
-
-            .excel-table td,
-            .excel-table th {
-                padding: 1px 2px;
-                height: 18px;
-            }
-
-            @page {
-                size: A4 landscape;
-                margin: 10mm;
-            }
-        }
-
-        /* モバイル対応 */
-        @media (max-width: 768px) {
-            .container {
-                padding: 2mm;
-                overflow-x: auto;
-            }
-
-            .excel-table {
-                min-width: 800px;
-                font-size: 8pt;
-            }
-
-            .print-button,
-            .back-button {
-                position: relative;
-                margin: 5px;
-                display: block;
-                width: calc(100% - 10px);
-            }
+            body { font-size: 7.5pt; }
+            .action-bar { display: none !important; }
+            .container { margin-top: 0; padding: 0; }
+            table.at td, table.at th { padding: 1px 2px; }
+            @page { size: A4 landscape; margin: 8mm; }
         }
     </style>
 </head>
 <body>
-    <button class="print-button" onclick="window.print()">印刷する</button>
-    <a href="{% url 'assessment_detail' assessment.pk %}" class="back-button">戻る</a>
 
-    <div class="container">
-        <table class="excel-table">
-            <!-- タイトル行 -->
+<!-- 操作バー（印刷時非表示） -->
+<div class="action-bar">
+    <a href="{% url 'assessment_detail' assessment.pk %}" class="btn-back">&#8592; 戻る</a>
+    <span class="title">{{ client.name }} 様 — アセスメントシート</span>
+    <button class="btn-print" onclick="window.print()">&#128438; 印刷する</button>
+</div>
+
+<div class="container">
+
+    <!-- ドキュメントヘッダー -->
+    <div class="doc-header">
+        <div class="doc-title">アセスメントシート</div>
+        <div class="doc-meta">
+            居宅介護支援事業所 安濃津ろまん<br>
+            作成年月日: {{ assessment.assessment_date|date:"Y年m月d日" }}
+        </div>
+    </div>
+
+    <!-- ===== 行1: アセスメントの理由・面談場所・作成者 ===== -->
+    <div class="sec">
+        <table class="at">
+            <colgroup>
+                <col style="width:9%"><col style="width:24%">
+                <col style="width:9%"><col style="width:24%">
+                <col style="width:9%"><col style="width:25%">
+            </colgroup>
             <tr>
-                <td colspan="20" class="title-cell">アセスメントシート</td>
+                <td class="lb">アセスメントの理由</td>
+                <td class="vl">
+                    {{ assessment.get_assessment_type_display }}{% if assessment.assessment_type == 'other' and assessment.assessment_type_other %}（{{ assessment.assessment_type_other }}）{% endif %}
+                </td>
+                <td class="lb">面談場所</td>
+                <td class="vl">
+                    {{ assessment.get_interview_location_display }}{% if assessment.interview_location == 'other' and assessment.interview_location_other %}（{{ assessment.interview_location_other }}）{% endif %}
+                </td>
+                <td class="lb">作成者</td>
+                <td class="vl">{{ assessment.assessor.profile.get_full_name }}</td>
             </tr>
-            
-            <!-- 空白行 -->
-            <tr><td colspan="20" class="section-break"></td></tr>
-            
-            <!-- アセスメントの理由 -->
-            <tr>
-                <td class="section-header" colspan="20">アセスメントの理由</td>
-            </tr>
-            
-            <!-- 基本情報セクション -->
-            <tr>
-                <td class="section-header" colspan="20">基本情報</td>
-            </tr>
-            <tr>
-                <td class="label-cell">基本情報</td>
-                <td class="label-cell">ふりがな</td>
-                <td class="input-cell span-3">{{ client.furigana|default:"" }}</td>
-                <td class="label-cell"></td>
-                <td class="label-cell"></td>
-                <td class="label-cell"></td>
-                <td class="label-cell"></td>
-                <td class="label-cell"></td>
-                <td class="label-cell"></td>
-                <td class="label-cell"></td>
-                <td class="label-cell"></td>
-                <td class="label-cell"></td>
-                <td class="label-cell"></td>
-                <td class="label-cell"></td>
-                <td class="label-cell"></td>
-                <td class="label-cell"></td>
-                <td class="label-cell"></td>
-                <td class="label-cell"></td>
-                <td class="label-cell"></td>
-                <td class="label-cell"></td>
-            </tr>
-            <tr>
-                <td class="input-cell"></td>
-                <td class="label-cell">氏名</td>
-                <td class="input-cell span-3">{{ client.name }}</td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-            </tr>
-            <tr>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-            </tr>
-            <tr>
-                <td class="input-cell"></td>
-                <td class="label-cell">住所</td>
-                <td class="input-cell span-5">{{ client.address|default:"" }}</td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-            </tr>
-            
-            <!-- 空白行 -->
-            <tr><td colspan="20" class="section-break"></td></tr>
-            
-            <!-- 保険情報セクション -->
-            <tr>
-                <td class="section-header" colspan="20">保険情報</td>
-            </tr>
-            <tr>
-                <td class="label-cell">保険情報</td>
-                <td class="label-cell">介護保険</td>
-                <td class="input-cell span-2">{{ assessment.insurance_info.medical_insurance|default:"" }}</td>
-                <td class="label-cell">被保険者番号</td>
-                <td class="input-cell span-3">{{ client.insurance_number|default:"" }}</td>
-                <td class="label-cell">要介護度</td>
-                <td class="input-cell span-2">{{ assessment.insurance_info.care_level|default:"" }}</td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-            </tr>
-            <tr>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="label-cell">身体障害者手帳</td>
-                <td class="input-cell">{{ assessment.insurance_info.disability_handbook|yesno:"有,無"|default:"" }}</td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-            </tr>
-            
-            <!-- 家族情報セクション -->
-            <tr>
-                <td class="section-header" colspan="20">家族情報</td>
-            </tr>
-            <tr>
-                <td class="label-cell">家族情報</td>
-                <td class="label-cell">家族構成員</td>
-                <td class="input-cell span-2">{{ assessment.family_situation.family_member1|default:"" }}</td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="label-cell">人</td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="label-cell">住所</td>
-                <td class="input-cell span-2">{{ client.address|default:"" }}</td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-            </tr>
-            
-            <!-- 健康状態セクション -->
-            {% if assessment.health_status %}
-            <tr>
-                <td class="section-header" colspan="20">健康状態</td>
-            </tr>
-            <tr>
-                <td class="label-cell">主な疾患</td>
-                <td class="input-cell span-4">{{ assessment.health_status.disease_1|default:"" }}</td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-            </tr>
-            <tr>
-                <td class="label-cell">主治医</td>
-                <td class="input-cell span-4">{{ assessment.health_status.main_doctor|default:"" }}</td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-            </tr>
-            <tr>
-                <td class="label-cell">服薬状況</td>
-                <td class="input-cell span-4">{{ assessment.health_status.medication|default:"" }}</td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-            </tr>
-            {% endif %}
-            
-            <!-- 身体状況 -->
-            {% if assessment.physical_status %}
-            <tr>
-                <td class="section-header" colspan="20">身体状況</td>
-            </tr>
-            <tr>
-                <td class="label-cell">身長・体重</td>
-                <td class="input-cell">{{ assessment.physical_status.height|default:"" }}cm</td>
-                <td class="input-cell">{{ assessment.physical_status.weight|default:"" }}kg</td>
-                <td class="label-cell">視力</td>
-                <td class="input-cell span-2">{{ assessment.physical_status.vision|default:"" }}</td>
-                <td class="label-cell">聴力</td>
-                <td class="input-cell span-2">{{ assessment.physical_status.hearing|default:"" }}</td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-            </tr>
-            {% endif %}
-            
-            <!-- ADL（日常生活動作）-->
-            {% if assessment.adl %}
-            <tr>
-                <td class="section-header" colspan="20">日常生活動作（ADL）</td>
-            </tr>
-            <tr>
-                <td class="label-cell">食事</td>
-                <td class="input-cell span-3">{{ assessment.adl.eating_method|default:"" }}</td>
-                <td class="label-cell">入浴</td>
-                <td class="input-cell span-3">{{ assessment.adl.bathing_assistance|default:"" }}</td>
-                <td class="label-cell">排泄</td>
-                <td class="input-cell span-3">{{ assessment.adl.excretion_assistance|default:"" }}</td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-            </tr>
-            {% endif %}
-            
-            <!-- IADL（手段的日常生活動作）-->
-            {% if assessment.iadl %}
-            <tr>
-                <td class="section-header" colspan="20">手段的日常生活動作（IADL）</td>
-            </tr>
-            <tr>
-                <td class="label-cell">調理</td>
-                <td class="input-cell span-2">{{ assessment.iadl.cooking|default:"" }}</td>
-                <td class="label-cell">掃除</td>
-                <td class="input-cell span-2">{{ assessment.iadl.cleaning|default:"" }}</td>
-                <td class="label-cell">買い物</td>
-                <td class="input-cell span-2">{{ assessment.iadl.shopping|default:"" }}</td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-            </tr>
-            {% endif %}
-            
-            <!-- 総合所見 -->
-            <tr>
-                <td class="section-header" colspan="20">総合所見・支援目標</td>
-            </tr>
-            <tr>
-                <td class="label-cell">総合所見</td>
-                <td class="input-cell span-4" style="height: 60px;">{{ assessment.general_assessment|default:"" }}</td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-            </tr>
-            <tr>
-                <td class="label-cell">支援目標</td>
-                <td class="input-cell span-4" style="height: 60px;">{{ assessment.support_goals|default:"" }}</td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-            </tr>
-            
-            <!-- 作成者情報 -->
-            <tr>
-                <td class="section-header" colspan="20">作成者情報</td>
-            </tr>
-            <tr>
-                <td class="label-cell">作成者</td>
-                <td class="input-cell span-2">{{ assessment.assessor.profile.get_full_name }}</td>
-                <td class="label-cell">作成日</td>
-                <td class="input-cell span-2">{{ assessment.assessment_date|date:"Y年m月d日" }}</td>
-                <td class="label-cell">面接場所</td>
-                <td class="input-cell span-2">{{ assessment.get_interview_location_display }}</td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-                <td class="input-cell"></td>
-            </tr>
-            
         </table>
     </div>
+
+    <!-- ===== 行2: 基本情報 ===== -->
+    <div class="sec">
+        <table class="at">
+            <colgroup>
+                <col style="width:5%">
+                <col style="width:6%"><col style="width:14%">
+                <col style="width:5%"><col style="width:8%">
+                <col style="width:7%"><col style="width:11%">
+                <col style="width:5%"><col style="width:4%">
+                <col style="width:7%"><col style="width:28%">
+            </colgroup>
+            <tr>
+                <td class="sh" rowspan="2">基本情報</td>
+                <td class="lb">ふりがな</td>
+                <td class="vl">{{ client.furigana }}</td>
+                <td class="lb">性別</td>
+                <td class="vl">{{ client.get_gender_display }}</td>
+                <td class="lb">生年月日</td>
+                <td class="vl">{{ client.birth_date|date:"Y年m月d日" }}</td>
+                <td class="lb">年齢</td>
+                <td class="vl nowrap">{% if client_age %}{{ client_age }}歳{% endif %}</td>
+                <td class="lb">連絡先</td>
+                <td class="vl">{{ client.phone }}</td>
+            </tr>
+            <tr>
+                <td class="lb">氏名</td>
+                <td class="vl" style="font-size:9pt;font-weight:bold;">{{ client.name }} 様</td>
+                <td class="lb" colspan="2">住所</td>
+                <td class="vl" colspan="6">{{ client.address }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- ===== 行3: 保険情報 ===== -->
+    <div class="sec">
+        <table class="at">
+            <colgroup>
+                <col style="width:5%">
+                <col style="width:6%"><col style="width:8%">
+                <col style="width:6%"><col style="width:9%">
+                <col style="width:6%"><col style="width:7%">
+                <col style="width:6%"><col style="width:9%">
+                <col style="width:6%"><col style="width:9%">
+                <col style="width:6%"><col style="width:17%">
+            </colgroup>
+            <tr>
+                <td class="sh" rowspan="2">保険情報</td>
+                <td class="lb">医療保険</td>
+                <td class="vl">{{ insurance_info.medical_insurance }}</td>
+                <td class="lb">被保険者番号</td>
+                <td class="vl">{{ client.insurance_number }}</td>
+                <td class="lb">要介護度</td>
+                <td class="vl">{{ client.get_care_level_display }}</td>
+                <td class="lb">認定日</td>
+                <td class="vl">{% if client.certification_date %}{{ client.certification_date|date:"Y年m月d日" }}{% endif %}</td>
+                <td class="lb">認定期間</td>
+                <td class="vl" colspan="3">
+                    {% if client.certification_period_start %}{{ client.certification_period_start|date:"Y.m.d" }}{% endif %}
+                    〜
+                    {% if client.certification_period_end %}{{ client.certification_period_end|date:"Y.m.d" }}{% endif %}
+                </td>
+            </tr>
+            <tr>
+                <td class="lb">負担割合</td>
+                <td class="vl">{{ client.care_burden }}</td>
+                <td class="lb">身体障害者手帳</td>
+                <td class="vl">{{ client.disability_handbook|yesno:"有,無" }}</td>
+                <td class="lb">障がい種別</td>
+                <td class="vl">{{ client.get_disability_handbook_type_display }}</td>
+                <td class="lb">難病</td>
+                <td class="vl">{{ client.difficult_disease|yesno:"有,無" }}</td>
+                <td class="lb">生活保護</td>
+                <td class="vl">{{ client.life_protection|yesno:"有,無" }}</td>
+                <td class="lb">障がい高齢者自立度</td>
+                <td class="vl">{{ client.get_disability_level_display }}</td>
+            </tr>
+            <tr>
+                <td class="lb" colspan="2">認知症自立度</td>
+                <td class="vl" colspan="11">{{ client.get_dementia_level_display }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- ===== 行4: 家族状況 ===== -->
+    <div class="sec">
+        <table class="at">
+            <colgroup>
+                <col style="width:5%">
+                <col style="width:5%"><col style="width:10%">
+                <col style="width:5%"><col style="width:9%">
+                <col style="width:5%"><col style="width:11%">
+                <col style="width:5%"><col style="width:9%">
+                <col style="width:5%"><col style="width:9%">
+                <col style="width:5%"><col style="width:9%">
+                <col style="width:13%">
+            </colgroup>
+            <tr>
+                <td class="sh" rowspan="3">家族状況</td>
+                <td class="lb">氏名</td>
+                <td class="vl">{{ family_situation.family_member1_name }}</td>
+                <td class="lb">続柄</td>
+                <td class="vl">{{ family_situation.family_member1_relation }}</td>
+                <td class="lb">住所</td>
+                <td class="vl">{{ family_situation.family_member1_address }}</td>
+                <td class="lb">連絡先</td>
+                <td class="vl">{{ family_situation.family_member1_contact }}</td>
+                <td class="lb">介護状況</td>
+                <td class="vl">{{ family_situation.family_member1_care }}</td>
+                <td class="lb">同居</td>
+                <td class="vl">{{ family_situation.family_member1_living_together }}</td>
+                <td class="vl">{{ family_situation.family_member1_notes }}</td>
+            </tr>
+            <tr>
+                <td class="lb">氏名</td>
+                <td class="vl">{{ family_situation.family_member2_name }}</td>
+                <td class="lb">続柄</td>
+                <td class="vl">{{ family_situation.family_member2_relation }}</td>
+                <td class="lb">住所</td>
+                <td class="vl">{{ family_situation.family_member2_address }}</td>
+                <td class="lb">連絡先</td>
+                <td class="vl">{{ family_situation.family_member2_contact }}</td>
+                <td class="lb">介護状況</td>
+                <td class="vl">{{ family_situation.family_member2_care }}</td>
+                <td class="lb">同居</td>
+                <td class="vl">{{ family_situation.family_member2_living_together }}</td>
+                <td class="vl">{{ family_situation.family_member2_notes }}</td>
+            </tr>
+            <tr>
+                <td class="lb" colspan="2">家族特記</td>
+                <td class="vl h2" colspan="11">{{ family_situation.notes }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- ===== 行5: 居住状況 ===== -->
+    <div class="sec">
+        <table class="at">
+            <colgroup>
+                <col style="width:5%">
+                <col style="width:6%"><col style="width:9%">
+                <col style="width:6%"><col style="width:9%">
+                <col style="width:6%"><col style="width:9%">
+                <col style="width:6%"><col style="width:9%">
+                <col style="width:6%"><col style="width:9%">
+                <col style="width:20%">
+            </colgroup>
+            <tr>
+                <td class="sh" rowspan="3">居住状況</td>
+                <td class="lb">家庭環境</td>
+                <td class="vl">{{ liv_home_env }}</td>
+                <td class="lb">住宅形態</td>
+                <td class="vl">{{ liv_housing_type }}</td>
+                <td class="lb">住宅権利</td>
+                <td class="vl">{{ liv_ownership }}</td>
+                <td class="lb">個室</td>
+                <td class="vl">{{ liv_private_room }}</td>
+                <td class="lb">エアコン</td>
+                <td class="vl">{{ liv_aircon }}</td>
+                <td class="vl" rowspan="2">{{ liv_notes }}</td>
+            </tr>
+            <tr>
+                <td class="lb">トイレ</td>
+                <td class="vl">{{ liv_toilet }}</td>
+                <td class="lb">浴室</td>
+                <td class="vl">{{ liv_bathroom }}</td>
+                <td class="lb">寝室</td>
+                <td class="vl">{{ liv_bedroom }}</td>
+                <td class="lb">室内段差</td>
+                <td class="vl">{{ liv_level_diff }}</td>
+                <td class="lb">住宅改修</td>
+                <td class="vl">{{ liv_modification }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- ===== 行6: 利用サービス・社会関係 ===== -->
+    <div class="sec">
+        <table class="at">
+            <colgroup>
+                <col style="width:5%">
+                <col style="width:7%"><col style="width:25%">
+                <col style="width:7%"><col style="width:25%">
+                <col style="width:7%"><col style="width:24%">
+            </colgroup>
+            <tr>
+                <td class="sh" rowspan="2">利用サービス</td>
+                <td class="lb">介護サービス</td>
+                <td class="vl h3">{{ svc_care }}</td>
+                <td class="lb">福祉用具</td>
+                <td class="vl h3">{{ svc_welfare }}</td>
+                <td class="lb">その他サービス</td>
+                <td class="vl h3">{{ svc_other }}</td>
+            </tr>
+            <tr>
+                <td class="lb">インフォーマルサービス</td>
+                <td class="vl h3">{{ svc_informal }}</td>
+                <td class="lb">社会的関係</td>
+                <td class="vl h3" colspan="3">{{ svc_social }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- ===== 行7: 本人・家族の意向 ===== -->
+    <div class="sec">
+        <table class="at">
+            <colgroup>
+                <col style="width:5%">
+                <col style="width:7%"><col style="width:88%">
+            </colgroup>
+            <tr>
+                <td class="sh" rowspan="2">意向</td>
+                <td class="lb">本人の意向</td>
+                <td class="vl h3">{{ basic_info.personal_hopes }}</td>
+            </tr>
+            <tr>
+                <td class="lb">家族の意向</td>
+                <td class="vl h3">{{ basic_info.family_hopes }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- ===== 行8: 生活歴・特記事項 ===== -->
+    <div class="sec">
+        <table class="at">
+            <colgroup>
+                <col style="width:5%">
+                <col style="width:7%"><col style="width:88%">
+            </colgroup>
+            <tr>
+                <td class="sh" rowspan="2">生活歴等</td>
+                <td class="lb">生活歴</td>
+                <td class="vl h3">{{ basic_info.life_history }}</td>
+            </tr>
+            <tr>
+                <td class="lb">特記事項</td>
+                <td class="vl h2">{{ basic_info.notes }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- ===== 行9: 健康状態 ===== -->
+    <div class="sec">
+        <table class="at">
+            <colgroup>
+                <col style="width:5%">
+                <col style="width:8%"><col style="width:9%">
+                <col style="width:8%"><col style="width:9%">
+                <col style="width:8%"><col style="width:9%">
+                <col style="width:8%"><col style="width:9%">
+                <col style="width:8%"><col style="width:9%">
+                <col style="width:8%"><col style="width:8%">
+            </colgroup>
+            <tr>
+                <td class="sh" rowspan="7">健康状態</td>
+                <td class="lb">疾患名1</td>
+                <td class="vl">{{ health_status.disease_name_1 }}</td>
+                <td class="lb">疾患名2</td>
+                <td class="vl">{{ health_status.disease_name_2 }}</td>
+                <td class="lb">疾患名3</td>
+                <td class="vl">{{ health_status.disease_name_3 }}</td>
+                <td class="lb">疾患名4</td>
+                <td class="vl">{{ health_status.disease_name_4 }}</td>
+                <td class="lb">疾患名5</td>
+                <td class="vl">{{ health_status.disease_name_5 }}</td>
+                <td class="lb">疾患名6</td>
+                <td class="vl">{{ health_status.disease_name_6 }}</td>
+            </tr>
+            <tr>
+                <td class="lb">発症日1</td>
+                <td class="vl">{{ health_status.onset_date_1 }}</td>
+                <td class="lb">発症日2</td>
+                <td class="vl">{{ health_status.onset_date_2 }}</td>
+                <td class="lb">発症日3</td>
+                <td class="vl">{{ health_status.onset_date_3 }}</td>
+                <td class="lb">発症日4</td>
+                <td class="vl">{{ health_status.onset_date_4 }}</td>
+                <td class="lb">発症日5</td>
+                <td class="vl">{{ health_status.onset_date_5 }}</td>
+                <td class="lb">発症日6</td>
+                <td class="vl">{{ health_status.onset_date_6 }}</td>
+            </tr>
+            <tr>
+                <td class="lb" colspan="2">既往歴</td>
+                <td class="vl h2" colspan="10">{{ health_status.medical_history }}</td>
+            </tr>
+            <tr>
+                <td class="lb" colspan="2">特別な医療</td>
+                <td class="vl h2" colspan="10">{{ health_status.special_medical_treatment }}</td>
+            </tr>
+            <tr>
+                <td class="lb">主治医（病院）</td>
+                <td class="vl">{{ health_status.main_doctor_hospital }}</td>
+                <td class="lb">主治医（氏名）</td>
+                <td class="vl">{{ health_status.main_doctor_name }}</td>
+                <td class="lb">訪問診療医</td>
+                <td class="vl">{{ health_status.home_visit_doctor }}</td>
+                <td class="lb">かかりつけ医1</td>
+                <td class="vl">{{ health_status.family_doctor1 }}</td>
+                <td class="lb">かかりつけ医2</td>
+                <td class="vl">{{ health_status.family_doctor2 }}</td>
+                <td class="lb">かかりつけ医3</td>
+                <td class="vl">{{ health_status.family_doctor3 }}</td>
+            </tr>
+            <tr>
+                <td class="lb">通院状況</td>
+                <td class="vl">{{ health_status.hospital_visit_status }}</td>
+                <td class="lb">通院方法</td>
+                <td class="vl">{{ health_status.hospital_visit_method }}</td>
+                <td class="lb" colspan="2">服薬内容</td>
+                <td class="vl h2" colspan="6">{{ health_status.medication_details }}</td>
+            </tr>
+            <tr>
+                <td class="lb">アレルギー</td>
+                <td class="vl">{{ health_status.allergy|yesno:"有,無" }}</td>
+                <td class="lb" colspan="2">アレルギー詳細</td>
+                <td class="vl" colspan="8">{{ health_status.allergy_details }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- ===== 行10: 身体状況 ===== -->
+    <div class="sec">
+        <table class="at">
+            <colgroup>
+                <col style="width:5%">
+                <col style="width:7%"><col style="width:16%">
+                <col style="width:7%"><col style="width:16%">
+                <col style="width:7%"><col style="width:7%">
+                <col style="width:5%"><col style="width:6%">
+                <col style="width:5%"><col style="width:6%">
+                <col style="width:13%">
+            </colgroup>
+            <tr>
+                <td class="sh" rowspan="3">身体状況</td>
+                <td class="lb">皮膚疾患</td>
+                <td class="vl">{{ phy_skin }}</td>
+                <td class="lb">感染症</td>
+                <td class="vl">{{ phy_infection }}</td>
+                <td class="lb">特別な医療処置</td>
+                <td class="vl">{{ phy_special_medical }}</td>
+                <td class="lb">麻痺</td>
+                <td class="vl">{{ phy_paralysis }}</td>
+                <td class="lb">疼痛</td>
+                <td class="vl">{{ phy_pain }}</td>
+                <td class="vl h4" rowspan="3">{{ phy_notes }}</td>
+            </tr>
+            <tr>
+                <td class="lb">身長</td>
+                <td class="vl">{% if phy_height %}{{ phy_height }}cm{% endif %}</td>
+                <td class="lb">体重</td>
+                <td class="vl">{% if phy_weight %}{{ phy_weight }}kg{% endif %}</td>
+                <td class="lb">視力</td>
+                <td class="vl">{{ phy_vision }}</td>
+                <td class="lb">眼鏡</td>
+                <td class="vl">{{ phy_glasses }}</td>
+                <td class="lb">聴力</td>
+                <td class="vl">{{ phy_hearing }}</td>
+            </tr>
+            <tr>
+                <td class="lb">補聴器</td>
+                <td class="vl">{{ phy_hearing_aid }}</td>
+                <td colspan="9"></td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- ===== 行11: 基本動作 ===== -->
+    <div class="sec">
+        <table class="at">
+            <colgroup>
+                <col style="width:5%">
+                <col style="width:6%"><col style="width:8%">
+                <col style="width:6%"><col style="width:8%">
+                <col style="width:6%"><col style="width:8%">
+                <col style="width:6%"><col style="width:8%">
+                <col style="width:7%"><col style="width:10%">
+                <col style="width:22%">
+            </colgroup>
+            <tr>
+                <td class="sh" rowspan="2">基本動作</td>
+                <td class="lb">寝返り</td>
+                <td class="vl">{{ ba_turning }}</td>
+                <td class="lb">起き上がり</td>
+                <td class="vl">{{ ba_getting_up }}</td>
+                <td class="lb">座位保持</td>
+                <td class="vl">{{ ba_sitting }}</td>
+                <td class="lb">立ち上がり</td>
+                <td class="vl">{{ ba_standing_up }}</td>
+                <td class="lb">立位保持</td>
+                <td class="vl">{{ ba_standing }}</td>
+                <td class="vl h3" rowspan="2">{{ ba_notes }}</td>
+            </tr>
+            <tr>
+                <td class="lb">移乗</td>
+                <td class="vl">{{ ba_transfer }}</td>
+                <td class="lb">屋内移動</td>
+                <td class="vl">{{ ba_indoor_mobility }}<br><small>{{ ba_indoor_equipment }}</small></td>
+                <td class="lb">屋外移動</td>
+                <td class="vl">{{ ba_outdoor_mobility }}<br><small>{{ ba_outdoor_equipment }}</small></td>
+                <td colspan="3"></td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- ===== 行12: 食事・嚥下 ===== -->
+    <div class="sec">
+        <table class="at">
+            <colgroup>
+                <col style="width:5%">
+                <col style="width:6%"><col style="width:9%">
+                <col style="width:6%"><col style="width:9%">
+                <col style="width:6%"><col style="width:9%">
+                <col style="width:6%"><col style="width:9%">
+                <col style="width:6%"><col style="width:9%">
+                <col style="width:20%">
+            </colgroup>
+            <tr>
+                <td class="sh" rowspan="2">食事・嚥下</td>
+                <td class="lb">食事摂取方法</td>
+                <td class="vl">{{ adl_eating_method }}</td>
+                <td class="lb">食事介助</td>
+                <td class="vl">{{ adl_eating_assistance }}</td>
+                <td class="lb">嚥下</td>
+                <td class="vl">{{ adl_swallowing }}</td>
+                <td class="lb">主食形態</td>
+                <td class="vl">{{ adl_meal_main }}</td>
+                <td class="lb">副食形態</td>
+                <td class="vl">{{ adl_meal_side }}</td>
+                <td class="vl h3" rowspan="2">{{ adl_eating_notes }}</td>
+            </tr>
+            <tr>
+                <td class="lb">とろみ</td>
+                <td class="vl">{{ adl_thickening }}</td>
+                <td class="lb">食事制限</td>
+                <td class="vl">{{ adl_eating_restriction }}</td>
+                <td class="lb">食器</td>
+                <td class="vl">{{ adl_utensils }}</td>
+                <td colspan="4"></td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- ===== 行13: 口腔 ===== -->
+    <div class="sec">
+        <table class="at">
+            <colgroup>
+                <col style="width:5%">
+                <col style="width:7%"><col style="width:12%">
+                <col style="width:5%"><col style="width:10%">
+                <col style="width:7%"><col style="width:12%">
+                <col style="width:7%"><col style="width:12%">
+                <col style="width:23%">
+            </colgroup>
+            <tr>
+                <td class="sh">口腔</td>
+                <td class="lb">口腔清潔</td>
+                <td class="vl">{{ adl_oral_assistance }}</td>
+                <td class="lb">歯</td>
+                <td class="vl">{{ adl_teeth }}</td>
+                <td class="lb">義歯種類</td>
+                <td class="vl">{{ adl_denture_type }}</td>
+                <td class="lb">義歯部位</td>
+                <td class="vl">{{ adl_denture_location }}</td>
+                <td class="vl h2">{{ adl_oral_notes }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- ===== 行14: 入浴・更衣 ===== -->
+    <div class="sec">
+        <table class="at">
+            <colgroup>
+                <col style="width:5%">
+                <col style="width:7%"><col style="width:12%">
+                <col style="width:7%"><col style="width:12%">
+                <col style="width:7%"><col style="width:12%">
+                <col style="width:8%"><col style="width:12%">
+                <col style="width:8%"><col style="width:10%">
+            </colgroup>
+            <tr>
+                <td class="sh" rowspan="2">入浴・更衣</td>
+                <td class="lb">入浴介助</td>
+                <td class="vl">{{ adl_bathing_assistance }}</td>
+                <td class="lb">入浴形態</td>
+                <td class="vl">{{ adl_bathing_form }}</td>
+                <td class="lb">入浴制限</td>
+                <td class="vl">{{ adl_bathing_restriction }}</td>
+                <td class="lb">更衣（上半身）</td>
+                <td class="vl">{{ adl_dressing_upper }}</td>
+                <td class="lb">更衣（下半身）</td>
+                <td class="vl">{{ adl_dressing_lower }}</td>
+            </tr>
+            <tr>
+                <td class="lb" colspan="2">特記事項</td>
+                <td class="vl h2" colspan="8">{{ adl_bathing_notes }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- ===== 行15: 排泄 ===== -->
+    <div class="sec">
+        <table class="at">
+            <colgroup>
+                <col style="width:5%">
+                <col style="width:6%"><col style="width:8%">
+                <col style="width:6%"><col style="width:8%">
+                <col style="width:6%"><col style="width:8%">
+                <col style="width:6%"><col style="width:8%">
+                <col style="width:6%"><col style="width:8%">
+                <col style="width:6%"><col style="width:7%">
+                <col style="width:16%">
+            </colgroup>
+            <tr>
+                <td class="sh" rowspan="2">排泄</td>
+                <td class="lb">排泄介助</td>
+                <td class="vl">{{ adl_excretion_assistance }}</td>
+                <td class="lb">排尿</td>
+                <td class="vl">{{ adl_urination }}</td>
+                <td class="lb">尿失禁</td>
+                <td class="vl">{{ adl_urinary_incontinence }}</td>
+                <td class="lb">排便</td>
+                <td class="vl">{{ adl_defecation }}</td>
+                <td class="lb">便失禁</td>
+                <td class="vl">{{ adl_fecal_incontinence }}</td>
+                <td class="lb">日中場所</td>
+                <td class="vl">{{ adl_daytime_location }}</td>
+                <td class="vl h3" rowspan="2">{{ adl_excretion_notes }}</td>
+            </tr>
+            <tr>
+                <td class="lb">夜間場所</td>
+                <td class="vl">{{ adl_nighttime_location }}</td>
+                <td class="lb" colspan="2">排泄用品</td>
+                <td class="vl" colspan="8">{{ adl_excretion_supplies }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- ===== 行16: IADL ===== -->
+    <div class="sec">
+        <table class="at">
+            <colgroup>
+                <col style="width:5%">
+                <col style="width:7%"><col style="width:14%">
+                <col style="width:7%"><col style="width:14%">
+                <col style="width:7%"><col style="width:14%">
+                <col style="width:7%"><col style="width:14%">
+                <col style="width:11%">
+            </colgroup>
+            <tr>
+                <td class="sh" rowspan="2">IADL</td>
+                <td class="lb">調理</td>
+                <td class="vl">{{ iadl_cooking }}</td>
+                <td class="lb">洗濯</td>
+                <td class="vl">{{ iadl_laundry }}</td>
+                <td class="lb">金銭管理</td>
+                <td class="vl">{{ iadl_finance }}</td>
+                <td class="lb">掃除</td>
+                <td class="vl">{{ iadl_cleaning }}</td>
+                <td class="vl" rowspan="2">{{ iadl_notes }}</td>
+            </tr>
+            <tr>
+                <td class="lb">買い物</td>
+                <td class="vl" colspan="7">{{ iadl_shopping }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- ===== 行17: 認知機能 ===== -->
+    <div class="sec">
+        <table class="at">
+            <colgroup>
+                <col style="width:5%">
+                <col style="width:7%"><col style="width:11%">
+                <col style="width:6%"><col style="width:10%">
+                <col style="width:7%"><col style="width:27%">
+                <col style="width:6%"><col style="width:8%">
+                <col style="width:23%">
+            </colgroup>
+            <tr>
+                <td class="sh" rowspan="2">認知機能</td>
+                <td class="lb">認知症の有無</td>
+                <td class="vl">{{ cog_dementia }}</td>
+                <td class="lb">重症度</td>
+                <td class="vl">{{ cog_severity }}</td>
+                <td class="lb">BPSD症状</td>
+                <td class="vl h3" rowspan="2">{{ cog_bpsd }}</td>
+                <td class="lb">会話</td>
+                <td class="vl">{{ cog_conversation }}</td>
+                <td class="vl h3" rowspan="2">{{ cog_notes }}</td>
+            </tr>
+            <tr>
+                <td class="lb">コミュニケーション</td>
+                <td class="vl" colspan="3">{{ cog_communication }}</td>
+                <td class="lb">特記</td>
+                <td class="vl"></td>
+            </tr>
+        </table>
+    </div>
+
+</div><!-- /container -->
 </body>
 </html>

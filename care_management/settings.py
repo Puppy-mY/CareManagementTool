@@ -180,6 +180,11 @@ LOGGING = {
 OFFICE_NAME = os.environ.get("OFFICE_NAME", "居宅介護支援事業所")
 OFFICE_NAME_FURIGANA = os.environ.get("OFFICE_NAME_FURIGANA", "")
 
+# 書類テンプレートファイル名（改版のたびにここを更新）
+LTC_RENEWAL_FILENAME = os.environ.get("LTC_RENEWAL_FILENAME", "LTC_Certification_Renewal_R8.4-.xlsx")
+LTC_CHANGE_FILENAME = os.environ.get("LTC_CHANGE_FILENAME", "LTC_Certification_Change_R8.4-.xlsx")
+LTC_REISSUE_FILENAME = os.environ.get("LTC_REISSUE_FILENAME", "LTC_Reissue_Application.xlsx")
+
 # アプリバージョン・更新情報
 APP_VERSION = "1.3.0"
 RELEASE_NOTES = [

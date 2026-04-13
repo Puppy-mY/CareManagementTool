@@ -1615,17 +1615,15 @@ def generate_assessment_excel(assessment, request=None):
                     print(f"DEBUG: セル {cell_ref} への書き込みエラー (シート: {assessment_sheet_name}, 値: {value}): {str(e)}")
 
             def safe_write_wareki_cell(cell_ref, value):
-                """和暦文字列を書き込む（セル書式をテキストに強制してから書き込み）"""
+                """和暦文字列を書き込む（openpyxlはテキストとして書き込む）"""
                 try:
                     if cell_ref:
                         if value is None: value = ""
-                        cell = worksheet[cell_ref]
-                        if not isinstance(cell, MergedCell):
-                            cell.number_format = "@"
-                            cell.value = str(value)
+                        write_cell(worksheet, cell_ref, str(value))
                 except Exception as e:
                     print(f"DEBUG: セル {cell_ref} への和暦書き込みエラー (値: {value}): {str(e)}")
 
+            
             # クライアント基本情報
             safe_write_cell(coords.get("client_name"), assessment.client.name)
             safe_write_cell(coords.get("client_furigana"), assessment.client.furigana)
@@ -3676,3 +3674,396 @@ def assessment_delete(request, pk):
     return JsonResponse(
         {"success": False, "message": "不正なリクエストです"}, status=400
     )
+
+
+@login_required
+def assessment_print_view(request, pk):
+    """アセスメントシート 印刷プレビュー"""
+    assessment = get_object_or_404(Assessment, pk=pk)
+    client = assessment.client
+
+    # 年齢計算
+    today = date.today()
+    birth = client.birth_date
+    client_age = (
+        today.year - birth.year - ((today.month, today.day) < (birth.month, birth.day))
+        if birth else None
+    )
+
+    # 選択肢の値→表示名変換用辞書（generate_assessment_excel と同一）
+    CHOICE_LABELS = {
+        "basic_no_assistance": "つかまらないでできる",
+        "basic_with_assistance": "何かにつかまればできる",
+        "basic_cannot": "できない",
+        "sitting_can_do": "できる",
+        "sitting_self_support": "自分の手で支えればできる",
+        "sitting_support_needed": "支えてもらえればできる",
+        "sitting_cannot": "できない",
+        "standing_no_support": "支えなしでできる",
+        "standing_with_something": "何か支えがあればできる",
+        "standing_cannot": "できない",
+        "mobility_independent": "自立",
+        "mobility_supervision": "見守り",
+        "mobility_partial_assistance": "一部介助",
+        "mobility_full_assistance": "全介助",
+        "equipment_none": "なし",
+        "equipment_wheelchair": "車椅子",
+        "equipment_walker": "歩行器",
+        "equipment_cane": "杖",
+        "equipment_crutches": "松葉杖",
+        "equipment_other": "その他",
+        "eating_method_oral": "経口摂取",
+        "eating_method_tube_oral": "経管栄養+経口摂取",
+        "eating_method_tube_only": "経管栄養（胃ろう）",
+        "eating_method_tube_nasal": "経管栄養（経鼻）",
+        "eating_method_tube_gastronomy": "経管栄養（腸ろう）",
+        "eating_assistance_independent": "自立",
+        "eating_assistance_supervision": "見守り",
+        "eating_assistance_partial_assistance": "一部介助",
+        "eating_assistance_full_assistance": "全介助",
+        "eating_restriction_yes": "あり",
+        "eating_restriction_no": "なし",
+        "eating_restriction_unknown": "不明",
+        "swallowing_can_do": "できる",
+        "swallowing_supervision_needed": "見守り等が必要",
+        "swallowing_cannot": "できない",
+        "meal_main_normal": "普通",
+        "meal_main_soft": "軟飯",
+        "meal_main_porridge": "全粥",
+        "meal_main_paste": "ペースト",
+        "water_thickening_yes": "あり",
+        "water_thickening_no": "なし",
+        "teeth_yes": "あり",
+        "teeth_no": "なし",
+        "denture_complete": "総義歯",
+        "denture_partial": "部分義歯",
+        "denture_upper": "上顎",
+        "denture_lower": "下顎",
+        "denture_both": "上下",
+        "bathing_form_regular_bath": "一般浴",
+        "bathing_form_sitting_bath": "寝台浴",
+        "bathing_form_shower_bath": "シャワー浴",
+        "bathing_form_chair_bath": "チェアー浴",
+        "dressing_independent": "自立",
+        "dressing_supervision": "見守り",
+        "dressing_partial_assistance": "一部介助",
+        "dressing_full_assistance": "全介助",
+        "excretion_yes": "あり",
+        "excretion_no": "なし",
+        "incontinence_yes": "あり",
+        "incontinence_no": "なし",
+        "location_toilet": "トイレ",
+        "location_portable_toilet": "Pトイレ",
+        "location_bed": "ベッド",
+        "iadl_independent": "自立",
+        "iadl_supervision": "見守り",
+        "iadl_partial_assistance": "一部介助",
+        "iadl_full_assistance": "全介助",
+        "dementia_yes": "あり",
+        "dementia_no": "なし",
+        "dementia_mild": "軽度",
+        "dementia_moderate": "中等度",
+        "dementia_severe": "重度",
+        "bpsd_none": "なし",
+        "bpsd_persecution_delusion": "被害妄想",
+        "bpsd_confabulation": "作話",
+        "bpsd_mood_instability": "感情の不安定",
+        "bpsd_day_night_reversal": "昼夜逆転",
+        "bpsd_home_return_desire": "帰宅願望",
+        "bpsd_loud_voice": "大声・奇声",
+        "bpsd_violence": "暴力・暴言",
+        "bpsd_collection_habit": "収集癖",
+        "bpsd_care_resistance": "介護抵抗",
+        "bpsd_restlessness": "落ち着きがない",
+        "bpsd_wandering": "徘徊",
+        "bpsd_destructive_behavior": "破壊行為",
+        "bpsd_severe_forgetfulness": "ひどい物忘れ",
+        "bpsd_selfish_behavior": "自分勝手な行動",
+        "bpsd_agitation": "不穏",
+        "bpsd_depression_tendency": "うつ傾向",
+        "skin_bedsore": "床ずれ",
+        "skin_eczema": "湿疹",
+        "skin_itching": "かゆみ",
+        "skin_athletes_foot": "水虫",
+        "skin_shingles": "帯状疱疹",
+        "infection_tuberculosis": "結核",
+        "infection_pneumonia": "肺炎",
+        "infection_hepatitis": "肝炎",
+        "infection_scabies": "疥癬",
+        "infection_mrsa": "MRSA",
+        "conversation_possible": "可能",
+        "conversation_unclear": "不明瞭",
+        "conversation_somewhat_difficult": "やや不自由",
+        "conversation_completely_impossible": "全くできない",
+        "conversation_impossible": "全くできない",
+        "communication_possible": "可能",
+        "communication_only_sometimes": "その場のみ可能",
+        "home_family_cohabitation": "家族と同居",
+        "home_living_alone": "一人暮らし",
+        "home_elderly_household": "高齢世帯",
+        "home_daytime_alone": "日中独居",
+        "home_two_generation_house": "二世帯住宅",
+        "home_other": "その他",
+        "housing_detached_house": "一戸建て",
+        "housing_apartment_complex": "集合住宅",
+        "housing_public_housing": "公営住宅",
+        "housing_condominium": "マンション",
+        "housing_other": "その他",
+        "ownership_owned": "所有",
+        "ownership_rental": "賃貸",
+        "ownership_lodging": "間借り",
+        "ownership_other": "その他",
+        "room_available": "あり",
+        "room_not_available": "なし",
+        "aircon_available": "あり",
+        "aircon_not_available": "なし",
+        "toilet_western": "洋式",
+        "toilet_japanese": "和式",
+        "bathroom_available": "あり",
+        "bathroom_not_available": "なし",
+        "sleeping_tatami_floor": "畳・床",
+        "sleeping_regular_bed": "ベッド",
+        "sleeping_care_bed": "介護用ベッド",
+        "sleeping_other": "その他",
+        "level_diff_available": "あり",
+        "level_diff_not_available": "なし",
+        "modification_completed": "あり",
+        "modification_not_completed": "なし",
+        "modification_need_needed": "あり",
+        "modification_need_not_needed": "なし",
+        "vision_normal": "正常",
+        "vision_large_letters_ok": "大きい字は可",
+        "vision_barely_visible": "ほぼ見えない",
+        "vision_blind": "失明",
+        "hearing_normal": "正常",
+        "hearing_loud_voice_ok": "大きい声は可",
+        "hearing_barely_audible": "ほぼ聞こえない",
+        "hearing_deaf": "聞こえない",
+        "glasses_yes": "使用",
+        "glasses_no": "未使用",
+        "hearing_aid_yes": "使用",
+        "hearing_aid_no": "未使用",
+        "service_home_help": "訪問介護",
+        "service_visit_bath": "訪問入浴",
+        "service_visit_nursing": "訪問看護",
+        "service_visit_rehab": "訪問リハビリ",
+        "service_day_service": "通所介護",
+        "service_day_rehab": "通所リハビリ",
+        "service_short_stay": "ショートステイ",
+        "service_small_scale_multi": "小規模多機能",
+        "welfare_wheelchair": "車いす",
+        "welfare_walker": "車いす付属品",
+        "welfare_special_bed": "特殊寝台",
+        "welfare_special_bed_accessories": "特殊寝台付属品",
+        "welfare_fall_prevention": "床ずれ防止用具",
+        "welfare_position_changer": "体位変換器",
+        "welfare_walking_aid": "手すり",
+        "welfare_slope": "スロープ",
+        "welfare_walking_frame": "歩行器",
+        "welfare_walking_support": "歩行補助つえ",
+        "welfare_detect_sensor": "排個感知機器",
+        "welfare_mobility_lift": "移動用リフト",
+        "welfare_automatic_drainage": "自動排泄処理装置",
+        "informal_family_support": "家族による支援",
+        "informal_neighbor_support": "近隣による支援",
+        "informal_volunteer": "ボランティア",
+        "informal_community_group": "地域活動グループ",
+        "informal_friend_support": "友人による支援",
+        "informal_npo_support": "NPO団体支援",
+        "informal_religious_support": "宗教団体支援",
+        "informal_meal_support": "食事支援",
+        "informal_excretion_support": "排泄支援",
+        "informal_linen_lease": "リネンリース",
+        "informal_laundry": "洗濯",
+        "informal_room_cleaning": "居室清掃",
+        "informal_sputum_suction": "喀痰吸引",
+        "informal_diaper_supply": "オムツ支給",
+        "informal_taxi_voucher": "タクシー券",
+        "informal_massage_voucher": "マッサージ券",
+        "informal_fire_alarm": "火災報知器",
+        "informal_auto_fire_extinguisher": "自動消火器",
+        "informal_elderly_phone": "老人用電話",
+        "informal_bedding_disinfection": "寝具乾燥消毒",
+        "informal_induction_cooker": "電磁調理器",
+        "informal_emergency_alert": "緊急通報装置",
+        "informal_meal_delivery": "配食サービス",
+        "informal_other_services": "その他",
+        "utensil_chopsticks": "箸",
+        "utensil_spoon": "スプーン",
+        "utensil_apron": "エプロン",
+        "utensil_assistive": "補助具",
+        "utensil_other": "その他",
+        "supply_rehabilitation_pants": "リハビリパンツ",
+        "supply_paper_diaper": "紙おむつ",
+        "supply_small_pad": "小パット",
+        "supply_large_pad": "大パット",
+        "medication_self": "自己管理",
+        "medication_family": "家族管理",
+        "medication_support": "支援あり",
+        "medication_none": "服薬なし",
+        "visit_status_regular": "定期通院",
+        "visit_status_occasional": "時々通院",
+        "visit_status_home_visit": "往診",
+        "visit_status_none": "通院なし",
+        "visit_method_self": "本人",
+        "visit_method_family": "家族",
+        "visit_method_care_assistance": "通院乗降介助",
+        "visit_method_care_taxi": "介護タクシー",
+        "oral_assistance_independent": "自立",
+        "oral_assistance_supervision": "見守り",
+        "oral_assistance_partial_assistance": "一部介助",
+        "oral_assistance_full_assistance": "全介助",
+        "bathing_assistance_independent": "自立",
+        "bathing_assistance_supervision": "見守り",
+        "bathing_assistance_partial_assistance": "一部介助",
+        "bathing_assistance_full_assistance": "全介助",
+        "bathing_restriction_yes": "あり",
+        "bathing_restriction_no": "なし",
+        "excretion_assistance_independent": "自立",
+        "excretion_assistance_supervision": "見守り",
+        "excretion_assistance_partial_assistance": "一部介助",
+        "excretion_assistance_full_assistance": "全介助",
+    }
+
+    def cl(value):
+        """選択肢キーを表示名に変換（単値）"""
+        if not value:
+            return ""
+        if isinstance(value, (list, dict)):
+            return value
+        return CHOICE_LABELS.get(value, value)
+
+    def cl_list(value_list, prefix=""):
+        """リスト形式の値を表示名の読点区切り文字列に変換"""
+        if not value_list:
+            return ""
+        if not isinstance(value_list, list):
+            return cl(str(value_list))
+        labels = []
+        for item in value_list:
+            raw = cl(f"{prefix}{item}") if prefix else cl(item)
+            label = str(raw) if raw is not None else ""
+            if label:
+                labels.append(label)
+        return "、".join(labels)
+
+    basic_info = assessment.basic_info or {}
+    insurance_info = assessment.insurance_info or {}
+    family_situation = assessment.family_situation or {}
+    living_situation = assessment.living_situation or {}
+    services = assessment.services or {}
+    health_status = assessment.health_status or {}
+    physical_status = assessment.physical_status or {}
+    basic_activities = assessment.basic_activities or {}
+    adl = assessment.adl or {}
+    iadl = assessment.iadl or {}
+    cognitive_function = assessment.cognitive_function or {}
+
+    context = {
+        "assessment": assessment,
+        "client": client,
+        "client_age": client_age,
+        "basic_info": basic_info,
+        "insurance_info": insurance_info,
+        "family_situation": family_situation,
+        "living_situation": living_situation,
+        "services": services,
+        "health_status": health_status,
+        "physical_status": physical_status,
+        "basic_activities": basic_activities,
+        "adl": adl,
+        "iadl": iadl,
+        "cognitive_function": cognitive_function,
+        # 変換済み値（基本動作）
+        "ba_turning": cl(basic_activities.get("turning_over")),
+        "ba_getting_up": cl(basic_activities.get("getting_up")),
+        "ba_sitting": cl(basic_activities.get("sitting")),
+        "ba_standing_up": cl(basic_activities.get("standing_up")),
+        "ba_standing": cl(basic_activities.get("standing")),
+        "ba_transfer": cl(basic_activities.get("transfer")),
+        "ba_indoor_mobility": cl(basic_activities.get("indoor_mobility")),
+        "ba_indoor_equipment": cl_list(basic_activities.get("indoor_mobility_equipment", [])),
+        "ba_outdoor_mobility": cl(basic_activities.get("outdoor_mobility")),
+        "ba_outdoor_equipment": cl_list(basic_activities.get("outdoor_mobility_equipment", [])),
+        "ba_notes": basic_activities.get("notes", ""),
+        # 変換済み値（食事・嚥下）
+        "adl_eating_method": cl(adl.get("eating_method")),
+        "adl_eating_assistance": cl(adl.get("eating_assistance")),
+        "adl_swallowing": cl(adl.get("swallowing")),
+        "adl_meal_main": cl(adl.get("meal_main_type")),
+        "adl_meal_side": adl.get("meal_side_type", ""),
+        "adl_thickening": cl(adl.get("water_thickening")),
+        "adl_eating_restriction": cl(adl.get("eating_restriction")),
+        "adl_utensils": cl_list(adl.get("utensils", [])),
+        "adl_eating_notes": adl.get("eating_notes", ""),
+        # 口腔
+        "adl_oral_assistance": cl(adl.get("oral_hygiene_assistance")),
+        "adl_teeth": cl(adl.get("teeth")),
+        "adl_denture_type": cl(adl.get("denture_type")),
+        "adl_denture_location": cl(adl.get("denture_location")),
+        "adl_oral_notes": adl.get("oral_notes", ""),
+        # 入浴・更衣
+        "adl_bathing_assistance": cl(adl.get("bathing_assistance")),
+        "adl_bathing_form": cl(adl.get("bathing_form")),
+        "adl_bathing_restriction": cl(adl.get("bathing_restriction")),
+        "adl_dressing_upper": cl(adl.get("dressing_upper")),
+        "adl_dressing_lower": cl(adl.get("dressing_lower")),
+        "adl_bathing_notes": adl.get("bathing_notes", ""),
+        # 排泄
+        "adl_excretion_assistance": cl(adl.get("excretion_assistance")),
+        "adl_urination": cl(adl.get("urination")),
+        "adl_urinary_incontinence": cl(adl.get("urinary_incontinence")),
+        "adl_defecation": cl(adl.get("defecation")),
+        "adl_fecal_incontinence": cl(adl.get("fecal_incontinence")),
+        "adl_daytime_location": cl(adl.get("daytime_excretion_location")),
+        "adl_nighttime_location": cl(adl.get("nighttime_excretion_location")),
+        "adl_excretion_supplies": cl_list(adl.get("excretion_supplies", [])),
+        "adl_excretion_notes": adl.get("excretion_notes", ""),
+        # IADL
+        "iadl_cooking": cl(iadl.get("cooking")),
+        "iadl_laundry": cl(iadl.get("laundry")),
+        "iadl_finance": cl(iadl.get("finance_management")),
+        "iadl_cleaning": cl(iadl.get("cleaning")),
+        "iadl_shopping": cl(iadl.get("shopping")),
+        "iadl_notes": iadl.get("notes", ""),
+        # 認知機能
+        "cog_dementia": cl(cognitive_function.get("dementia")),
+        "cog_severity": cl(cognitive_function.get("dementia_severity")),
+        "cog_bpsd": cl_list(cognitive_function.get("bpsd", [])),
+        "cog_conversation": cl(cognitive_function.get("conversation")),
+        "cog_communication": cl(cognitive_function.get("communication")),
+        "cog_notes": cognitive_function.get("notes", ""),
+        # 居住状況
+        "liv_home_env": cl(living_situation.get("home_environment")),
+        "liv_housing_type": cl(living_situation.get("housing_type")),
+        "liv_ownership": cl(living_situation.get("housing_ownership")),
+        "liv_private_room": cl(living_situation.get("private_room")),
+        "liv_aircon": cl(living_situation.get("air_conditioner")),
+        "liv_toilet": cl(living_situation.get("toilet_type")),
+        "liv_bathroom": cl(living_situation.get("bathroom")),
+        "liv_bedroom": cl(living_situation.get("sleeping_environment")),
+        "liv_level_diff": cl(living_situation.get("indoor_level_difference")),
+        "liv_modification": cl(living_situation.get("housing_modification")),
+        "liv_notes": living_situation.get("notes", ""),
+        # 利用サービス
+        "svc_care": cl_list(services.get("care_services", [])),
+        "svc_welfare": cl_list(services.get("welfare_equipment", [])),
+        "svc_other": services.get("other_services", ""),
+        "svc_informal": cl_list(services.get("informal_services", [])),
+        "svc_social": services.get("social_relationships", ""),
+        # 身体状況
+        "phy_skin": cl_list(physical_status.get("skin_condition", [])),
+        "phy_infection": cl_list(physical_status.get("infection", [])),
+        "phy_special_medical": physical_status.get("special_medical_treatment", ""),
+        "phy_paralysis": physical_status.get("paralysis", ""),
+        "phy_pain": physical_status.get("pain", ""),
+        "phy_height": physical_status.get("height", ""),
+        "phy_weight": physical_status.get("weight", ""),
+        "phy_vision": cl(physical_status.get("vision")),
+        "phy_glasses": cl(physical_status.get("glasses")),
+        "phy_hearing": cl(physical_status.get("hearing")),
+        "phy_hearing_aid": cl(physical_status.get("hearing_aid")),
+        "phy_notes": physical_status.get("notes", ""),
+    }
+
+    return render(request, "assessments/assessment_print.html", context)

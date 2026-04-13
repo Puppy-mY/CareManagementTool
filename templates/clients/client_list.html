@@ -324,15 +324,6 @@
 
     .document-modal-body {
         padding: 24px;
-        display: grid;
-        grid-template-columns: 1fr auto 1fr;
-        gap: 24px;
-    }
-
-    .modal-divider {
-        width: 1px;
-        background: #dee2e6;
-        align-self: stretch;
     }
     .document-create-btn:hover .document-tooltip,
     .document-tooltip:hover {
@@ -588,39 +579,45 @@
             </button>
         </div>
         <div class="document-modal-body">
-            <div>
-                <div class="document-section">
-                    <h6 class="document-section-title">介護保険関係</h6>
-                    <ul class="document-list">
-                        <li class="document-item" onclick="selectDocument('居宅サービス計画作成依頼（変更）届出書', '利用可能', event)">居宅サービス計画作成依頼（変更）届出書</li>
-                        <li class="document-item" onclick="selectDocument('介護予防サービス計画作成・介護予防ケアマネジメント依頼（変更）届出書', '利用可能', event)">介護予防サービス計画作成・介護予防ケアマネジメント依頼（変更）届出書</li>
-                        <li class="document-item" onclick="selectDocument('介護保険 要介護・要支援 [認定区分変更]申請書', '開発中', event)">介護保険 要介護・要支援 [認定区分変更]申請書</li>
-                        <li class="document-item" onclick="selectDocument('介護保険　要介護・要支援　（更新）認定申請書', '開発中', event)">介護保険　要介護・要支援　（更新）認定申請書</li>
-                        <li class="document-item" onclick="selectDocument('介護保険関係・再交付申請書', '開発中', event)">介護保険関係・再交付申請書</li>
-                        <li class="document-item" onclick="selectDocument('居宅サービス事業所の選択に関する説明に係る確認書', '開発中', event)">居宅サービス事業所の選択に関する説明に係る確認書</li>
-                    </ul>
-                </div>
-
-                <div class="document-section">
-                    <h6 class="document-section-title">ケアプラン・サービス関係</h6>
-                    <ul class="document-list">
-                        <li class="document-item" onclick="selectDocument('介護サービス計画作成に係る資料提供申請書', '開発中', event)">介護サービス計画作成に係る資料提供申請書</li>
-                        <li class="document-item" onclick="selectDocument('サービス担当者会議開催のご案内', '開発中', event)">サービス担当者会議開催のご案内</li>
-                    </ul>
-                </div>
+            <div class="document-section">
+                <h6 class="document-section-title">介護保険更新及び変更申請</h6>
+                <ul class="document-list">
+                    <li class="document-item" onclick="selectDocument('介護保険　要介護・要支援　（更新）認定申請書', '開発中', event)">更新認定申請書（開発中）</li>
+                    <li class="document-item" onclick="selectDocument('介護保険 要介護・要支援 [認定区分変更]申請書', '開発中', event)">区分変更申請書（開発中）</li>
+                    <li class="document-item" onclick="selectDocument('介護保険関係・再交付申請書', '開発中', event)">再交付申請書（開発中）</li>
+                </ul>
             </div>
 
-            <div class="modal-divider"></div>
+            <div class="document-section">
+                <h6 class="document-section-title">居宅の届出及び資料請求</h6>
+                <ul class="document-list">
+                    <li class="document-item" onclick="selectDocument('居宅サービス計画作成依頼（変更）届出書', '利用可能', event)">居宅サービス計画作成依頼（変更）届出書</li>
+                    <li class="document-item" onclick="selectDocument('介護予防サービス計画作成・介護予防ケアマネジメント依頼（変更）届出書', '利用可能', event)">介護予防サービス計画作成・介護予防ケアマネジメント依頼（変更）届出書</li>
+                    <li class="document-item" onclick="selectDocument('介護サービス計画作成に係る資料提供申請書', '開発中', event)">介護サービス計画作成に係る資料提供申請書（開発中）</li>
+                </ul>
+            </div>
 
-            <div>
-                <div class="document-section">
-                    <h6 class="document-section-title">基本情報・医療連携</h6>
-                    <ul class="document-list">
-                        <li class="document-item" onclick="selectDocument('フェースシート', '開発中', event)">フェースシート</li>
-                        <li class="document-item" onclick="selectDocument('入院時情報提供書', '開発中', event)">入院時情報提供書</li>
-                        <li class="document-item" onclick="selectDocument('医療・介護連携シート', '開発中', event)">医療・介護連携シート</li>
-                    </ul>
-                </div>
+            <div class="document-section">
+                <h6 class="document-section-title">居宅サービス利用説明・確認</h6>
+                <ul class="document-list">
+                    <li class="document-item" onclick="selectDocument('居宅サービス事業所の選択に関する説明に係る確認書', '開発中', event)">居宅サービス事業所の選択に関する説明に係る確認書（開発中）</li>
+                </ul>
+            </div>
+
+            <div class="document-section">
+                <h6 class="document-section-title">計画作成及び担当者会議</h6>
+                <ul class="document-list">
+                    <li class="document-item" onclick="selectDocument('フェースシート', '開発中', event)">フェースシート（開発中）</li>
+                    <li class="document-item" onclick="selectDocument('サービス担当者会議開催のご案内', '開発中', event)">サービス担当者会議開催のご案内（開発中）</li>
+                </ul>
+            </div>
+
+            <div class="document-section">
+                <h6 class="document-section-title">医療及び介護連携</h6>
+                <ul class="document-list">
+                    <li class="document-item" onclick="selectDocument('入院時情報提供書', '開発中', event)">入院時情報提供書（開発中）</li>
+                    <li class="document-item" onclick="selectDocument('医療・介護連携シート', '開発中', event)">医療・介護連携シート（開発中）</li>
+                </ul>
             </div>
         </div>
     </div>
@@ -1458,6 +1455,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // ドキュメントクリックで展開エリアを閉じる
         document.addEventListener('click', function(e) {
+            // 書類作成モーダルが開いている間は何もしない
+            const documentModal = document.getElementById('documentModal');
+            if (documentModal && documentModal.classList.contains('show')) return;
+
             // 操作ボタンや展開エリア内のクリックは除外
             const isActionButton = e.target.closest('.action-toggle');
             const isExpandArea = e.target.closest('.action-expand-row');
@@ -1696,6 +1697,7 @@ function showDocumentModal(button, event) {
     modal.style.opacity = '1';
     modal.style.visibility = 'visible';
     modal.classList.add('show');
+    document.body.style.overflow = 'hidden';
 
     console.log('Modal should be visible now'); // デバッグ用
 }
@@ -1715,6 +1717,7 @@ function hideDocumentModal(event) {
         modal.style.opacity = '0';
         modal.style.visibility = 'hidden';
         modal.classList.remove('show');
+        document.body.style.overflow = '';
         console.log('Modal hidden');
     }
 }
@@ -1745,15 +1748,18 @@ function selectDocument(documentName, status, event) {
         alert(`${documentName}の作成機能（未開発）`);
     } else if (status === '開発中' || status === '利用可能') {
         // 書類名からdocument_typeへのマッピング
-        const documentTypeMap = {
-            '居宅サービス計画作成依頼（変更）届出書': 'kyotaku_service_plan_request',
-            '介護予防サービス計画作成・介護予防ケアマネジメント依頼（変更）届出書': 'kyotaku_preventive_service_plan_request',
+        // 書類名 → URL のマッピング
+        const documentUrlMap = {
+            '居宅サービス計画作成依頼（変更）届出書':
+                `/clients/${currentClientId}/documents/create/kyotaku_service_plan_request/`,
+            '介護予防サービス計画作成・介護予防ケアマネジメント依頼（変更）届出書':
+                `/clients/${currentClientId}/documents/create/kyotaku_preventive_service_plan_request/`,
+            '介護保険　要介護・要支援　（更新）認定申請書':
+                `/clients/${currentClientId}/document/ltc-renewal/`,
         };
 
-        const documentType = documentTypeMap[documentName];
-        if (documentType) {
-            const url = `/clients/${currentClientId}/documents/create/${documentType}/`;
-            console.log('Navigating to:', url);
+        const url = documentUrlMap[documentName];
+        if (url) {
             window.location.href = url;
             return;
         } else {
@@ -1774,24 +1780,23 @@ function getCurrentClientId() {
 }
 
 // モーダル外クリックで閉じる（ドロップダウンの状態を保持）
-document.addEventListener('click', function(event) {
-    const modal = document.getElementById('documentModal');
-    if (event.target === modal) {
-        // hideDocumentModal関数を使用してモーダルを完全に閉じる
-        hideDocumentModal(event);
-    }
-}, true); // キャプチャフェーズで実行
+// 枠外クリックで閉じる処理（一時無効化中）
+// document.addEventListener('click', function(event) {
+//     const modal = document.getElementById('documentModal');
+//     if (event.target === modal) {
+//         hideDocumentModal(event);
+//     }
+// }, true);
 
-// ESCキーで閉じる（ドロップダウンの状態を保持）
-document.addEventListener('keydown', function(event) {
-    if (event.key === 'Escape') {
-        const modal = document.getElementById('documentModal');
-        if (modal.classList.contains('show')) {
-            // hideDocumentModal関数を使用してモーダルを完全に閉じる
-            hideDocumentModal(event);
-        }
-    }
-}, true); // キャプチャフェーズで実行
+// ESCキーで閉じる処理（一時無効化中）
+// document.addEventListener('keydown', function(event) {
+//     if (event.key === 'Escape') {
+//         const modal = document.getElementById('documentModal');
+//         if (modal.classList.contains('show')) {
+//             hideDocumentModal(event);
+//         }
+//     }
+// }, true);
 
 // モーダルコンテンツ内のクリックを処理（背景要素に影響させない）
 document.addEventListener('DOMContentLoaded', function() {

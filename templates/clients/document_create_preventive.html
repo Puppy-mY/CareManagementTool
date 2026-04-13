@@ -78,8 +78,8 @@
 
                 <!-- 編集ボタン -->
                 <div class="col-12 text-end mt-2">
-                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openCenterMasterDrawer();">
-                        <i class="fas fa-edit me-1"></i>地域包括支援センターマスタデータを編集
+                    <button type="button" class="btn btn-outline-secondary btn-sm" id="houkatsu_edit_btn" onclick="openHoukatsuMasterDrawer();">
+                        <i class="fas fa-edit me-1"></i><span id="houkatsu_edit_btn_text">地域包括支援センターマスタデータを編集</span>
                     </button>
                 </div>
             </div>
@@ -198,19 +198,124 @@
 {% endblock %}
 
 {% block extra_content %}
-<!-- マスタデータ編集ドロワー（preventive専用） -->
-<div class="drawer-overlay" id="preventiveDrawerOverlay"></div>
-<div class="drawer" id="preventiveMasterDataDrawer">
-    <div class="drawer-header">
-        <h5 class="mb-0" id="preventiveDrawerTitle">マスタデータ編集</h5>
-        <button type="button" class="btn-close" onclick="closePreventiveMasterDrawer()"></button>
+<!-- 地域包括支援センターマスタ編集モーダル -->
+<div class="modal fade" id="preventiveCenterModal" tabindex="-1" aria-labelledby="preventiveCenterModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="preventiveCenterModalLabel">
+                    <i class="fas fa-building me-2"></i>地域包括支援センターマスタデータ編集
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label">事業所名 <span class="text-danger">*</span></label>
+                        <input type="text" id="edit_center_name" class="form-control" readonly>
+                        <small class="text-muted">※事業所名は変更できません</small>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">事業所番号 <span class="text-danger">*</span></label>
+                        <input type="text" id="edit_center_office_number" class="form-control" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">郵便番号 <span class="text-danger">*</span></label>
+                        <input type="text" id="edit_center_postal_code" class="form-control" placeholder="000-0000" maxlength="8" required>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">住所 <span class="text-danger">*</span></label>
+                        <input type="text" id="edit_center_address" class="form-control" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">電話番号 <span class="text-danger">*</span></label>
+                        <input type="text" id="edit_center_phone" class="form-control" required>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                <button type="button" class="btn btn-primary" onclick="saveCenterData()">
+                    <i class="fas fa-save me-1"></i>保存して反映
+                </button>
+            </div>
+        </div>
     </div>
-    <div class="drawer-body" id="preventiveDrawerBody">
-        <!-- 動的にコンテンツが挿入されます -->
-    </div>
-    <div class="drawer-footer">
-        <button type="button" class="btn btn-secondary" onclick="closePreventiveMasterDrawer()">キャンセル</button>
-        <button type="button" class="btn btn-primary" onclick="saveMasterData()">保存して反映</button>
+</div>
+
+<!-- 事業所マスタ編集モーダル（居宅介護支援事業所用） -->
+<div class="modal fade" id="preventiveOfficeModal" tabindex="-1" aria-labelledby="preventiveOfficeModalLabel" aria-hidden="true"
+     data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <input type="hidden" id="preventive_modal_pk" value="{{ initial_data.kyotaku_office_id|default:'' }}">
+            <input type="hidden" id="preventive_modal_context" value="">
+            <div class="modal-header">
+                <h5 class="modal-title" id="preventiveOfficeModalLabel">
+                    <i class="fas fa-hospital me-2"></i>居宅介護支援事業所編集
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="preventiveOfficeModalError" class="alert alert-danger d-none"></div>
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label">事業所名 <span class="text-danger">*</span></label>
+                        <input type="text" id="preventive_modal_name" class="form-control"
+                               value="{{ initial_data.kyotaku_office_name|default:'' }}">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">フリガナ</label>
+                        <input type="text" id="preventive_modal_furigana" class="form-control"
+                               value="{{ initial_data.kyotaku_office_furigana|default:'' }}"
+                               placeholder="例: キョタクカイゴシエンジギョウショ アノツロマン">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">事業所番号 <span class="text-danger">*</span></label>
+                        <input type="text" id="preventive_modal_office_number" class="form-control"
+                               value="{{ initial_data.kyotaku_office_number|default:'' }}">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">管理者名</label>
+                        <input type="text" id="preventive_modal_manager" class="form-control"
+                               value="{{ initial_data.kyotaku_office_manager|default:'' }}"
+                               placeholder="例: 山田 太郎">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">郵便番号</label>
+                        <input type="text" id="preventive_modal_postal_code" class="form-control"
+                               value="{{ initial_data.kyotaku_postal_code|default:'' }}" placeholder="例: 514-0009">
+                    </div>
+                    <div class="col-md-8">
+                        <label class="form-label">住所</label>
+                        <input type="text" id="preventive_modal_address" class="form-control"
+                               value="{{ initial_data.kyotaku_address|default:'' }}">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">電話番号</label>
+                        <input type="text" id="preventive_modal_phone" class="form-control"
+                               value="{{ initial_data.kyotaku_phone|default:'' }}" placeholder="例: 059-123-4567">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">FAX</label>
+                        <input type="text" id="preventive_modal_fax" class="form-control"
+                               value="{{ initial_data.kyotaku_office_fax|default:'' }}" placeholder="例: 059-123-4568">
+                    </div>
+                    <div class="col-12">
+                        <div class="form-check">
+                            <input type="checkbox" id="preventive_modal_is_active" class="form-check-input" checked>
+                            <label class="form-check-label" for="preventive_modal_is_active">有効</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                <button type="button" class="btn btn-primary" id="preventiveOfficeSaveBtn">
+                    <i class="fas fa-save me-1"></i>保存して反映
+                </button>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
@@ -295,6 +400,7 @@
 <script>
 // グローバル変数の定義
 let currentEditData = {};
+let currentProviderCategory = '';  // openHoukatsuMasterDrawer() からも参照するためグローバル宣言
 // currentDrawerType はベーステンプレートで既に宣言済み
 
 // 地域包括支援センターのマスタデータ（グローバル変数）
@@ -491,14 +597,15 @@ function initDocumentSpecific() {
     const savedProviderCategory = '{{ initial_data.provider_category|default:"" }}';
     const savedProvider = '{{ initial_data.preventive_support_provider|default:"" }}';
 
-    // 安濃津ろまんのデータ（ログインユーザーの所属事業所から取得）
+    // 安濃津ろまんのデータ（initial_data から取得、なければDBから取得済みの値を使用）
     const anoutsuData = {
-        name: '{% if user.profile.home_care_office %}{{ user.profile.home_care_office.name }}{% else %}居宅介護支援事業所　安濃津ろまん{% endif %}',
-        office_number: '{% if user.profile.home_care_office %}{{ user.profile.home_care_office.office_number }}{% endif %}',
-        postal_code: '{% if user.profile.home_care_office %}{{ user.profile.home_care_office.postal_code }}{% endif %}',
-        address: '{% if user.profile.home_care_office %}{{ user.profile.home_care_office.address }}{% endif %}',
-        phone: '{% if user.profile.home_care_office %}{{ user.profile.home_care_office.phone }}{% endif %}'
+        name: '{{ initial_data.kyotaku_office_name|default:"居宅介護支援事業所　安濃津ろまん" }}',
+        office_number: '{{ initial_data.kyotaku_office_number|default:"" }}',
+        postal_code: '{{ initial_data.kyotaku_postal_code|default:"" }}',
+        address: '{{ initial_data.kyotaku_address|default:"" }}',
+        phone: '{{ initial_data.kyotaku_phone|default:"" }}'
     };
+    const anoutsuOfficeId = {{ initial_data.kyotaku_office_id|default:"null" }};
 
     // ログインユーザー名
     const loggedInUserName = '{% if user.is_authenticated %}{{ user.profile.get_full_name }}{% endif %}';
@@ -516,8 +623,8 @@ function initDocumentSpecific() {
     const kengaiProviderNameSection = document.getElementById('kengai_provider_name_section');
     const providerManualInput = document.getElementById('preventive_support_provider_manual');
 
-    // 現在の事業者種別を保持
-    let currentProviderCategory = '';
+    // 現在の事業者種別を保持（グローバル変数に代入）
+    // currentProviderCategory はグローバルスコープで宣言済み
 
     // 選択された地域包括支援センターの元データを保持（変更検出用）
     let originalCenterData = {
@@ -675,6 +782,10 @@ function initDocumentSpecific() {
             // 元データを保存（変更検出用） - 居宅介護支援事業所なので空にする
             originalCenterData = { name: '', office_number: '', postal_code: '', address: '', phone: '' };
 
+            // 編集ボタンを事業所マスタ編集に切り替え
+            const editBtnText = document.getElementById('houkatsu_edit_btn_text');
+            if (editBtnText) editBtnText.textContent = '事業所マスタデータを編集';
+
             closeHoukatsuAccordion();
         } else if (category === 'kengai') {
             houkatsuDetailSection.style.display = 'block';
@@ -698,6 +809,10 @@ function initDocumentSpecific() {
             console.log('houkatsuDetailSection.style.display set to block');
             if (kengaiProviderNameSection) kengaiProviderNameSection.style.display = 'none';
             updateStaffNameRequired(false);
+
+            // 編集ボタンを地域包括支援センター編集に切り替え
+            const editBtnText = document.getElementById('houkatsu_edit_btn_text');
+            if (editBtnText) editBtnText.textContent = '地域包括支援センターマスタデータを編集';
 
             // 初回ロード時は保存されたデータを優先、それ以外はプリセットデータを使用
             const preset = supportCentersFromDB.find(p => p.name === providerName);
@@ -913,38 +1028,20 @@ function initDocumentSpecific() {
     // カテゴリ変更時の処理は上の統合イベントリスナーで実施済み
 }
 
-// ドロワーを開く共通関数（preventive専用）
-function openPreventiveMasterDrawer() {
-    console.log('openPreventiveMasterDrawer called');
-    const overlay = document.getElementById('preventiveDrawerOverlay');
-    const drawer = document.getElementById('preventiveMasterDataDrawer');
-    console.log('overlay:', overlay);
-    console.log('drawer:', drawer);
-
-    if (!overlay || !drawer) {
-        console.error('Drawer elements not found!');
-        return;
-    }
-
-    overlay.classList.add('show');
-    console.log('overlay classes after add:', overlay.className);
-    setTimeout(() => {
-        drawer.classList.add('show');
-        console.log('drawer classes after add:', drawer.className);
-    }, 10);
+// モーダルに変更したためイベント用等のダミー関数
+function openPreventiveMasterDrawer() { }
+function closePreventiveMasterDrawer() {
+    currentDrawerType = null;
+    currentEditData = {};
 }
 
-// ドロワーを閉じる（preventive専用）
-function closePreventiveMasterDrawer() {
-    const overlay = document.getElementById('preventiveDrawerOverlay');
-    const drawer = document.getElementById('preventiveMasterDataDrawer');
-
-    drawer.classList.remove('show');
-    setTimeout(() => {
-        overlay.classList.remove('show');
-        currentDrawerType = null;
-        currentEditData = {};
-    }, 300);
+// houkatsu セクションの編集ボタン：カテゴリに応じて振り分け
+function openHoukatsuMasterDrawer() {
+    if (currentProviderCategory === 'anoutsu') {
+        openOfficeMasterDrawer('houkatsu');
+    } else {
+        openCenterMasterDrawer();
+    }
 }
 
 // 地域包括支援センター編集ドロワーを開く
@@ -996,98 +1093,51 @@ function openCenterMasterDrawer() {
         area: selectedCenter.area
     };
 
-    // ドロワーのタイトルを設定
-    document.getElementById('preventiveDrawerTitle').innerHTML = '<i class="fas fa-building me-2"></i>地域包括支援センター編集';
+    // モーダルに値を反映
+    document.getElementById('edit_center_name').value = currentEditData.name || '';
+    document.getElementById('edit_center_office_number').value = currentEditData.office_number || '';
+    document.getElementById('edit_center_postal_code').value = currentEditData.postal_code || '';
+    document.getElementById('edit_center_address').value = currentEditData.address || '';
+    document.getElementById('edit_center_phone').value = currentEditData.phone || '';
 
-    // ドロワーの内容を設定
-    const drawerBody = document.getElementById('preventiveDrawerBody');
-    drawerBody.innerHTML = `
-        <div class="mb-3">
-            <label class="form-label">事業所名 <span class="text-danger">*</span></label>
-            <input type="text" id="edit_center_name" class="form-control" value="${currentEditData.name || ''}" readonly>
-            <small class="text-muted">※事業所名は変更できません</small>
-        </div>
-        <div class="mb-3">
-            <label class="form-label">事業所番号 <span class="text-danger">*</span></label>
-            <input type="text" id="edit_center_office_number" class="form-control" value="${currentEditData.office_number || ''}" required>
-        </div>
-        <div class="mb-3">
-            <label class="form-label">郵便番号 <span class="text-danger">*</span></label>
-            <input type="text" id="edit_center_postal_code" class="form-control" value="${currentEditData.postal_code || ''}" placeholder="000-0000" maxlength="8" required>
-        </div>
-        <div class="mb-3">
-            <label class="form-label">住所 <span class="text-danger">*</span></label>
-            <input type="text" id="edit_center_address" class="form-control" value="${currentEditData.address || ''}" required>
-        </div>
-        <div class="mb-3">
-            <label class="form-label">電話番号 <span class="text-danger">*</span></label>
-            <input type="text" id="edit_center_phone" class="form-control" value="${currentEditData.phone || ''}" required>
-        </div>
-    `;
-
-    openPreventiveMasterDrawer();
+    const modalEl = document.getElementById('preventiveCenterModal');
+    const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+    modal.show();
 }
 
-// 事業所編集ドロワーを開く
-function openOfficeMasterDrawer() {
-    console.log('openOfficeMasterDrawer called');
-    currentDrawerType = 'office';
+// 事業所編集モーダルを開く
+// context: 'houkatsu'（安濃津ろまんが主事業者の場合）または 'jutaku'（受託事業者の場合）
+function openOfficeMasterDrawer(context) {
+    context = context || 'jutaku';
 
-    {% if user.profile.home_care_office %}
-    console.log('user.profile.home_care_office exists');
-    // 現在の値を保存
-    currentEditData = {
-        id: {{ user.profile.home_care_office.id }},
-        name: '{{ user.profile.home_care_office.name }}',
-        office_number: '{{ user.profile.home_care_office.office_number }}',
-        postal_code: '{{ user.profile.home_care_office.postal_code }}',
-        address: '{{ user.profile.home_care_office.address }}',
-        phone: '{{ user.profile.home_care_office.phone }}',
-        fax: '{{ user.profile.home_care_office.fax }}',
-        manager_name: '{{ user.profile.home_care_office.manager_name }}'
-    };
+    // コンテキストを保存
+    const ctxEl = document.getElementById('preventive_modal_context');
+    if (ctxEl) ctxEl.value = context;
 
-    // ドロワーのタイトルを設定
-    document.getElementById('preventiveDrawerTitle').innerHTML = '<i class="fas fa-hospital me-2"></i>居宅介護支援事業所編集';
+    // hiddenフィールドから最新のマスタデータを反映
+    const origName = document.getElementById('original_office_name');
+    const origFurigana = document.getElementById('original_office_furigana');
+    const origManager = document.getElementById('original_office_manager_name');
+    const origFax = document.getElementById('original_office_fax');
+    
+    if (origName) document.getElementById('preventive_modal_name').value = origName.value;
+    if (origFurigana) document.getElementById('preventive_modal_furigana').value = origFurigana.value;
+    if (origManager) document.getElementById('preventive_modal_manager').value = origManager.value;
+    if (origFax) document.getElementById('preventive_modal_fax').value = origFax.value;
 
-    // ドロワーの内容を設定
-    const drawerBody = document.getElementById('preventiveDrawerBody');
-    drawerBody.innerHTML = `
-        <div class="mb-3">
-            <label class="form-label">事業所名 <span class="text-danger">*</span></label>
-            <input type="text" id="edit_office_name" class="form-control" value="${currentEditData.name || ''}" readonly>
-            <small class="text-muted">※事業所名は変更できません</small>
-        </div>
-        <div class="mb-3">
-            <label class="form-label">事業所番号 <span class="text-danger">*</span></label>
-            <input type="text" id="edit_office_number" class="form-control" value="${currentEditData.office_number || ''}" required>
-        </div>
-        <div class="mb-3">
-            <label class="form-label">郵便番号 <span class="text-danger">*</span></label>
-            <input type="text" id="edit_office_postal_code" class="form-control" value="${currentEditData.postal_code || ''}" placeholder="000-0000" maxlength="8" required>
-        </div>
-        <div class="mb-3">
-            <label class="form-label">住所 <span class="text-danger">*</span></label>
-            <input type="text" id="edit_office_address" class="form-control" value="${currentEditData.address || ''}" required>
-        </div>
-        <div class="mb-3">
-            <label class="form-label">電話番号 <span class="text-danger">*</span></label>
-            <input type="text" id="edit_office_phone" class="form-control" value="${currentEditData.phone || ''}" required>
-        </div>
-        <div class="mb-3">
-            <label class="form-label">FAX番号</label>
-            <input type="text" id="edit_office_fax" class="form-control" value="${currentEditData.fax || ''}">
-        </div>
-        <div class="mb-3">
-            <label class="form-label">管理者氏名 <span class="text-danger">*</span></label>
-            <input type="text" id="edit_office_manager_name" class="form-control" value="${currentEditData.manager_name || ''}" required>
-        </div>
-    `;
+    // コンテキストに応じてフォームフィールドから現在値をモーダルに反映
+    const prefix = context === 'houkatsu' ? 'houkatsu' : 'jutaku';
+    const numEl  = document.getElementById(prefix + '_office_number');
+    const pcEl   = document.getElementById(prefix + '_postal_code');
+    const addrEl = document.getElementById(prefix + '_address');
+    const phEl   = document.getElementById(prefix + '_phone');
+    if (numEl)  document.getElementById('preventive_modal_office_number').value = numEl.value;
+    if (pcEl)   document.getElementById('preventive_modal_postal_code').value   = pcEl.value;
+    if (addrEl) document.getElementById('preventive_modal_address').value        = addrEl.value;
+    if (phEl)   document.getElementById('preventive_modal_phone').value          = phEl.value;
 
-    openPreventiveMasterDrawer();
-    {% else %}
-    alert('居宅介護支援事業所の情報が設定されていません。');
-    {% endif %}
+    document.getElementById('preventiveOfficeModalError').classList.add('d-none');
+    new bootstrap.Modal(document.getElementById('preventiveOfficeModal')).show();
 }
 
 // CSRFトークン取得用関数
@@ -1108,10 +1158,10 @@ function getCookie(name) {
 
 // マスタデータを保存
 function saveMasterData() {
+    // センター編集はドロワーの「保存して反映」ボタンが saveCenterData() を直接呼ぶ
+    // 事業所編集はモーダル経由なので saveOfficeData() はモーダルボタンから呼ばれる
     if (currentDrawerType === 'center') {
         saveCenterData();
-    } else if (currentDrawerType === 'office') {
-        saveOfficeData();
     }
 }
 
@@ -1173,8 +1223,9 @@ function saveCenterData() {
                 supportCentersFromDB[centerIndex].phone = phone;
             }
 
-            // ドロワーを閉じる
-            closePreventiveMasterDrawer();
+            // モーダルを閉じる
+    bootstrap.Modal.getInstance(document.getElementById('preventiveCenterModal')).hide();
+    closePreventiveMasterDrawer();
 
             // ステータスアイコンをリアルタイムで更新
             try {
@@ -1198,72 +1249,76 @@ function saveCenterData() {
     });
 }
 
-// 事業所データを保存
+// 事業所データを保存（モーダルから）
 function saveOfficeData() {
-    const officeNumber = document.getElementById('edit_office_number').value.trim();
-    const postalCode = document.getElementById('edit_office_postal_code').value.trim();
-    const address = document.getElementById('edit_office_address').value.trim();
-    const phone = document.getElementById('edit_office_phone').value.trim();
-    const fax = document.getElementById('edit_office_fax').value.trim();
-    const managerName = document.getElementById('edit_office_manager_name').value.trim();
+    const pk      = document.getElementById('preventive_modal_pk').value;
+    const context = document.getElementById('preventive_modal_context').value || 'jutaku';
+    if (!pk) { alert('事業所IDが取得できません。'); return; }
 
-    if (!officeNumber || !postalCode || !address || !phone || !managerName) {
-        alert('すべての必須項目を入力してください。');
+    const name        = document.getElementById('preventive_modal_name').value.trim();
+    const furigana    = document.getElementById('preventive_modal_furigana').value.trim();
+    const officeNumber = document.getElementById('preventive_modal_office_number').value.trim();
+    const manager     = document.getElementById('preventive_modal_manager').value.trim();
+    const postalCode  = document.getElementById('preventive_modal_postal_code').value.trim();
+    const address     = document.getElementById('preventive_modal_address').value.trim();
+    const phone       = document.getElementById('preventive_modal_phone').value.trim();
+    const fax         = document.getElementById('preventive_modal_fax').value.trim();
+    const isActive    = document.getElementById('preventive_modal_is_active').checked;
+
+    if (!name || !officeNumber) {
+        const errEl = document.getElementById('preventiveOfficeModalError');
+        errEl.textContent = '事業所名と事業所番号は必須です。';
+        errEl.classList.remove('d-none');
         return;
     }
 
-    // マスタデータベースを更新
-    const officeId = currentEditData.id;
-    fetch(`/clients/office/${officeId}/update-master/`, {
+    const formData = new FormData();
+    formData.append('name', name);
+    formData.append('furigana', furigana);
+    formData.append('office_number', officeNumber);
+    formData.append('manager_name', manager);
+    formData.append('postal_code', postalCode);
+    formData.append('address', address);
+    formData.append('phone', phone);
+    formData.append('fax', fax);
+    if (isActive) formData.append('is_active', 'true');
+
+    fetch(`/clients/home-care-offices/${pk}/edit/`, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': getCookie('csrftoken')
-        },
-        body: JSON.stringify({
-            office_number: officeNumber,
-            postal_code: postalCode,
-            address: address,
-            phone: phone
-        })
+        headers: { 'X-CSRFToken': getCookie('csrftoken'), 'X-Requested-With': 'XMLHttpRequest' },
+        body: formData,
     })
-    .then(response => response.json())
+    .then(r => r.json())
     .then(data => {
         if (data.success) {
-            // フォームの値を更新
-            document.getElementById('jutaku_office_number').value = officeNumber;
-            document.getElementById('jutaku_postal_code').value = postalCode;
-            document.getElementById('jutaku_address').value = address;
-            document.getElementById('jutaku_phone').value = phone;
+            // コンテキストに応じた書類フォームフィールドを更新
+            const prefix = context === 'houkatsu' ? 'houkatsu' : 'jutaku';
+            const numEl  = document.getElementById(prefix + '_office_number');
+            const pcEl   = document.getElementById(prefix + '_postal_code');
+            const addrEl = document.getElementById(prefix + '_address');
+            const phEl   = document.getElementById(prefix + '_phone');
+            if (numEl)  numEl.value  = officeNumber;
+            if (pcEl)   pcEl.value   = postalCode;
+            if (addrEl) addrEl.value = address;
+            if (phEl)   phEl.value   = phone;
 
-            // currentEditDataを更新（次回編集時に最新データを表示するため）
-            currentEditData.office_number = officeNumber;
-            currentEditData.postal_code = postalCode;
-            currentEditData.address = address;
-            currentEditData.phone = phone;
+            bootstrap.Modal.getInstance(document.getElementById('preventiveOfficeModal')).hide();
 
-            // ドロワーを閉じる
-            closePreventiveMasterDrawer();
-
-            // ステータスアイコンをリアルタイムで更新
-            try {
-                if (typeof updateJutakuStatusIcon === 'function') {
-                    updateJutakuStatusIcon();
-                } else {
-                    console.warn('[WARN] updateJutakuStatusIcon function not found');
-                }
-            } catch (iconError) {
-                console.error('[ERROR] Failed to update jutaku status icon:', iconError);
+            if (context === 'houkatsu' && typeof updateHoukatsuStatusIcon === 'function') {
+                updateHoukatsuStatusIcon();
+            } else if (context === 'jutaku' && typeof updateJutakuStatusIcon === 'function') {
+                updateJutakuStatusIcon();
             }
-
-            alert('事業所のマスタデータを更新し、書類フォームに反映しました。');
         } else {
-            alert('マスタデータの更新に失敗しました: ' + (data.error || '不明なエラー'));
+            const errEl = document.getElementById('preventiveOfficeModalError');
+            errEl.textContent = data.error || 'エラーが発生しました。';
+            errEl.classList.remove('d-none');
         }
     })
-    .catch(error => {
-        console.error('Error updating office master:', error);
-        alert('マスタデータの更新中にエラーが発生しました。');
+    .catch(() => {
+        const errEl = document.getElementById('preventiveOfficeModalError');
+        errEl.textContent = '通信エラーが発生しました。';
+        errEl.classList.remove('d-none');
     });
 }
 
@@ -1272,6 +1327,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const overlay = document.getElementById('preventiveDrawerOverlay');
     if (overlay) {
         overlay.addEventListener('click', closePreventiveMasterDrawer);
+    }
+
+    // 事業所モーダル保存ボタン
+    const saveBtn = document.getElementById('preventiveOfficeSaveBtn');
+    if (saveBtn) {
+        saveBtn.addEventListener('click', saveOfficeData);
     }
 });
 </script>

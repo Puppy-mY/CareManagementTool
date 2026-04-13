@@ -727,6 +727,7 @@ class HomeCareSupportOffice(models.Model):
     """居宅介護支援事業所"""
 
     name = models.CharField('事業所名', max_length=100)
+    furigana = models.CharField('フリガナ', max_length=100, blank=True)
     office_number = models.CharField('事業所番号', max_length=20, unique=True)
     postal_code = models.CharField('郵便番号', max_length=10, blank=True)
     address = models.CharField('住所', max_length=200, blank=True)

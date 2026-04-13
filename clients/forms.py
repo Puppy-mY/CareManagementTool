@@ -321,13 +321,17 @@ class HomeCareSupportOfficeForm(forms.ModelForm):
 
     class Meta:
         model = HomeCareSupportOffice
-        fields = ['name', 'office_number', 'postal_code', 'address', 'phone', 'fax', 'manager_name', 'is_active']
+        fields = ['name', 'furigana', 'office_number', 'postal_code', 'address', 'phone', 'fax', 'manager_name', 'is_active']
 
         widgets = {
             'name': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': '例: 居宅介護支援事業所 安濃津ろまん',
                 'required': True
+            }),
+            'furigana': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': '例: キョタクカイゴシエンジギョウショ アノツロマン'
             }),
             'office_number': forms.TextInput(attrs={
                 'class': 'form-control',
@@ -362,6 +366,7 @@ class HomeCareSupportOfficeForm(forms.ModelForm):
 
         labels = {
             'name': '事業所名',
+            'furigana': 'フリガナ',
             'office_number': '事業所番号',
             'postal_code': '郵便番号',
             'address': '住所',

@@ -42,6 +42,14 @@
                             {% endif %}
                         </div>
 
+                        <div class="col-12">
+                            <label for="id_furigana" class="form-label">フリガナ</label>
+                            {{ form.furigana }}
+                            {% if form.furigana.errors %}
+                                <div class="text-danger mt-1">{{ form.furigana.errors }}</div>
+                            {% endif %}
+                        </div>
+
                         <div class="col-md-6">
                             <label for="id_office_number" class="form-label">事業所番号 <span class="text-danger">*</span></label>
                             {{ form.office_number }}

@@ -832,6 +832,27 @@ def document_create(request, client_id, document_type):
             'client_insurance_number': client.insurance_number or '',
         }
 
+    # 事業所情報を initial_data に設定
+    # ユーザープロフィールの所属事業所、なければDBの最初の有効事業所を使用
+    if document_type in ('kyotaku_service_plan_request', 'kyotaku_preventive_service_plan_request'):
+        from .models import HomeCareSupportOffice
+        office = getattr(getattr(request.user, 'profile', None), 'home_care_office', None)
+        if not office:
+            office = HomeCareSupportOffice.objects.filter(is_active=True).order_by('name').first()
+        if office:
+            # office_id は常にセット（モーダルのAPI呼び出しに必要）
+            initial_data['kyotaku_office_id'] = office.pk
+            initial_data['kyotaku_office_furigana'] = office.furigana or ''
+            initial_data['kyotaku_office_fax'] = office.fax or ''
+            initial_data['kyotaku_office_manager'] = office.manager_name or ''
+            # 他のフィールドは未設定の場合のみセット（履歴データを優先）
+            if not initial_data.get('kyotaku_office_number'):
+                initial_data['kyotaku_office_number'] = office.office_number
+                initial_data['kyotaku_postal_code'] = office.postal_code or ''
+                initial_data['kyotaku_address'] = office.address or ''
+                initial_data['kyotaku_phone'] = office.phone or ''
+                initial_data['kyotaku_office_name'] = office.name or ''
+
     if request.method == 'POST':
         # フォームデータの取得
         form_data = {
@@ -2540,49 +2561,64 @@ def home_care_office_list(request):
 @login_required
 def home_care_office_create(request):
     """居宅介護支援事業所作成"""
-    # 管理者権限チェック
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
     if not request.user.is_staff and not request.user.is_superuser:
+        if is_ajax:
+            return JsonResponse({'success': False, 'error': 'アクセス権限がありません。'})
         messages.error(request, 'このページにアクセスする権限がありません。')
         return redirect('client_list')
 
     if request.method == 'POST':
         name = request.POST.get('name', '').strip()
+        furigana = request.POST.get('furigana', '').strip()
         office_number = request.POST.get('office_number', '').strip()
         postal_code = request.POST.get('postal_code', '').strip()
         address = request.POST.get('address', '').strip()
         phone = request.POST.get('phone', '').strip()
         fax = request.POST.get('fax', '').strip()
         manager_name = request.POST.get('manager_name', '').strip()
+        is_active = request.POST.get('is_active') == 'true'
 
         if not name or not office_number:
+            if is_ajax:
+                return JsonResponse({'success': False, 'error': '事業所名と事業所番号は必須です。'})
             messages.error(request, '事業所名と事業所番号は必須です。')
             return redirect('home_care_office_create')
 
-        # 事業所番号の重複チェック
         if HomeCareSupportOffice.objects.filter(office_number=office_number).exists():
+            if is_ajax:
+                return JsonResponse({'success': False, 'error': 'この事業所番号は既に登録されています。'})
             messages.error(request, 'この事業所番号は既に登録されています。')
             return redirect('home_care_office_create')
 
         office = HomeCareSupportOffice.objects.create(
             name=name,
+            furigana=furigana,
             office_number=office_number,
             postal_code=postal_code,
             address=address,
             phone=phone,
             fax=fax,
             manager_name=manager_name,
+            is_active=is_active,
         )
+        if is_ajax:
+            return JsonResponse({'success': True})
         messages.success(request, f'{office.name} を登録しました。')
         return redirect('home_care_office_list')
 
-    return render(request, 'clients/home_care_office_form.html', {'action': 'create'})
+    return redirect('home_care_office_list')
 
 
 @login_required
 def home_care_office_edit(request, pk):
     """居宅介護支援事業所編集"""
-    # 管理者権限チェック
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
     if not request.user.is_staff and not request.user.is_superuser:
+        if is_ajax:
+            return JsonResponse({'success': False, 'error': 'アクセス権限がありません。'})
         messages.error(request, 'このページにアクセスする権限がありません。')
         return redirect('client_list')
 
@@ -2590,31 +2626,34 @@ def home_care_office_edit(request, pk):
 
     if request.method == 'POST':
         office.name = request.POST.get('name', '').strip()
+        office.furigana = request.POST.get('furigana', '').strip()
         office.office_number = request.POST.get('office_number', '').strip()
         office.postal_code = request.POST.get('postal_code', '').strip()
         office.address = request.POST.get('address', '').strip()
         office.phone = request.POST.get('phone', '').strip()
         office.fax = request.POST.get('fax', '').strip()
         office.manager_name = request.POST.get('manager_name', '').strip()
+        office.is_active = request.POST.get('is_active') == 'true'
 
         if not office.name or not office.office_number:
+            if is_ajax:
+                return JsonResponse({'success': False, 'error': '事業所名と事業所番号は必須です。'})
             messages.error(request, '事業所名と事業所番号は必須です。')
             return redirect('home_care_office_edit', pk=pk)
 
-        # 事業所番号の重複チェック（自身以外）
         if HomeCareSupportOffice.objects.filter(office_number=office.office_number).exclude(pk=pk).exists():
+            if is_ajax:
+                return JsonResponse({'success': False, 'error': 'この事業所番号は既に登録されています。'})
             messages.error(request, 'この事業所番号は既に登録されています。')
             return redirect('home_care_office_edit', pk=pk)
 
         office.save()
+        if is_ajax:
+            return JsonResponse({'success': True})
         messages.success(request, f'{office.name} を更新しました。')
         return redirect('home_care_office_list')
 
-    context = {
-        'office': office,
-        'action': 'edit'
-    }
-    return render(request, 'clients/home_care_office_form.html', context)
+    return redirect('home_care_office_list')
 
 
 @login_required
@@ -2634,6 +2673,204 @@ def home_care_office_delete(request, pk):
         return redirect('home_care_office_list')
 
     return redirect('home_care_office_list')
+
+
+# ========================================
+# 更新認定申請書
+# ========================================
+
+@login_required
+def document_create_ltc_renewal(request, client_id):
+    """更新認定申請書 作成画面"""
+    from django.conf import settings as dj_settings
+    from openpyxl import load_workbook
+    from openpyxl.cell.cell import MergedCell
+    import tempfile
+
+    client = get_object_or_404(Client, pk=client_id)
+
+    # ユーザープロフィールと事業所情報を取得
+    profile = getattr(request.user, 'profile', None)
+    office = getattr(profile, 'home_care_office', None)
+
+    # 担当者氏名（ログインユーザーの氏名）
+    user_full_name = profile.get_full_name() if profile else request.user.username
+
+    # 初期値（自動反映）
+    initial = {
+        # 被保険者
+        'insurance_number': client.insurance_number or '',
+        'client_furigana': client.furigana or '',
+        'client_name': client.name or '',
+        'client_gender': '男' if client.gender == 'male' else ('女' if client.gender == 'female' else ''),
+        'birth_date': client.birth_date.strftime('%Y-%m-%d') if client.birth_date else '',
+        'postal_code': client.postal_code or '',
+        'client_address': client.address or '',
+        'client_phone': client.phone or '',
+        # 前回の認定
+        'care_level': client.get_care_level_display() if client.care_level else '',
+        'cert_start': client.certification_period_start.strftime('%Y-%m-%d') if client.certification_period_start else '',
+        'cert_end': client.certification_period_end.strftime('%Y-%m-%d') if client.certification_period_end else '',
+        # 医療保険
+        'medical_insurer_name': client.medical_insurer_name_issuer or '',
+        'medical_insurer_number': client.medical_insurer_number or '',
+        'medical_insurance_symbol': client.medical_insurance_symbol or '',
+        'medical_insurance_number': client.medical_insurance_number or '',
+        # 申請書提出者（事業所）
+        'office_furigana': (office.furigana if office else '') or '',
+        'office_name': (office.name if office else '') or '',
+        'office_number': (office.office_number if office else '') or '',
+        'office_postal_code': (office.postal_code if office else '') or '',
+        'office_address': (office.address if office else '') or '',
+        'office_phone': (office.phone if office else '') or '',
+        'staff_name': user_full_name,
+        'relation': '介護支援専門員',
+        # 手入力項目
+        'application_date': '',
+        'specific_disease': '',
+        'survey_contact_name': '',
+        'survey_contact_relation': '',
+        'survey_contact_phone': '',
+        'survey_preferred_time': '',
+        'survey_notes': '',
+        'doctor_hospital': '',
+        'doctor_name': '',
+        'doctor_notes': '',
+    }
+
+    if request.method == 'POST':
+        # フォームデータを収集
+        form_data = {k: request.POST.get(k, '') for k in initial}
+
+        # Excelテンプレートを読み込み
+        filename = getattr(dj_settings, 'LTC_RENEWAL_FILENAME', 'LTC_Certification_Renewal_R8.4-.xlsx')
+        template_path = os.path.join(dj_settings.BASE_DIR, 'templates', 'forms', filename)
+
+        if not os.path.exists(template_path):
+            messages.error(request, f'テンプレートファイルが見つかりません: {filename}')
+            return redirect('client_detail', pk=client_id)
+
+        try:
+            workbook = load_workbook(template_path)
+            ws = workbook.active
+
+            def w(cell_ref, value):
+                """MergedCell対応の安全な書き込み"""
+                if not cell_ref or value is None:
+                    return
+                try:
+                    cell = ws[cell_ref]
+                    if isinstance(cell, MergedCell):
+                        for mr in ws.merged_cells.ranges:
+                            if cell_ref in mr:
+                                min_col, min_row, _, _ = mr.bounds
+                                ws.cell(row=min_row, column=min_col).value = value
+                                return
+                    else:
+                        cell.value = value
+                except Exception:
+                    pass
+
+            def to_wareki(date_str):
+                if not date_str:
+                    return ''
+                try:
+                    from datetime import date as date_cls, datetime
+                    d = datetime.strptime(date_str, '%Y-%m-%d').date()
+                    y, m, day = d.year, d.month, d.day
+                    if d >= date_cls(2019, 5, 1):
+                        return f"令和{y-2018:02d}年{m:02d}月{day:02d}日"
+                    elif d >= date_cls(1989, 1, 8):
+                        return f"平成{y-1988:02d}年{m:02d}月{day:02d}日"
+                    elif d >= date_cls(1926, 12, 25):
+                        return f"昭和{y-1925:02d}年{m:02d}月{day:02d}日"
+                    else:
+                        return f"大正{y-1911:02d}年{m:02d}月{day:02d}日"
+                except Exception:
+                    return date_str
+
+            # ① 申請年月日
+            w('X7', to_wareki(form_data.get('application_date', '')))
+
+            # ① 申請書提出者（事業所）
+            w('D8', form_data.get('office_furigana', ''))
+            w('D9', form_data.get('office_name', ''))
+            w('T9', form_data.get('relation', '介護支援専門員'))
+            w('D10', form_data.get('office_address', ''))
+            w('G10', f"（〒{form_data.get('office_postal_code', '')}）" if form_data.get('office_postal_code') else '')
+            w('U11', form_data.get('office_phone', ''))
+            w('A13', form_data.get('staff_name', ''))
+            w('Q13', form_data.get('office_number', ''))
+
+            # ② 被保険者
+            w('B15', form_data.get('insurance_number', ''))
+            w('B16', form_data.get('client_furigana', ''))
+            w('B17', form_data.get('client_name', ''))
+            w('Q16', form_data.get('client_gender', ''))
+            w('Q17', to_wareki(form_data.get('birth_date', '')))
+            w('G18', f"（〒{form_data.get('postal_code', '')}）" if form_data.get('postal_code') else '')
+            w('B18', form_data.get('client_address', ''))
+            w('U20', form_data.get('client_phone', ''))
+
+            # 前回の認定
+            w('N21', form_data.get('care_level', ''))
+            cert_start = to_wareki(form_data.get('cert_start', ''))
+            cert_end = to_wareki(form_data.get('cert_end', ''))
+            if cert_start and cert_end:
+                w('N22', f"{cert_start}から{cert_end}まで")
+            elif cert_start:
+                w('N22', f"{cert_start}から")
+
+            # 医療保険
+            w('G25', form_data.get('medical_insurer_name', ''))
+            w('V25', form_data.get('medical_insurer_number', ''))
+            w('M26', form_data.get('medical_insurance_symbol', ''))
+            w('V26', form_data.get('medical_insurance_number', ''))
+
+            # 特定疾病名
+            if form_data.get('specific_disease'):
+                w('G27', form_data.get('specific_disease', ''))
+
+            # ③ 認定調査 連絡先
+            w('G32', form_data.get('survey_contact_name', ''))
+            w('O32', form_data.get('survey_contact_relation', ''))
+            w('T32', form_data.get('survey_contact_phone', ''))
+            w('G34', form_data.get('survey_preferred_time', ''))
+            w('G35', form_data.get('survey_notes', ''))
+
+            # ④ 主治医
+            w('B37', form_data.get('doctor_hospital', ''))
+            w('B39', form_data.get('doctor_name', ''))
+            w('G42', form_data.get('doctor_notes', ''))
+
+            # 一時ファイルに保存してダウンロード
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.xlsx') as tmp:
+                workbook.save(tmp.name)
+                workbook.close()
+                with open(tmp.name, 'rb') as f:
+                    content = f.read()
+            os.unlink(tmp.name)
+
+            # ダウンロードファイル名：ふりがな苗字_氏名_更新認定申請書.xlsx
+            last_name_kana = (client.furigana or '').split()[0] if client.furigana else ''
+            dl_name = f"{last_name_kana}_{client.name}_更新認定申請書.xlsx"
+
+            response = HttpResponse(
+                content,
+                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            )
+            response['Content-Disposition'] = f'attachment; filename="{dl_name}"; filename*=UTF-8\'\'{dl_name}'
+            return response
+
+        except Exception as e:
+            messages.error(request, f'Excel生成中にエラーが発生しました: {str(e)}')
+            return redirect('client_detail', pk=client_id)
+
+    context = {
+        'client': client,
+        'initial': initial,
+    }
+    return render(request, 'clients/document_create_ltc_renewal.html', context)
 
 
 # ========================================
