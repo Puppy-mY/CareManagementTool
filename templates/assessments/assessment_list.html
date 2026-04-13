@@ -375,7 +375,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // （Chrome拡張機能等による日本語ファイル名文字化けを回避しつつ、サーバー側で設定したファイル名を使用する）
 function exportListExcel(assessmentId, clientName, dateStr) {
     const url = `/assessments/${assessmentId}/excel/`;
-    const filename = `アセスメント_${clientName}_${dateStr}.xlsm`;
+    const filename = `アセスメント_${clientName}_${dateStr}.xlsx`;
     handleExcelDownload(url, filename, null, true);
 }
 </script>

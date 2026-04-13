@@ -1109,6 +1109,7 @@
      * Excelダウンロード処理
      */
     async function handleExcelDownload(url, filename, postData = null, useAjax = false) {
+        /* --- モーダル表示（一時非表示中。復活する場合はコメントアウトを解除） ---
         showConfirmModal({
             icon: 'fa-spinner',
             iconColor: '#0d6efd',
@@ -1117,9 +1118,8 @@
             hideCancel: true,
             hideOk: true
         });
-        
-        // iconにfa-spinを追加
         updateConfirmModal({ icon: 'fa-spinner', spinning: true });
+        --- モーダル表示ここまで --- */
 
         try {
             const options = {
@@ -1132,7 +1132,7 @@
             if (useAjax) {
                 options.headers['X-Requested-With'] = 'XMLHttpRequest';
             }
-            
+
             if (postData) {
                 if (postData instanceof FormData) {
                     options.body = postData;
@@ -1148,6 +1148,7 @@
             const contentType = response.headers.get('content-type');
             if (contentType && contentType.indexOf('application/json') !== -1) {
                 const data = await response.json();
+                /* --- JSON応答モーダル（一時非表示中） ---
                 updateConfirmModal({
                     icon: 'fa-check-circle',
                     iconColor: '#198754',
@@ -1157,6 +1158,7 @@
                     showOkOnly: true,
                     okText: '閉じる'
                 });
+                --- ここまで --- */
                 return;
             }
 
@@ -1164,7 +1166,7 @@
             const downloadUrl = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = downloadUrl;
-            
+
             // Content-Dispositionからファイル名取得を試みる
             const contentDisposition = response.headers.get('Content-Disposition');
             if (contentDisposition) {
@@ -1180,13 +1182,14 @@
                     }
                 }
             }
-            
+
             a.download = filename || 'download.xlsx';
             document.body.appendChild(a);
             a.click();
             a.remove();
             window.URL.revokeObjectURL(downloadUrl);
 
+            /* --- 完了モーダル（一時非表示中） ---
             updateConfirmModal({
                 icon: 'fa-check-circle',
                 iconColor: '#198754',
@@ -1196,9 +1199,11 @@
                 showOkOnly: true,
                 okText: '閉じる'
             });
+            --- ここまで --- */
 
         } catch (error) {
             console.error('Download error:', error);
+            /* --- エラーモーダル（一時非表示中） ---
             updateConfirmModal({
                 icon: 'fa-exclamation-triangle',
                 iconColor: '#dc3545',
@@ -1209,6 +1214,7 @@
                 okClass: 'btn-danger',
                 okText: '閉じる'
             });
+            --- ここまで --- */
         }
     }
     </script>

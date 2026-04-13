@@ -1258,23 +1258,12 @@ def generate_assessment_excel(assessment, request=None):
         )
 
     try:
-        # --- 保存先パスの事前特定（ファイル名とサブフォルダ） ---
-        network_base_path = r"N:\居宅関係★★\利用者フォルダ"
-        
-        # 苗字のふりがな（苗字）と氏名を組み合わせてファイル名を生成
+        # ファイル名生成: やまかわ_山川夏楓_アセスメント_20260412.xlsx
         furigana = assessment.client.furigana or ""
         last_name_kana = furigana.split()[0] if furigana.split() else ""
         full_name = (assessment.client.name or "").replace(" ", "").replace("　", "")
-        save_filename = f"{last_name_kana}_{full_name}様.xlsm"
-
-        # 担当者（アセッサー）の苗字を取得してサブフォルダを特定
-        staff_last_name = ""
-        if assessment.assessor and hasattr(assessment.assessor, "profile"):
-            staff_last_name = assessment.assessor.profile.last_name
-        
-        target_dir = os.path.join(network_base_path, staff_last_name) if staff_last_name else network_base_path
-        existing_file_path = os.path.join(target_dir, save_filename)
-        # ----------------------------------------------------
+        date_str = assessment.assessment_date.strftime("%Y%m%d") if assessment.assessment_date else ""
+        download_filename = f"{last_name_kana}_{full_name}_アセスメント_{date_str}.xlsx"
 
         # 座標設定ファイルを読み込み
         coordinates_path = os.path.join(
@@ -1288,35 +1277,23 @@ def generate_assessment_excel(assessment, request=None):
         # テンプレート（ベースファイル）の決定
         # 既存ファイルがあればそれをベースにし、なければ原本を使用する
         default_template_path = os.path.join(
-            settings.BASE_DIR, "templates", "forms", "assessment_sheet_genpon.xlsm"
+            settings.BASE_DIR, "templates", "forms", "assessment_sheet.xlsx"
         )
         
-        import xlwings as xw
         import tempfile
         import shutil
 
         # 一時ファイルを作成
-        with tempfile.NamedTemporaryFile(suffix=".xlsm", delete=False) as temp_file:
+        with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as temp_file:
             temp_filepath = temp_file.name
 
-        # ベースファイルのコピー
-        if os.path.exists(existing_file_path):
-            # 既にファイルが存在する場合、それを一時ファイルにコピーして更新のベースにする
-            shutil.copy2(existing_file_path, temp_filepath)
-            print(f"INFO: Using existing file as template: {existing_file_path}")
-        else:
-            # 存在しない場合は原本テンプレートを使用
-            if not os.path.exists(default_template_path):
-                raise Exception(f"Excelテンプレートが見つかりません: {default_template_path}")
-            shutil.copy2(default_template_path, temp_filepath)
-            print(f"INFO: Using default template: {default_template_path}")
-
-        # Excelアプリケーションをバックグラウンドで起動
-        app = xw.App(visible=False, add_book=False)
-        app.display_alerts = False
+        # テンプレートを一時ファイルにコピー
+        if not os.path.exists(default_template_path):
+            raise Exception(f"Excelテンプレートが見つかりません: {default_template_path}")
+        shutil.copy2(default_template_path, temp_filepath)
 
         try:
-            workbook = app.books.open(temp_filepath)
+            workbook = load_workbook(temp_filepath)
 
             # --- 和暦変換関数 ---
             def to_wareki(date):
@@ -1613,13 +1590,15 @@ def generate_assessment_excel(assessment, request=None):
 
             # --- アセスメントシートのワークシート設定と書き込み関数 ---
             assessment_sheet_name = coords.get("sheet_name", "（最新）アセスメントシート")
-            worksheet = workbook.sheets[assessment_sheet_name]
+            worksheet = workbook[assessment_sheet_name]
 
             # 既存データをクリア（空白データが前回の値を残さないよう）
             for _key, _cell_ref in coords.items():
                 if _key != "sheet_name" and _cell_ref:
                     try:
-                        worksheet.range(_cell_ref).value = ""
+                        _cell = worksheet[_cell_ref]
+                        if not isinstance(_cell, MergedCell):
+                            _cell.value = ""
                     except Exception:
                         pass
 
@@ -1629,7 +1608,9 @@ def generate_assessment_excel(assessment, request=None):
                         if value is None: value = ""
                         if isinstance(value, list):
                             value = "、".join([str(v) for v in value])
-                        worksheet.range(cell_ref).value = value
+                        cell = worksheet[cell_ref]
+                        if not isinstance(cell, MergedCell):
+                            cell.value = value
                 except Exception as e:
                     print(f"DEBUG: セル {cell_ref} への書き込みエラー (シート: {assessment_sheet_name}, 値: {value}): {str(e)}")
 
@@ -1638,8 +1619,10 @@ def generate_assessment_excel(assessment, request=None):
                 try:
                     if cell_ref:
                         if value is None: value = ""
-                        worksheet.range(cell_ref).number_format = "@"
-                        worksheet.range(cell_ref).value = str(value)
+                        cell = worksheet[cell_ref]
+                        if not isinstance(cell, MergedCell):
+                            cell.number_format = "@"
+                            cell.value = str(value)
                 except Exception as e:
                     print(f"DEBUG: セル {cell_ref} への和暦書き込みエラー (値: {value}): {str(e)}")
 
@@ -2545,15 +2528,17 @@ def generate_assessment_excel(assessment, request=None):
             # --- 救急医療情報シートへの書き込み ---
             ei_coords = coordinates.get("emergency_info", {})
             ei_sheet_name = ei_coords.get("sheet_name", "救急医療情報")
-            all_sheet_names = [s.name for s in workbook.sheets]
+            all_sheet_names = workbook.sheetnames
             if ei_sheet_name in all_sheet_names:
-                ei_sheet = workbook.sheets[ei_sheet_name]
+                ei_sheet = workbook[ei_sheet_name]
 
                 # 既存データをクリア（空白データが前回の値を残さないよう）
                 for _key, _cell_ref in ei_coords.items():
                     if _key != "sheet_name" and _cell_ref:
                         try:
-                            ei_sheet.range(_cell_ref).value = ""
+                            _c = ei_sheet[_cell_ref]
+                            if not isinstance(_c, MergedCell):
+                                _c.value = ""
                         except Exception:
                             pass
 
@@ -2561,7 +2546,9 @@ def generate_assessment_excel(assessment, request=None):
                     try:
                         if cell_ref:
                             if value is None: value = ""
-                            ei_sheet.range(cell_ref).value = value
+                            cell = ei_sheet[cell_ref]
+                            if not isinstance(cell, MergedCell):
+                                cell.value = value
                     except Exception as e:
                         print(f"DEBUG: 救急医療情報 セル {cell_ref} 書き込みエラー: {str(e)}")
 
@@ -2569,10 +2556,10 @@ def generate_assessment_excel(assessment, request=None):
                     try:
                         if cell_ref:
                             if value is None: value = ""
-                            ei_sheet.range(cell_ref).number_format = "@"
-                            # 均等割り付けを左揃えに変更してから書き込み
-                            ei_sheet.range(cell_ref).api.HorizontalAlignment = -4131  # xlLeft
-                            ei_sheet.range(cell_ref).value = str(value)
+                            cell = ei_sheet[cell_ref]
+                            if not isinstance(cell, MergedCell):
+                                cell.number_format = "@"
+                                cell.value = str(value)
                     except Exception as e:
                         print(f"DEBUG: 救急医療情報 セル {cell_ref} 和暦書き込みエラー: {str(e)}")
 
@@ -2660,21 +2647,25 @@ def generate_assessment_excel(assessment, request=None):
             # --- 医療・介護連携シートへの書き込み ---
             mcc_coords = coordinates.get("medical_care_coordination", {})
             mcc_sheet_name = mcc_coords.get("sheet_name", "医療・介護連携シート")
-            if mcc_sheet_name in [s.name for s in workbook.sheets]:
-                mcc_sheet = workbook.sheets[mcc_sheet_name]
+            if mcc_sheet_name in workbook.sheetnames:
+                mcc_sheet = workbook[mcc_sheet_name]
 
                 def safe_write_mcc(cell_ref, value):
                     try:
                         if cell_ref and value is not None:
-                            mcc_sheet.range(cell_ref).value = value
+                            cell = mcc_sheet[cell_ref]
+                            if not isinstance(cell, MergedCell):
+                                cell.value = value
                     except Exception as e:
                         print(f"DEBUG: {mcc_sheet_name} セル {cell_ref} 書き込みエラー: {e}")
 
                 def safe_write_mcc_wareki(cell_ref, value):
                     try:
                         if cell_ref and value is not None:
-                            mcc_sheet.range(cell_ref).number_format = "@"
-                            mcc_sheet.range(cell_ref).value = str(value)
+                            cell = mcc_sheet[cell_ref]
+                            if not isinstance(cell, MergedCell):
+                                cell.number_format = "@"
+                                cell.value = str(value)
                     except Exception as e:
                         print(f"DEBUG: {mcc_sheet_name} セル {cell_ref} 和暦書き込みエラー: {e}")
 
@@ -2692,21 +2683,25 @@ def generate_assessment_excel(assessment, request=None):
             # --- (貼付作成)入院時情報提供シートへの書き込み ---
             hai_coords = coordinates.get("hospital_admission_info", {})
             hai_sheet_name = hai_coords.get("sheet_name", "(貼付作成)入院時情報提供")
-            if hai_sheet_name in [s.name for s in workbook.sheets]:
-                hai_sheet = workbook.sheets[hai_sheet_name]
+            if hai_sheet_name in workbook.sheetnames:
+                hai_sheet = workbook[hai_sheet_name]
 
                 def safe_write_hai(cell_ref, value):
                     try:
                         if cell_ref and value is not None:
-                            hai_sheet.range(cell_ref).value = value
+                            cell = hai_sheet[cell_ref]
+                            if not isinstance(cell, MergedCell):
+                                cell.value = value
                     except Exception as e:
                         print(f"DEBUG: {hai_sheet_name} セル {cell_ref} 書き込みエラー: {e}")
 
                 def safe_write_hai_wareki(cell_ref, value):
                     try:
                         if cell_ref and value is not None:
-                            hai_sheet.range(cell_ref).number_format = "@"
-                            hai_sheet.range(cell_ref).value = str(value)
+                            cell = hai_sheet[cell_ref]
+                            if not isinstance(cell, MergedCell):
+                                cell.number_format = "@"
+                                cell.value = str(value)
                     except Exception as e:
                         print(f"DEBUG: {hai_sheet_name} セル {cell_ref} 和暦書き込みエラー: {e}")
 
@@ -2848,21 +2843,25 @@ def generate_assessment_excel(assessment, request=None):
             # --- (手入力)入院時情報提供シートへの書き込み ---
             hai_m_coords = coordinates.get("hospital_admission_info_manual", {})
             hai_m_sheet_name = hai_m_coords.get("sheet_name", "(手入力)入院時情報提供")
-            if hai_m_sheet_name in [s.name for s in workbook.sheets]:
-                hai_m_sheet = workbook.sheets[hai_m_sheet_name]
+            if hai_m_sheet_name in workbook.sheetnames:
+                hai_m_sheet = workbook[hai_m_sheet_name]
 
                 def safe_write_haim(cell_ref, value):
                     try:
                         if cell_ref and value is not None:
-                            hai_m_sheet.range(cell_ref).value = value
+                            cell = hai_m_sheet[cell_ref]
+                            if not isinstance(cell, MergedCell):
+                                cell.value = value
                     except Exception as e:
                         print(f"DEBUG: {hai_m_sheet_name} セル {cell_ref} 書き込みエラー: {e}")
 
                 def safe_write_haim_wareki(cell_ref, value):
                     try:
                         if cell_ref and value is not None:
-                            hai_m_sheet.range(cell_ref).number_format = "@"
-                            hai_m_sheet.range(cell_ref).value = str(value)
+                            cell = hai_m_sheet[cell_ref]
+                            if not isinstance(cell, MergedCell):
+                                cell.number_format = "@"
+                                cell.value = str(value)
                     except Exception as e:
                         print(f"DEBUG: {hai_m_sheet_name} セル {cell_ref} 和暦書き込みエラー: {e}")
 
@@ -2909,21 +2908,25 @@ def generate_assessment_excel(assessment, request=None):
             # --- 更新・新規申請書シートへの書き込み ---
             ks_coords = coordinates.get("koshin_shinki_shinsei", {})
             ks_sheet_name = ks_coords.get("sheet_name", "更新・新規申請書")
-            if ks_sheet_name in [s.name for s in workbook.sheets]:
-                ks_sheet = workbook.sheets[ks_sheet_name]
+            if ks_sheet_name in workbook.sheetnames:
+                ks_sheet = workbook[ks_sheet_name]
 
                 def safe_write_ks(cell_ref, value):
                     try:
                         if cell_ref and value is not None:
-                            ks_sheet.range(cell_ref).value = value
+                            cell = ks_sheet[cell_ref]
+                            if not isinstance(cell, MergedCell):
+                                cell.value = value
                     except Exception as e:
                         print(f"DEBUG: 更新・新規申請書 セル {cell_ref} 書き込みエラー: {e}")
 
                 def safe_write_ks_wareki(cell_ref, value):
                     try:
                         if cell_ref and value is not None:
-                            ks_sheet.range(cell_ref).number_format = "@"
-                            ks_sheet.range(cell_ref).value = str(value)
+                            cell = ks_sheet[cell_ref]
+                            if not isinstance(cell, MergedCell):
+                                cell.number_format = "@"
+                                cell.value = str(value)
                     except Exception as e:
                         print(f"DEBUG: 更新・新規申請書 セル {cell_ref} 和暦書き込みエラー: {e}")
 
@@ -2976,21 +2979,25 @@ def generate_assessment_excel(assessment, request=None):
             # --- 区分変更申請書シートへの書き込み ---
             kb_coords = coordinates.get("kubun_henkou_shinsei", {})
             kb_sheet_name = kb_coords.get("sheet_name", "区分変更申請書")
-            if kb_sheet_name in [s.name for s in workbook.sheets]:
-                kb_sheet = workbook.sheets[kb_sheet_name]
+            if kb_sheet_name in workbook.sheetnames:
+                kb_sheet = workbook[kb_sheet_name]
 
                 def safe_write_kb(cell_ref, value):
                     if cell_ref:
                         try:
-                            kb_sheet.range(cell_ref).value = value
+                            cell = kb_sheet[cell_ref]
+                            if not isinstance(cell, MergedCell):
+                                cell.value = value
                         except Exception as e:
                             print(f"DEBUG: 区分変更申請書 セル {cell_ref} 書き込みエラー: {e}")
 
                 def safe_write_kb_wareki(cell_ref, value):
                     if cell_ref:
                         try:
-                            kb_sheet.range(cell_ref).number_format = "@"
-                            kb_sheet.range(cell_ref).value = str(value)
+                            cell = kb_sheet[cell_ref]
+                            if not isinstance(cell, MergedCell):
+                                cell.number_format = "@"
+                                cell.value = str(value)
                         except Exception as e:
                             print(f"DEBUG: 区分変更申請書 セル {cell_ref} 和暦書き込みエラー: {e}")
 
@@ -3033,21 +3040,25 @@ def generate_assessment_excel(assessment, request=None):
             # --- 資料提供申請書シートへの書き込み ---
             st_coords = coordinates.get("shiryo_teikyou", {})
             st_sheet_name = st_coords.get("sheet_name", "資料提供申請書")
-            if st_sheet_name in [s.name for s in workbook.sheets]:
-                st_sheet = workbook.sheets[st_sheet_name]
+            if st_sheet_name in workbook.sheetnames:
+                st_sheet = workbook[st_sheet_name]
 
                 def safe_write_st(cell_ref, value):
                     if cell_ref:
                         try:
-                            st_sheet.range(cell_ref).value = value
+                            cell = st_sheet[cell_ref]
+                            if not isinstance(cell, MergedCell):
+                                cell.value = value
                         except Exception as e:
                             print(f"DEBUG: 資料提供申請書 セル {cell_ref} 書き込みエラー: {e}")
 
                 def safe_write_st_wareki(cell_ref, value):
                     if cell_ref:
                         try:
-                            st_sheet.range(cell_ref).number_format = "@"
-                            st_sheet.range(cell_ref).value = str(value)
+                            cell = st_sheet[cell_ref]
+                            if not isinstance(cell, MergedCell):
+                                cell.number_format = "@"
+                                cell.value = str(value)
                         except Exception as e:
                             print(f"DEBUG: 資料提供申請書 セル {cell_ref} 和暦書き込みエラー: {e}")
 
@@ -3059,21 +3070,29 @@ def generate_assessment_excel(assessment, request=None):
             # --- 入退去連絡シートへの書き込み ---
             ntr_coords = coordinates.get("nyutaikyo_renraku", {})
             ntr_sheet_name = ntr_coords.get("sheet_name", "入退去連絡")
-            if ntr_sheet_name in [s.name for s in workbook.sheets]:
-                ntr_sheet = workbook.sheets[ntr_sheet_name]
+            if ntr_sheet_name in workbook.sheetnames:
+                ntr_sheet = workbook[ntr_sheet_name]
                 try:
-                    ntr_sheet.range(ntr_coords.get("client_name")).value = client.name
+                    _ref = ntr_coords.get("client_name")
+                    if _ref:
+                        _c = ntr_sheet[_ref]
+                        if not isinstance(_c, MergedCell):
+                            _c.value = client.name
                 except Exception as e:
                     print(f"DEBUG: 入退去連絡 セル {ntr_coords.get('client_name')} 書き込みエラー: {e}")
 
             # --- 確認書（原本）シートへの書き込み ---
             kg_coords = coordinates.get("kakuninsho_genpon", {})
             kg_sheet_name = kg_coords.get("sheet_name", "確認書（原本）")
-            if kg_sheet_name in [s.name for s in workbook.sheets]:
-                kg_sheet = workbook.sheets[kg_sheet_name]
+            if kg_sheet_name in workbook.sheetnames:
+                kg_sheet = workbook[kg_sheet_name]
                 try:
-                    kg_sheet.range(kg_coords.get("certification_period_start")).number_format = "@"
-                    kg_sheet.range(kg_coords.get("certification_period_start")).value = to_wareki(client.certification_period_start) if client.certification_period_start else ""
+                    _ref = kg_coords.get("certification_period_start")
+                    if _ref:
+                        _c = kg_sheet[_ref]
+                        if not isinstance(_c, MergedCell):
+                            _c.number_format = "@"
+                            _c.value = to_wareki(client.certification_period_start) if client.certification_period_start else ""
                 except Exception as e:
                     print(f"DEBUG: 確認書（原本） セル {kg_coords.get('certification_period_start')} 書き込みエラー: {e}")
 
@@ -3081,22 +3100,28 @@ def generate_assessment_excel(assessment, request=None):
             for kakuninsho_key in ["kakuninsho_helper", "kakuninsho_day", "kakuninsho_fukushi"]:
                 kk_coords = coordinates.get(kakuninsho_key, {})
                 kk_sheet_name = kk_coords.get("sheet_name", "")
-                if kk_sheet_name and kk_sheet_name in [s.name for s in workbook.sheets]:
-                    kk_sheet = workbook.sheets[kk_sheet_name]
+                if kk_sheet_name and kk_sheet_name in workbook.sheetnames:
+                    kk_sheet = workbook[kk_sheet_name]
                     try:
-                        kk_sheet.range(kk_coords.get("care_manager")).value = assessor_name
-                        kk_sheet.range(kk_coords.get("client_name")).value = client.name
+                        for _ref, _val in [(kk_coords.get("care_manager"), assessor_name), (kk_coords.get("client_name"), client.name)]:
+                            if _ref:
+                                _c = kk_sheet[_ref]
+                                if not isinstance(_c, MergedCell):
+                                    _c.value = _val
                     except Exception as e:
                         print(f"DEBUG: {kk_sheet_name} 書き込みエラー: {e}")
 
             # --- モニタリングシートへの書き込み ---
             mon_coords = coordinates.get("monitoring_sheet", {})
             mon_sheet_name = mon_coords.get("sheet_name", "モニタリングシート")
-            if mon_sheet_name in [s.name for s in workbook.sheets]:
-                mon_sheet = workbook.sheets[mon_sheet_name]
+            if mon_sheet_name in workbook.sheetnames:
+                mon_sheet = workbook[mon_sheet_name]
                 try:
-                    mon_sheet.range(mon_coords["client_name"]).value = assessment.client.name
-                    mon_sheet.range(mon_coords["care_manager"]).value = assessor_name
+                    for _ref, _val in [(mon_coords.get("client_name"), assessment.client.name), (mon_coords.get("care_manager"), assessor_name)]:
+                        if _ref:
+                            _c = mon_sheet[_ref]
+                            if not isinstance(_c, MergedCell):
+                                _c.value = _val
                 except Exception as e:
                     print(f"DEBUG: モニタリングシート 書き込みエラー: {e}")
 
@@ -3104,50 +3129,64 @@ def generate_assessment_excel(assessment, request=None):
             from django.conf import settings as dj_settings
             tk_coords = coordinates.get("tankai_annai", {})
             tk_sheet_name = tk_coords.get("sheet_name", "担会案内")
-            if tk_sheet_name in [s.name for s in workbook.sheets]:
-                tk_sheet = workbook.sheets[tk_sheet_name]
+            if tk_sheet_name in workbook.sheetnames:
+                tk_sheet = workbook[tk_sheet_name]
                 office_name = getattr(dj_settings, "OFFICE_NAME", "居宅介護支援事業所")
                 try:
-                    tk_sheet.range(tk_coords["care_manager"]).value = assessor_name
-                    tk_sheet.range(tk_coords["client_name"]).value = assessment.client.name
-                    tk_sheet.range(tk_coords["office_name"]).value = office_name
+                    for _ref, _val in [(tk_coords.get("care_manager"), assessor_name), (tk_coords.get("client_name"), assessment.client.name), (tk_coords.get("office_name"), office_name)]:
+                        if _ref:
+                            _c = tk_sheet[_ref]
+                            if not isinstance(_c, MergedCell):
+                                _c.value = _val
                 except Exception as e:
                     print(f"DEBUG: 担会案内 書き込みエラー: {e}")
 
             # --- チェックシートへの書き込み ---
             cs_coords = coordinates.get("check_sheet", {})
             cs_sheet_name = cs_coords.get("sheet_name", "チェックシート")
-            if cs_sheet_name in [s.name for s in workbook.sheets]:
-                cs_sheet = workbook.sheets[cs_sheet_name]
-                cs_sheet.range(cs_coords["client_name"]).value = assessment.client.name
+            if cs_sheet_name in workbook.sheetnames:
+                cs_sheet = workbook[cs_sheet_name]
+                _ref = cs_coords.get("client_name")
+                if _ref:
+                    _c = cs_sheet[_ref]
+                    if not isinstance(_c, MergedCell):
+                        _c.value = assessment.client.name
 
             # --- HOMEシートへの書き込み ---
             home_coords = coordinates.get("home_sheet", {})
             home_sheet_name = home_coords.get("sheet_name", "HOME")
-            if home_sheet_name in [s.name for s in workbook.sheets]:
-                home_sheet = workbook.sheets[home_sheet_name]
-                home_sheet.range(home_coords["client_name"]).value = assessment.client.name
+            if home_sheet_name in workbook.sheetnames:
+                home_sheet = workbook[home_sheet_name]
+                _ref = home_coords.get("client_name")
+                if _ref:
+                    _c = home_sheet[_ref]
+                    if not isinstance(_c, MergedCell):
+                        _c.value = assessment.client.name
 
             # --- 居宅届シートへの書き込み ---
             def write_kyotaku(sheet_key):
                 kt_coords = coordinates.get(sheet_key, {})
                 kt_sheet_name = kt_coords.get("sheet_name", "")
-                if not kt_sheet_name or kt_sheet_name not in [s.name for s in workbook.sheets]:
+                if not kt_sheet_name or kt_sheet_name not in workbook.sheetnames:
                     return
-                kt_sheet = workbook.sheets[kt_sheet_name]
+                kt_sheet = workbook[kt_sheet_name]
 
                 def sw(cell_ref, value):
                     try:
                         if cell_ref and value is not None:
-                            kt_sheet.range(cell_ref).value = value
+                            cell = kt_sheet[cell_ref]
+                            if not isinstance(cell, MergedCell):
+                                cell.value = value
                     except Exception as e:
                         print(f"DEBUG: {kt_sheet_name} セル {cell_ref} 書き込みエラー: {e}")
 
                 def sw_wareki(cell_ref, value):
                     try:
                         if cell_ref and value is not None:
-                            kt_sheet.range(cell_ref).number_format = "@"
-                            kt_sheet.range(cell_ref).value = str(value)
+                            cell = kt_sheet[cell_ref]
+                            if not isinstance(cell, MergedCell):
+                                cell.number_format = "@"
+                                cell.value = str(value)
                     except Exception as e:
                         print(f"DEBUG: {kt_sheet_name} セル {cell_ref} 和暦書き込みエラー: {e}")
 
@@ -3162,34 +3201,7 @@ def generate_assessment_excel(assessment, request=None):
             write_kyotaku("kyotaku_todoke_yobou")
 
             # Excelファイルを保存
-            workbook.save()
-
-            # --- ネットワークドライブへの自動保存ロジック ---
-            try:
-                if os.path.exists(network_base_path):
-                    # サブフォルダが存在しない場合は作成（target_dirは関数冒頭で特定済み）
-                    if not os.path.exists(target_dir):
-                        try:
-                            os.makedirs(target_dir)
-                            print(f"SUCCESS: Created directory {target_dir}")
-                        except Exception as e:
-                            print(f"WARNING: Failed to create directory {target_dir}: {str(e)}")
-                            target_dir = network_base_path
-
-                    # target_pathを最終決定
-                    target_path = os.path.join(target_dir, save_filename)
-                    import shutil
-
-                    shutil.copy2(temp_filepath, target_path)
-                    print(f"SUCCESS: Network save (overwrite/create) completed to {target_path}")
-                else:
-                    print(f"WARNING: Network base path not found: {network_base_path}")
-            except Exception as e:
-                print(f"WARNING: Network save failed: {str(e)}")
-            # --------------------------------------------
-
-            workbook.close()
-            app.quit()
+            workbook.save(temp_filepath)
 
             # HTTPレスポンスの準備
             with open(temp_filepath, "rb") as f:
@@ -3201,43 +3213,20 @@ def generate_assessment_excel(assessment, request=None):
             except OSError:
                 pass
 
+            from urllib.parse import quote
             response = HttpResponse(
                 excel_data,
-                content_type="application/vnd.ms-excel.sheet.macroEnabled.12",
+                content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             )
-            # クライアントのふりがな（苗字）と氏名を組み合わせてファイル名を生成
-            # 例: やまかわ_山川夏楓様.xlsm
-            from urllib.parse import quote
-
-            furigana = assessment.client.furigana or ""
-            # スペースで分割して最初の要素（苗字）を取得
-            last_name_kana = furigana.split()[0] if furigana.split() else ""
-            # 名前から空白を削除
-            full_name = (assessment.client.name or "").replace(" ", "").replace("　", "")
-
-            filename = f"{last_name_kana}_{full_name}様.xlsm"
-            # 日本語ファイル名を正しく扱うためのエンコーディング
             response["Content-Disposition"] = (
-                f"attachment; filename*=UTF-8''{quote(filename)}"
+                f"attachment; filename*=UTF-8''{quote(download_filename)}"
             )
-
-            # AJAXリクエスト（fetchなど）からの呼び出しの場合は、バイナリを返さず成功通知のみ返す（B案: ネットワーク保存のみ）
-            if request and request.headers.get("x-requested-with") == "XMLHttpRequest":
-                return JsonResponse(
-                    {
-                        "success": True,
-                        "message": "共有ドライブの各担当の利用者フォルダに保存しました。",
-                        "filename": filename,
-                    }
-                )
 
             return response
 
         finally:
-            # エラー時も確実にExcelプロセスを終了する
+            # エラー時も一時ファイルを削除する
             try:
-                if "app" in locals():
-                    app.quit()
                 if "temp_filepath" in locals() and os.path.exists(temp_filepath):
                     os.unlink(temp_filepath)
             except Exception:

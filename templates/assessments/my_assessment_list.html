@@ -382,7 +382,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // ExcelをJavaScript（Blob）経由でダウンロードする関数
 function exportListExcel(assessmentId, clientName, dateStr) {
     const url = `/assessments/${assessmentId}/excel/`;
-    const filename = `アセスメント_${clientName}_${dateStr}.xlsm`;
+    const filename = `アセスメント_${clientName}_${dateStr}.xlsx`;
     handleExcelDownload(url, filename, null, true);
 }
 </script>
