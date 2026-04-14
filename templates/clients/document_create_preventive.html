@@ -93,9 +93,12 @@
         <label class="form-label">介護予防支援を受託する居宅介護支援事業者</label>
         <div class="d-flex flex-column gap-2" style="width: fit-content;">
             <select name="jutaku_provider" id="jutaku_provider" class="form-select" style="width: 400px;">
-                <option value="anoutsu_roman" selected>居宅介護支援事業所　安濃津ろまん</option>
+                <option value="anoutsu_roman" {% if initial_data.jutaku_provider != 'other' %}selected{% endif %}>{% if user.profile.home_care_office %}{{ user.profile.home_care_office.name }}{% else %}居宅介護支援事業所　安濃津ろまん{% endif %}</option>
+                <option value="other" {% if initial_data.jutaku_provider == 'other' %}selected{% endif %}>その他（手入力）</option>
             </select>
+            <input type="text" name="jutaku_provider_name" id="jutaku_provider_manual" class="form-control {% if initial_data.jutaku_provider != 'other' %}d-none{% endif %}" style="width: 400px;" placeholder="事業所名をご入力ください" value="{{ initial_data.jutaku_provider_name|default:'' }}">
         </div>
+        <small class="text-muted mt-1">※その他を選択すると、事業所名を手入力できます</small>
     </div>
 </div>
 
@@ -135,7 +138,7 @@
                 </div>
 
                 <!-- 編集ボタン -->
-                <div class="col-12 text-end mt-2">
+                <div id="jutaku_edit_button_wrapper" class="col-12 text-end mt-2">
                     <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openOfficeMasterDrawer();">
                         <i class="fas fa-edit me-1"></i>事業所マスタデータを編集
                     </button>
@@ -321,6 +324,10 @@
 {% endblock %}
 
 {% block extra_styles %}
+/* ページタイトル文字サイズ縮小 */
+h1.h4 {
+    font-size: 1.25rem;
+}
 /* アコーディオンボタンの色を固定 */
 #houkatsu_detail_section .accordion-button,
 #jutaku_detail_section .accordion-button,
@@ -519,7 +526,16 @@ function validateForm() {
         // 受託事業者（安濃津ろまん以外選択時）のチェック
         if (category !== 'anoutsu') {
             const jutakuProviderSelect = document.getElementById('jutaku_provider');
-            if (jutakuProviderSelect && jutakuProviderSelect.value === 'anoutsu_roman') {
+            // その他モードの場合、手入力事業所名を確認
+            if (jutakuProviderSelect && jutakuProviderSelect.value === 'other') {
+                const jutakuManualEl = document.getElementById('jutaku_provider_manual');
+                if (!jutakuManualEl || !jutakuManualEl.value.trim()) {
+                    alert('受託事業者の事業所名を入力してください。');
+                    focusAndScroll(jutakuManualEl);
+                    return false;
+                }
+            }
+            if (jutakuProviderSelect && (jutakuProviderSelect.value === 'anoutsu_roman' || jutakuProviderSelect.value === 'other')) {
                 const jutakuOfficeNumber = document.getElementById('jutaku_office_number');
                 const jutakuPostalCode = document.getElementById('jutaku_postal_code');
                 const jutakuAddress = document.getElementById('jutaku_address');
@@ -923,17 +939,24 @@ function initDocumentSpecific() {
         const statusIcon = document.getElementById('jutaku_status_icon');
         if (!statusIcon) return;
 
+        const jutakuProviderSelect = document.getElementById('jutaku_provider');
         const jutakuOfficeNumber = document.getElementById('jutaku_office_number');
         const jutakuPostalCode = document.getElementById('jutaku_postal_code');
         const jutakuAddress = document.getElementById('jutaku_address');
         const jutakuPhone = document.getElementById('jutaku_phone');
         const jutakuStaffName = document.getElementById('jutaku_staff_name');
 
-        const isComplete = jutakuOfficeNumber && jutakuOfficeNumber.value.trim() !== '' &&
-                           jutakuPostalCode && jutakuPostalCode.value.trim() !== '' &&
-                           jutakuAddress && jutakuAddress.value.trim() !== '' &&
-                           jutakuPhone && jutakuPhone.value.trim() !== '' &&
-                           jutakuStaffName && jutakuStaffName.value.trim() !== '';
+        let isComplete = jutakuOfficeNumber && jutakuOfficeNumber.value.trim() !== '' &&
+                         jutakuPostalCode && jutakuPostalCode.value.trim() !== '' &&
+                         jutakuAddress && jutakuAddress.value.trim() !== '' &&
+                         jutakuPhone && jutakuPhone.value.trim() !== '' &&
+                         jutakuStaffName && jutakuStaffName.value.trim() !== '';
+
+        // その他モードでは手入力の事業所名も必須チェック
+        if (jutakuProviderSelect && jutakuProviderSelect.value === 'other') {
+            const manualEl = document.getElementById('jutaku_provider_manual');
+            isComplete = isComplete && manualEl && manualEl.value.trim() !== '';
+        }
 
         if (isComplete) {
             statusIcon.innerHTML = '<i class="fas fa-check-circle" style="color: rgba(25, 135, 84, 0.5);"></i>';
@@ -943,7 +966,7 @@ function initDocumentSpecific() {
     };
 
     // 受託事業者の全フィールド入力時にアイコン更新
-    const jutakuFields = ['jutaku_office_number', 'jutaku_postal_code', 'jutaku_address', 'jutaku_phone', 'jutaku_staff_name'];
+    const jutakuFields = ['jutaku_office_number', 'jutaku_postal_code', 'jutaku_address', 'jutaku_phone', 'jutaku_staff_name', 'jutaku_provider_manual'];
     jutakuFields.forEach(function(fieldId) {
         const field = document.getElementById(fieldId);
         if (field) {
@@ -1010,8 +1033,30 @@ function initDocumentSpecific() {
     // 受託事業者プルダウン変更時
     if (jutakuProvider) {
         jutakuProvider.addEventListener('change', function() {
+            const manualEl = document.getElementById('jutaku_provider_manual');
+            const editBtnWrapper = document.getElementById('jutaku_edit_button_wrapper');
+
             if (this.value === 'anoutsu_roman') {
+                // 手入力非表示・編集ボタン表示・フィールドをreadonly＋マスタ値に戻す
+                if (manualEl) { manualEl.classList.add('d-none'); manualEl.value = ''; }
+                if (editBtnWrapper) editBtnWrapper.classList.remove('d-none');
+                ['jutaku_office_number', 'jutaku_postal_code', 'jutaku_address', 'jutaku_phone'].forEach(function(id) {
+                    const el = document.getElementById(id);
+                    if (el) el.setAttribute('readonly', 'readonly');
+                });
                 showJutakuDetail(false);
+            } else if (this.value === 'other') {
+                // 手入力表示・編集ボタン非表示・フィールドをクリア＆編集可能に
+                if (manualEl) manualEl.classList.remove('d-none');
+                if (editBtnWrapper) editBtnWrapper.classList.add('d-none');
+                ['jutaku_office_number', 'jutaku_postal_code', 'jutaku_address', 'jutaku_phone'].forEach(function(id) {
+                    const el = document.getElementById(id);
+                    if (el) { el.removeAttribute('readonly'); el.value = ''; }
+                });
+                const staffName = document.getElementById('jutaku_staff_name');
+                if (staffName) staffName.value = '';
+                if (jutakuDetailSection) jutakuDetailSection.style.display = 'block';
+                updateJutakuStatusIcon();
             } else {
                 if (jutakuDetailSection) {
                     jutakuDetailSection.style.display = 'none';
@@ -1023,6 +1068,21 @@ function initDocumentSpecific() {
     // ページロード時に受託事業者セクションの状態を復元
     if (savedProviderCategory) {
         updateJutakuSection(savedProviderCategory, true);
+    }
+
+    // ページロード時に「その他」モードなら手入力・編集ボタン状態を反映
+    const savedJutakuProviderValue = '{{ initial_data.jutaku_provider|default:"" }}';
+    if (savedJutakuProviderValue === 'other') {
+        const manualEl = document.getElementById('jutaku_provider_manual');
+        const editBtnWrapper = document.getElementById('jutaku_edit_button_wrapper');
+        if (manualEl) manualEl.classList.remove('d-none');
+        if (editBtnWrapper) editBtnWrapper.classList.add('d-none');
+        // フィールドを編集可能に
+        ['jutaku_office_number', 'jutaku_postal_code', 'jutaku_address', 'jutaku_phone'].forEach(function(id) {
+            const el = document.getElementById(id);
+            if (el) el.removeAttribute('readonly');
+        });
+        updateJutakuStatusIcon();
     }
 
     // カテゴリ変更時の処理は上の統合イベントリスナーで実施済み

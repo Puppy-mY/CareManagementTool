@@ -51,6 +51,8 @@ function toggleKyotakuProvider() {
         if (address) { address.setAttribute('readonly', 'readonly'); address.value = address.defaultValue; }
         if (phone) { phone.setAttribute('readonly', 'readonly'); phone.value = phone.defaultValue; }
     }
+
+    if (typeof updateKyotakuStatusIcon === 'function') updateKyotakuStatusIcon();
 }
 </script>
 
@@ -227,8 +229,24 @@ const kyotakuCsrfToken = document.querySelector('[name=csrfmiddlewaretoken]').va
 window.updateKyotakuStatusIcon = function() {
     const statusIcon = document.getElementById('kyotaku_status_icon');
     if (!statusIcon) return;
+
+    const selectEl  = document.getElementById('kyotaku_provider_select');
     const staffName = document.getElementById('kyotaku_staff_name');
-    const isComplete = staffName && staffName.value.trim() !== '';
+    let isComplete  = staffName && staffName.value.trim() !== '';
+
+    // その他モードでは手入力フィールド・事業所番号・住所・電話も必須チェック
+    if (selectEl && selectEl.value === 'other') {
+        const manualEl  = document.getElementById('kyotaku_provider_manual');
+        const officeNum = document.getElementById('kyotaku_office_number');
+        const address   = document.getElementById('kyotaku_address');
+        const phone     = document.getElementById('kyotaku_phone');
+        isComplete = isComplete
+            && manualEl  && manualEl.value.trim()  !== ''
+            && officeNum && officeNum.value.trim() !== ''
+            && address   && address.value.trim()   !== ''
+            && phone     && phone.value.trim()     !== '';
+    }
+
     statusIcon.innerHTML = isComplete
         ? '<i class="fas fa-check-circle" style="color: rgba(25, 135, 84, 0.5);"></i>'
         : '<i class="fas fa-circle-exclamation" style="color: rgba(220, 53, 69, 0.5);"></i>';
@@ -266,6 +284,12 @@ function initDocumentSpecific() {
     updateKyotakuStatusIcon();
     const staffNameField = document.getElementById('kyotaku_staff_name');
     if (staffNameField) { staffNameField.addEventListener('input', updateKyotakuStatusIcon); }
+
+    // その他モードで手入力するフィールドにもイベントリスナーを追加
+    ['kyotaku_provider_manual', 'kyotaku_office_number', 'kyotaku_address', 'kyotaku_phone'].forEach(function(id) {
+        const el = document.getElementById(id);
+        if (el) { el.addEventListener('input', updateKyotakuStatusIcon); }
+    });
 }
 
 // 居宅版のバリデーション（ベーステンプレートから呼び出される）

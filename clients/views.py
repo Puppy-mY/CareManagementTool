@@ -877,6 +877,7 @@ def document_create(request, client_id, document_type):
 
             # 介護予防支援を受託する居宅介護支援事業者
             'jutaku_provider': request.POST.get('jutaku_provider'),
+            'jutaku_provider_name': request.POST.get('jutaku_provider_name', ''),
             'jutaku_office_number': request.POST.get('jutaku_office_number'),
             'jutaku_postal_code': request.POST.get('jutaku_postal_code'),
             'jutaku_address': request.POST.get('jutaku_address'),
@@ -1319,9 +1320,10 @@ def generate_document_excel(request, client, document_type, document_name, form_
             # jutaku_providerが選択されている場合のみ書き込む
             jutaku_provider = form_data.get('jutaku_provider', '')
             if jutaku_provider:
-                # 事業所名（ユーザーの所属事業所名を使用）
-                jutaku_name = ''
-                if request.user.profile.home_care_office:
+                # 事業所名：その他（手入力）の場合は入力値、それ以外はマスタ名
+                if jutaku_provider == 'other':
+                    jutaku_name = form_data.get('jutaku_provider_name', '')
+                elif request.user.profile.home_care_office:
                     jutaku_name = request.user.profile.home_care_office.name
                 else:
                     jutaku_name = '居宅介護支援事業所　安濃津ろまん'  # フォールバック

@@ -134,12 +134,28 @@
                         <!-- 有効開始（変更）日 -->
                         <div class="row g-3 mb-4">
                             <div class="col-12">
-                                <label class="form-label">有効開始（変更）日 <span class="text-danger">*</span></label>
+                                <div class="d-flex align-items-center gap-2 mb-1">
+                                    <label class="form-label mb-0">有効開始（変更）日 <span class="text-danger">*</span></label>
+                                    <div class="birth-era-toggle" title="和暦 / 西暦を切り替え">
+                                        <button type="button" class="era-btn active" id="effectiveDate_era_japanese" onclick="switchEffectiveDateEra('japanese')">和暦</button>
+                                        <button type="button" class="era-btn" id="effectiveDate_era_western" onclick="switchEffectiveDateEra('western')">西暦</button>
+                                    </div>
+                                </div>
                                 <div class="mt-1">
                                     <small class="text-muted">サービス開始予定日を入力してください</small>
                                 </div>
                                 <div class="mt-2">
-                                    <input type="date" name="effective_start_date" class="form-control" required style="max-width: 200px;" value="{{ initial_data.effective_start_date|default:'' }}">
+                                    <!-- 和暦入力（デフォルト表示） -->
+                                    <div id="effectiveDate_japanese">
+                                        <input type="text" id="effectiveDate_wareki_text" class="form-control" style="max-width: 220px;"
+                                            placeholder="例: 令和6年4月1日" autocomplete="off"
+                                            oninput="syncEffectiveDateFromWareki()">
+                                        <small id="effectiveDate_wareki_preview" style="font-size:0.78em; display:block; margin-top:2px;"></small>
+                                    </div>
+                                    <!-- 西暦入力（切り替え時に表示） -->
+                                    <div id="effectiveDate_western" style="display:none;">
+                                        <input type="date" id="id_effective_start_date" name="effective_start_date" class="form-control" style="max-width: 200px;" value="{{ initial_data.effective_start_date|default:'' }}">
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -538,7 +554,13 @@ function validateFormBase() {
 
     if (!effectiveDateEl.value.trim()) {
         alert('有効開始（変更）日を入力してください。');
-        focusAndScroll(effectiveDateEl);
+        const warekiDiv = document.getElementById('effectiveDate_japanese');
+        const warekiInput = document.getElementById('effectiveDate_wareki_text');
+        if (warekiDiv && warekiDiv.style.display !== 'none' && warekiInput) {
+            focusAndScroll(warekiInput);
+        } else {
+            focusAndScroll(effectiveDateEl);
+        }
         return false;
     }
 
@@ -796,11 +818,142 @@ textarea[readonly]:focus {
     border-color: #2196F3;
     color: #2196F3;
 }
+
+/* 西暦/和暦トグル */
+.birth-era-toggle {
+    display: inline-flex;
+    border: 1px solid #ced4da;
+    border-radius: 0.375rem;
+    overflow: hidden;
+    font-size: 0.72rem;
+    flex-shrink: 0;
+}
+.birth-era-toggle .era-btn {
+    background: #fff;
+    border: none;
+    padding: 2px 7px;
+    cursor: pointer;
+    color: #6c757d;
+    font-size: 0.72rem;
+    line-height: 1.5;
+    transition: background 0.15s, color 0.15s;
+}
+.birth-era-toggle .era-btn:not(:last-child) {
+    border-right: 1px solid #ced4da;
+}
+.birth-era-toggle .era-btn.active {
+    background: #6c757d;
+    color: #fff;
+}
+.birth-era-toggle .era-btn:hover:not(.active) {
+    background: #f0f0f0;
+}
 {% block extra_styles %}{% endblock %}
 </style>
 
 {% block extra_content %}{% endblock %}
 
+<script>
+// ============================================================
+// 有効開始（変更）日 西暦 / 和暦 切り替えロジック
+// ============================================================
+(function() {
+    var ERA_INFO = [
+        { keys: ['令和', 'R', 'r'],  start: 2019, label: '令和' },
+        { keys: ['平成', 'H', 'h'],  start: 1989, label: '平成' },
+        { keys: ['昭和', 'S', 's'],  start: 1926, label: '昭和' },
+        { keys: ['大正', 'T', 't'],  start: 1912, label: '大正' },
+        { keys: ['明治', 'M', 'm'],  start: 1868, label: '明治' },
+    ];
+
+    function parseWareki(text) {
+        if (!text) return null;
+        text = text.replace(/\s/g, '');
+        var era = null, rest = text;
+        for (var i = 0; i < ERA_INFO.length; i++) {
+            var info = ERA_INFO[i];
+            for (var k = 0; k < info.keys.length; k++) {
+                if (text.indexOf(info.keys[k]) === 0) {
+                    era = info; rest = text.slice(info.keys[k].length); break;
+                }
+            }
+            if (era) break;
+        }
+        if (!era) return null;
+        var m1 = rest.match(/^(\d{1,2})年(\d{1,2})月(\d{1,2})日?$/);
+        if (m1) return { era: era, year: parseInt(m1[1]), month: parseInt(m1[2]), day: parseInt(m1[3]) };
+        var m2 = rest.match(/^(\d{1,2})[.\-\/](\d{1,2})[.\-\/](\d{1,2})$/);
+        if (m2) return { era: era, year: parseInt(m2[1]), month: parseInt(m2[2]), day: parseInt(m2[3]) };
+        return null;
+    }
+
+    function toWarekiText(dateStr) {
+        if (!dateStr) return '';
+        var parts = dateStr.split('-');
+        if (parts.length < 3) return '';
+        var y = parseInt(parts[0]), m = parseInt(parts[1]), d = parseInt(parts[2]);
+        for (var i = 0; i < ERA_INFO.length; i++) {
+            var info = ERA_INFO[i];
+            if (y >= info.start) return info.label + (y - info.start + 1) + '年' + m + '月' + d + '日';
+        }
+        return '';
+    }
+
+    window.syncEffectiveDateFromWareki = function() {
+        var text = (document.getElementById('effectiveDate_wareki_text') || {}).value || '';
+        var hidden = document.getElementById('id_effective_start_date');
+        var preview = document.getElementById('effectiveDate_wareki_preview');
+        if (!hidden || !preview) return;
+        var result = parseWareki(text);
+        if (result) {
+            var wy = result.era.start + result.year - 1;
+            hidden.value = wy + '-' + String(result.month).padStart(2,'0') + '-' + String(result.day).padStart(2,'0');
+            preview.textContent = '→ 西暦 ' + wy + '年' + result.month + '月' + result.day + '日';
+            preview.style.color = '#6c757d';
+        } else {
+            hidden.value = '';
+            preview.textContent = text.length > 0 ? '例: 令和6年4月1日　または　R6.4.1' : '';
+            preview.style.color = '#aaa';
+        }
+    };
+
+    window.switchEffectiveDateEra = function(mode) {
+        var westernDiv  = document.getElementById('effectiveDate_western');
+        var japaneseDiv = document.getElementById('effectiveDate_japanese');
+        var btnW = document.getElementById('effectiveDate_era_western');
+        var btnJ = document.getElementById('effectiveDate_era_japanese');
+        var hidden  = document.getElementById('id_effective_start_date');
+        var warekiInput = document.getElementById('effectiveDate_wareki_text');
+        if (!westernDiv || !japaneseDiv) return;
+        if (mode === 'western') {
+            westernDiv.style.display  = '';
+            japaneseDiv.style.display = 'none';
+            if (btnW) btnW.classList.add('active');
+            if (btnJ) btnJ.classList.remove('active');
+        } else {
+            if (hidden && warekiInput) {
+                warekiInput.value = toWarekiText(hidden.value);
+                syncEffectiveDateFromWareki();
+            }
+            westernDiv.style.display  = 'none';
+            japaneseDiv.style.display = '';
+            if (btnJ) btnJ.classList.add('active');
+            if (btnW) btnW.classList.remove('active');
+            if (warekiInput) warekiInput.focus();
+        }
+    };
+
+    // ページロード時：保存済み値があれば和暦で表示
+    document.addEventListener('DOMContentLoaded', function() {
+        var hidden = document.getElementById('id_effective_start_date');
+        var warekiInput = document.getElementById('effectiveDate_wareki_text');
+        if (hidden && hidden.value && warekiInput) {
+            warekiInput.value = toWarekiText(hidden.value);
+            syncEffectiveDateFromWareki();
+        }
+    });
+})();
+</script>
 {% block extra_scripts %}{% endblock %}
 
 {% endblock %}
