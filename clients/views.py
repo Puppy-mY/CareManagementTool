@@ -2941,12 +2941,11 @@ def client_medical_info_update(request, client_id):
 
 
 # ========================================
-# 更新認定申請書
+# 更新認定申請書 / 区分変更申請書
 # ========================================
 
-@login_required
-def document_create_ltc_renewal(request, client_id):
-    """更新認定申請書 作成画面"""
+def _document_create_ltc_base(request, client_id, doc_type, doc_name, template_name):
+    """更新認定申請書・区分変更申請書の共通ロジック"""
     from django.conf import settings as dj_settings
     from openpyxl import load_workbook
     from openpyxl.cell.cell import MergedCell
@@ -3042,6 +3041,7 @@ def document_create_ltc_renewal(request, client_id):
         'doctor_postal_code': '',
         'doctor_address': '',
         'doctor_notes': '',
+        'change_reason': '',
     }
 
     # 履歴からの再編集：保存済みデータで initial を上書き
@@ -3126,22 +3126,22 @@ def document_create_ltc_renewal(request, client_id):
         if not history_id:
             hist = DocumentCreationHistory.objects.create(
                 client=client,
-                document_type='ltc_renewal',
-                document_name='更新認定申請書',
+                document_type=doc_type,
+                document_name=doc_name,
                 form_data=form_data,
                 status='draft',
                 created_by=request.user,
             )
 
         if action == 'save':
-            messages.success(request, '更新認定申請書を保存しました。')
+            messages.success(request, f'{doc_name}を保存しました。')
             url = reverse('client_detail', kwargs={'pk': client_id}) + '#documents'
             return HttpResponseRedirect(url)
 
         try:
             from urllib.parse import quote
             content = _generate_ltc_renewal_excel_bytes(client, form_data)
-            dl_name = _make_dl_filename(client, '更新認定申請書')
+            dl_name = _make_dl_filename(client, doc_name)
             response = HttpResponse(
                 content,
                 content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
@@ -3227,7 +3227,31 @@ def document_create_ltc_renewal(request, client_id):
         'doctor_options': doctor_options,
         'history_id': history_id or '',
     }
-    return render(request, 'clients/document_create_ltc_renewal.html', context)
+    return render(request, template_name, context)
+
+
+@login_required
+@user_passes_test(staff_required)
+def document_create_ltc_renewal(request, client_id):
+    """更新認定申請書 作成画面"""
+    return _document_create_ltc_base(
+        request, client_id,
+        doc_type='ltc_renewal',
+        doc_name='更新認定申請書',
+        template_name='clients/document_create_ltc_renewal.html',
+    )
+
+
+@login_required
+@user_passes_test(staff_required)
+def document_create_ltc_change(request, client_id):
+    """区分変更申請書 作成画面"""
+    return _document_create_ltc_base(
+        request, client_id,
+        doc_type='ltc_change',
+        doc_name='区分変更申請書',
+        template_name='clients/document_create_ltc_change.html',
+    )
 
 
 # ========================================

@@ -63,8 +63,9 @@ urlpatterns = [
     path('home-care-offices/<int:pk>/edit/', views.home_care_office_edit, name='home_care_office_edit'),
     path('home-care-offices/<int:pk>/delete/', views.home_care_office_delete, name='home_care_office_delete'),
 
-    # 更新認定申請書
+    # 更新認定申請書・区分変更申請書
     path('<str:client_id>/document/ltc-renewal/', views.document_create_ltc_renewal, name='document_ltc_renewal'),
+    path('<str:client_id>/document/ltc-change/', views.document_create_ltc_change, name='document_ltc_change'),
     path('<str:client_id>/cert-info/update/', views.client_cert_info_update, name='client_cert_info_update'),
     path('<str:client_id>/medical-info/update/', views.client_medical_info_update, name='client_medical_info_update'),
 
