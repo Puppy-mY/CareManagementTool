@@ -736,6 +736,15 @@ function initDocumentSpecific() {
         } else {
             statusIcon.innerHTML = '<i class="fas fa-circle-exclamation" style="color: rgba(220, 53, 69, 0.5);"></i>';
         }
+        // 未完了時は展開・完了時は閉じる
+        const houkatsuCollapseEl = document.getElementById('houkatsuDetailCollapse');
+        if (houkatsuCollapseEl) {
+            if (!isComplete && !houkatsuCollapseEl.classList.contains('show')) {
+                new bootstrap.Collapse(houkatsuCollapseEl, { toggle: false }).show();
+            } else if (isComplete && houkatsuCollapseEl.classList.contains('show') && !houkatsuCollapseEl.contains(document.activeElement)) {
+                new bootstrap.Collapse(houkatsuCollapseEl, { toggle: false }).hide();
+            }
+        }
     };
 
     // 入力フィールドにイベントリスナーを追加
@@ -962,6 +971,15 @@ function initDocumentSpecific() {
             statusIcon.innerHTML = '<i class="fas fa-check-circle" style="color: rgba(25, 135, 84, 0.5);"></i>';
         } else {
             statusIcon.innerHTML = '<i class="fas fa-circle-exclamation" style="color: rgba(220, 53, 69, 0.5);"></i>';
+        }
+        // 未完了時は展開・完了時は閉じる
+        const jutakuCollapseEl = document.getElementById('jutakuDetailCollapse');
+        if (jutakuCollapseEl) {
+            if (!isComplete && !jutakuCollapseEl.classList.contains('show')) {
+                new bootstrap.Collapse(jutakuCollapseEl, { toggle: false }).show();
+            } else if (isComplete && jutakuCollapseEl.classList.contains('show') && !jutakuCollapseEl.contains(document.activeElement)) {
+                new bootstrap.Collapse(jutakuCollapseEl, { toggle: false }).hide();
+            }
         }
     };
 

@@ -250,6 +250,15 @@ window.updateKyotakuStatusIcon = function() {
     statusIcon.innerHTML = isComplete
         ? '<i class="fas fa-check-circle" style="color: rgba(25, 135, 84, 0.5);"></i>'
         : '<i class="fas fa-circle-exclamation" style="color: rgba(220, 53, 69, 0.5);"></i>';
+    // 未完了時は展開・完了時は閉じる
+    const kyotakuCollapse = document.getElementById('kyotakuDetailCollapse');
+    if (kyotakuCollapse) {
+        if (!isComplete && !kyotakuCollapse.classList.contains('show')) {
+            new bootstrap.Collapse(kyotakuCollapse, { toggle: false }).show();
+        } else if (isComplete && kyotakuCollapse.classList.contains('show') && !kyotakuCollapse.contains(document.activeElement)) {
+            new bootstrap.Collapse(kyotakuCollapse, { toggle: false }).hide();
+        }
+    }
 };
 
 // 居宅版のバリデーション

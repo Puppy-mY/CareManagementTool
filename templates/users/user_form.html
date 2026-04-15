@@ -187,6 +187,20 @@
                     }
                     </script>
 
+                    <!-- 所属居宅介護支援事業所 -->
+                    <div class="mb-3" id="home-care-office-col">
+                        <label for="{{ form.home_care_office.id_for_label }}" class="form-label">
+                            {{ form.home_care_office.label }}
+                        </label>
+                        <select class="form-select" id="{{ form.home_care_office.id_for_label }}" name="{{ form.home_care_office.name }}">
+                            <option value="">---</option>
+                            {% for obj in form.fields.home_care_office.queryset %}
+                            <option value="{{ obj.pk }}" {% if form.home_care_office.value|stringformat:"s" == obj.pk|stringformat:"s" %}selected{% endif %}>{{ obj.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text text-muted">居宅介護支援担当者の場合に設定してください。</div>
+                    </div>
+
                     <div class="d-flex justify-content-between mt-4">
                         <a href="{% url 'user_list' %}" class="btn btn-outline-secondary">
                             <i class="fas fa-arrow-left"></i> キャンセル

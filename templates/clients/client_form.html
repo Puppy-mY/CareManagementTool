@@ -439,7 +439,7 @@
                         <label for="{{ form.medical_insurer_name_issuer.id_for_label }}" class="form-label">保険者名称・交付者</label>
                         <!-- 動的プルダウン用セレクトボックス -->
                         <select id="insurer_preset" class="form-select mb-2" style="display: none;">
-                            <option value="">選択してください</option>
+                            <option value="">----------</option>
                         </select>
                         <div id="insurer_manual_wrapper">
                             {% bootstrap_field form.medical_insurer_name_issuer show_label=False %}
@@ -1307,7 +1307,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const currentName = nameInput.value.trim();
 
         // プルダウンを初期化
-        presetSelect.innerHTML = '<option value="">選択してください</option>';
+        presetSelect.innerHTML = '<option value="">----------</option>';
 
         if (presets[type]) {
             // 国保または後期高齢者の場合、プルダウンを表示

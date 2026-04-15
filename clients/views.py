@@ -2678,6 +2678,115 @@ def home_care_office_delete(request, pk):
 
 
 # ========================================
+# 介護保険認定情報 更新API
+# ========================================
+
+@login_required
+def client_cert_info_update(request, client_id):
+    """介護保険被保険者証の認定情報をDBに保存するAJAX endpoint"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'POST only'}, status=405)
+
+    client = get_object_or_404(Client, pk=client_id)
+
+    insurance_number   = request.POST.get('insurance_number', '').strip()
+    care_level         = request.POST.get('care_level', '').strip()
+    care_burden        = request.POST.get('care_burden', '').strip()
+    cert_date_str      = request.POST.get('certification_date', '').strip()
+    cert_start_str     = request.POST.get('cert_start', '').strip()
+    cert_end_str       = request.POST.get('cert_end', '').strip()
+
+    from datetime import date as date_cls
+    def parse_date(s):
+        if not s:
+            return None
+        try:
+            return datetime.strptime(s, '%Y-%m-%d').date()
+        except ValueError:
+            return None
+
+    def to_wareki_str(d):
+        if not d:
+            return ''
+        y, m, day = d.year, d.month, d.day
+        if d >= date_cls(2019, 5, 1):   return f"令和{y-2018}年{m}月{day}日"
+        if d >= date_cls(1989, 1, 8):   return f"平成{y-1988}年{m}月{day}日"
+        if d >= date_cls(1926, 12, 25): return f"昭和{y-1925}年{m}月{day}日"
+        if d >= date_cls(1912, 7, 30):  return f"大正{y-1911}年{m}月{day}日"
+        return f"明治{y-1867}年{m}月{day}日"
+
+    if insurance_number:
+        client.insurance_number = insurance_number
+    if care_level:
+        client.care_level = care_level
+    client.care_burden            = care_burden
+    client.certification_date     = parse_date(cert_date_str)
+    client.certification_period_start = parse_date(cert_start_str)
+    client.certification_period_end   = parse_date(cert_end_str)
+    client.save()
+
+    cert_date_obj  = client.certification_date
+    cert_start_obj = client.certification_period_start
+    cert_end_obj   = client.certification_period_end
+
+    return JsonResponse({
+        'success': True,
+        'insurance_number':    client.insurance_number,
+        'care_level_value':    client.care_level,
+        'care_level_display':  client.get_care_level_display(),
+        'care_burden':         client.care_burden,
+        'certification_date':  cert_date_obj.strftime('%Y-%m-%d') if cert_date_obj else '',
+        'cert_date_wareki':    to_wareki_str(cert_date_obj),
+        'cert_start':          cert_start_obj.strftime('%Y-%m-%d') if cert_start_obj else '',
+        'cert_end':            cert_end_obj.strftime('%Y-%m-%d')   if cert_end_obj   else '',
+        'cert_start_wareki':   to_wareki_str(cert_start_obj),
+        'cert_end_wareki':     to_wareki_str(cert_end_obj),
+    })
+
+
+# ========================================
+# 医療保険情報 更新API
+# ========================================
+
+@login_required
+def client_medical_info_update(request, client_id):
+    """医療保険情報をDBに保存するAJAX endpoint"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'POST only'}, status=405)
+
+    client = get_object_or_404(Client, pk=client_id)
+
+    medical_type   = request.POST.get('medical_insurance_type', '').strip()
+    symbol         = request.POST.get('medical_insurance_symbol', '').strip()
+    number         = request.POST.get('medical_insurance_number', '').strip()
+    branch         = request.POST.get('medical_insurance_branch', '').strip()
+    burden         = request.POST.get('medical_burden', '').strip()
+    insurer_name   = request.POST.get('medical_insurer_name', '').strip()
+    insurer_number = request.POST.get('medical_insurer_number', '').strip()
+
+    client.medical_insurance_type      = medical_type
+    client.medical_insurance_symbol    = symbol
+    client.medical_insurance_number    = number
+    client.medical_insurance_branch    = branch
+    client.medical_burden              = burden
+    client.medical_insurer_name_issuer = insurer_name
+    client.medical_insurer_number      = insurer_number
+    client.save()
+
+    return JsonResponse({
+        'success': True,
+        'medical_insurance_type':         client.medical_insurance_type,
+        'medical_insurance_type_display': client.get_medical_insurance_type_display(),
+        'medical_insurance_symbol':       client.medical_insurance_symbol,
+        'medical_insurance_number':       client.medical_insurance_number,
+        'medical_insurance_branch':       client.medical_insurance_branch,
+        'medical_burden':                 client.medical_burden,
+        'medical_insurer_name':           client.medical_insurer_name_issuer,
+        'medical_insurer_number':         client.medical_insurer_number,
+    })
+
+
+# ========================================
 # 更新認定申請書
 # ========================================
 
@@ -2698,6 +2807,23 @@ def document_create_ltc_renewal(request, client_id):
     # 担当者氏名（ログインユーザーの氏名）
     user_full_name = profile.get_full_name() if profile else request.user.username
 
+    # 和暦変換（表示用）
+    def _to_wareki_display(d):
+        if not d:
+            return ''
+        from datetime import date as date_cls
+        y, m, day = d.year, d.month, d.day
+        if d >= date_cls(2019, 5, 1):
+            return f"令和{y-2018}年{m}月{day}日"
+        elif d >= date_cls(1989, 1, 8):
+            return f"平成{y-1988}年{m}月{day}日"
+        elif d >= date_cls(1926, 12, 25):
+            return f"昭和{y-1925}年{m}月{day}日"
+        elif d >= date_cls(1912, 7, 30):
+            return f"大正{y-1911}年{m}月{day}日"
+        else:
+            return f"明治{y-1867}年{m}月{day}日"
+
     # 初期値（自動反映）
     initial = {
         # 被保険者
@@ -2713,7 +2839,13 @@ def document_create_ltc_renewal(request, client_id):
         'care_level': client.get_care_level_display() if client.care_level else '',
         'cert_start': client.certification_period_start.strftime('%Y-%m-%d') if client.certification_period_start else '',
         'cert_end': client.certification_period_end.strftime('%Y-%m-%d') if client.certification_period_end else '',
+        'cert_start_wareki': _to_wareki_display(client.certification_period_start),
+        'cert_end_wareki': _to_wareki_display(client.certification_period_end),
+        'certification_date': client.certification_date.strftime('%Y-%m-%d') if client.certification_date else '',
+        'cert_date_wareki': _to_wareki_display(client.certification_date),
+        'care_burden': client.care_burden or '',
         # 医療保険
+        'medical_insurance_type': client.get_medical_insurance_type_display() if client.medical_insurance_type else '',
         'medical_insurer_name': client.medical_insurer_name_issuer or '',
         'medical_insurer_number': client.medical_insurer_number or '',
         'medical_insurance_symbol': client.medical_insurance_symbol or '',
@@ -2728,21 +2860,129 @@ def document_create_ltc_renewal(request, client_id):
         'staff_name': user_full_name,
         'relation': '介護支援専門員',
         # 手入力項目
-        'application_date': '',
+        'application_date': datetime.today().strftime('%Y-%m-%d'),
         'specific_disease': '',
+        'survey_location': 'サービス付き高齢者向け住宅　安濃津ろまん',
+        'survey_location_other': '',
+        'survey_location_postal': '',
+        'survey_location_address': '',
+        'survey_location_phone': '',
+        'transferred_in': '',
+        'transfer_from_municipality': '',
+        'transfer_applied': '',
+        'transfer_applied_date': '',
+        'survey_contact_type': '担当ケアマネ',
         'survey_contact_name': '',
+        'survey_contact_furigana': '',
         'survey_contact_relation': '',
         'survey_contact_phone': '',
         'survey_preferred_time': '',
         'survey_notes': '',
+        'user_full_name': user_full_name,
+        'user_full_name_kana': profile.get_full_name_kana() if profile else '',
+        'user_phone': profile.phone if profile else '',
         'doctor_hospital': '',
         'doctor_name': '',
+        'doctor_phone': '',
+        'doctor_outside_city': '',
+        'doctor_postal_code': '',
+        'doctor_address': '',
         'doctor_notes': '',
     }
+
+    # 履歴からの再編集：保存済みデータで initial を上書き
+    history_id = request.GET.get('history_id')
+    if history_id and request.method == 'GET':
+        try:
+            hist = DocumentCreationHistory.objects.get(pk=history_id, client=client)
+            saved = hist.form_data or {}
+            for k in initial:
+                if k in saved:
+                    initial[k] = saved[k]
+
+            # care_level: 生値（例: "care4"）を表示値に変換
+            care_level_map = {
+                'independent': '自立',
+                'support1': '要支援1', 'support2': '要支援2',
+                'care1': '要介護1', 'care2': '要介護2', 'care3': '要介護3',
+                'care4': '要介護4', 'care5': '要介護5',
+            }
+            cl = initial.get('care_level', '')
+            if cl in care_level_map:
+                initial['care_level'] = care_level_map[cl]
+
+            # cert_start_wareki / cert_end_wareki: 保存済みISO日付から再計算
+            for date_key, wareki_key in [('cert_start', 'cert_start_wareki'), ('cert_end', 'cert_end_wareki'), ('certification_date', 'cert_date_wareki')]:
+                iso = initial.get(date_key, '')
+                if iso:
+                    try:
+                        from datetime import datetime as _dt
+                        d = _dt.strptime(iso, '%Y-%m-%d').date()
+                        initial[wareki_key] = _to_wareki_display(d)
+                    except Exception:
+                        pass
+
+            # ユーザー情報は常に最新を使用（保存値ではなくログインユーザーから）
+            initial['user_full_name']      = user_full_name
+            initial['user_full_name_kana'] = profile.get_full_name_kana() if profile else ''
+            initial['user_phone']          = profile.phone if profile else ''
+            initial['office_phone']        = (office.phone if office else '') or ''
+
+        except DocumentCreationHistory.DoesNotExist:
+            history_id = None
 
     if request.method == 'POST':
         # フォームデータを収集
         form_data = {k: request.POST.get(k, '') for k in initial}
+        # care_level: 生値を表示値に変換して保存
+        _care_map = {
+            'independent': '自立',
+            'support1': '要支援1', 'support2': '要支援2',
+            'care1': '要介護1', 'care2': '要介護2', 'care3': '要介護3',
+            'care4': '要介護4', 'care5': '要介護5',
+        }
+        if form_data.get('care_level') in _care_map:
+            form_data['care_level'] = _care_map[form_data['care_level']]
+        # cert_start_wareki / cert_end_wareki を再計算して保存
+        for date_key, wareki_key in [('cert_start', 'cert_start_wareki'), ('cert_end', 'cert_end_wareki'), ('certification_date', 'cert_date_wareki')]:
+            iso = form_data.get(date_key, '')
+            if iso:
+                try:
+                    from datetime import datetime as _dt2
+                    d2 = _dt2.strptime(iso, '%Y-%m-%d').date()
+                    form_data[wareki_key] = _to_wareki_display(d2)
+                except Exception:
+                    pass
+        # ユーザー情報を最新値で上書き保存
+        form_data['user_full_name']      = user_full_name
+        form_data['user_full_name_kana'] = profile.get_full_name_kana() if profile else ''
+        form_data['user_phone']          = profile.phone if profile else ''
+        form_data['office_phone']        = (office.phone if office else '') or ''
+        action = request.POST.get('action', 'excel')
+        history_id = request.GET.get('history_id')
+
+        # 保存処理（保存して戻る / 保存してExcel出力 共通）
+        if history_id:
+            try:
+                hist = DocumentCreationHistory.objects.get(pk=history_id, client=client)
+                hist.form_data = form_data
+                hist.save()
+            except DocumentCreationHistory.DoesNotExist:
+                history_id = None
+        if not history_id:
+            hist = DocumentCreationHistory.objects.create(
+                client=client,
+                document_type='ltc_renewal',
+                document_name='更新認定申請書',
+                form_data=form_data,
+                status='draft',
+                created_by=request.user,
+            )
+
+        if action == 'save':
+            messages.success(request, '更新認定申請書を保存しました。')
+            url = reverse('client_detail', kwargs={'pk': client_id}) + '#documents'
+            return HttpResponseRedirect(url)
 
         # Excelテンプレートを読み込み
         filename = getattr(dj_settings, 'LTC_RENEWAL_FILENAME', 'LTC_Certification_Renewal_R8.4-.xlsx')
@@ -2794,55 +3034,71 @@ def document_create_ltc_renewal(request, client_id):
             # ① 申請年月日
             w('X7', to_wareki(form_data.get('application_date', '')))
 
-            # ① 申請書提出者（事業所）
-            w('D8', form_data.get('office_furigana', ''))
-            w('D9', form_data.get('office_name', ''))
-            w('T9', form_data.get('relation', '介護支援専門員'))
-            w('D10', form_data.get('office_address', ''))
-            w('G10', f"（〒{form_data.get('office_postal_code', '')}）" if form_data.get('office_postal_code') else '')
-            w('U11', form_data.get('office_phone', ''))
-            w('A13', form_data.get('staff_name', ''))
-            w('Q13', form_data.get('office_number', ''))
+            # ② 申請書提出者（事業所）
+            w('G8',  form_data.get('office_furigana', ''))
+            w('G9',  form_data.get('office_name', ''))
+            w('X9',  form_data.get('relation', '介護支援専門員'))
+            w('H10', f"〒{form_data.get('office_postal_code', '')}" if form_data.get('office_postal_code') else '')
+            w('G11', form_data.get('office_address', ''))
+            w('Y11', form_data.get('office_phone', ''))
+            w('G13', form_data.get('staff_name', ''))
+            w('W13', form_data.get('office_number', ''))
 
-            # ② 被保険者
-            w('B15', form_data.get('insurance_number', ''))
-            w('B16', form_data.get('client_furigana', ''))
-            w('B17', form_data.get('client_name', ''))
-            w('Q16', form_data.get('client_gender', ''))
-            w('Q17', to_wareki(form_data.get('birth_date', '')))
-            w('G18', f"（〒{form_data.get('postal_code', '')}）" if form_data.get('postal_code') else '')
-            w('B18', form_data.get('client_address', ''))
-            w('U20', form_data.get('client_phone', ''))
+            # ③ 被保険者
+            w('G15', form_data.get('insurance_number', ''))
+            w('G16', form_data.get('client_furigana', ''))
+            w('G17', form_data.get('client_name', ''))
+            w('U16', form_data.get('client_gender', ''))
+            w('U17', to_wareki(form_data.get('birth_date', '')))
+            w('H18', f"〒{form_data.get('postal_code', '')}" if form_data.get('postal_code') else '')
+            w('G19', form_data.get('client_address', ''))
+            w('Y20', form_data.get('client_phone', ''))
 
-            # 前回の認定
+            # ④ 前回の認定
             w('N21', form_data.get('care_level', ''))
-            cert_start = to_wareki(form_data.get('cert_start', ''))
-            cert_end = to_wareki(form_data.get('cert_end', ''))
-            if cert_start and cert_end:
-                w('N22', f"{cert_start}から{cert_end}まで")
-            elif cert_start:
-                w('N22', f"{cert_start}から")
+            w('N22', to_wareki(form_data.get('cert_start', '')))
+            w('W22', to_wareki(form_data.get('cert_end', '')))
 
-            # 医療保険
-            w('G25', form_data.get('medical_insurer_name', ''))
-            w('V25', form_data.get('medical_insurer_number', ''))
-            w('M26', form_data.get('medical_insurance_symbol', ''))
-            w('V26', form_data.get('medical_insurance_number', ''))
+            # ⑤ 転入関係
+            if form_data.get('transfer_from_municipality'):
+                w('S23', form_data.get('transfer_from_municipality', ''))
+            if form_data.get('transfer_applied') == 'yes':
+                transfer_date = to_wareki(form_data.get('transfer_applied_date', ''))
+                w('V24', f"はい（申請日：{transfer_date}）" if transfer_date else 'はい')
 
-            # 特定疾病名
+            # ⑥ 医療保険
+            w('M25', form_data.get('medical_insurer_name', ''))
+            w('AA25', form_data.get('medical_insurer_number', ''))
+            w('O26', form_data.get('medical_insurance_symbol', ''))
+            w('Y26', form_data.get('medical_insurance_number', ''))
+
+            # ⑦ 特定疾病名
             if form_data.get('specific_disease'):
                 w('G27', form_data.get('specific_disease', ''))
 
-            # ③ 認定調査 連絡先
-            w('G32', form_data.get('survey_contact_name', ''))
-            w('O32', form_data.get('survey_contact_relation', ''))
-            w('T32', form_data.get('survey_contact_phone', ''))
-            w('G34', form_data.get('survey_preferred_time', ''))
-            w('G35', form_data.get('survey_notes', ''))
+            # ⑧ 認定調査 場所
+            w('G30', form_data.get('survey_location', ''))
+            w('S29', f"〒{form_data.get('survey_location_postal', '')}" if form_data.get('survey_location_postal') else '')
+            w('O30', form_data.get('survey_location_address', ''))
+            w('W30', form_data.get('survey_location_phone', ''))
 
-            # ④ 主治医
-            w('B37', form_data.get('doctor_hospital', ''))
-            w('B39', form_data.get('doctor_name', ''))
+            # ⑨ 認定調査 連絡先
+            w('I32', form_data.get('survey_contact_furigana', ''))
+            w('I33', form_data.get('survey_contact_name', ''))
+            w('O33', form_data.get('survey_contact_relation', ''))
+            w('U33', form_data.get('survey_contact_phone', ''))
+
+            # ⑩ 主治医意見書依頼先
+            w('G37', form_data.get('doctor_hospital', ''))
+            if form_data.get('doctor_outside_city') == 'yes':
+                postal = form_data.get('doctor_postal_code', '')
+                addr   = form_data.get('doctor_address', '')
+                parts  = []
+                if postal: parts.append(f"〒{postal}")
+                if addr:   parts.append(addr)
+                if parts:  w('G38', '　'.join(parts))
+            w('G39', form_data.get('doctor_name', ''))
+            w('U39', form_data.get('doctor_phone', ''))
             w('G42', form_data.get('doctor_notes', ''))
 
             # 一時ファイルに保存してダウンロード
@@ -2868,9 +3124,79 @@ def document_create_ltc_renewal(request, client_id):
             messages.error(request, f'Excel生成中にエラーが発生しました: {str(e)}')
             return redirect('client_detail', pk=client_id)
 
+    # 年齢計算（第2号被保険者判定: 40〜64歳）
+    is_second_insured = False
+    if client.birth_date:
+        from datetime import date as _date_cls
+        today = _date_cls.today()
+        age = today.year - client.birth_date.year - (
+            (today.month, today.day) < (client.birth_date.month, client.birth_date.day)
+        )
+        is_second_insured = 40 <= age <= 64
+
+    specific_diseases = [
+        'がん（末期）',
+        '関節リウマチ',
+        '筋萎縮性側索硬化症（ALS）',
+        '後縦靱帯骨化症',
+        '骨折を伴う骨粗鬆症',
+        '初老期における認知症',
+        '進行性核上性麻痺・大脳皮質基底核変性症・パーキンソン病関連疾患',
+        '脊髄小脳変性症',
+        '脊柱管狭窄症',
+        '早老症',
+        '多系統萎縮症',
+        '糖尿病性神経障害・糖尿病性腎症・糖尿病性網膜症',
+        '脳血管疾患',
+        '閉塞性動脈硬化症',
+        '慢性閉塞性肺疾患（COPD）',
+        '両側の膝関節または股関節に著しい変形を伴う変形性関節症',
+    ]
+
+    # アセスメントから医師・医療機関情報を取得（医師情報が入っている最新を優先）
+    from assessments.models import Assessment
+    def _has_doctor(a):
+        hs = a.health_status or {}
+        return any([
+            hs.get('main_doctor_hospital'),
+            hs.get('visiting_doctor_hospital'),
+            *(hs.get(f'family_doctor_hospital_{i}') for i in range(1, 5)),
+        ])
+    latest_assessment = next(
+        (a for a in client.assessments.order_by('-assessment_date', '-created_at') if _has_doctor(a)),
+        client.assessments.order_by('-assessment_date', '-created_at').first()
+    )
+    doctor_options = []
+    if latest_assessment:
+        hs = latest_assessment.health_status or {}
+        if hs.get('main_doctor_hospital'):
+            doctor_options.append({
+                'type': '主治医',
+                'hospital': hs.get('main_doctor_hospital', ''),
+                'name': hs.get('main_doctor_name', ''),
+            })
+        if hs.get('visiting_doctor_hospital'):
+            doctor_options.append({
+                'type': '往診医',
+                'hospital': hs.get('visiting_doctor_hospital', ''),
+                'name': hs.get('visiting_doctor_name', ''),
+            })
+        for i in range(1, 5):
+            hospital = hs.get(f'family_doctor_hospital_{i}', '')
+            if hospital:
+                doctor_options.append({
+                    'type': 'かかりつけ医',
+                    'hospital': hospital,
+                    'name': hs.get(f'family_doctor_name_{i}', ''),
+                })
+
     context = {
         'client': client,
         'initial': initial,
+        'is_second_insured': is_second_insured,
+        'specific_diseases': specific_diseases,
+        'doctor_options': doctor_options,
+        'history_id': history_id or '',
     }
     return render(request, 'clients/document_create_ltc_renewal.html', context)
 

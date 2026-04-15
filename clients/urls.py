@@ -65,6 +65,8 @@ urlpatterns = [
 
     # 更新認定申請書
     path('<str:client_id>/document/ltc-renewal/', views.document_create_ltc_renewal, name='document_ltc_renewal'),
+    path('<str:client_id>/cert-info/update/', views.client_cert_info_update, name='client_cert_info_update'),
+    path('<str:client_id>/medical-info/update/', views.client_medical_info_update, name='client_medical_info_update'),
 
     # マスタデータ更新API
     path('office/<int:pk>/update-master/', api_views.update_office_master, name='update_office_master'),

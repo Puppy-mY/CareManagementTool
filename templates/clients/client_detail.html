@@ -1094,10 +1094,11 @@ function downloadDocumentHistoryExcel(historyId) {
 
 // 書類を再編集
 function reopenDocument(documentType, historyId, clientId) {
-    console.log('reopenDocument called:', documentType, historyId, clientId);
-    const url = `/clients/${clientId}/documents/create/${documentType}/?history_id=${historyId}`;
-
-    console.log('Opening URL:', url);
+    const typeToUrl = {
+        'ltc_renewal': `/clients/${clientId}/document/ltc-renewal/?history_id=${historyId}`,
+    };
+    const url = typeToUrl[documentType]
+        || `/clients/${clientId}/documents/create/${documentType}/?history_id=${historyId}`;
     window.location.href = url;
 }
 
