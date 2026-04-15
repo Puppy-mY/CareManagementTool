@@ -1399,7 +1399,9 @@ def generate_document_excel(request, client, document_type, document_name, form_
                 else:
                     content_type = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
                 response = HttpResponse(f.read(), content_type=content_type)
-                response['Content-Disposition'] = f'attachment; filename="{client.name}様_{document_name}{file_ext}"'
+                from urllib.parse import quote
+                dl_name = _make_dl_filename(client, document_name, file_ext)
+                response['Content-Disposition'] = f"attachment; filename=\"download.xlsx\"; filename*=UTF-8''{quote(dl_name, safe='')}"
 
         # 一時ファイルを削除
         os.unlink(tmp.name)
@@ -1445,15 +1447,167 @@ def document_delete(request, pk):
     return JsonResponse({'success': False, 'message': '不正なリクエストです'}, status=400)
 
 
+def _make_dl_filename(client, document_name, ext='.xlsx'):
+    """統一ダウンロードファイル名: ふりがな苗字_氏名_（書類名）_日付YYYYMMDD"""
+    from datetime import date
+    furigana = (client.furigana or '').split()[0] if client.furigana else ''
+    today = date.today().strftime('%Y%m%d')
+    return f"{furigana}_{client.name}_{document_name}_{today}{ext}"
+
+
+def _generate_ltc_renewal_excel_bytes(client, form_data):
+    """更新認定申請書のExcelバイト列を生成して返す"""
+    from openpyxl import load_workbook as _load_wb
+    from openpyxl.cell import MergedCell as _MergedCell
+
+    filename = getattr(settings, 'LTC_RENEWAL_FILENAME', 'LTC_Certification_Renewal_R8.4-.xlsx')
+    template_path = os.path.join(settings.BASE_DIR, 'templates', 'forms', filename)
+
+    workbook = _load_wb(template_path)
+    ws = workbook.active
+
+    def w(cell_ref, value, as_text=False):
+        if not cell_ref or value is None:
+            return
+        try:
+            cell = ws[cell_ref]
+            if isinstance(cell, _MergedCell):
+                for mr in ws.merged_cells.ranges:
+                    if cell_ref in mr:
+                        min_col, min_row, _, _ = mr.bounds
+                        target = ws.cell(row=min_row, column=min_col)
+                        target.value = str(value) if as_text else value
+                        if as_text:
+                            target.number_format = '@'
+                        return
+            else:
+                cell.value = str(value) if as_text else value
+                if as_text:
+                    cell.number_format = '@'
+        except Exception:
+            pass
+
+    def to_wareki(date_str):
+        if not date_str:
+            return ''
+        try:
+            from datetime import date as date_cls, datetime
+            d = datetime.strptime(date_str, '%Y-%m-%d').date()
+            y, m, day = d.year, d.month, d.day
+            if d >= date_cls(2019, 5, 1):
+                return f"令和{y-2018:02d}年{m:02d}月{day:02d}日"
+            elif d >= date_cls(1989, 1, 8):
+                return f"平成{y-1988:02d}年{m:02d}月{day:02d}日"
+            elif d >= date_cls(1926, 12, 25):
+                return f"昭和{y-1925:02d}年{m:02d}月{day:02d}日"
+            else:
+                return f"大正{y-1911:02d}年{m:02d}月{day:02d}日"
+        except Exception:
+            return date_str
+
+    # ① 申請年月日
+    w('X7', to_wareki(form_data.get('application_date', '')))
+
+    # ② 申請書提出者（事業所）
+    w('G8',  form_data.get('office_furigana', ''))
+    w('G9',  form_data.get('office_name', ''))
+    w('X9',  form_data.get('relation', '介護支援専門員'))
+    w('I11', f"〒{form_data.get('office_postal_code', '')}" if form_data.get('office_postal_code') else '')
+    w('G12', form_data.get('office_address', ''))
+    w('X12', form_data.get('office_phone', ''))
+    w('G14', form_data.get('staff_name', ''))
+    w('W14', int(form_data['office_number']) if form_data.get('office_number', '').isdigit() else form_data.get('office_number', ''))
+
+    # ③ 被保険者
+    w('G16', int(form_data['insurance_number']) if form_data.get('insurance_number', '').isdigit() else form_data.get('insurance_number', ''))
+    w('G17', ''.join(chr(ord(c) + 0x60) if '\u3041' <= c <= '\u3096' else c for c in form_data.get('client_furigana', '')))
+    w('G18', form_data.get('client_name', ''))
+    w('U17', form_data.get('client_gender', ''))
+    w('U18', to_wareki(form_data.get('birth_date', '')))
+    w('H19', f"〒{form_data.get('postal_code', '')}" if form_data.get('postal_code') else '')
+    w('G20', form_data.get('client_address', ''))
+    w('Y21', form_data.get('client_phone', ''))
+
+    # ④ 前回の認定
+    w('N22', form_data.get('care_level', ''))
+    w('N23', to_wareki(form_data.get('cert_start', '')))
+    w('W23', to_wareki(form_data.get('cert_end', '')))
+
+    # ⑤ 転入関係
+    if form_data.get('transfer_from_municipality'):
+        w('S24', f"[{form_data.get('transfer_from_municipality', '')}]")
+    if form_data.get('transfer_applied') == 'yes':
+        transfer_date = to_wareki(form_data.get('transfer_applied_date', ''))
+        w('W25', f"[はい（申請日：{transfer_date}）]" if transfer_date else '[はい（申請日：　年　月　日）・いいえ]')
+    else:
+        w('W25', '[はい（申請日：　年　月　日）・いいえ]')
+
+    # ⑥ 医療保険
+    w('M26', form_data.get('medical_insurer_name', ''))
+    w('AA26', int(form_data['medical_insurer_number']) if form_data.get('medical_insurer_number', '').isdigit() else form_data.get('medical_insurer_number', ''))
+    w('O27', form_data.get('medical_insurance_symbol', ''))
+    w('Y27', int(form_data['medical_insurance_number']) if form_data.get('medical_insurance_number', '').isdigit() else form_data.get('medical_insurance_number', ''))
+
+    # ⑦ 特定疾病名
+    if form_data.get('specific_disease'):
+        w('G28', form_data.get('specific_disease', ''))
+
+    # ⑧ 認定調査 場所
+    w('G32', form_data.get('survey_location', ''))
+    w('S31', f"〒{form_data.get('survey_location_postal', '')}" if form_data.get('survey_location_postal') else '')
+    w('O32', form_data.get('survey_location_address', ''))
+    w('W33', form_data.get('survey_location_phone', ''))
+
+    # ⑨ 認定調査 連絡先
+    w('I34', form_data.get('survey_contact_furigana', ''))
+    w('I35', form_data.get('survey_contact_name', ''))
+    w('O35', form_data.get('survey_contact_relation', ''))
+    w('T35', form_data.get('survey_contact_phone', ''))
+    w('G36', form_data.get('survey_contact_preferred_time', ''))
+    w('G37', form_data.get('survey_contact_notes', ''))
+
+    # ⑩ 主治医意見書依頼先
+    w('G40', form_data.get('doctor_hospital', ''))
+    if form_data.get('doctor_outside_city') == 'yes':
+        w('S41', f"〒{form_data.get('doctor_postal_code', '')}" if form_data.get('doctor_postal_code') else '')
+        w('Q42', form_data.get('doctor_address', ''))
+    w('G42', form_data.get('doctor_name', ''))
+    w('U43', form_data.get('doctor_phone', ''))
+    w('G46', form_data.get('doctor_notes', ''))
+
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.xlsx') as tmp:
+        workbook.save(tmp.name)
+        workbook.close()
+        with open(tmp.name, 'rb') as f:
+            content = f.read()
+    os.unlink(tmp.name)
+    return content
+
+
 @login_required
 def document_history_excel(request, pk):
     """書類履歴からExcelファイルをダウンロード"""
     history = get_object_or_404(DocumentCreationHistory, pk=pk)
+    client = history.client
 
-    # 履歴データからExcelを生成
+    if history.document_type == 'ltc_renewal':
+        try:
+            content = _generate_ltc_renewal_excel_bytes(client, history.form_data)
+        except Exception as e:
+            messages.error(request, f'Excel生成中にエラーが発生しました: {str(e)}')
+            return redirect('client_detail', pk=client.pk)
+        from urllib.parse import quote
+        dl_name = _make_dl_filename(client, '更新認定申請書')
+        response = HttpResponse(
+            content,
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = f"attachment; filename=\"download.xlsx\"; filename*=UTF-8''{quote(dl_name, safe='')}"
+        return response
+
     return generate_document_excel(
         request,
-        history.client,
+        client,
         history.document_type,
         history.document_name,
         history.form_data
@@ -2984,140 +3138,15 @@ def document_create_ltc_renewal(request, client_id):
             url = reverse('client_detail', kwargs={'pk': client_id}) + '#documents'
             return HttpResponseRedirect(url)
 
-        # Excelテンプレートを読み込み
-        filename = getattr(dj_settings, 'LTC_RENEWAL_FILENAME', 'LTC_Certification_Renewal_R8.4-.xlsx')
-        template_path = os.path.join(dj_settings.BASE_DIR, 'templates', 'forms', filename)
-
-        if not os.path.exists(template_path):
-            messages.error(request, f'テンプレートファイルが見つかりません: {filename}')
-            return redirect('client_detail', pk=client_id)
-
         try:
-            workbook = load_workbook(template_path)
-            ws = workbook.active
-
-            def w(cell_ref, value):
-                """MergedCell対応の安全な書き込み"""
-                if not cell_ref or value is None:
-                    return
-                try:
-                    cell = ws[cell_ref]
-                    if isinstance(cell, MergedCell):
-                        for mr in ws.merged_cells.ranges:
-                            if cell_ref in mr:
-                                min_col, min_row, _, _ = mr.bounds
-                                ws.cell(row=min_row, column=min_col).value = value
-                                return
-                    else:
-                        cell.value = value
-                except Exception:
-                    pass
-
-            def to_wareki(date_str):
-                if not date_str:
-                    return ''
-                try:
-                    from datetime import date as date_cls, datetime
-                    d = datetime.strptime(date_str, '%Y-%m-%d').date()
-                    y, m, day = d.year, d.month, d.day
-                    if d >= date_cls(2019, 5, 1):
-                        return f"令和{y-2018:02d}年{m:02d}月{day:02d}日"
-                    elif d >= date_cls(1989, 1, 8):
-                        return f"平成{y-1988:02d}年{m:02d}月{day:02d}日"
-                    elif d >= date_cls(1926, 12, 25):
-                        return f"昭和{y-1925:02d}年{m:02d}月{day:02d}日"
-                    else:
-                        return f"大正{y-1911:02d}年{m:02d}月{day:02d}日"
-                except Exception:
-                    return date_str
-
-            # ① 申請年月日
-            w('X7', to_wareki(form_data.get('application_date', '')))
-
-            # ② 申請書提出者（事業所）
-            w('G8',  form_data.get('office_furigana', ''))
-            w('G9',  form_data.get('office_name', ''))
-            w('X9',  form_data.get('relation', '介護支援専門員'))
-            w('H10', f"〒{form_data.get('office_postal_code', '')}" if form_data.get('office_postal_code') else '')
-            w('G11', form_data.get('office_address', ''))
-            w('Y11', form_data.get('office_phone', ''))
-            w('G13', form_data.get('staff_name', ''))
-            w('W13', form_data.get('office_number', ''))
-
-            # ③ 被保険者
-            w('G15', form_data.get('insurance_number', ''))
-            w('G16', form_data.get('client_furigana', ''))
-            w('G17', form_data.get('client_name', ''))
-            w('U16', form_data.get('client_gender', ''))
-            w('U17', to_wareki(form_data.get('birth_date', '')))
-            w('H18', f"〒{form_data.get('postal_code', '')}" if form_data.get('postal_code') else '')
-            w('G19', form_data.get('client_address', ''))
-            w('Y20', form_data.get('client_phone', ''))
-
-            # ④ 前回の認定
-            w('N21', form_data.get('care_level', ''))
-            w('N22', to_wareki(form_data.get('cert_start', '')))
-            w('W22', to_wareki(form_data.get('cert_end', '')))
-
-            # ⑤ 転入関係
-            if form_data.get('transfer_from_municipality'):
-                w('S23', form_data.get('transfer_from_municipality', ''))
-            if form_data.get('transfer_applied') == 'yes':
-                transfer_date = to_wareki(form_data.get('transfer_applied_date', ''))
-                w('V24', f"はい（申請日：{transfer_date}）" if transfer_date else 'はい')
-
-            # ⑥ 医療保険
-            w('M25', form_data.get('medical_insurer_name', ''))
-            w('AA25', form_data.get('medical_insurer_number', ''))
-            w('O26', form_data.get('medical_insurance_symbol', ''))
-            w('Y26', form_data.get('medical_insurance_number', ''))
-
-            # ⑦ 特定疾病名
-            if form_data.get('specific_disease'):
-                w('G27', form_data.get('specific_disease', ''))
-
-            # ⑧ 認定調査 場所
-            w('G30', form_data.get('survey_location', ''))
-            w('S29', f"〒{form_data.get('survey_location_postal', '')}" if form_data.get('survey_location_postal') else '')
-            w('O30', form_data.get('survey_location_address', ''))
-            w('W30', form_data.get('survey_location_phone', ''))
-
-            # ⑨ 認定調査 連絡先
-            w('I32', form_data.get('survey_contact_furigana', ''))
-            w('I33', form_data.get('survey_contact_name', ''))
-            w('O33', form_data.get('survey_contact_relation', ''))
-            w('U33', form_data.get('survey_contact_phone', ''))
-
-            # ⑩ 主治医意見書依頼先
-            w('G37', form_data.get('doctor_hospital', ''))
-            if form_data.get('doctor_outside_city') == 'yes':
-                postal = form_data.get('doctor_postal_code', '')
-                addr   = form_data.get('doctor_address', '')
-                parts  = []
-                if postal: parts.append(f"〒{postal}")
-                if addr:   parts.append(addr)
-                if parts:  w('G38', '　'.join(parts))
-            w('G39', form_data.get('doctor_name', ''))
-            w('U39', form_data.get('doctor_phone', ''))
-            w('G42', form_data.get('doctor_notes', ''))
-
-            # 一時ファイルに保存してダウンロード
-            with tempfile.NamedTemporaryFile(delete=False, suffix='.xlsx') as tmp:
-                workbook.save(tmp.name)
-                workbook.close()
-                with open(tmp.name, 'rb') as f:
-                    content = f.read()
-            os.unlink(tmp.name)
-
-            # ダウンロードファイル名：ふりがな苗字_氏名_更新認定申請書.xlsx
-            last_name_kana = (client.furigana or '').split()[0] if client.furigana else ''
-            dl_name = f"{last_name_kana}_{client.name}_更新認定申請書.xlsx"
-
+            from urllib.parse import quote
+            content = _generate_ltc_renewal_excel_bytes(client, form_data)
+            dl_name = _make_dl_filename(client, '更新認定申請書')
             response = HttpResponse(
                 content,
                 content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
             )
-            response['Content-Disposition'] = f'attachment; filename="{dl_name}"; filename*=UTF-8\'\'{dl_name}'
+            response['Content-Disposition'] = f"attachment; filename=\"download.xlsx\"; filename*=UTF-8''{quote(dl_name, safe='')}"
             return response
 
         except Exception as e:

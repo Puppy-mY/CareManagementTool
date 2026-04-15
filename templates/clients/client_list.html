@@ -325,6 +325,21 @@
     .document-modal-body {
         padding: 24px;
     }
+    .document-modal-footer-link {
+        margin-top: 16px;
+        padding-top: 12px;
+        border-top: 1px solid #e9ecef;
+        text-align: center;
+        font-size: 0.8rem;
+    }
+    .document-modal-footer-link a {
+        color: #6c757d;
+        text-decoration: none;
+    }
+    .document-modal-footer-link a:hover {
+        color: #0d6efd;
+        text-decoration: underline;
+    }
     .document-create-btn:hover .document-tooltip,
     .document-tooltip:hover {
         opacity: 1;
@@ -618,6 +633,12 @@
                     <li class="document-item" onclick="selectDocument('入院時情報提供書', '開発中', event)">入院時情報提供書（開発中）</li>
                     <li class="document-item" onclick="selectDocument('医療・介護連携シート', '開発中', event)">医療・介護連携シート（開発中）</li>
                 </ul>
+            </div>
+
+            <div class="document-modal-footer-link">
+                <a href="https://www.info.city.tsu.mie.jp/dl-list/kenkoufukushibu/1008733.html" target="_blank" rel="noopener noreferrer">
+                    <i class="fas fa-external-link-alt"></i> 三重県津市 介護保険課　申請書類ダウンロード
+                </a>
             </div>
         </div>
     </div>
