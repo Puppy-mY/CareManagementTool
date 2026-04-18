@@ -4,32 +4,6 @@
 {% block effective_date_section %}{% endblock %}
 {% block burden_section %}{% endblock %}
 
-{% block insurance_section %}
-{# アコーディオンなし：モーダルJS用の表示要素（非表示）と送信用hiddenフィールドのみ #}
-<input type="hidden" id="disp_care_level"
-    value="{{ initial_data.client_care_level_display|default:client.get_care_level_display }}"
-    data-value="{{ initial_data.client_care_level|default:client.care_level }}">
-<input type="hidden" id="disp_cert_date"
-    value="{{ initial_data.client_certification_date_display|default:'' }}"
-    data-iso="{{ initial_data.client_certification_date_iso|default:'' }}">
-<input type="hidden" id="disp_cert_start"
-    value="{{ initial_data.client_certification_period_start_display|default:'' }}"
-    data-iso="{{ initial_data.client_certification_period_start_iso|default:'' }}">
-<input type="hidden" id="disp_cert_end"
-    value="{{ initial_data.client_certification_period_end_display|default:'' }}"
-    data-iso="{{ initial_data.client_certification_period_end_iso|default:'' }}">
-<input type="hidden" id="disp_care_burden"
-    value="{{ initial_data.client_care_burden|default:client.care_burden }}">
-<input type="hidden" name="client_care_level" value="{{ initial_data.client_care_level|default:client.care_level }}">
-<input type="hidden" name="client_care_level_display" value="{{ initial_data.client_care_level_display|default:client.get_care_level_display }}">
-<input type="hidden" name="client_certification_date_iso" value="{{ initial_data.client_certification_date_iso|default:'' }}">
-<input type="hidden" name="client_certification_date_display" value="{{ initial_data.client_certification_date_display|default:'' }}">
-<input type="hidden" name="client_certification_period_start_iso" value="{{ initial_data.client_certification_period_start_iso|default:'' }}">
-<input type="hidden" name="client_certification_period_start_display" value="{{ initial_data.client_certification_period_start_display|default:'' }}">
-<input type="hidden" name="client_certification_period_end_iso" value="{{ initial_data.client_certification_period_end_iso|default:'' }}">
-<input type="hidden" name="client_certification_period_end_display" value="{{ initial_data.client_certification_period_end_display|default:'' }}">
-<input type="hidden" name="client_care_burden" value="{{ initial_data.client_care_burden|default:client.care_burden }}">
-{% endblock insurance_section %}
 
 {% block provider_section %}
 <!-- 申請者（事業所・施設）情報 -->
@@ -52,7 +26,7 @@
 <div id="office_detail_section" class="accordion" style="margin: 0.5rem 0 1rem 0;">
     <div class="accordion-item" style="border: none; background-color: #f8f9fa; border-radius: 0.5rem;">
         <h2 class="accordion-header">
-            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#officeDetailCollapse" aria-expanded="true" aria-controls="officeDetailCollapse" style="background-color: #f8f9fa; padding: 0.5rem 1rem; color: #333;">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#officeDetailCollapse" aria-expanded="false" aria-controls="officeDetailCollapse" style="background-color: #f8f9fa; padding: 0.5rem 1rem; color: #333;">
                 <span id="office_status_icon" class="me-2"><i class="fas fa-check-circle" style="color: rgba(25, 135, 84, 0.5);"></i></span>事業者及び施設情報
             </button>
         </h2>
@@ -75,7 +49,7 @@
 <div id="staff_detail_section" class="accordion" style="margin: 0.5rem 0 1rem 0;">
     <div class="accordion-item" style="border: none; background-color: #f8f9fa; border-radius: 0.5rem;">
         <h2 class="accordion-header">
-            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#staffDetailCollapse" aria-expanded="true" aria-controls="staffDetailCollapse" style="background-color: #f8f9fa; padding: 0.5rem 1rem; color: #333;">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#staffDetailCollapse" aria-expanded="false" aria-controls="staffDetailCollapse" style="background-color: #f8f9fa; padding: 0.5rem 1rem; color: #333;">
                 <span id="staff_status_icon" class="me-2"><i class="fas fa-check-circle" style="color: rgba(25, 135, 84, 0.5);"></i></span>提供申請者（担当職員）
             </button>
         </h2>
@@ -118,20 +92,6 @@
                     value="{{ initial_data.application_date|default:'' }}">
             </div>
         </div>
-    </div>
-</div>
-
-<!-- 介護保険被保険者番号 -->
-<div class="row g-3 mb-4 align-items-end">
-    <div class="col-md-4">
-        <label class="form-label">介護保険被保険者番号 <span class="text-danger">*</span></label>
-        <input type="text" name="client_insurance_number" class="form-control"
-               value="{{ initial_data.client_insurance_number|default:client.insurance_number }}" readonly required>
-    </div>
-    <div class="col-auto">
-        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openInsuranceModal()">
-            <i class="fas fa-edit me-1"></i>介護保険情報を編集
-        </button>
     </div>
 </div>
 
@@ -341,12 +301,6 @@ function validateDocumentSpecific() {
     const appDate = document.getElementById('id_application_date')?.value;
     if (!appDate) {
         alert('作成日を入力してください。');
-        return false;
-    }
-
-    const insuranceNumber = document.querySelector('input[name="client_insurance_number"]')?.value?.trim();
-    if (!insuranceNumber) {
-        alert('介護保険被保険者番号を入力してください。');
         return false;
     }
 

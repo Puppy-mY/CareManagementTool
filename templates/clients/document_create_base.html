@@ -889,6 +889,12 @@ function validateForm() {
 document.addEventListener('DOMContentLoaded', function() {
     console.log('書類作成ページが読み込まれました');
 
+    // 有効開始日：未入力時は本日の日付をデフォルト設定
+    const today = new Date().toISOString().slice(0, 10);
+    document.querySelectorAll('input[name="effective_start_date"]').forEach(function(el) {
+        if (!el.value) el.value = today;
+    });
+
     // 届出を行う区分の単一選択制御
     const notificationCheckboxes = document.querySelectorAll('input[name="notification_type"]');
     notificationCheckboxes.forEach(checkbox => {
