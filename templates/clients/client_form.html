@@ -1372,7 +1372,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // イベントリスナー設定
     typeSelect.addEventListener('change', function() {
-        // 保険種別が変わった時、保険者名と番号をクリアしてオプションを再生成
+        // 保険種別が変わった時、被保険者番号・負担割合・保険者名と番号をクリア
+        const symInput    = document.getElementById('id_medical_insurance_symbol');
+        const numInput    = document.getElementById('id_medical_insurance_number');
+        const branchInput = document.getElementById('id_medical_insurance_branch');
+        const burdenSel   = document.getElementById('id_medical_burden');
+        if (symInput)    symInput.value = '';
+        if (numInput)    numInput.value = '';
+        if (branchInput) branchInput.value = '';
+        if (burdenSel)   burdenSel.value = '';
         nameInput.value = '';
         numberInput.value = '';
         updatePresetOptions();

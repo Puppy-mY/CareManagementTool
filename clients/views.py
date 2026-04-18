@@ -1038,15 +1038,29 @@ def document_create(request, client_id, document_type):
                     url = reverse('client_detail', kwargs={'pk': client_id}) + '#documents'
                     return HttpResponseRedirect(url)
             else:
-                history = DocumentCreationHistory.objects.create(
-                    client=client,
-                    document_type=document_type,
-                    document_name=document_name,
-                    form_data=form_data,
-                    status='draft',
-                    created_by=request.user
-                )
-                messages.success(request, '書類を保存しました。')
+                # 同じ書類種別・同じ作成日のレコードがあれば上書き
+                app_date = form_data.get('application_date', '')
+                existing = None
+                if app_date:
+                    existing = DocumentCreationHistory.objects.filter(
+                        client=client,
+                        document_type=document_type,
+                        form_data__application_date=app_date,
+                    ).first()
+                if existing:
+                    existing.form_data = form_data
+                    existing.save()
+                    messages.success(request, '書類を上書き保存しました。')
+                else:
+                    DocumentCreationHistory.objects.create(
+                        client=client,
+                        document_type=document_type,
+                        document_name=document_name,
+                        form_data=form_data,
+                        status='draft',
+                        created_by=request.user
+                    )
+                    messages.success(request, '書類を保存しました。')
 
             url = reverse('client_detail', kwargs={'pk': client_id}) + '#documents'
             return HttpResponseRedirect(url)

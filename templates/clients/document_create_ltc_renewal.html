@@ -91,6 +91,120 @@
                     </div>
                 </div>
 
+                <!-- 介護保険情報（自動反映）アコーディオン -->
+                <div class="accordion mb-4" id="insuranceInfoAccordion">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="insuranceInfoHeading">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#insuranceInfoCollapse" aria-expanded="false" aria-controls="insuranceInfoCollapse">
+                                <i class="fas fa-id-card me-2"></i>
+                                <strong>介護保険情報（自動反映）</strong>
+                                <small class="text-muted ms-2">※利用者データから自動入力</small>
+                            </button>
+                        </h2>
+                        <div id="insuranceInfoCollapse" class="accordion-collapse collapse" aria-labelledby="insuranceInfoHeading">
+                            <div class="accordion-body">
+                                <div class="row g-3 mb-2">
+                                    <div class="col-md-4">
+                                        <label class="form-label">被保険者番号</label>
+                                        <input type="text" id="ins_disp_insurance" class="form-control" value="{{ initial.insurance_number }}" readonly>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">要介護度</label>
+                                        <input type="text" id="ins_disp_care_level" class="form-control" value="{{ initial.care_level }}" readonly>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">認定日</label>
+                                        <input type="text" id="ins_disp_cert_date" class="form-control" value="{{ initial.cert_date_wareki }}" readonly>
+                                    </div>
+                                </div>
+                                <div class="row g-3 mb-2">
+                                    <div class="col-md-6">
+                                        <label class="form-label">認定期間（開始）</label>
+                                        <input type="text" id="ins_disp_cert_start" class="form-control" value="{{ initial.cert_start_wareki }}" readonly>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">認定期間（終了）</label>
+                                        <input type="text" id="ins_disp_cert_end" class="form-control" value="{{ initial.cert_end_wareki }}" readonly>
+                                    </div>
+                                </div>
+                                <div class="row g-3 mb-2">
+                                    <div class="col-md-4">
+                                        <label class="form-label">負担割合</label>
+                                        <input type="text" id="ins_disp_care_burden" class="form-control" value="{{ initial.care_burden }}" readonly>
+                                    </div>
+                                </div>
+                                <div class="text-end mt-2">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openCertInfoModal()">
+                                        <i class="fas fa-edit me-1"></i>介護保険情報を編集
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 医療保険情報（自動反映）アコーディオン -->
+                <div class="accordion mb-4" id="medicalInsuranceAccordion">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="medicalInsuranceHeading">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#medicalInsuranceCollapse" aria-expanded="false" aria-controls="medicalInsuranceCollapse">
+                                <i class="fas fa-hospital me-2"></i>
+                                <strong>医療保険情報（自動反映）</strong>
+                                <small class="text-muted ms-2">※利用者データから自動入力</small>
+                            </button>
+                        </h2>
+                        <div id="medicalInsuranceCollapse" class="accordion-collapse collapse" aria-labelledby="medicalInsuranceHeading">
+                            <div class="accordion-body">
+                                <!-- 医療保険種別 -->
+                                <div class="row g-3 mb-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">医療保険種別</label>
+                                        <input type="text" id="med_disp_type" class="form-control" value="{{ initial.medical_insurance_type }}" readonly>
+                                    </div>
+                                </div>
+                                <!-- 被保険者番号（記号・番号・枝番） -->
+                                <div class="row g-3 mb-3">
+                                    <div class="col-12">
+                                        <label class="form-label">被保険者番号</label>
+                                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                                            <span class="text-nowrap">記号</span>
+                                            <input type="text" id="med_disp_symbol" class="form-control" style="width:120px;" value="{{ initial.medical_insurance_symbol }}" readonly>
+                                            <span class="text-nowrap">番号</span>
+                                            <input type="text" id="med_disp_number" class="form-control" style="width:200px;" value="{{ initial.medical_insurance_number }}" readonly>
+                                            <span class="text-nowrap">枝番</span>
+                                            <input type="text" id="med_disp_branch" class="form-control" style="width:80px;" value="{{ client.medical_insurance_branch }}" readonly>
+                                        </div>
+                                        <small class="text-muted">医療保険証に記載されている被保険者番号です（介護保険の被保険者番号とは別の番号）</small>
+                                    </div>
+                                </div>
+                                <!-- 負担割合 -->
+                                <div class="row g-3 mb-3">
+                                    <div class="col-md-4">
+                                        <label class="form-label">負担割合</label>
+                                        <input type="text" id="med_disp_burden" class="form-control" value="{{ client.medical_burden }}" readonly>
+                                    </div>
+                                </div>
+                                <!-- 保険者名称・保険者番号 -->
+                                <div class="row g-3 mb-2">
+                                    <div class="col-md-8">
+                                        <label class="form-label">保険者名称・交付者</label>
+                                        <input type="text" id="med_disp_insurer_name" class="form-control" value="{{ initial.medical_insurer_name }}" readonly>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">保険者番号</label>
+                                        <input type="text" id="med_disp_insurer_number" class="form-control" value="{{ initial.medical_insurer_number }}" readonly>
+                                    </div>
+                                </div>
+                                <div class="text-end mt-2">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openMedicalInfoModal()">
+                                        <i class="fas fa-edit me-1"></i>医療保険情報を編集
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- 入力項目 -->
                 <div class="card mb-4">
                     <div class="card-header d-flex align-items-center">
@@ -198,10 +312,11 @@
                         <div class="accordion mb-4" id="certInfoAccordion">
                             <div class="accordion-item" style="border: none; background-color: #f8f9fa; border-radius: 0.5rem;">
                                 <h2 class="accordion-header">
-                                    <button class="accordion-button collapsed" type="button"
-                                            data-bs-toggle="collapse" data-bs-target="#certInfoCollapse"
-                                            style="background-color: #f8f9fa; padding: 0.5rem 1rem; color: #333;">
+                                    <button type="button"
+                                            onclick="jumpToInsuranceAccordion()"
+                                            style="display:flex; align-items:center; width:100%; border:none; text-align:left; background-color:#f8f9fa; padding:0.5rem 1rem; color:#333; cursor:pointer; border-radius:0.5rem; font-size:1rem; font-weight:400;">
                                         <span id="cert_status_icon" class="me-2"><i class="fas fa-check-circle" style="color: rgba(25, 135, 84, 0.5);"></i></span>介護保険情報
+                                        <small class="text-muted ms-2" style="font-size:0.78em;">↑ クリックで上の介護保険情報を表示</small>
                                     </button>
                                 </h2>
                                 <div id="certInfoCollapse" class="accordion-collapse collapse">
@@ -301,10 +416,11 @@
                         <div class="accordion mb-3" id="medicalInfoAccordion">
                             <div class="accordion-item" style="border: none; background-color: #f8f9fa; border-radius: 0.5rem;">
                                 <h2 class="accordion-header">
-                                    <button class="accordion-button collapsed" type="button"
-                                            data-bs-toggle="collapse" data-bs-target="#medicalInfoCollapse"
-                                            style="background-color: #f8f9fa; padding: 0.5rem 1rem; color: #333;">
+                                    <button type="button"
+                                            onclick="jumpToMedicalAccordion()"
+                                            style="display:flex; align-items:center; width:100%; border:none; text-align:left; background-color:#f8f9fa; padding:0.5rem 1rem; color:#333; cursor:pointer; border-radius:0.5rem; font-size:1rem; font-weight:400;">
                                         <span id="medical_status_icon" class="me-2"><i class="fas fa-check-circle" style="color: rgba(25, 135, 84, 0.5);"></i></span>医療保険情報
+                                        <small class="text-muted ms-2" style="font-size:0.78em;">↑ クリックで上の医療保険情報を表示</small>
                                     </button>
                                 </h2>
                                 <div id="medicalInfoCollapse" class="accordion-collapse collapse">
@@ -812,8 +928,8 @@
 <div id="drawerOverlay" class="drawer-overlay" onclick="closeMasterDrawer()"></div>
 
 <!-- 認定情報編集モーダル -->
-<div class="modal fade" id="certInfoModal" tabindex="-1" aria-labelledby="certInfoModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
+<div class="modal fade" id="certInfoModal" tabindex="-1" aria-labelledby="certInfoModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 700px;">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="certInfoModalLabel">
@@ -823,6 +939,11 @@
             </div>
             <div class="modal-body">
                 <div id="certInfoModalError" class="alert alert-danger d-none mb-3"></div>
+                <div class="card mb-0">
+                    <div class="card-header d-flex align-items-center">
+                        <h5 class="section-title"><i class="fas fa-id-card me-2"></i>介護保険情報</h5>
+                    </div>
+                    <div class="card-body">
                 <div class="row g-3">
                     <!-- 1行目: 被保険者番号 / 要介護度 / 認定日 -->
                     <div class="col-md-4">
@@ -909,6 +1030,8 @@
                         </select>
                     </div>
                 </div>
+                    </div>
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
@@ -921,8 +1044,8 @@
 </div>
 
 <!-- 医療保険情報編集モーダル -->
-<div class="modal fade" id="medicalInfoModal" tabindex="-1" aria-labelledby="medicalInfoModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
+<div class="modal fade" id="medicalInfoModal" tabindex="-1" aria-labelledby="medicalInfoModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 700px;">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="medicalInfoModalLabel">
@@ -932,62 +1055,76 @@
             </div>
             <div class="modal-body">
                 <div id="medicalInfoModalError" class="alert alert-danger d-none mb-3"></div>
-                <div class="row g-3">
-                    <!-- 医療保険種別 -->
-                    <div class="col-md-6">
-                        <label class="form-label">医療保険種別</label>
-                        <select id="medical_modal_type" class="form-select" onchange="toggleMedicalModalSymbolBranch(true)">
-                            <option value="">----------</option>
-                            <option value="national_health">国民健康保険</option>
-                            <option value="latter_stage_elderly">後期高齢者医療</option>
-                            <option value="health_insurance_association">健康保険（協会けんぽ）</option>
-                            <option value="health_insurance_union">健康保険（組合）</option>
-                            <option value="mutual_aid">共済組合</option>
-                            <option value="seamen">船員保険</option>
-                            <option value="other">その他</option>
-                        </select>
+                <div class="card mb-0">
+                    <div class="card-header d-flex align-items-center">
+                        <h5 class="section-title"><i class="fas fa-notes-medical me-2"></i>医療保険関係</h5>
                     </div>
-                    <!-- 被保険者番号 記号・番号・枝番 -->
-                    <div class="col-12">
-                        <label class="form-label">被保険者番号</label>
-                        <div class="d-flex align-items-center gap-2 flex-wrap">
-                            <span class="text-nowrap" id="medical_modal_symbol_label">記号</span>
-                            <div style="width:90px;" id="medical_modal_symbol_wrapper">
-                                <input type="text" id="medical_modal_symbol" class="form-control">
-                            </div>
-                            <span class="text-nowrap">番号</span>
-                            <div style="width:150px;">
-                                <input type="text" id="medical_modal_number" class="form-control">
-                            </div>
-                            <span class="text-nowrap" id="medical_modal_branch_label">枝番</span>
-                            <div style="width:65px;" id="medical_modal_branch_wrapper">
-                                <input type="text" id="medical_modal_branch" class="form-control">
+                    <div class="card-body">
+                        <div class="row g-3 mb-3">
+                            <!-- 医療保険種別 -->
+                            <div class="col-md-6">
+                                <label class="form-label">医療保険種別</label>
+                                <select id="medical_modal_type" class="form-select" onchange="toggleMedicalModalSymbolBranch(true)">
+                                    <option value="">----------</option>
+                                    <option value="national_health">国民健康保険</option>
+                                    <option value="latter_stage_elderly">後期高齢者医療</option>
+                                    <option value="health_insurance_association">健康保険（協会けんぽ）</option>
+                                    <option value="health_insurance_union">健康保険（組合）</option>
+                                    <option value="mutual_aid">共済組合</option>
+                                    <option value="seamen">船員保険</option>
+                                    <option value="other">その他</option>
+                                </select>
                             </div>
                         </div>
-                    </div>
-                    <!-- 負担割合 -->
-                    <div class="col-12">
-                        <label class="form-label">負担割合</label>
-                        <select id="medical_modal_burden" class="form-select" style="max-width:180px;">
-                            <option value="">----------</option>
-                            <option value="1割負担">1割負担</option>
-                            <option value="2割負担">2割負担</option>
-                            <option value="3割負担">3割負担</option>
-                        </select>
-                    </div>
-                    <!-- 保険者名称・保険者番号（同じ行） -->
-                    <div class="col-md-8">
-                        <label class="form-label">保険者名称・交付者</label>
-                        <select id="medical_modal_insurer_preset" class="form-select mb-2" style="display:none;">
-                            <option value="">----------</option>
-                        </select>
-                        <div id="medical_modal_insurer_manual_wrapper">
-                            <input type="text" id="medical_modal_insurer_name" class="form-control">
+                        <!-- 被保険者番号 記号・番号・枝番 -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-12">
+                                <label class="form-label">被保険者番号</label>
+                                <div class="d-flex align-items-center gap-2 flex-wrap">
+                                    <span class="text-nowrap" id="medical_modal_symbol_label">記号</span>
+                                    <div style="width:120px;" id="medical_modal_symbol_wrapper">
+                                        <input type="text" id="medical_modal_symbol" class="form-control">
+                                    </div>
+                                    <span class="text-nowrap">番号</span>
+                                    <div style="width:200px;">
+                                        <input type="text" id="medical_modal_number" class="form-control">
+                                    </div>
+                                    <span class="text-nowrap" id="medical_modal_branch_label">枝番</span>
+                                    <div style="width:80px;" id="medical_modal_branch_wrapper">
+                                        <input type="text" id="medical_modal_branch" class="form-control">
+                                    </div>
+                                </div>
+                                <small class="text-muted mt-1 d-block">医療保険証に記載されている被保険者番号です（介護保険の被保険者番号とは別の番号）</small>
+                            </div>
                         </div>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">保険者番号</label>
-                        <input type="text" id="medical_modal_insurer_number" class="form-control">
+                        <!-- 負担割合 -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label">負担割合</label>
+                                <select id="medical_modal_burden" class="form-select">
+                                    <option value="">----------</option>
+                                    <option value="1割負担">1割負担</option>
+                                    <option value="2割負担">2割負担</option>
+                                    <option value="3割負担">3割負担</option>
+                                </select>
+                            </div>
+                        </div>
+                        <!-- 保険者名称・保険者番号 -->
+                        <div class="row g-3">
+                            <div class="col-md-8">
+                                <label class="form-label">保険者名称・交付者</label>
+                                <select id="medical_modal_insurer_preset" class="form-select mb-2" style="display:none;">
+                                    <option value="">----------</option>
+                                </select>
+                                <div id="medical_modal_insurer_manual_wrapper">
+                                    <input type="text" id="medical_modal_insurer_name" class="form-control">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">保険者番号</label>
+                                <input type="text" id="medical_modal_insurer_number" class="form-control">
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1005,6 +1142,7 @@
 
 {% block extra_js %}
 <script>
+
 let currentDrawerType = null;
 
 function goBack() {
@@ -1127,6 +1265,28 @@ function openRenewalOfficeMasterModal() {
 // ========================================
 // 認定情報 ステータスアイコン・モーダル
 // ========================================
+
+function jumpToMedicalAccordion() {
+    const collapseEl = document.getElementById('medicalInsuranceCollapse');
+    const targetEl   = document.getElementById('medicalInsuranceAccordion');
+    if (!collapseEl || !targetEl) return;
+    bootstrap.Collapse.getOrCreateInstance(collapseEl, { toggle: false }).show();
+    setTimeout(() => {
+        targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 50);
+}
+
+function jumpToInsuranceAccordion() {
+    const collapseEl = document.getElementById('insuranceInfoCollapse');
+    const targetEl   = document.getElementById('insuranceInfoAccordion');
+    if (!collapseEl || !targetEl) return;
+    // 展開
+    bootstrap.Collapse.getOrCreateInstance(collapseEl, { toggle: false }).show();
+    // スクロール（展開アニメーション後）
+    setTimeout(() => {
+        targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 50);
+}
 
 function updateCertStatusIcon() {
     const icon      = document.getElementById('cert_status_icon');
@@ -1550,7 +1710,12 @@ function toggleMedicalModalSymbolBranch(clearValues) {
         const el = document.getElementById(id);
         if (el) el.style.display = isLatter ? 'none' : '';
     });
-    if (isLatter) {
+    if (clearValues) {
+        document.getElementById('medical_modal_symbol').value = '';
+        document.getElementById('medical_modal_number').value = '';
+        document.getElementById('medical_modal_branch').value = '';
+        document.getElementById('medical_modal_burden').value = '';
+    } else if (isLatter) {
         document.getElementById('medical_modal_symbol').value = '';
         document.getElementById('medical_modal_branch').value = '';
     }
@@ -1964,11 +2129,19 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(r => r.json())
             .then(data => {
                 if (data.success) {
-                    // 表示フィールド更新
+                    // 表示フィールド更新（内側アコーディオン）
                     document.getElementById('cert_display_insurance').value   = data.insurance_number;
                     document.getElementById('cert_display_care_level').value  = data.care_level_display;
                     document.getElementById('cert_display_start').value       = data.cert_start_wareki;
                     document.getElementById('cert_display_end').value         = data.cert_end_wareki;
+                    // 表示フィールド更新（外側アコーディオン）
+                    const setOuter = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+                    setOuter('ins_disp_insurance',  data.insurance_number);
+                    setOuter('ins_disp_care_level', data.care_level_display);
+                    setOuter('ins_disp_cert_date',  data.cert_date_wareki);
+                    setOuter('ins_disp_cert_start', data.cert_start_wareki);
+                    setOuter('ins_disp_cert_end',   data.cert_end_wareki);
+                    setOuter('ins_disp_care_burden', data.care_burden);
                     // 隠しフィールド更新（Excel出力用）
                     document.getElementById('cert_hidden_insurance_number').value = data.insurance_number;
                     document.getElementById('cert_hidden_care_level').value       = data.care_level_value;
@@ -2028,6 +2201,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     setVal('medical_display_number',         data.medical_insurance_number);
                     setVal('medical_display_insurer_name',   data.medical_insurer_name);
                     setVal('medical_display_insurer_number', data.medical_insurer_number);
+                    // 外側アコーディオンも更新
+                    setVal('med_disp_type',           data.medical_insurance_type_display);
+                    setVal('med_disp_symbol',         data.medical_insurance_symbol);
+                    setVal('med_disp_number',         data.medical_insurance_number);
+                    setVal('med_disp_branch',         data.medical_insurance_branch);
+                    setVal('med_disp_burden',         data.medical_burden);
+                    setVal('med_disp_insurer_name',   data.medical_insurer_name);
+                    setVal('med_disp_insurer_number', data.medical_insurer_number);
                     // hidden fields
                     setVal('medical_hidden_type',           data.medical_insurance_type);
                     setVal('medical_hidden_symbol',         data.medical_insurance_symbol);
