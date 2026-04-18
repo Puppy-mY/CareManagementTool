@@ -534,6 +534,7 @@ class DocumentCreationHistory(models.Model):
         ('kyotaku_preventive_service_plan_request', '介護予防サービス計画作成依頼書'),
         ('ltc_renewal', '更新認定申請書'),
         ('ltc_change', '区分変更申請書'),
+        ('careplan_info_request', '介護サービス計画作成に係る資料提供申請書'),
         ('care_plan', 'ケアプラン'),
         ('assessment', 'アセスメント'),
         ('other', 'その他'),

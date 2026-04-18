@@ -30,6 +30,9 @@ urlpatterns = [
     # カラー参照
     path('color-reference/', views.color_reference, name='color_reference'),
 
+    # 書類ファイル名管理
+    path('document-file-management/', views.document_file_management, name='document_file_management'),
+
     # ユーザー管理
     path('users/', views.user_list, name='user_list'),
     path('users/create/', views.user_create, name='user_create'),
@@ -80,6 +83,7 @@ urlpatterns = [
     path('<str:pk>/schedule/', views.schedule_management, name='schedule_management'),
     path('<str:pk>/dementia/', views.update_dementia_status, name='update_dementia_status'),
     path('<int:pk>/update-master/', api_views.update_client_master, name='update_client_master'),
+    path('<int:pk>/update-insurance/', api_views.update_client_insurance, name='update_client_insurance'),
     path('<str:client_id>/limits/create/', views.limit_calculation_create, name='limit_calculation_create'),
     path('<str:client_id>/documents/create/<str:document_type>/', views.document_create, name='document_create'),
 ]

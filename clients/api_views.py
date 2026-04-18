@@ -24,12 +24,80 @@ def update_client_master(request, pk):
         client.furigana = data.get('furigana', client.furigana)
         client.birth_date = data.get('birth_date', client.birth_date)
         client.address = data.get('address', client.address)
-        client.insurance_number = data.get('insurance_number', client.insurance_number)
+        if 'postal_code' in data:
+            client.postal_code = data['postal_code']
+        if 'gender' in data:
+            g = data['gender']
+            client.gender = g if g in ('male', 'female') else ('male' if g == '男' else ('female' if g == '女' else g))
+        if 'phone' in data:
+            client.phone = data['phone']
         client.save()
 
         return JsonResponse({'success': True, 'message': '利用者マスタデータを更新しました。'})
     except Exception as e:
         logger.error(f'Error updating client master: {e}')
+        return JsonResponse({'success': False, 'error': str(e)})
+
+
+@login_required
+def update_client_insurance(request, pk):
+    """利用者介護保険情報更新API"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'POSTメソッドのみ対応しています。'})
+
+    try:
+        from datetime import date as date_cls
+        client = get_object_or_404(Client, pk=pk)
+        data = json.loads(request.body)
+
+        client.insurance_number = data.get('insurance_number', client.insurance_number)
+        if 'care_level' in data:
+            client.care_level = data['care_level']
+        if 'care_burden' in data:
+            client.care_burden = data['care_burden']
+
+        def parse_date(val):
+            if not val:
+                return None
+            try:
+                from datetime import datetime
+                return datetime.strptime(val, '%Y-%m-%d').date()
+            except Exception:
+                return None
+
+        if 'certification_date' in data:
+            client.certification_date = parse_date(data['certification_date'])
+        if 'certification_period_start' in data:
+            client.certification_period_start = parse_date(data['certification_period_start'])
+        if 'certification_period_end' in data:
+            client.certification_period_end = parse_date(data['certification_period_end'])
+
+        client.save()
+
+        def to_wareki(d):
+            if not d:
+                return '', ''
+            iso = d.strftime('%Y-%m-%d')
+            y, m, day = d.year, d.month, d.day
+            for era_name, era_start in [('令和', 2019), ('平成', 1989), ('昭和', 1926), ('大正', 1912), ('明治', 1868)]:
+                if y >= era_start:
+                    return era_name + str(y - era_start + 1) + '年' + str(m) + '月' + str(day) + '日', iso
+            return iso, iso
+
+        cert_date_disp, _ = to_wareki(client.certification_date)
+        cert_start_disp, _ = to_wareki(client.certification_period_start)
+        cert_end_disp, _ = to_wareki(client.certification_period_end)
+
+        return JsonResponse({
+            'success': True,
+            'message': '介護保険情報を更新しました。',
+            'care_level_display': client.get_care_level_display() if client.care_level else '',
+            'certification_date_display': cert_date_disp,
+            'certification_period_start_display': cert_start_disp,
+            'certification_period_end_display': cert_end_disp,
+        })
+    except Exception as e:
+        logger.error(f'Error updating client insurance: {e}')
         return JsonResponse({'success': False, 'error': str(e)})
 
 

@@ -31,7 +31,7 @@
                 <input type="hidden" name="action" id="actionField" value="">
 
                 <!-- 利用者基本情報（アコーディオン） -->
-                <div class="accordion mb-4" id="basicInfoAccordion">
+                <div class="accordion mb-3" id="basicInfoAccordion">
                     <div class="accordion-item">
                         <h2 class="accordion-header" id="basicInfoHeading">
                             <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#basicInfoCollapse" aria-expanded="false" aria-controls="basicInfoCollapse">
@@ -40,47 +40,42 @@
                                 <small class="text-muted ms-2">※利用者データから自動入力</small>
                             </button>
                         </h2>
-                        <div id="basicInfoCollapse" class="accordion-collapse collapse" aria-labelledby="basicInfoHeading" data-bs-parent="#basicInfoAccordion">
+                        <div id="basicInfoCollapse" class="accordion-collapse collapse" aria-labelledby="basicInfoHeading">
                             <div class="accordion-body">
-                                <!-- 氏名・フリガナ・生年月日（横並び） -->
-                                <div class="row g-3 mb-3">
-                                    <div class="col-md-4">
+                                <div class="row g-3 mb-2">
+                                    <div class="col-md-3">
                                         <label class="form-label">氏名 <span class="text-danger">*</span></label>
                                         <input type="text" name="client_name" class="form-control" value="{{ initial_data.client_name|default:client.name }}" required readonly>
                                     </div>
                                     <div class="col-md-4">
-                                        <label class="form-label">ふりがな <span class="text-danger">*</span></label>
-                                        <input type="text" name="client_furigana" class="form-control" value="{{ initial_data.client_furigana|default:client.furigana }}" required readonly placeholder="ひらがなで入力">
+                                        <label class="form-label">フリガナ <span class="text-danger">*</span></label>
+                                        <input type="text" name="client_furigana" class="form-control" value="{{ initial_data.client_furigana|default:client.furigana }}" required readonly>
                                     </div>
-                                    <div class="col-md-4">
+                                    <div class="col-md-3">
                                         <label class="form-label">生年月日 <span class="text-danger">*</span></label>
                                         <input type="date" name="client_birth_date" class="form-control" value="{% if initial_data.client_birth_date %}{{ initial_data.client_birth_date }}{% else %}{{ client.birth_date|date:'Y-m-d' }}{% endif %}" required readonly>
                                     </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label">性別</label>
+                                        <input type="text" name="client_gender" class="form-control" value="{% if initial_data.client_gender %}{{ initial_data.client_gender }}{% elif client.gender == 'male' %}男{% elif client.gender == 'female' %}女{% endif %}" readonly>
+                                    </div>
                                 </div>
-
-                                <!-- 住所（新規追加） -->
-                                <div class="row g-3 mb-3">
-                                    <div class="col-12">
+                                <div class="row g-3 mb-2">
+                                    <div class="col-md-2">
+                                        <label class="form-label">郵便番号</label>
+                                        <input type="text" name="client_postal_code" class="form-control" value="{{ initial_data.client_postal_code|default:client.postal_code }}" readonly>
+                                    </div>
+                                    <div class="col-md-6">
                                         <label class="form-label">住所 <span class="text-danger">*</span></label>
-                                        <input type="text" name="client_address" class="form-control" value="{{ initial_data.client_address|default:client.address }}" required readonly placeholder="住所を入力してください">
+                                        <input type="text" name="client_address" class="form-control" value="{{ initial_data.client_address|default:client.address }}" required readonly>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">電話番号</label>
+                                        <input type="text" name="client_phone" class="form-control" value="{{ initial_data.client_phone|default:client.phone }}" readonly>
                                     </div>
                                 </div>
-                                <!-- 被保険者番号・担当ケアマネ（横並び） -->
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <label class="form-label">介護保険被保険者番号 <span class="text-danger">*</span></label>
-                                        <input type="text" name="client_insurance_number" class="form-control" value="{{ initial_data.client_insurance_number|default:client.insurance_number }}" required readonly>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label">ケアマネ担当者名 <span class="text-danger">*</span></label>
-                                        <input type="text" name="care_manager_name" class="form-control" placeholder="担当ケアマネジャー名を入力" required value="{% if user.is_authenticated %}{{ user.profile.get_full_name }}{% endif %}">
-                                        <small class="text-muted">※ログインユーザーから自動入力・必要に応じて編集可能</small>
-                                    </div>
-                                </div>
-
-                                <!-- 編集ボタン -->
-                                <div class="mt-3 text-end">
-                                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openClientMasterDrawer();">
+                                <div class="text-end mt-2">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openClientMasterDrawer()">
                                         <i class="fas fa-edit me-1"></i>利用者マスタデータを編集
                                     </button>
                                 </div>
@@ -88,6 +83,84 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- 介護保険情報（アコーディオン） -->
+                {% block insurance_section %}
+                <div class="accordion mb-4" id="insuranceInfoAccordion">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="insuranceInfoHeading">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#insuranceInfoCollapse" aria-expanded="false" aria-controls="insuranceInfoCollapse">
+                                <i class="fas fa-id-card me-2"></i>
+                                <strong>介護保険情報（自動反映）</strong>
+                                <small class="text-muted ms-2">※利用者データから自動入力</small>
+                            </button>
+                        </h2>
+                        <div id="insuranceInfoCollapse" class="accordion-collapse collapse" aria-labelledby="insuranceInfoHeading">
+                            <div class="accordion-body">
+                                <div class="row g-3 mb-2">
+                                    <div class="col-md-4">
+                                        <label class="form-label">被保険者番号 <span class="text-danger">*</span></label>
+                                        <input type="text" name="client_insurance_number" class="form-control" value="{{ initial_data.client_insurance_number|default:client.insurance_number }}" required readonly>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">要介護度</label>
+                                        <input type="text" id="disp_care_level" class="form-control"
+                                            value="{{ initial_data.client_care_level_display|default:client.get_care_level_display }}"
+                                            data-value="{{ initial_data.client_care_level|default:client.care_level }}"
+                                            readonly>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">認定日</label>
+                                        <input type="text" id="disp_cert_date" class="form-control"
+                                            value="{{ initial_data.client_certification_date_display|default:'' }}"
+                                            data-iso="{{ initial_data.client_certification_date_iso|default:'' }}"
+                                            readonly>
+                                    </div>
+                                </div>
+                                <div class="row g-3 mb-2">
+                                    <div class="col-md-6">
+                                        <label class="form-label">認定期間（開始）</label>
+                                        <input type="text" id="disp_cert_start" class="form-control"
+                                            value="{{ initial_data.client_certification_period_start_display|default:'' }}"
+                                            data-iso="{{ initial_data.client_certification_period_start_iso|default:'' }}"
+                                            readonly>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">認定期間（終了）</label>
+                                        <input type="text" id="disp_cert_end" class="form-control"
+                                            value="{{ initial_data.client_certification_period_end_display|default:'' }}"
+                                            data-iso="{{ initial_data.client_certification_period_end_iso|default:'' }}"
+                                            readonly>
+                                    </div>
+                                </div>
+                                <div class="row g-3 mb-2">
+                                    <div class="col-md-4">
+                                        <label class="form-label">負担割合</label>
+                                        <input type="text" id="disp_care_burden" class="form-control"
+                                            value="{{ initial_data.client_care_burden|default:client.care_burden }}"
+                                            readonly>
+                                    </div>
+                                </div>
+                                <!-- 介護保険情報の hidden フィールド（フォーム送信用） -->
+                                <input type="hidden" name="client_care_level" value="{{ initial_data.client_care_level|default:client.care_level }}">
+                                <input type="hidden" name="client_care_level_display" value="{{ initial_data.client_care_level_display|default:client.get_care_level_display }}">
+                                <input type="hidden" name="client_certification_date_iso" value="{{ initial_data.client_certification_date_iso|default:'' }}">
+                                <input type="hidden" name="client_certification_date_display" value="{{ initial_data.client_certification_date_display|default:'' }}">
+                                <input type="hidden" name="client_certification_period_start_iso" value="{{ initial_data.client_certification_period_start_iso|default:'' }}">
+                                <input type="hidden" name="client_certification_period_start_display" value="{{ initial_data.client_certification_period_start_display|default:'' }}">
+                                <input type="hidden" name="client_certification_period_end_iso" value="{{ initial_data.client_certification_period_end_iso|default:'' }}">
+                                <input type="hidden" name="client_certification_period_end_display" value="{{ initial_data.client_certification_period_end_display|default:'' }}">
+                                <input type="hidden" name="client_care_burden" value="{{ initial_data.client_care_burden|default:client.care_burden }}">
+                                <div class="text-end mt-2">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openInsuranceModal()">
+                                        <i class="fas fa-edit me-1"></i>介護保険情報を編集
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endblock insurance_section %}
 
                 <!-- 手動入力項目 -->
                 <div class="card mb-4">
@@ -98,6 +171,7 @@
                     <div class="card-body">
                         {% block provider_section %}{% endblock %}
 
+                        {% block kubun_section %}
                         <!-- 届出を行う区分 -->
                         <div class="row g-3 mb-4">
                             <div class="col-12">
@@ -122,12 +196,15 @@
                             </div>
                         </div>
 
+                        {% endblock %}
+
                         <!-- 区切り線 -->
                         <div style="border-top: 1px solid #dee2e6; width: 50%; margin: 1.5rem 0;"></div>
 
                         <!-- 依頼事由（子テンプレートでオーバーライド） -->
                         {% block request_reason_section %}{% endblock %}
 
+                        {% block effective_date_section %}
                         <!-- 区切り線 -->
                         <div style="border-top: 1px solid #dee2e6; width: 50%; margin: 1.5rem 0;"></div>
 
@@ -160,6 +237,9 @@
                             </div>
                         </div>
 
+                        {% endblock %}
+
+                        {% block burden_section %}
                         <!-- 区切り線 -->
                         <div style="border-top: 1px solid #dee2e6; width: 50%; margin: 1.5rem 0;"></div>
 
@@ -192,6 +272,7 @@
                                 </div>
                             </div>
                         </div>
+                        {% endblock %}
                     </div>
                 </div>
 
@@ -209,7 +290,7 @@
                                     <i class="fas fa-file-excel me-1"></i> Excel出力
                                 </button>
                                 <button type="button" class="btn btn-outline-secondary save-btn px-5 py-2" onclick="saveDocument()" style="transition: all 0.2s ease;">
-                                    <i class="fas fa-save me-1"></i> 保存して戻る
+                                    <i class="fas fa-save me-1"></i> 保存
                                 </button>
                             </div>
                         </div>
@@ -246,7 +327,7 @@
 
 <!-- 利用者マスタ編集モーダル（form タグなし：documentForm のネスト回避） -->
 <div class="modal fade" id="clientMasterModal" tabindex="-1" aria-labelledby="clientMasterModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 700px;">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="clientMasterModalLabel">
@@ -255,32 +336,187 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <div class="row g-3">
-                    <div class="col-md-6">
+                <div class="card mb-0">
+                    <div class="card-header d-flex align-items-center">
+                        <h5 class="section-title"><i class="fas fa-id-card me-2"></i>基本情報</h5>
+                    </div>
+                    <div class="card-body">
+                <!-- 氏名・ふりがな・生年月日・性別 -->
+                <div class="row g-3 mb-3">
+                    <div class="col-md-3">
                         <label class="form-label">氏名 <span class="text-danger">*</span></label>
                         <input type="text" id="edit_client_name" class="form-control" required>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-3">
                         <label class="form-label">ふりがな <span class="text-danger">*</span></label>
                         <input type="text" id="edit_client_furigana" class="form-control" required placeholder="ひらがなで入力">
                     </div>
-                    <div class="col-md-6">
-                        <label class="form-label">生年月日 <span class="text-danger">*</span></label>
-                        <input type="date" id="edit_client_birth_date" class="form-control" required>
+                    <div class="col-md-4">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <label class="form-label mb-0">生年月日 <span class="text-danger">*</span></label>
+                            <div class="birth-era-toggle" title="和暦 / 西暦を切り替え">
+                                <button type="button" class="era-btn active" id="modal_birth_era_japanese" onclick="switchModalBirthEra('japanese')">和暦</button>
+                                <button type="button" class="era-btn" id="modal_birth_era_western" onclick="switchModalBirthEra('western')">西暦</button>
+                            </div>
+                        </div>
+                        <input type="hidden" id="edit_client_birth_date">
+                        <div id="modal_birth_japanese_div">
+                            <input type="text" id="modal_birth_wareki_text" class="form-control"
+                                placeholder="例: 昭和40年3月15日" autocomplete="off"
+                                oninput="syncModalBirthFromWareki()">
+                            <small id="modal_birth_preview" style="font-size:0.78em; display:block; margin-top:2px;"></small>
+                        </div>
+                        <div id="modal_birth_western_div" style="display:none;">
+                            <input type="date" id="modal_birth_western_input" class="form-control"
+                                oninput="document.getElementById('edit_client_birth_date').value = this.value">
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">性別</label>
+                        <select id="edit_client_gender" class="form-select">
+                            <option value="">-</option>
+                            <option value="male">男</option>
+                            <option value="female">女</option>
+                        </select>
+                    </div>
+                </div>
+                <!-- 郵便番号・住所・電話番号 -->
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">郵便番号</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-muted">〒</span>
+                            <input type="text" id="edit_client_postal_code" class="form-control" placeholder="000-0000" maxlength="8">
+                        </div>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">介護保険被保険者番号 <span class="text-danger">*</span></label>
-                        <input type="text" id="edit_client_insurance_number" class="form-control" required>
-                    </div>
-                    <div class="col-12">
                         <label class="form-label">住所 <span class="text-danger">*</span></label>
                         <input type="text" id="edit_client_address" class="form-control" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">電話番号</label>
+                        <input type="text" id="edit_client_phone" class="form-control">
+                    </div>
+                </div>
+                    </div><!-- card-body -->
+                </div><!-- card -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                <button type="button" class="btn btn-primary" onclick="saveClientMasterData()">
+                    <i class="fas fa-save me-1"></i>保存して反映
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 介護保険情報を編集モーダル -->
+<div class="modal fade" id="insuranceModal" tabindex="-1" aria-labelledby="insuranceModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 700px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="insuranceModalLabel">
+                    <i class="fas fa-id-card me-2"></i>介護保険情報を編集
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="card mb-0">
+                    <div class="card-header d-flex align-items-center">
+                        <h5 class="section-title"><i class="fas fa-id-card me-2"></i>介護保険情報</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label">被保険者番号 <span class="text-danger">*</span></label>
+                                <input type="text" id="edit_insurance_number" class="form-control" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">要介護度</label>
+                                <select id="edit_care_level" class="form-select">
+                                    <option value="">----------</option>
+                                    <option value="independent">自立</option>
+                                    <option value="support1">要支援1</option>
+                                    <option value="support2">要支援2</option>
+                                    <option value="care1">要介護1</option>
+                                    <option value="care2">要介護2</option>
+                                    <option value="care3">要介護3</option>
+                                    <option value="care4">要介護4</option>
+                                    <option value="care5">要介護5</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    <label class="form-label mb-0">認定日</label>
+                                    <div class="birth-era-toggle" title="和暦 / 西暦を切り替え">
+                                        <button type="button" class="era-btn active" id="ins_certDate_era_j" onclick="switchInsDateEra('certDate','japanese')">和暦</button>
+                                        <button type="button" class="era-btn" id="ins_certDate_era_w" onclick="switchInsDateEra('certDate','western')">西暦</button>
+                                    </div>
+                                </div>
+                                <input type="hidden" id="ins_certDate_hidden">
+                                <div id="ins_certDate_japanese_div">
+                                    <input type="text" id="ins_certDate_wareki" class="form-control" placeholder="例: 令和6年4月1日" autocomplete="off" oninput="syncInsDateFromWareki('certDate')">
+                                    <small id="ins_certDate_preview" style="font-size:0.78em;display:block;margin-top:2px;"></small>
+                                </div>
+                                <div id="ins_certDate_western_div" style="display:none;">
+                                    <input type="date" id="ins_certDate_western" class="form-control" oninput="document.getElementById('ins_certDate_hidden').value=this.value">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    <label class="form-label mb-0">認定期間（開始）</label>
+                                    <div class="birth-era-toggle" title="和暦 / 西暦を切り替え">
+                                        <button type="button" class="era-btn active" id="ins_certStart_era_j" onclick="switchInsDateEra('certStart','japanese')">和暦</button>
+                                        <button type="button" class="era-btn" id="ins_certStart_era_w" onclick="switchInsDateEra('certStart','western')">西暦</button>
+                                    </div>
+                                </div>
+                                <input type="hidden" id="ins_certStart_hidden">
+                                <div id="ins_certStart_japanese_div">
+                                    <input type="text" id="ins_certStart_wareki" class="form-control" placeholder="例: 令和6年4月1日" autocomplete="off" oninput="syncInsDateFromWareki('certStart')">
+                                    <small id="ins_certStart_preview" style="font-size:0.78em;display:block;margin-top:2px;"></small>
+                                </div>
+                                <div id="ins_certStart_western_div" style="display:none;">
+                                    <input type="date" id="ins_certStart_western" class="form-control" oninput="document.getElementById('ins_certStart_hidden').value=this.value">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    <label class="form-label mb-0">認定期間（終了）</label>
+                                    <div class="birth-era-toggle" title="和暦 / 西暦を切り替え">
+                                        <button type="button" class="era-btn active" id="ins_certEnd_era_j" onclick="switchInsDateEra('certEnd','japanese')">和暦</button>
+                                        <button type="button" class="era-btn" id="ins_certEnd_era_w" onclick="switchInsDateEra('certEnd','western')">西暦</button>
+                                    </div>
+                                </div>
+                                <input type="hidden" id="ins_certEnd_hidden">
+                                <div id="ins_certEnd_japanese_div">
+                                    <input type="text" id="ins_certEnd_wareki" class="form-control" placeholder="例: 令和8年3月31日" autocomplete="off" oninput="syncInsDateFromWareki('certEnd')">
+                                    <small id="ins_certEnd_preview" style="font-size:0.78em;display:block;margin-top:2px;"></small>
+                                </div>
+                                <div id="ins_certEnd_western_div" style="display:none;">
+                                    <input type="date" id="ins_certEnd_western" class="form-control" oninput="document.getElementById('ins_certEnd_hidden').value=this.value">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label">負担割合</label>
+                                <select id="edit_care_burden" class="form-select">
+                                    <option value="">----------</option>
+                                    <option value="1割負担">1割負担</option>
+                                    <option value="2割負担">2割負担</option>
+                                    <option value="3割負担">3割負担</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
-                <button type="button" class="btn btn-primary" onclick="saveClientMasterData()">
+                <button type="button" class="btn btn-primary" onclick="saveInsuranceData()">
                     <i class="fas fa-save me-1"></i>保存して反映
                 </button>
             </div>
@@ -320,23 +556,31 @@ function closeMasterDrawer() {
     currentDrawerType = null;
 }
 
-// 利用者マスタデータ編集ドロワーを開く（今回はモーダルに変更）
+// 利用者マスタデータ編集モーダルを開く
 function openClientMasterDrawer() {
-    const clientName = document.querySelector('input[name="client_name"]').value;
-    const clientFurigana = document.querySelector('input[name="client_furigana"]').value;
-    const clientBirthDate = document.querySelector('input[name="client_birth_date"]').value;
-    const clientAddress = document.querySelector('input[name="client_address"]').value;
-    const clientInsuranceNumber = document.querySelector('input[name="client_insurance_number"]').value;
-
-    document.getElementById('edit_client_name').value = clientName;
-    document.getElementById('edit_client_furigana').value = clientFurigana;
-    document.getElementById('edit_client_birth_date').value = clientBirthDate;
-    document.getElementById('edit_client_address').value = clientAddress;
-    document.getElementById('edit_client_insurance_number').value = clientInsuranceNumber;
+    document.getElementById('edit_client_name').value = document.querySelector('input[name="client_name"]').value;
+    document.getElementById('edit_client_furigana').value = document.querySelector('input[name="client_furigana"]').value;
+    document.getElementById('edit_client_postal_code').value = document.querySelector('input[name="client_postal_code"]')?.value || '';
+    document.getElementById('edit_client_address').value = document.querySelector('input[name="client_address"]').value;
+    document.getElementById('edit_client_phone').value = document.querySelector('input[name="client_phone"]')?.value || '';
+    const genderDisplay = document.querySelector('input[name="client_gender"]')?.value || '';
+    document.getElementById('edit_client_gender').value = genderDisplay === '男' ? 'male' : (genderDisplay === '女' ? 'female' : '');
+    initModalBirthDate(document.querySelector('input[name="client_birth_date"]').value);
 
     const modalEl = document.getElementById('clientMasterModal');
-    const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
-    modal.show();
+    (bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl)).show();
+}
+
+// 介護保険情報を編集モーダルを開く
+function openInsuranceModal() {
+    document.getElementById('edit_insurance_number').value = document.querySelector('input[name="client_insurance_number"]').value;
+    document.getElementById('edit_care_level').value = document.getElementById('disp_care_level')?.dataset.value || '';
+    document.getElementById('edit_care_burden').value = document.getElementById('disp_care_burden')?.value || '';
+    initInsDateField('certDate',  document.getElementById('disp_cert_date')?.dataset.iso || '');
+    initInsDateField('certStart', document.getElementById('disp_cert_start')?.dataset.iso || '');
+    initInsDateField('certEnd',   document.getElementById('disp_cert_end')?.dataset.iso || '');
+    const modalEl = document.getElementById('insuranceModal');
+    (bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl)).show();
 }
 
 // 事業所マスタデータ編集ドロワーを開く
@@ -388,37 +632,99 @@ function saveClientMasterData() {
         name: document.getElementById('edit_client_name').value,
         furigana: document.getElementById('edit_client_furigana').value,
         birth_date: document.getElementById('edit_client_birth_date').value,
+        postal_code: document.getElementById('edit_client_postal_code').value,
         address: document.getElementById('edit_client_address').value,
-        insurance_number: document.getElementById('edit_client_insurance_number').value
+        gender: document.getElementById('edit_client_gender').value,
+        phone: document.getElementById('edit_client_phone').value,
     };
 
-    // バリデーション
-    if (!data.name || !data.furigana || !data.birth_date || !data.address || !data.insurance_number) {
-        alert('すべての必須項目を入力してください。');
+    if (!data.name || !data.furigana || !data.birth_date || !data.address) {
+        alert('必須項目を入力してください。');
         return;
     }
 
-    // Ajax送信
     fetch(`/clients/${clientId}/update-master/`, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-        },
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value },
         body: JSON.stringify(data)
     })
-    .then(response => response.json())
+    .then(r => r.json())
     .then(result => {
         if (result.success) {
-            // 書類作成画面のreadonly項目を更新
             document.querySelector('input[name="client_name"]').value = data.name;
             document.querySelector('input[name="client_furigana"]').value = data.furigana;
             document.querySelector('input[name="client_birth_date"]').value = data.birth_date;
             document.querySelector('input[name="client_address"]').value = data.address;
-            document.querySelector('input[name="client_insurance_number"]').value = data.insurance_number;
+            const postalEl = document.querySelector('input[name="client_postal_code"]');
+            if (postalEl) postalEl.value = data.postal_code;
+            const genderEl = document.querySelector('input[name="client_gender"]');
+            if (genderEl) genderEl.value = data.gender === 'male' ? '男' : (data.gender === 'female' ? '女' : '');
+            const phoneEl = document.querySelector('input[name="client_phone"]');
+            if (phoneEl) phoneEl.value = data.phone;
 
             bootstrap.Modal.getInstance(document.getElementById('clientMasterModal')).hide();
             alert('利用者マスタデータを更新しました。');
+        } else {
+            alert('エラー: ' + (result.error || '更新に失敗しました。'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('更新中にエラーが発生しました。');
+    });
+}
+
+// 介護保険情報を保存
+function saveInsuranceData() {
+    const clientId = {{ client.id }};
+    const data = {
+        insurance_number:           document.getElementById('edit_insurance_number').value,
+        care_level:                 document.getElementById('edit_care_level').value,
+        certification_date:         document.getElementById('ins_certDate_hidden').value,
+        certification_period_start: document.getElementById('ins_certStart_hidden').value,
+        certification_period_end:   document.getElementById('ins_certEnd_hidden').value,
+        care_burden:                document.getElementById('edit_care_burden').value,
+    };
+
+    if (!data.insurance_number) {
+        alert('被保険者番号を入力してください。');
+        return;
+    }
+
+    fetch(`/clients/${clientId}/update-insurance/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value },
+        body: JSON.stringify(data)
+    })
+    .then(r => r.json())
+    .then(result => {
+        if (result.success) {
+            // readonly 表示フィールドを更新
+            document.querySelector('input[name="client_insurance_number"]').value = data.insurance_number;
+            const careLevelEl = document.getElementById('disp_care_level');
+            if (careLevelEl) { careLevelEl.dataset.value = data.care_level; careLevelEl.value = result.care_level_display || ''; }
+            const setDateDisp = (id, iso, wareki) => {
+                const el = document.getElementById(id);
+                if (el) { el.dataset.iso = iso; el.value = wareki || iso; }
+            };
+            setDateDisp('disp_cert_date',  data.certification_date,         result.certification_date_display);
+            setDateDisp('disp_cert_start', data.certification_period_start, result.certification_period_start_display);
+            setDateDisp('disp_cert_end',   data.certification_period_end,   result.certification_period_end_display);
+            const burdenDisplayEl = document.getElementById('disp_care_burden');
+            if (burdenDisplayEl) burdenDisplayEl.value = data.care_burden;
+            // hidden フィールドも更新（フォーム送信用）
+            const setHidden = (name, val) => { const el = document.querySelector(`input[type="hidden"][name="${name}"]`); if (el) el.value = val || ''; };
+            setHidden('client_care_level', data.care_level);
+            setHidden('client_care_level_display', result.care_level_display || '');
+            setHidden('client_certification_date_iso', data.certification_date);
+            setHidden('client_certification_date_display', result.certification_date_display || '');
+            setHidden('client_certification_period_start_iso', data.certification_period_start);
+            setHidden('client_certification_period_start_display', result.certification_period_start_display || '');
+            setHidden('client_certification_period_end_iso', data.certification_period_end);
+            setHidden('client_certification_period_end_display', result.certification_period_end_display || '');
+            setHidden('client_care_burden', data.care_burden);
+            bootstrap.Modal.getInstance(document.getElementById('insuranceModal')).hide();
+            alert('介護保険情報を更新しました。');
         } else {
             alert('エラー: ' + (result.error || '更新に失敗しました。'));
         }
@@ -523,36 +829,36 @@ function validateFormBase() {
         return false;
     }
 
-    if (!careManagerNameEl.value.trim()) {
+    if (careManagerNameEl && !careManagerNameEl.value.trim()) {
         alert('ケアマネ担当者名を入力してください。');
         focusAndScroll(careManagerNameEl);
         return false;
     }
 
-    if (!notificationType) {
+    if (document.querySelector('input[name="notification_type"]') && !notificationType) {
         alert('届出を行う区分を選択してください。');
         const firstNotification = document.querySelector('input[name="notification_type"]');
         focusAndScroll(firstNotification);
         return false;
     }
 
-    if (!requestReason) {
+    if (document.querySelector('input[name="request_reason"]') && !requestReason) {
         alert('依頼事由を選択してください。');
         const firstReason = document.querySelector('input[name="request_reason"]');
         focusAndScroll(firstReason);
         return false;
     }
 
-    if (requestReason.value === 'other') {
+    if (requestReason && requestReason.value === 'other') {
         const otherDetailEl = document.querySelector('input[name="other_reason_detail"]');
-        if (!otherDetailEl.value.trim()) {
+        if (otherDetailEl && !otherDetailEl.value.trim()) {
             alert('その他の事由を具体的に入力してください。');
             focusAndScroll(otherDetailEl);
             return false;
         }
     }
 
-    if (!effectiveDateEl.value.trim()) {
+    if (effectiveDateEl && !effectiveDateEl.value.trim()) {
         alert('有効開始（変更）日を入力してください。');
         const warekiDiv = document.getElementById('effectiveDate_japanese');
         const warekiInput = document.getElementById('effectiveDate_wareki_text');
@@ -952,6 +1258,221 @@ textarea[readonly]:focus {
             syncEffectiveDateFromWareki();
         }
     });
+})();
+
+// ============================================================
+// 利用者マスタ編集モーダル 生年月日 西暦 / 和暦 切り替え
+// ============================================================
+(function() {
+    var ERA_INFO = [
+        { keys: ['令和', 'R', 'r'],  start: 2019, label: '令和' },
+        { keys: ['平成', 'H', 'h'],  start: 1989, label: '平成' },
+        { keys: ['昭和', 'S', 's'],  start: 1926, label: '昭和' },
+        { keys: ['大正', 'T', 't'],  start: 1912, label: '大正' },
+        { keys: ['明治', 'M', 'm'],  start: 1868, label: '明治' },
+    ];
+
+    function parseWareki(text) {
+        if (!text) return null;
+        text = text.replace(/\s/g, '');
+        var era = null, rest = text;
+        for (var i = 0; i < ERA_INFO.length; i++) {
+            var info = ERA_INFO[i];
+            for (var k = 0; k < info.keys.length; k++) {
+                if (text.indexOf(info.keys[k]) === 0) {
+                    era = info; rest = text.slice(info.keys[k].length); break;
+                }
+            }
+            if (era) break;
+        }
+        if (!era) return null;
+        var m1 = rest.match(/^(\d{1,2})年(\d{1,2})月(\d{1,2})日?$/);
+        if (m1) return { era: era, year: parseInt(m1[1]), month: parseInt(m1[2]), day: parseInt(m1[3]) };
+        var m2 = rest.match(/^(\d{1,2})[.\-\/](\d{1,2})[.\-\/](\d{1,2})$/);
+        if (m2) return { era: era, year: parseInt(m2[1]), month: parseInt(m2[2]), day: parseInt(m2[3]) };
+        return null;
+    }
+
+    function toWarekiText(dateStr) {
+        if (!dateStr) return '';
+        var parts = dateStr.split('-');
+        if (parts.length < 3) return '';
+        var y = parseInt(parts[0]), m = parseInt(parts[1]), d = parseInt(parts[2]);
+        for (var i = 0; i < ERA_INFO.length; i++) {
+            if (y >= ERA_INFO[i].start) return ERA_INFO[i].label + (y - ERA_INFO[i].start + 1) + '年' + m + '月' + d + '日';
+        }
+        return '';
+    }
+
+    window.syncModalBirthFromWareki = function() {
+        var text = (document.getElementById('modal_birth_wareki_text') || {}).value || '';
+        var hidden = document.getElementById('edit_client_birth_date');
+        var preview = document.getElementById('modal_birth_preview');
+        if (!hidden || !preview) return;
+        var result = parseWareki(text);
+        if (result) {
+            var wy = result.era.start + result.year - 1;
+            hidden.value = wy + '-' + String(result.month).padStart(2,'0') + '-' + String(result.day).padStart(2,'0');
+            preview.textContent = '→ 西暦 ' + wy + '年' + result.month + '月' + result.day + '日';
+            preview.style.color = '#6c757d';
+        } else {
+            hidden.value = '';
+            preview.textContent = text.length > 0 ? '例: 昭和40年3月15日　または　S40.3.15' : '';
+            preview.style.color = '#aaa';
+        }
+    };
+
+    window.switchModalBirthEra = function(mode) {
+        var westernDiv  = document.getElementById('modal_birth_western_div');
+        var japaneseDiv = document.getElementById('modal_birth_japanese_div');
+        var btnW = document.getElementById('modal_birth_era_western');
+        var btnJ = document.getElementById('modal_birth_era_japanese');
+        var hidden  = document.getElementById('edit_client_birth_date');
+        var warekiInput = document.getElementById('modal_birth_wareki_text');
+        var westernInput = document.getElementById('modal_birth_western_input');
+        if (mode === 'western') {
+            if (westernInput) westernInput.value = hidden ? hidden.value : '';
+            westernDiv.style.display = '';
+            japaneseDiv.style.display = 'none';
+            if (btnW) btnW.classList.add('active');
+            if (btnJ) btnJ.classList.remove('active');
+        } else {
+            var warekiText = toWarekiText(hidden ? hidden.value : '');
+            if (warekiInput) warekiInput.value = warekiText;
+            syncModalBirthFromWareki();
+            westernDiv.style.display = 'none';
+            japaneseDiv.style.display = '';
+            if (btnJ) btnJ.classList.add('active');
+            if (btnW) btnW.classList.remove('active');
+            if (warekiInput) warekiInput.focus();
+        }
+    };
+
+    window.initModalBirthDate = function(dateStr) {
+        var hidden = document.getElementById('edit_client_birth_date');
+        var warekiInput = document.getElementById('modal_birth_wareki_text');
+        var westernDiv  = document.getElementById('modal_birth_western_div');
+        var japaneseDiv = document.getElementById('modal_birth_japanese_div');
+        var btnW = document.getElementById('modal_birth_era_western');
+        var btnJ = document.getElementById('modal_birth_era_japanese');
+        if (hidden) hidden.value = dateStr || '';
+        // 常に和暦モードで開く
+        westernDiv.style.display = 'none';
+        japaneseDiv.style.display = '';
+        if (btnJ) btnJ.classList.add('active');
+        if (btnW) btnW.classList.remove('active');
+        if (warekiInput) {
+            warekiInput.value = toWarekiText(dateStr || '');
+            syncModalBirthFromWareki();
+        }
+    };
+})();
+
+// ============================================================
+// 介護保険情報モーダル 日付 西暦 / 和暦 切り替え
+// ============================================================
+(function() {
+    var ERA_INFO = [
+        { keys: ['令和', 'R', 'r'],  start: 2019, label: '令和' },
+        { keys: ['平成', 'H', 'h'],  start: 1989, label: '平成' },
+        { keys: ['昭和', 'S', 's'],  start: 1926, label: '昭和' },
+        { keys: ['大正', 'T', 't'],  start: 1912, label: '大正' },
+        { keys: ['明治', 'M', 'm'],  start: 1868, label: '明治' },
+    ];
+
+    function parseWareki(text) {
+        if (!text) return null;
+        text = text.replace(/\s/g, '');
+        var era = null, rest = text;
+        for (var i = 0; i < ERA_INFO.length; i++) {
+            var info = ERA_INFO[i];
+            for (var k = 0; k < info.keys.length; k++) {
+                if (text.indexOf(info.keys[k]) === 0) {
+                    era = info; rest = text.slice(info.keys[k].length); break;
+                }
+            }
+            if (era) break;
+        }
+        if (!era) return null;
+        var m1 = rest.match(/^(\d{1,2})年(\d{1,2})月(\d{1,2})日?$/);
+        if (m1) return { era: era, year: parseInt(m1[1]), month: parseInt(m1[2]), day: parseInt(m1[3]) };
+        var m2 = rest.match(/^(\d{1,2})[.\-\/](\d{1,2})[.\-\/](\d{1,2})$/);
+        if (m2) return { era: era, year: parseInt(m2[1]), month: parseInt(m2[2]), day: parseInt(m2[3]) };
+        return null;
+    }
+
+    function toWarekiText(dateStr) {
+        if (!dateStr) return '';
+        var parts = dateStr.split('-');
+        if (parts.length < 3) return '';
+        var y = parseInt(parts[0]), m = parseInt(parts[1]), d = parseInt(parts[2]);
+        for (var i = 0; i < ERA_INFO.length; i++) {
+            if (y >= ERA_INFO[i].start) return ERA_INFO[i].label + (y - ERA_INFO[i].start + 1) + '年' + m + '月' + d + '日';
+        }
+        return '';
+    }
+
+    window.syncInsDateFromWareki = function(prefix) {
+        var text = (document.getElementById('ins_' + prefix + '_wareki') || {}).value || '';
+        var hidden = document.getElementById('ins_' + prefix + '_hidden');
+        var preview = document.getElementById('ins_' + prefix + '_preview');
+        if (!hidden) return;
+        var result = parseWareki(text);
+        if (result) {
+            var wy = result.era.start + result.year - 1;
+            hidden.value = wy + '-' + String(result.month).padStart(2,'0') + '-' + String(result.day).padStart(2,'0');
+            if (preview) { preview.textContent = '→ 西暦 ' + wy + '年' + result.month + '月' + result.day + '日'; preview.style.color = '#6c757d'; }
+        } else {
+            hidden.value = '';
+            if (preview) { preview.textContent = text.length > 0 ? '例: 令和6年4月1日　または　R6.4.1' : ''; preview.style.color = '#aaa'; }
+        }
+    };
+
+    window.switchInsDateEra = function(prefix, mode) {
+        var westernDiv  = document.getElementById('ins_' + prefix + '_western_div');
+        var japaneseDiv = document.getElementById('ins_' + prefix + '_japanese_div');
+        var btnW = document.getElementById('ins_' + prefix + '_era_w');
+        var btnJ = document.getElementById('ins_' + prefix + '_era_j');
+        var hidden  = document.getElementById('ins_' + prefix + '_hidden');
+        var warekiInput = document.getElementById('ins_' + prefix + '_wareki');
+        var westernInput = document.getElementById('ins_' + prefix + '_western');
+        if (!westernDiv || !japaneseDiv) return;
+        if (mode === 'western') {
+            if (westernInput) westernInput.value = hidden ? hidden.value : '';
+            westernDiv.style.display = '';
+            japaneseDiv.style.display = 'none';
+            if (btnW) btnW.classList.add('active');
+            if (btnJ) btnJ.classList.remove('active');
+        } else {
+            var warekiText = toWarekiText(hidden ? hidden.value : '');
+            if (warekiInput) warekiInput.value = warekiText;
+            window.syncInsDateFromWareki(prefix);
+            westernDiv.style.display = 'none';
+            japaneseDiv.style.display = '';
+            if (btnJ) btnJ.classList.add('active');
+            if (btnW) btnW.classList.remove('active');
+            if (warekiInput) warekiInput.focus();
+        }
+    };
+
+    window.initInsDateField = function(prefix, dateStr) {
+        var hidden = document.getElementById('ins_' + prefix + '_hidden');
+        var warekiInput = document.getElementById('ins_' + prefix + '_wareki');
+        var westernDiv  = document.getElementById('ins_' + prefix + '_western_div');
+        var japaneseDiv = document.getElementById('ins_' + prefix + '_japanese_div');
+        var btnW = document.getElementById('ins_' + prefix + '_era_w');
+        var btnJ = document.getElementById('ins_' + prefix + '_era_j');
+        if (hidden) hidden.value = dateStr || '';
+        if (!westernDiv || !japaneseDiv) return;
+        westernDiv.style.display = 'none';
+        japaneseDiv.style.display = '';
+        if (btnJ) btnJ.classList.add('active');
+        if (btnW) btnW.classList.remove('active');
+        if (warekiInput) {
+            warekiInput.value = toWarekiText(dateStr || '');
+            window.syncInsDateFromWareki(prefix);
+        }
+    };
 })();
 </script>
 {% block extra_scripts %}{% endblock %}

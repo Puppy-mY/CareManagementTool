@@ -641,11 +641,11 @@
                             <div class="d-flex gap-2">
                                 <button type="submit" name="action" value="excel"
                                         class="btn btn-outline-secondary excel-btn px-4 py-2">
-                                    <i class="fas fa-file-excel me-1"></i> 保存してExcel出力
+                                    <i class="fas fa-file-excel me-1"></i> Excel出力
                                 </button>
                                 <button type="submit" name="action" value="save"
                                         class="btn btn-outline-secondary save-btn px-4 py-2">
-                                    <i class="fas fa-save me-1"></i> 保存して戻る
+                                    <i class="fas fa-save me-1"></i> 保存
                                 </button>
                             </div>
                         </div>
@@ -653,6 +653,90 @@
                 </div>
 
             </form>
+        </div>
+    </div>
+</div>
+
+<!-- 利用者マスタ編集モーダル -->
+<div class="modal fade" id="clientMasterModal" tabindex="-1" aria-labelledby="clientMasterModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 700px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="clientMasterModalLabel">
+                    <i class="fas fa-user-edit me-2"></i>利用者マスタデータ編集
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="card mb-0">
+                    <div class="card-header d-flex align-items-center">
+                        <h5 class="section-title"><i class="fas fa-id-card me-2"></i>基本情報</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-3">
+                                <label class="form-label">氏名 <span class="text-danger">*</span></label>
+                                <input type="text" id="edit_client_name" class="form-control" required>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">ふりがな <span class="text-danger">*</span></label>
+                                <input type="text" id="edit_client_furigana" class="form-control" required placeholder="ひらがなで入力">
+                            </div>
+                            <div class="col-md-4">
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    <label class="form-label mb-0">生年月日 <span class="text-danger">*</span></label>
+                                    <div class="birth-era-toggle" title="和暦 / 西暦を切り替え">
+                                        <button type="button" class="era-btn active" id="modal_birth_era_japanese" onclick="switchModalBirthEra('japanese')">和暦</button>
+                                        <button type="button" class="era-btn" id="modal_birth_era_western" onclick="switchModalBirthEra('western')">西暦</button>
+                                    </div>
+                                </div>
+                                <input type="hidden" id="edit_client_birth_date">
+                                <div id="modal_birth_japanese_div">
+                                    <input type="text" id="modal_birth_wareki_text" class="form-control"
+                                        placeholder="例: 昭和40年3月15日" autocomplete="off"
+                                        oninput="syncModalBirthFromWareki()">
+                                    <small id="modal_birth_preview" style="font-size:0.78em; display:block; margin-top:2px;"></small>
+                                </div>
+                                <div id="modal_birth_western_div" style="display:none;">
+                                    <input type="date" id="modal_birth_western_input" class="form-control"
+                                        oninput="document.getElementById('edit_client_birth_date').value = this.value">
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">性別</label>
+                                <select id="edit_client_gender" class="form-select">
+                                    <option value="">-</option>
+                                    <option value="male">男</option>
+                                    <option value="female">女</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label class="form-label">郵便番号</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light text-muted">〒</span>
+                                    <input type="text" id="edit_client_postal_code" class="form-control" placeholder="000-0000" maxlength="8">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">住所 <span class="text-danger">*</span></label>
+                                <input type="text" id="edit_client_address" class="form-control" required>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">電話番号</label>
+                                <input type="text" id="edit_client_phone" class="form-control">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                <button type="button" class="btn btn-primary" onclick="saveClientMasterData()">
+                    <i class="fas fa-save me-1"></i>保存して反映
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -953,57 +1037,29 @@ function saveMasterData() {
 }
 
 function openClientMasterDrawer() {
-    currentDrawerType = 'client';
-    document.getElementById('drawerTitle').innerHTML = '<i class="fas fa-user-edit me-2"></i>利用者マスタデータ編集';
-    document.getElementById('drawerBody').innerHTML = `
-        <div class="mb-3">
-            <label class="form-label">被保険者番号</label>
-            <input type="text" id="edit_insurance_number" class="form-control"
-                   value="${document.querySelector('[name=insurance_number]').value}">
-        </div>
-        <div class="mb-3">
-            <label class="form-label">フリガナ</label>
-            <input type="text" id="edit_client_furigana" class="form-control"
-                   value="${document.querySelector('[name=client_furigana]').value}">
-        </div>
-        <div class="mb-3">
-            <label class="form-label">氏名</label>
-            <input type="text" id="edit_client_name" class="form-control"
-                   value="${document.querySelector('[name=client_name]').value}">
-        </div>
-        <div class="mb-3">
-            <label class="form-label">生年月日</label>
-            <input type="date" id="edit_birth_date" class="form-control"
-                   value="${document.querySelector('[name=birth_date]').value}">
-        </div>
-        <div class="mb-3">
-            <label class="form-label">郵便番号</label>
-            <input type="text" id="edit_postal_code_client" class="form-control"
-                   value="${document.querySelector('[name=postal_code]').value}">
-        </div>
-        <div class="mb-3">
-            <label class="form-label">住所</label>
-            <input type="text" id="edit_client_address" class="form-control"
-                   value="${document.querySelector('[name=client_address]').value}">
-        </div>
-        <div class="mb-3">
-            <label class="form-label">電話番号</label>
-            <input type="text" id="edit_client_phone" class="form-control"
-                   value="${document.querySelector('[name=client_phone]').value}">
-        </div>
-    `;
-    openMasterDrawer();
+    document.getElementById('edit_client_name').value = document.querySelector('[name=client_name]').value;
+    document.getElementById('edit_client_furigana').value = document.querySelector('[name=client_furigana]').value;
+    document.getElementById('edit_client_postal_code').value = document.querySelector('[name=postal_code]')?.value || '';
+    document.getElementById('edit_client_address').value = document.querySelector('[name=client_address]').value;
+    document.getElementById('edit_client_phone').value = document.querySelector('[name=client_phone]')?.value || '';
+    const genderDisplay = document.querySelector('[name=client_gender]')?.value || '';
+    document.getElementById('edit_client_gender').value = genderDisplay === '男' ? 'male' : (genderDisplay === '女' ? 'female' : '');
+    initModalBirthDate(document.querySelector('[name=birth_date]').value);
+    const modalEl = document.getElementById('clientMasterModal');
+    (bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl)).show();
 }
 
 function saveClientMasterData() {
-    document.querySelector('[name=insurance_number]').value = document.getElementById('edit_insurance_number').value;
     document.querySelector('[name=client_furigana]').value = document.getElementById('edit_client_furigana').value;
     document.querySelector('[name=client_name]').value = document.getElementById('edit_client_name').value;
-    document.querySelector('[name=birth_date]').value = document.getElementById('edit_birth_date').value;
-    document.querySelector('[name=postal_code]').value = document.getElementById('edit_postal_code_client').value;
+    document.querySelector('[name=birth_date]').value = document.getElementById('edit_client_birth_date').value;
+    document.querySelector('[name=postal_code]').value = document.getElementById('edit_client_postal_code').value;
     document.querySelector('[name=client_address]').value = document.getElementById('edit_client_address').value;
     document.querySelector('[name=client_phone]').value = document.getElementById('edit_client_phone').value;
-    closeMasterDrawer();
+    const g = document.getElementById('edit_client_gender').value;
+    const genderEl = document.querySelector('[name=client_gender]');
+    if (genderEl) genderEl.value = g === 'male' ? '男' : (g === 'female' ? '女' : '');
+    bootstrap.Modal.getInstance(document.getElementById('clientMasterModal')).hide();
 }
 
 // 申請書提出者：その他 / auto トグル
@@ -2071,6 +2127,92 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+// 利用者マスタ編集モーダル 生年月日 和暦/西暦切り替え
+(function() {
+    var ERA_INFO = [
+        { keys: ['令和','R','r'], start: 2019, label: '令和' },
+        { keys: ['平成','H','h'], start: 1989, label: '平成' },
+        { keys: ['昭和','S','s'], start: 1926, label: '昭和' },
+        { keys: ['大正','T','t'], start: 1912, label: '大正' },
+        { keys: ['明治','M','m'], start: 1868, label: '明治' },
+    ];
+    function parseWareki(text) {
+        if (!text) return null;
+        text = text.replace(/\s/g, '');
+        var era = null, rest = text;
+        for (var i = 0; i < ERA_INFO.length; i++) {
+            for (var k = 0; k < ERA_INFO[i].keys.length; k++) {
+                if (text.indexOf(ERA_INFO[i].keys[k]) === 0) { era = ERA_INFO[i]; rest = text.slice(ERA_INFO[i].keys[k].length); break; }
+            }
+            if (era) break;
+        }
+        if (!era) return null;
+        var m1 = rest.match(/^(\d{1,2})年(\d{1,2})月(\d{1,2})日?$/);
+        if (m1) return { era: era, year: parseInt(m1[1]), month: parseInt(m1[2]), day: parseInt(m1[3]) };
+        var m2 = rest.match(/^(\d{1,2})[.\-\/](\d{1,2})[.\-\/](\d{1,2})$/);
+        if (m2) return { era: era, year: parseInt(m2[1]), month: parseInt(m2[2]), day: parseInt(m2[3]) };
+        return null;
+    }
+    function toWarekiText(dateStr) {
+        if (!dateStr) return '';
+        var p = dateStr.split('-'); if (p.length < 3) return '';
+        var y = parseInt(p[0]), m = parseInt(p[1]), d = parseInt(p[2]);
+        for (var i = 0; i < ERA_INFO.length; i++) {
+            if (y >= ERA_INFO[i].start) return ERA_INFO[i].label + (y - ERA_INFO[i].start + 1) + '年' + m + '月' + d + '日';
+        }
+        return '';
+    }
+    window.syncModalBirthFromWareki = function() {
+        var text = (document.getElementById('modal_birth_wareki_text') || {}).value || '';
+        var hidden = document.getElementById('edit_client_birth_date');
+        var preview = document.getElementById('modal_birth_preview');
+        if (!hidden || !preview) return;
+        var result = parseWareki(text);
+        if (result) {
+            var wy = result.era.start + result.year - 1;
+            hidden.value = wy + '-' + String(result.month).padStart(2,'0') + '-' + String(result.day).padStart(2,'0');
+            preview.textContent = '→ 西暦 ' + wy + '年' + result.month + '月' + result.day + '日';
+            preview.style.color = '#6c757d';
+        } else {
+            hidden.value = '';
+            preview.textContent = text.length > 0 ? '例: 昭和40年3月15日　または　S40.3.15' : '';
+            preview.style.color = '#aaa';
+        }
+    };
+    window.switchModalBirthEra = function(mode) {
+        var wDiv = document.getElementById('modal_birth_western_div');
+        var jDiv = document.getElementById('modal_birth_japanese_div');
+        var btnW = document.getElementById('modal_birth_era_western');
+        var btnJ = document.getElementById('modal_birth_era_japanese');
+        var hidden = document.getElementById('edit_client_birth_date');
+        var warekiInput = document.getElementById('modal_birth_wareki_text');
+        var westernInput = document.getElementById('modal_birth_western_input');
+        if (mode === 'western') {
+            if (westernInput) westernInput.value = hidden ? hidden.value : '';
+            wDiv.style.display = ''; jDiv.style.display = 'none';
+            if (btnW) btnW.classList.add('active'); if (btnJ) btnJ.classList.remove('active');
+        } else {
+            if (warekiInput) warekiInput.value = toWarekiText(hidden ? hidden.value : '');
+            syncModalBirthFromWareki();
+            wDiv.style.display = 'none'; jDiv.style.display = '';
+            if (btnJ) btnJ.classList.add('active'); if (btnW) btnW.classList.remove('active');
+            if (warekiInput) warekiInput.focus();
+        }
+    };
+    window.initModalBirthDate = function(dateStr) {
+        var hidden = document.getElementById('edit_client_birth_date');
+        var warekiInput = document.getElementById('modal_birth_wareki_text');
+        var wDiv = document.getElementById('modal_birth_western_div');
+        var jDiv = document.getElementById('modal_birth_japanese_div');
+        var btnW = document.getElementById('modal_birth_era_western');
+        var btnJ = document.getElementById('modal_birth_era_japanese');
+        if (hidden) hidden.value = dateStr || '';
+        if (wDiv) wDiv.style.display = 'none'; if (jDiv) jDiv.style.display = '';
+        if (btnJ) btnJ.classList.add('active'); if (btnW) btnW.classList.remove('active');
+        if (warekiInput) { warekiInput.value = toWarekiText(dateStr || ''); syncModalBirthFromWareki(); }
+    };
+})();
 </script>
 
 <style>

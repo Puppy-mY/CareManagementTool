@@ -815,6 +815,9 @@
                         </span>
                         <div class="d-flex align-items-center gap-2">
                             {% if user.is_staff or user.is_superuser %}
+                            <a href="{% url 'document_file_management' %}" style="font-size: 0.85rem; color: rgba(255,255,255,0.55); text-decoration: none;">
+                                <i class="fas fa-folder-open fa-fw"></i> 書類ファイル名管理
+                            </a>
                             <a href="{% url 'color_theme_settings' %}" style="font-size: 0.85rem; color: rgba(255,255,255,0.55); text-decoration: none;">
                                 <i class="fas fa-palette fa-fw"></i> カラー設定
                             </a>

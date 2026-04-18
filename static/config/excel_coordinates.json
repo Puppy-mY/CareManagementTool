@@ -111,7 +111,6 @@
         "staff_job_title": "C19",
         "client_address": "C20",
         "client_birth_date": "C21",
-        "client_insurance_number": "F21",
-        "client_name": "D23"
+        "client_insurance_number": "F21"
     }
 }

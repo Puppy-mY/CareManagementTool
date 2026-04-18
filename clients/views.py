@@ -724,7 +724,7 @@ def document_create(request, client_id, document_type):
     document_types = {
         'kyotaku_service_plan_request': '居宅サービス計画作成依頼（変更）届出書',
         'kyotaku_preventive_service_plan_request': '介護予防サービス計画作成・介護予防ケアマネジメント依頼（変更）届出書',
-        'careplan_info_request': '介護保険サービス計画作成等に係る情報提供依頼書',
+        'careplan_info_request': '介護サービス計画作成に係る資料提供申請書',
     }
 
     if document_type not in document_types:
@@ -822,14 +822,59 @@ def document_create(request, client_id, document_type):
         except DocumentCreationHistory.DoesNotExist:
             messages.warning(request, '指定された履歴データが見つかりません。')
 
+    # initial_dataがある場合でも介護保険情報の表示用フィールドを最新クライアントデータで補完
+    # （古い履歴データには _display / _iso フィールドがない場合がある）
+    if initial_data and not initial_data.get('client_care_level_display'):
+        initial_data['client_care_level'] = client.care_level or ''
+        initial_data['client_care_level_display'] = client.get_care_level_display() if client.care_level else ''
+        initial_data['client_care_burden'] = client.care_burden or ''
+        # 日付変換は _to_wareki 定義後に行うため後で補完
+
     # initial_dataがない場合のデフォルト値を設定
+    def _to_wareki(date_obj):
+        if not date_obj:
+            return '', ''
+        iso = date_obj.strftime('%Y-%m-%d')
+        y, m, d = date_obj.year, date_obj.month, date_obj.day
+        for era_name, era_start in [('令和', 2019), ('平成', 1989), ('昭和', 1926), ('大正', 1912), ('明治', 1868)]:
+            if y >= era_start:
+                return era_name + str(y - era_start + 1) + '年' + str(m) + '月' + str(d) + '日', iso
+        return iso, iso
+
+    # 履歴データで日付 _display / _iso が欠けている場合の補完
+    if initial_data and not initial_data.get('client_certification_date_iso'):
+        cert_date_disp, cert_date_iso = _to_wareki(client.certification_date)
+        cert_start_disp, cert_start_iso = _to_wareki(client.certification_period_start)
+        cert_end_disp, cert_end_iso = _to_wareki(client.certification_period_end)
+        initial_data['client_certification_date_display'] = cert_date_disp
+        initial_data['client_certification_date_iso'] = cert_date_iso
+        initial_data['client_certification_period_start_display'] = cert_start_disp
+        initial_data['client_certification_period_start_iso'] = cert_start_iso
+        initial_data['client_certification_period_end_display'] = cert_end_disp
+        initial_data['client_certification_period_end_iso'] = cert_end_iso
+
     if not initial_data:
+        cert_date_disp, cert_date_iso = _to_wareki(client.certification_date)
+        cert_start_disp, cert_start_iso = _to_wareki(client.certification_period_start)
+        cert_end_disp, cert_end_iso = _to_wareki(client.certification_period_end)
         initial_data = {
             'client_name': client.name or '',
             'client_furigana': client.furigana or '',
             'client_birth_date': client.birth_date.strftime('%Y-%m-%d') if client.birth_date else '',
+            'client_postal_code': client.postal_code or '',
             'client_address': client.address or '',
+            'client_phone': client.phone or '',
+            'client_gender': '男' if client.gender == 'male' else ('女' if client.gender == 'female' else ''),
             'client_insurance_number': client.insurance_number or '',
+            'client_care_level': client.care_level or '',
+            'client_care_level_display': client.get_care_level_display() if client.care_level else '',
+            'client_certification_date_display': cert_date_disp,
+            'client_certification_date_iso': cert_date_iso,
+            'client_certification_period_start_display': cert_start_disp,
+            'client_certification_period_start_iso': cert_start_iso,
+            'client_certification_period_end_display': cert_end_disp,
+            'client_certification_period_end_iso': cert_end_iso,
+            'client_care_burden': client.care_burden or '',
         }
 
     # 事業所情報を initial_data に設定
@@ -840,8 +885,9 @@ def document_create(request, client_id, document_type):
         if not office:
             office = HomeCareSupportOffice.objects.filter(is_active=True).order_by('name').first()
         if office:
-            # office_id は常にセット（モーダルのAPI呼び出しに必要）
+            # 常にセット（表示名・モーダルAPI呼び出しに必要）
             initial_data['kyotaku_office_id'] = office.pk
+            initial_data['kyotaku_office_name'] = office.name or ''
             initial_data['kyotaku_office_furigana'] = office.furigana or ''
             initial_data['kyotaku_office_fax'] = office.fax or ''
             initial_data['kyotaku_office_manager'] = office.manager_name or ''
@@ -851,19 +897,32 @@ def document_create(request, client_id, document_type):
                 initial_data['kyotaku_postal_code'] = office.postal_code or ''
                 initial_data['kyotaku_address'] = office.address or ''
                 initial_data['kyotaku_phone'] = office.phone or ''
-                initial_data['kyotaku_office_name'] = office.name or ''
 
     if request.method == 'POST':
         # フォームデータの取得
         form_data = {
             # 基本情報
+            'application_date': request.POST.get('application_date', ''),
             'kubun': request.POST.get('kubun'),
             'client_name': request.POST.get('client_name'),
             'client_insurance_number': request.POST.get('client_insurance_number'),
             'client_furigana': request.POST.get('client_furigana'),
             'personal_number': request.POST.get('personal_number'),
             'client_birth_date': request.POST.get('client_birth_date'),
+            'client_postal_code': request.POST.get('client_postal_code'),
             'client_address': request.POST.get('client_address'),
+            'client_phone': request.POST.get('client_phone'),
+            'client_gender': request.POST.get('client_gender'),
+            # 介護保険情報
+            'client_care_level': request.POST.get('client_care_level', ''),
+            'client_care_level_display': request.POST.get('client_care_level_display', ''),
+            'client_certification_date_display': request.POST.get('client_certification_date_display', ''),
+            'client_certification_date_iso': request.POST.get('client_certification_date_iso', ''),
+            'client_certification_period_start_display': request.POST.get('client_certification_period_start_display', ''),
+            'client_certification_period_start_iso': request.POST.get('client_certification_period_start_iso', ''),
+            'client_certification_period_end_display': request.POST.get('client_certification_period_end_display', ''),
+            'client_certification_period_end_iso': request.POST.get('client_certification_period_end_iso', ''),
+            'client_care_burden': request.POST.get('client_care_burden', ''),
 
             # 介護予防支援事業者（介護予防版のみ）
             'provider_category': request.POST.get('provider_category'),
@@ -899,6 +958,7 @@ def document_create(request, client_id, document_type):
             'kyotaku_staff_name': request.POST.get('kyotaku_staff_name'),
 
             # 情報提供依頼書（申請者・担当者情報）
+            'office_name_type': request.POST.get('office_name_type', 'anoutsu'),
             'staff_name': request.POST.get('staff_name'),
             'staff_job_title': request.POST.get('staff_job_title'),
             'manager_name': request.POST.get('manager_name'),
@@ -1050,6 +1110,8 @@ def document_create(request, client_id, document_type):
     # ドキュメントタイプに応じてテンプレートを選択
     if document_type == 'kyotaku_preventive_service_plan_request':
         template_name = 'clients/document_create_preventive.html'
+    elif document_type == 'careplan_info_request':
+        template_name = 'clients/document_create_careplan_info_request.html'
     else:
         template_name = 'clients/document_create_kyotaku.html'
 
@@ -1167,8 +1229,8 @@ def generate_document_excel(request, client, document_type, document_name, form_
                 era = "明治"
 
             if wareki_year == 1:
-                return f"{era}元年{month:02d}月{day:02d}日"
-            return f"{era}{wareki_year:02d}年{month:02d}月{day:02d}日"
+                return f"{era}元年{month}月{day}日"
+            return f"{era}{wareki_year}年{month}月{day}日"
 
         # 基本情報を書き込み
         safe_write_cell(coords.get('client_name'), client.name)
@@ -1246,13 +1308,26 @@ def generate_document_excel(request, client, document_type, document_name, form_
             safe_write_cell(coords.get('burden_agree_simultaneous'), '☑')
 
         elif document_type == 'careplan_info_request':
-            # 介護保険サービス計画作成等に係る情報提供依頼書専用ロジック
-            from datetime import datetime
-            today_wareki = to_wareki(datetime.now().date())
-            safe_write_cell(coords.get('request_date'), today_wareki)
+            # 介護サービス計画作成に係る資料提供申請書専用ロジック
+            app_date_iso = form_data.get('application_date', '')
+            if app_date_iso:
+                from datetime import date as _date
+                try:
+                    y, m, d = app_date_iso.split('-')
+                    app_date_wareki = to_wareki(_date(int(y), int(m), int(d)))
+                except Exception:
+                    app_date_wareki = app_date_iso
+            else:
+                from datetime import datetime
+                app_date_wareki = to_wareki(datetime.now().date())
+            safe_write_cell(coords.get('request_date'), app_date_wareki)
 
             # 申請者情報
-            safe_write_cell(coords.get('office_name'), form_data.get('office_name', ''))
+            if form_data.get('office_name_type', 'anoutsu') == 'anoutsu':
+                office_name_val = '居宅介護支援事業所　安濃津ろまん'
+            else:
+                office_name_val = form_data.get('office_name', '')
+            safe_write_cell(coords.get('office_name'), office_name_val)
             safe_write_cell(coords.get('manager_name'), form_data.get('manager_name', ''))
             safe_write_cell(coords.get('office_phone'), form_data.get('office_phone', ''))
 
@@ -1270,7 +1345,12 @@ def generate_document_excel(request, client, document_type, document_name, form_
             safe_write_cell(coords.get('client_address'), form_data.get('client_address', client.address))
             if client.birth_date:
                 safe_write_cell(coords.get('client_birth_date'), to_wareki(client.birth_date))
-            safe_write_cell(coords.get('client_insurance_number'), form_data.get('client_insurance_number', client.insurance_number), force_number=True)
+            ins_num_raw = form_data.get('client_insurance_number') or client.insurance_number or ''
+            try:
+                ins_num_val = int(str(ins_num_raw).replace('-', '').strip())
+            except (ValueError, TypeError):
+                ins_num_val = ins_num_raw
+            safe_write_cell(coords.get('client_insurance_number'), ins_num_val, force_number=True)
             safe_write_cell(coords.get('client_name'), form_data.get('client_name', client.name))
 
         # 介護予防支援事業者の情報（介護予防版のみ）
@@ -1584,20 +1664,279 @@ def _generate_ltc_renewal_excel_bytes(client, form_data):
     return content
 
 
+def _add_oval_to_xlsx_bytes(xlsx_bytes, cell_ref, padding=30000):
+    """xlsxバイト列のcell_refセルに楕円を重ねて返す（ZIP直接操作）。"""
+    import io, zipfile
+    from lxml import etree
+    from openpyxl.utils.cell import coordinate_from_string, column_index_from_string
+
+    col_str, row_num = coordinate_from_string(cell_ref)
+    col_num = column_index_from_string(col_str)
+
+    XDR = 'http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing'
+    A_NS = 'http://schemas.openxmlformats.org/drawingml/2006/main'
+    RELS_NS = 'http://schemas.openxmlformats.org/package/2006/relationships'
+    SS_NS = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main'
+    R_NS = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships'
+    DRAWING_REL_TYPE = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing'
+    CT_DRAWING = 'application/vnd.openxmlformats-officedocument.drawing+xml'
+
+    anchor_xml = (
+        f'<xdr:twoCellAnchor xmlns:xdr="{XDR}" xmlns:a="{A_NS}" editAs="oneCell">'
+        f'<xdr:from><xdr:col>{col_num - 1}</xdr:col><xdr:colOff>{padding}</xdr:colOff>'
+        f'<xdr:row>{row_num - 1}</xdr:row><xdr:rowOff>{padding}</xdr:rowOff></xdr:from>'
+        f'<xdr:to><xdr:col>{col_num}</xdr:col><xdr:colOff>-{padding}</xdr:colOff>'
+        f'<xdr:row>{row_num}</xdr:row><xdr:rowOff>-{padding}</xdr:rowOff></xdr:to>'
+        '<xdr:sp macro="" textlink="">'
+        '<xdr:nvSpPr>'
+        '<xdr:cNvPr id="2" name="Oval 1"/>'
+        '<xdr:cNvSpPr><a:spLocks noGrp="1"/></xdr:cNvSpPr>'
+        '</xdr:nvSpPr>'
+        '<xdr:spPr>'
+        '<a:prstGeom prst="ellipse"><a:avLst/></a:prstGeom>'
+        '<a:noFill/>'
+        '<a:ln w="19050"><a:solidFill><a:srgbClr val="000000"/></a:solidFill></a:ln>'
+        '</xdr:spPr>'
+        '<xdr:txBody><a:bodyPr/><a:lstStyle/><a:p/></xdr:txBody>'
+        '</xdr:sp>'
+        '<xdr:clientData/>'
+        '</xdr:twoCellAnchor>'
+    )
+
+    buf_in = io.BytesIO(xlsx_bytes)
+    buf_out = io.BytesIO()
+
+    with zipfile.ZipFile(buf_in, 'r') as zin:
+        names = set(zin.namelist())
+        sheet_path = 'xl/worksheets/sheet1.xml'
+        sheet_rels_path = 'xl/worksheets/_rels/sheet1.xml.rels'
+
+        # 既存のdrawingを探す
+        existing_draw_path = None
+        if sheet_rels_path in names:
+            rels_root = etree.fromstring(zin.read(sheet_rels_path))
+            for rel in rels_root:
+                if rel.get('Type') == DRAWING_REL_TYPE:
+                    target = rel.get('Target', '')
+                    existing_draw_path = 'xl/' + target.lstrip('../')
+                    break
+
+        if existing_draw_path:
+            new_draw_path = existing_draw_path
+            new_rel_id = None
+            draw_num = None
+        else:
+            draw_num = sum(1 for n in names if n.startswith('xl/drawings/drawing')) + 1
+            new_draw_path = f'xl/drawings/drawing{draw_num}.xml'
+            new_rel_id = f'rIdOval{draw_num}'
+
+        with zipfile.ZipFile(buf_out, 'w', zipfile.ZIP_DEFLATED) as zout:
+            for info in zin.infolist():
+                data = zin.read(info.filename)
+
+                if info.filename == '[Content_Types].xml' and new_rel_id:
+                    root = etree.fromstring(data)
+                    if CT_DRAWING not in {el.get('ContentType') for el in root}:
+                        etree.SubElement(root, 'Override', {
+                            'PartName': f'/{new_draw_path}',
+                            'ContentType': CT_DRAWING,
+                        })
+                    data = etree.tostring(root, xml_declaration=True, encoding='UTF-8', standalone=True)
+
+                elif info.filename == sheet_path and new_rel_id:
+                    root = etree.fromstring(data)
+                    if root.find(f'{{{SS_NS}}}drawing') is None:
+                        el = etree.SubElement(root, f'{{{SS_NS}}}drawing')
+                        el.set(f'{{{R_NS}}}id', new_rel_id)
+                    data = etree.tostring(root, xml_declaration=True, encoding='UTF-8', standalone=True)
+
+                elif info.filename == sheet_rels_path and new_rel_id:
+                    root = etree.fromstring(data)
+                    etree.SubElement(root, 'Relationship', {
+                        'Id': new_rel_id,
+                        'Type': DRAWING_REL_TYPE,
+                        'Target': f'../drawings/drawing{draw_num}.xml',
+                    })
+                    data = etree.tostring(root, xml_declaration=True, encoding='UTF-8', standalone=True)
+
+                elif info.filename == new_draw_path and not new_rel_id:
+                    # 既存drawingに楕円を追記
+                    root = etree.fromstring(data)
+                    anchor_el = etree.fromstring(anchor_xml)
+                    existing_ids = [int(e.get('id', 0)) for e in root.iter(f'{{{XDR}}}cNvPr')]
+                    max_id = max(existing_ids) if existing_ids else 1
+                    for e in anchor_el.iter(f'{{{XDR}}}cNvPr'):
+                        e.set('id', str(max_id + 1))
+                    root.append(anchor_el)
+                    data = etree.tostring(root, xml_declaration=True, encoding='UTF-8', standalone=True)
+
+                zout.writestr(info, data)
+
+            if new_rel_id:
+                if sheet_rels_path not in names:
+                    zout.writestr(sheet_rels_path, (
+                        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+                        f'<Relationships xmlns="{RELS_NS}">'
+                        f'<Relationship Id="{new_rel_id}" Type="{DRAWING_REL_TYPE}"'
+                        f' Target="../drawings/drawing{draw_num}.xml"/>'
+                        '</Relationships>'
+                    ).encode('utf-8'))
+                zout.writestr(new_draw_path, (
+                    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+                    f'<xdr:wsDr xmlns:xdr="{XDR}" xmlns:a="{A_NS}">'
+                    + anchor_xml +
+                    '</xdr:wsDr>'
+                ).encode('utf-8'))
+                zout.writestr(f'xl/drawings/_rels/drawing{draw_num}.xml.rels', (
+                    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+                    f'<Relationships xmlns="{RELS_NS}"/>'
+                ).encode('utf-8'))
+
+    return buf_out.getvalue()
+
+
+def _generate_ltc_change_excel_bytes(client, form_data):
+    """区分変更申請書のExcelバイト列を生成して返す"""
+    from openpyxl import load_workbook as _load_wb
+    from openpyxl.cell import MergedCell as _MergedCell
+
+    filename = getattr(settings, 'LTC_CHANGE_FILENAME', 'LTC_Certification_Change_R8.4-.xlsx')
+    template_path = os.path.join(settings.BASE_DIR, 'templates', 'forms', filename)
+
+    workbook = _load_wb(template_path)
+    ws = workbook.active
+
+    def w(cell_ref, value, as_text=False):
+        if not cell_ref or value is None:
+            return
+        try:
+            cell = ws[cell_ref]
+            if isinstance(cell, _MergedCell):
+                for mr in ws.merged_cells.ranges:
+                    if cell_ref in mr:
+                        min_col, min_row, _, _ = mr.bounds
+                        target = ws.cell(row=min_row, column=min_col)
+                        target.value = str(value) if as_text else value
+                        if as_text:
+                            target.number_format = '@'
+                        return
+            else:
+                cell.value = str(value) if as_text else value
+                if as_text:
+                    cell.number_format = '@'
+        except Exception:
+            pass
+
+    def to_wareki(date_str):
+        if not date_str:
+            return ''
+        try:
+            from datetime import date as date_cls, datetime
+            d = datetime.strptime(date_str, '%Y-%m-%d').date()
+            y, m, day = d.year, d.month, d.day
+            if d >= date_cls(2019, 5, 1):
+                return f"令和{y-2018:02d}年{m:02d}月{day:02d}日"
+            elif d >= date_cls(1989, 1, 8):
+                return f"平成{y-1988:02d}年{m:02d}月{day:02d}日"
+            elif d >= date_cls(1926, 12, 25):
+                return f"昭和{y-1925:02d}年{m:02d}月{day:02d}日"
+            else:
+                return f"大正{y-1911:02d}年{m:02d}月{day:02d}日"
+        except Exception:
+            return date_str
+
+    # ① 申請年月日
+    w('X7', to_wareki(form_data.get('application_date', '')))
+
+    # ② 申請書提出者（事業所）
+    w('G8',  form_data.get('office_furigana', ''))
+    w('G9',  form_data.get('office_name', ''))
+    w('X9',  form_data.get('relation', '介護支援専門員'))
+    w('I11', form_data.get('office_postal_code', ''))
+    w('G12', form_data.get('office_address', ''))
+    w('X12', form_data.get('office_phone', ''))
+    w('G14', form_data.get('staff_name', ''))
+    w('W14', int(form_data['office_number']) if form_data.get('office_number', '').isdigit() else form_data.get('office_number', ''))
+
+    # ③ 被保険者
+    w('G16', int(form_data['insurance_number']) if form_data.get('insurance_number', '').isdigit() else form_data.get('insurance_number', ''))
+    w('G17', ''.join(chr(ord(c) + 0x60) if '\u3041' <= c <= '\u3096' else c for c in form_data.get('client_furigana', '')))
+    w('G18', form_data.get('client_name', ''))
+    w('U17', form_data.get('client_gender', ''))
+    w('U18', to_wareki(form_data.get('birth_date', '')))
+    w('H19', form_data.get('postal_code', ''))
+    w('G20', form_data.get('client_address', ''))
+    w('Y21', form_data.get('client_phone', ''))
+
+    # ④ 前回の認定
+    w('J22', form_data.get('care_level', ''))
+    w('J23', to_wareki(form_data.get('cert_start', '')))
+    w('T23', to_wareki(form_data.get('cert_end', '')))
+
+    # ⑤ 申請の理由
+    w('G24', form_data.get('change_reason', ''))
+
+    # ⑥ 医療保険
+    w('M26', form_data.get('medical_insurer_name', ''))
+    w('AA26', int(form_data['medical_insurer_number']) if form_data.get('medical_insurer_number', '').isdigit() else form_data.get('medical_insurer_number', ''))
+    w('O27', form_data.get('medical_insurance_symbol', ''))
+    w('Y27', int(form_data['medical_insurance_number']) if form_data.get('medical_insurance_number', '').isdigit() else form_data.get('medical_insurance_number', ''))
+
+    # ⑦ 特定疾病名
+    if form_data.get('specific_disease'):
+        w('G28', form_data.get('specific_disease', ''))
+
+    # ⑧ 認定調査 場所
+    w('G32', form_data.get('survey_location', ''))
+    w('S31', form_data.get('survey_location_postal', ''))
+    w('O32', form_data.get('survey_location_address', ''))
+    w('W33', form_data.get('survey_location_phone', ''))
+
+    # ⑨ 認定調査 連絡先
+    w('I34', form_data.get('survey_contact_furigana', ''))
+    w('I35', form_data.get('survey_contact_name', ''))
+    w('O35', form_data.get('survey_contact_relation', ''))
+    w('T35', form_data.get('survey_contact_phone', ''))
+    w('G36', form_data.get('survey_contact_preferred_time', ''))
+    w('G38', form_data.get('survey_contact_notes', ''))
+
+    # ⑩ 主治医意見書依頼先
+    w('G40', form_data.get('doctor_hospital', ''))
+    if form_data.get('doctor_outside_city') == 'yes':
+        w('S41', form_data.get('doctor_postal_code', ''))
+        w('Q42', form_data.get('doctor_address', ''))
+    w('G42', form_data.get('doctor_name', ''))
+    w('U43', form_data.get('doctor_phone', ''))
+    w('G46', form_data.get('doctor_notes', ''))
+
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.xlsx') as tmp:
+        workbook.save(tmp.name)
+        workbook.close()
+        with open(tmp.name, 'rb') as f:
+            content = f.read()
+    os.unlink(tmp.name)
+    return content
+
+
 @login_required
 def document_history_excel(request, pk):
     """書類履歴からExcelファイルをダウンロード"""
     history = get_object_or_404(DocumentCreationHistory, pk=pk)
     client = history.client
 
-    if history.document_type == 'ltc_renewal':
+    if history.document_type in ('ltc_renewal', 'ltc_change'):
         try:
-            content = _generate_ltc_renewal_excel_bytes(client, history.form_data)
+            if history.document_type == 'ltc_change':
+                content = _generate_ltc_change_excel_bytes(client, history.form_data)
+                dl_label = '区分変更申請書'
+            else:
+                content = _generate_ltc_renewal_excel_bytes(client, history.form_data)
+                dl_label = '更新認定申請書'
         except Exception as e:
             messages.error(request, f'Excel生成中にエラーが発生しました: {str(e)}')
             return redirect('client_detail', pk=client.pk)
         from urllib.parse import quote
-        dl_name = _make_dl_filename(client, '更新認定申請書')
+        dl_name = _make_dl_filename(client, dl_label)
         response = HttpResponse(
             content,
             content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
@@ -1616,6 +1955,57 @@ def document_history_excel(request, pk):
 
 @login_required
 @user_passes_test(staff_required)
+@login_required
+@user_passes_test(staff_required)
+def document_file_management(request):
+    """書類ファイル名管理画面"""
+    documents = [
+        {
+            'section': '介護保険更新及び変更申請',
+            'items': [
+                {'name': '更新認定申請書',           'filename': getattr(settings, 'LTC_RENEWAL_FILENAME', 'LTC_Certification_Renewal_R8.4-.xlsx')},
+                {'name': '区分変更申請書',           'filename': getattr(settings, 'LTC_CHANGE_FILENAME',   'LTC_Certification_Change_R8.4-.xlsx')},
+                {'name': '認定申請主治医変更届出書', 'filename': '介護保険要介護（更新）・要支援（更新）申請書主治医変更届出書.xls'},
+                {'name': '認定申請取下書',           'filename': '介護保険要介護認定・要支援認定取下書.xls'},
+            ],
+        },
+        {
+            'section': '送付先変更・再交付関係',
+            'items': [
+                {'name': '介護保険関係・再交付申請書',              'filename': 'LTC_Reissue_Application.xlsx'},
+                {'name': '介護保険被保険者証の送付先変更届',        'filename': '（未設定）'},
+                {'name': '介護保険負担限度額・割合証送付先変更届',  'filename': '（未設定）'},
+            ],
+        },
+        {
+            'section': '居宅の届出及び資料請求',
+            'items': [
+                {'name': '居宅サービス計画作成依頼（変更）届出書',                                       'filename': 'kyotaku_service_plan_request.xlsx'},
+                {'name': '介護予防サービス計画作成・介護予防ケアマネジメント依頼（変更）届出書', 'filename': 'kyotaku_preventive_service_plan_request.xlsx'},
+                {'name': '介護サービス計画作成に係る資料提供申請書',                              'filename': 'CarePlan_Info_Request.xlsx'},
+            ],
+        },
+        {
+            'section': 'アセスメント・記録',
+            'items': [
+                {'name': 'アセスメントシート',  'filename': 'assessment_sheet.xlsx / assessment_sheet_genpon.xlsm'},
+                {'name': 'フェイスシート',      'filename': 'Face Sheet.xlsx'},
+                {'name': '医療連携シート',      'filename': 'medical_care_coordination_sheet.xlsx'},
+                {'name': '入院時情報提供書',    'filename': 'hospital_admission_info_form.xlsx'},
+            ],
+        },
+        {
+            'section': '計画作成及び担当者会議',
+            'items': [
+                {'name': 'ケアサービス担当者会議通知書',  'filename': 'care_service_meeting_notice.xlsx'},
+                {'name': '居宅サービス事業所選択確認書',  'filename': 'care_provider_selection_confirm.xlsx'},
+            ],
+        },
+    ]
+
+    return render(request, 'clients/document_file_management.html', {'documents': documents})
+
+
 def color_reference(request):
     """カラー参照画面"""
     # ベースの色データ
@@ -3140,7 +3530,10 @@ def _document_create_ltc_base(request, client_id, doc_type, doc_name, template_n
 
         try:
             from urllib.parse import quote
-            content = _generate_ltc_renewal_excel_bytes(client, form_data)
+            if doc_type == 'ltc_change':
+                content = _generate_ltc_change_excel_bytes(client, form_data)
+            else:
+                content = _generate_ltc_renewal_excel_bytes(client, form_data)
             dl_name = _make_dl_filename(client, doc_name)
             response = HttpResponse(
                 content,

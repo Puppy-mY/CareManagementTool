@@ -1,29 +1,63 @@
 {% extends 'clients/document_create_base.html' %}
 
+{% block kubun_section %}{% endblock %}
+{% block effective_date_section %}{% endblock %}
+{% block burden_section %}{% endblock %}
+
+{% block insurance_section %}
+{# アコーディオンなし：モーダルJS用の表示要素（非表示）と送信用hiddenフィールドのみ #}
+<input type="hidden" id="disp_care_level"
+    value="{{ initial_data.client_care_level_display|default:client.get_care_level_display }}"
+    data-value="{{ initial_data.client_care_level|default:client.care_level }}">
+<input type="hidden" id="disp_cert_date"
+    value="{{ initial_data.client_certification_date_display|default:'' }}"
+    data-iso="{{ initial_data.client_certification_date_iso|default:'' }}">
+<input type="hidden" id="disp_cert_start"
+    value="{{ initial_data.client_certification_period_start_display|default:'' }}"
+    data-iso="{{ initial_data.client_certification_period_start_iso|default:'' }}">
+<input type="hidden" id="disp_cert_end"
+    value="{{ initial_data.client_certification_period_end_display|default:'' }}"
+    data-iso="{{ initial_data.client_certification_period_end_iso|default:'' }}">
+<input type="hidden" id="disp_care_burden"
+    value="{{ initial_data.client_care_burden|default:client.care_burden }}">
+<input type="hidden" name="client_care_level" value="{{ initial_data.client_care_level|default:client.care_level }}">
+<input type="hidden" name="client_care_level_display" value="{{ initial_data.client_care_level_display|default:client.get_care_level_display }}">
+<input type="hidden" name="client_certification_date_iso" value="{{ initial_data.client_certification_date_iso|default:'' }}">
+<input type="hidden" name="client_certification_date_display" value="{{ initial_data.client_certification_date_display|default:'' }}">
+<input type="hidden" name="client_certification_period_start_iso" value="{{ initial_data.client_certification_period_start_iso|default:'' }}">
+<input type="hidden" name="client_certification_period_start_display" value="{{ initial_data.client_certification_period_start_display|default:'' }}">
+<input type="hidden" name="client_certification_period_end_iso" value="{{ initial_data.client_certification_period_end_iso|default:'' }}">
+<input type="hidden" name="client_certification_period_end_display" value="{{ initial_data.client_certification_period_end_display|default:'' }}">
+<input type="hidden" name="client_care_burden" value="{{ initial_data.client_care_burden|default:client.care_burden }}">
+{% endblock insurance_section %}
+
 {% block provider_section %}
-<!-- 情報提供先（通常は市町村長など） -->
-<div class="row g-3 mb-4">
+<!-- 申請者（事業所・施設）情報 -->
+<div class="row g-3 mb-2">
     <div class="col-12">
-        <div class="alert alert-info">
-            <i class="fas fa-info-circle me-1"></i> 保険者（市区町村長）宛に、認定調査票や主治医意見書の提供を依頼するための申請書です。
-        </div>
+        <label class="form-label fw-bold">申請者</label>
     </div>
 </div>
-
-<!-- 申請者（事業所・施設）情報 -->
+<div class="row g-3 mb-3">
+    <div class="col-md-6">
+        <label class="form-label">事業者及び施設名 <span class="text-danger">*</span></label>
+        <select id="office_name_select" class="form-select mb-2" onchange="toggleOfficeName()">
+            <option value="anoutsu" {% if not initial_data.office_name_type or initial_data.office_name_type == 'anoutsu' %}selected{% endif %}>居宅介護支援事業所　安濃津ろまん</option>
+            <option value="other" {% if initial_data.office_name_type == 'other' %}selected{% endif %}>その他（手入力）</option>
+        </select>
+        <input type="text" name="office_name" id="office_name" class="form-control {% if not initial_data.office_name_type or initial_data.office_name_type == 'anoutsu' %}d-none{% endif %}" value="{% if initial_data.office_name_type == 'other' %}{{ initial_data.office_name }}{% endif %}" placeholder="事業所名を入力">
+        <input type="hidden" name="office_name_type" id="office_name_type" value="{{ initial_data.office_name_type|default:'anoutsu' }}">
+    </div>
+</div>
 <div id="office_detail_section" class="accordion" style="margin: 0.5rem 0 1rem 0;">
     <div class="accordion-item" style="border: none; background-color: #f8f9fa; border-radius: 0.5rem;">
         <h2 class="accordion-header">
             <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#officeDetailCollapse" aria-expanded="true" aria-controls="officeDetailCollapse" style="background-color: #f8f9fa; padding: 0.5rem 1rem; color: #333;">
-                <span id="office_status_icon" class="me-2"><i class="fas fa-check-circle" style="color: rgba(25, 135, 84, 0.5);"></i></span>事業者及び施設情報（申請者）
+                <span id="office_status_icon" class="me-2"><i class="fas fa-check-circle" style="color: rgba(25, 135, 84, 0.5);"></i></span>事業者及び施設情報
             </button>
         </h2>
-        <div id="officeDetailCollapse" class="accordion-collapse collapse show">
+        <div id="officeDetailCollapse" class="accordion-collapse collapse">
             <div class="accordion-body row g-3" style="padding: 0.5rem 1rem 1rem 1rem;">
-                <div class="col-md-6">
-                    <label class="form-label">事業者及び施設名 <span class="text-danger">*</span></label>
-                    <input type="text" name="office_name" id="office_name" class="form-control" value="{% if initial_data.office_name %}{{ initial_data.office_name }}{% elif user.profile.home_care_office %}居宅介護支援事業所　{{ user.profile.home_care_office.name }}{% else %}居宅介護支援事業所　安濃津ろまん{% endif %}" required>
-                </div>
                 <div class="col-md-6">
                     <label class="form-label">管理者名 <span class="text-danger">*</span></label>
                     <input type="text" name="manager_name" id="manager_name" class="form-control" value="{% if initial_data.manager_name %}{{ initial_data.manager_name }}{% elif user.profile.home_care_office.manager_name %}{{ user.profile.home_care_office.manager_name }}{% else %}倉野　美和{% endif %}" required>
@@ -45,7 +79,7 @@
                 <span id="staff_status_icon" class="me-2"><i class="fas fa-check-circle" style="color: rgba(25, 135, 84, 0.5);"></i></span>提供申請者（担当職員）
             </button>
         </h2>
-        <div id="staffDetailCollapse" class="accordion-collapse collapse show">
+        <div id="staffDetailCollapse" class="accordion-collapse collapse">
             <div class="accordion-body row g-3" style="padding: 0.5rem 1rem 1rem 1rem;">
                 <div class="col-md-6">
                     <label class="form-label">氏名 <span class="text-danger">*</span></label>
@@ -62,46 +96,268 @@
 {% endblock %}
 
 {% block request_reason_section %}
-<!-- 依頼する資料 -->
+<!-- 作成日 -->
+<div class="row g-3 mb-3">
+    <div class="col-md-5">
+        <div class="d-flex align-items-center gap-2 mb-1">
+            <label class="form-label mb-0">作成日 <span class="text-danger">*</span></label>
+            <div class="birth-era-toggle" title="和暦 / 西暦を切り替え">
+                <button type="button" class="era-btn active" id="appDate_era_japanese" onclick="switchAppDateEra('japanese')">和暦</button>
+                <button type="button" class="era-btn" id="appDate_era_western" onclick="switchAppDateEra('western')">西暦</button>
+            </div>
+        </div>
+        <div style="min-height: 3.8rem;">
+            <div id="appDate_japanese">
+                <input type="text" id="appDate_wareki_text" class="form-control" style="max-width: 220px;"
+                    placeholder="例: 令和7年4月1日" autocomplete="off"
+                    oninput="syncAppDateFromWareki()">
+                <small id="appDate_wareki_preview" style="font-size:0.78em; display:block; margin-top:2px;"></small>
+            </div>
+            <div id="appDate_western" style="display:none;">
+                <input type="date" id="id_application_date" name="application_date" class="form-control" style="max-width: 220px;"
+                    value="{{ initial_data.application_date|default:'' }}">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 介護保険被保険者番号 -->
+<div class="row g-3 mb-4 align-items-end">
+    <div class="col-md-4">
+        <label class="form-label">介護保険被保険者番号 <span class="text-danger">*</span></label>
+        <input type="text" name="client_insurance_number" class="form-control"
+               value="{{ initial_data.client_insurance_number|default:client.insurance_number }}" readonly required>
+    </div>
+    <div class="col-auto">
+        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openInsuranceModal()">
+            <i class="fas fa-edit me-1"></i>介護保険情報を編集
+        </button>
+    </div>
+</div>
+
+<!-- 提供を依頼する資料 -->
 <div class="row g-3 mb-4">
     <div class="col-12">
         <label class="form-label">提供を依頼する資料（資料名） <span class="text-danger">*</span></label>
         <div class="mt-2">
             <div class="form-check mb-2">
-                <input class="form-check-input" type="checkbox" name="request_doc_chousasho" id="request_doc_chousasho" value="yes" style="border-radius: 3px;" {% if initial_data.request_doc_chousasho == 'yes' or not initial_data %}checked{% endif %}>
+                <input class="form-check-input" type="checkbox" name="request_doc_chousasho" id="request_doc_chousasho" value="yes" style="border-radius: 3px;" checked>
                 <label class="form-check-label" for="request_doc_chousasho">
                     介護保険の認定に係る認定調査票
                 </label>
             </div>
             <div class="form-check mb-2">
-                <input class="form-check-input" type="checkbox" name="request_doc_ikensho" id="request_doc_ikensho" value="yes" style="border-radius: 3px;" {% if initial_data.request_doc_ikensho == 'yes' or not initial_data %}checked{% endif %}>
+                <input class="form-check-input" type="checkbox" name="request_doc_ikensho" id="request_doc_ikensho" value="yes" style="border-radius: 3px;" checked>
                 <label class="form-check-label" for="request_doc_ikensho">
                     介護保険の認定に係る主治医意見書
                 </label>
             </div>
         </div>
-        <small class="text-muted mt-1">※少なくとも1つは選択してください。</small>
     </div>
 </div>
 {% endblock %}
 
 {% block extra_scripts %}
 <script>
-// 情報提供依頼書固有の初期化
-function initDocumentSpecific() {
-    console.log('情報提供依頼書が読み込まれました');
+// アコーディオンのステータスアイコンと開閉を更新
+// animate=false のときはアニメーションなしで直接クラス操作（初期化時用）
+function updateSectionStatus(iconId, collapseId, fieldIds, animate) {
+    const allFilled = fieldIds.every(id => {
+        const el = document.getElementById(id);
+        return el && el.value.trim();
+    });
+    const icon = document.getElementById(iconId);
+    const collapseEl = document.getElementById(collapseId);
+
+    if (allFilled) {
+        icon.innerHTML = '<i class="fas fa-check-circle" style="color: rgba(25, 135, 84, 0.5);"></i>';
+        if (animate) {
+            bootstrap.Collapse.getOrCreateInstance(collapseEl, { toggle: false }).hide();
+        } else {
+            collapseEl.classList.remove('show');
+        }
+    } else {
+        icon.innerHTML = '<i class="fas fa-circle-exclamation" style="color: rgba(220, 53, 69, 0.5);"></i>';
+        if (animate) {
+            bootstrap.Collapse.getOrCreateInstance(collapseEl, { toggle: false }).show();
+        } else {
+            collapseEl.classList.add('show');
+        }
+    }
 }
+
+function toggleOfficeName() {
+    const sel = document.getElementById('office_name_select');
+    const input = document.getElementById('office_name');
+    const typeField = document.getElementById('office_name_type');
+    const managerEl = document.getElementById('manager_name');
+    const phoneEl = document.getElementById('office_phone');
+    const staffNameEl = document.getElementById('staff_name');
+    const staffTitleEl = document.getElementById('staff_job_title');
+
+    if (sel.value === 'other') {
+        input.classList.remove('d-none');
+        input.required = true;
+        if (managerEl) managerEl.value = '';
+        if (phoneEl) phoneEl.value = '';
+        if (staffNameEl) staffNameEl.value = '';
+        if (staffTitleEl) staffTitleEl.value = '';
+    } else {
+        input.classList.add('d-none');
+        input.required = false;
+        input.value = '';
+    }
+    typeField.value = sel.value;
+    refreshSectionStatuses(true);
+}
+
+function refreshSectionStatuses(animate) {
+    updateSectionStatus('office_status_icon', 'officeDetailCollapse', ['manager_name', 'office_phone'], animate);
+    updateSectionStatus('staff_status_icon', 'staffDetailCollapse', ['staff_name', 'staff_job_title'], animate);
+}
+
+function initDocumentSpecific() {
+    // select の表示状態のみ初期化（アニメーションなし）
+    const sel = document.getElementById('office_name_select');
+    const input = document.getElementById('office_name');
+    const typeField = document.getElementById('office_name_type');
+    if (sel.value === 'other') {
+        input.classList.remove('d-none');
+        input.required = true;
+    } else {
+        input.classList.add('d-none');
+        input.required = false;
+    }
+    typeField.value = sel.value;
+
+    // 申請日の初期化
+    initAppDate();
+
+    // アニメーションなしで初期状態を設定
+    refreshSectionStatuses(false);
+
+    // input イベントで随時ステータス更新（アニメーションあり）
+    ['manager_name', 'office_phone', 'staff_name', 'staff_job_title'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('input', () => refreshSectionStatuses(true));
+    });
+}
+
+// 申請日 和暦/西暦
+(function() {
+    var APP_ERA = [
+        { keys: ['令和','R','r'], start: 2019, label: '令和' },
+        { keys: ['平成','H','h'], start: 1989, label: '平成' },
+        { keys: ['昭和','S','s'], start: 1926, label: '昭和' },
+        { keys: ['大正','T','t'], start: 1912, label: '大正' },
+    ];
+
+    function parseAppWareki(text) {
+        if (!text) return null;
+        text = text.replace(/\s/g, '');
+        var era = null, rest = text;
+        for (var i = 0; i < APP_ERA.length; i++) {
+            for (var k = 0; k < APP_ERA[i].keys.length; k++) {
+                if (text.indexOf(APP_ERA[i].keys[k]) === 0) {
+                    era = APP_ERA[i]; rest = text.slice(APP_ERA[i].keys[k].length); break;
+                }
+            }
+            if (era) break;
+        }
+        if (!era) return null;
+        var m1 = rest.match(/^(\d{1,2})年(\d{1,2})月(\d{1,2})日?$/);
+        if (m1) return { era: era, year: parseInt(m1[1]), month: parseInt(m1[2]), day: parseInt(m1[3]) };
+        var m2 = rest.match(/^(\d{1,2})[.\-\/](\d{1,2})[.\-\/](\d{1,2})$/);
+        if (m2) return { era: era, year: parseInt(m2[1]), month: parseInt(m2[2]), day: parseInt(m2[3]) };
+        return null;
+    }
+
+    function isoToWarekiText(iso) {
+        if (!iso) return '';
+        var p = iso.split('-'); if (p.length < 3) return '';
+        var y = parseInt(p[0]), m = parseInt(p[1]), d = parseInt(p[2]);
+        for (var i = 0; i < APP_ERA.length; i++) {
+            if (y >= APP_ERA[i].start) return APP_ERA[i].label + (y - APP_ERA[i].start + 1) + '年' + m + '月' + d + '日';
+        }
+        return '';
+    }
+
+    window.switchAppDateEra = function(mode) {
+        var jDiv = document.getElementById('appDate_japanese');
+        var wDiv = document.getElementById('appDate_western');
+        var hidden = document.getElementById('id_application_date');
+        var warekiInput = document.getElementById('appDate_wareki_text');
+        if (mode === 'western') {
+            jDiv.style.display = 'none'; wDiv.style.display = '';
+            document.getElementById('appDate_era_western').classList.add('active');
+            document.getElementById('appDate_era_japanese').classList.remove('active');
+        } else {
+            warekiInput.value = isoToWarekiText(hidden.value);
+            syncAppDateFromWareki();
+            wDiv.style.display = 'none'; jDiv.style.display = '';
+            document.getElementById('appDate_era_japanese').classList.add('active');
+            document.getElementById('appDate_era_western').classList.remove('active');
+            warekiInput.focus();
+        }
+    };
+
+    window.syncAppDateFromWareki = function() {
+        var text = document.getElementById('appDate_wareki_text').value;
+        var preview = document.getElementById('appDate_wareki_preview');
+        var hidden = document.getElementById('id_application_date');
+        var r = parseAppWareki(text);
+        if (r) {
+            var wy = r.era.start + r.year - 1;
+            var mo = String(r.month).padStart(2,'0'), d = String(r.day).padStart(2,'0');
+            hidden.value = wy + '-' + mo + '-' + d;
+            preview.textContent = '→ 西暦 ' + wy + '年' + r.month + '月' + r.day + '日';
+            preview.style.color = '#6c757d';
+        } else {
+            hidden.value = '';
+            if (text.length > 0) {
+                preview.textContent = '例: 令和7年4月1日　または　R7.4.1';
+                preview.style.color = '#aaa';
+            } else {
+                preview.textContent = '';
+            }
+        }
+    };
+
+    window.initAppDate = function() {
+        var hidden = document.getElementById('id_application_date');
+        // 新規作成時のみ本日の日付をデフォルトセット
+        if (!hidden.value) {
+            var today = new Date();
+            var y = today.getFullYear(), m = String(today.getMonth()+1).padStart(2,'0'), d = String(today.getDate()).padStart(2,'0');
+            hidden.value = y + '-' + m + '-' + d;
+        }
+        document.getElementById('appDate_wareki_text').value = isoToWarekiText(hidden.value);
+        syncAppDateFromWareki();
+    };
+})();
 
 // バリデーション
 function validateDocumentSpecific() {
+    const appDate = document.getElementById('id_application_date')?.value;
+    if (!appDate) {
+        alert('作成日を入力してください。');
+        return false;
+    }
+
+    const insuranceNumber = document.querySelector('input[name="client_insurance_number"]')?.value?.trim();
+    if (!insuranceNumber) {
+        alert('介護保険被保険者番号を入力してください。');
+        return false;
+    }
+
     const chousasho = document.getElementById('request_doc_chousasho').checked;
     const ikensho = document.getElementById('request_doc_ikensho').checked;
-    
+
     if (!chousasho && !ikensho) {
         alert('提供を依頼する資料を少なくとも1つ選択してください。');
         return false;
     }
-    
+
     return true;
 }
 </script>
