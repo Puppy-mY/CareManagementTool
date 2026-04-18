@@ -1938,24 +1938,30 @@ def document_history_excel(request, pk):
     history = get_object_or_404(DocumentCreationHistory, pk=pk)
     client = history.client
 
-    if history.document_type in ('ltc_renewal', 'ltc_change'):
+    if history.document_type in ('ltc_renewal', 'ltc_change', 'ltc_withdrawal'):
         try:
             if history.document_type == 'ltc_change':
-                content = _generate_ltc_change_excel_bytes(client, history.form_data)
+                content  = _generate_ltc_change_excel_bytes(client, history.form_data)
                 dl_label = '区分変更申請書'
+                ct       = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                ext      = '.xlsx'
+            elif history.document_type == 'ltc_withdrawal':
+                content  = _generate_ltc_withdrawal_excel_bytes(client, history.form_data)
+                dl_label = '認定申請取下書'
+                ct       = 'application/vnd.ms-excel'
+                ext      = '.xls'
             else:
-                content = _generate_ltc_renewal_excel_bytes(client, history.form_data)
+                content  = _generate_ltc_renewal_excel_bytes(client, history.form_data)
                 dl_label = '更新認定申請書'
+                ct       = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                ext      = '.xlsx'
         except Exception as e:
             messages.error(request, f'Excel生成中にエラーが発生しました: {str(e)}')
             return redirect('client_detail', pk=client.pk)
         from urllib.parse import quote
-        dl_name = _make_dl_filename(client, dl_label)
-        response = HttpResponse(
-            content,
-            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        )
-        response['Content-Disposition'] = f"attachment; filename=\"download.xlsx\"; filename*=UTF-8''{quote(dl_name, safe='')}"
+        dl_name  = _make_dl_filename(client, dl_label)
+        response = HttpResponse(content, content_type=ct)
+        response['Content-Disposition'] = f"attachment; filename=\"download{ext}\"; filename*=UTF-8''{quote(dl_name + ext, safe='')}"
         return response
 
     return generate_document_excel(
@@ -3659,6 +3665,187 @@ def document_create_ltc_change(request, client_id):
         doc_name='区分変更申請書',
         template_name='clients/document_create_ltc_change.html',
     )
+
+
+@login_required
+@user_passes_test(staff_required)
+def document_create_ltc_withdrawal(request, client_id):
+    """認定申請取下書 作成画面"""
+    client = get_object_or_404(Client, pk=client_id)
+
+    profile = getattr(request.user, 'profile', None)
+    office  = getattr(profile, 'home_care_office', None)
+
+    initial = {
+        'insurance_number': client.insurance_number or '',
+        'client_furigana':  client.furigana or '',
+        'client_name':      client.name or '',
+        'client_gender':    '男' if client.gender == 'male' else ('女' if client.gender == 'female' else ''),
+        'birth_date':       client.birth_date.strftime('%Y-%m-%d') if client.birth_date else '',
+        'postal_code':      client.postal_code or '',
+        'client_address':   client.address or '',
+        'client_phone':     client.phone or '',
+        'office_name':         (office.name         if office else '') or '',
+        'office_postal_code':  (office.postal_code  if office else '') or '',
+        'office_address':      (office.address      if office else '') or '',
+        'office_phone':        (office.phone        if office else '') or '',
+        'application_date':   '',
+        'withdrawal_reason':  '',
+    }
+
+    history_id = request.GET.get('history_id')
+    if history_id and request.method == 'GET':
+        try:
+            hist = DocumentCreationHistory.objects.get(pk=history_id, client=client)
+            saved = hist.form_data or {}
+            for k in initial:
+                if k in saved:
+                    initial[k] = saved[k]
+        except DocumentCreationHistory.DoesNotExist:
+            history_id = None
+
+    if request.method == 'POST':
+        form_data  = {k: request.POST.get(k, '') for k in initial}
+        action     = request.POST.get('action', 'excel')
+        history_id = request.GET.get('history_id')
+
+        if history_id:
+            try:
+                hist = DocumentCreationHistory.objects.get(pk=history_id, client=client)
+                hist.form_data = form_data
+                hist.save()
+            except DocumentCreationHistory.DoesNotExist:
+                history_id = None
+        if not history_id:
+            hist = DocumentCreationHistory.objects.create(
+                client=client,
+                document_type='ltc_withdrawal',
+                document_name='認定申請取下書',
+                form_data=form_data,
+                status='draft',
+                created_by=request.user,
+            )
+
+        if action == 'save':
+            messages.success(request, '認定申請取下書を保存しました。')
+            url = reverse('client_detail', kwargs={'pk': client_id}) + '#documents'
+            return HttpResponseRedirect(url)
+
+        try:
+            from urllib.parse import quote
+            content  = _generate_ltc_withdrawal_excel_bytes(client, form_data)
+            dl_name  = _make_dl_filename(client, '認定申請取下書')
+            response = HttpResponse(content, content_type='application/vnd.ms-excel')
+            response['Content-Disposition'] = (
+                f"attachment; filename=\"download.xls\"; "
+                f"filename*=UTF-8''{quote(dl_name + '.xls', safe='')}"
+            )
+            return response
+        except Exception as e:
+            messages.error(request, f'Excel生成中にエラーが発生しました: {str(e)}')
+            return redirect('client_detail', pk=client_id)
+
+    context = {
+        'client':     client,
+        'initial':    initial,
+        'history_id': history_id or '',
+    }
+    return render(request, 'clients/document_create_ltc_withdrawal.html', context)
+
+
+def _generate_ltc_withdrawal_excel_bytes(client, form_data):
+    """認定申請取下書（XLS）のバイト列を生成して返す"""
+    import tempfile, shutil
+    import xlwings as xw
+    from datetime import date as date_cls, datetime as dt_cls
+
+    template_path = os.path.join(
+        settings.BASE_DIR, 'templates', 'forms',
+        'LTCI_Certification_Withdrawal_Request.xls'
+    )
+
+    with tempfile.NamedTemporaryFile(suffix='.xls', delete=False) as tmp:
+        tmp_path = tmp.name
+    shutil.copy(template_path, tmp_path)
+
+    def to_wareki(date_str):
+        if not date_str:
+            return ''
+        try:
+            d = dt_cls.strptime(date_str, '%Y-%m-%d').date()
+            y, m, day = d.year, d.month, d.day
+            if d >= date_cls(2019, 5, 1):
+                return f"令和{y-2018}年{m}月{day}日"
+            elif d >= date_cls(1989, 1, 8):
+                return f"平成{y-1988}年{m}月{day}日"
+            elif d >= date_cls(1926, 12, 25):
+                return f"昭和{y-1925}年{m}月{day}日"
+            else:
+                return f"大正{y-1911}年{m}月{day}日"
+        except Exception:
+            return date_str
+
+    app = xw.App(visible=False)
+    try:
+        wb = app.books.open(tmp_path)
+        ws = wb.sheets[0]
+
+        # ① 申請年月日（取り下げる申請の日付）
+        app_date = to_wareki(form_data.get('application_date', ''))
+        if app_date:
+            ws['B5'].value  = f"{app_date}に行いました介護保険要介護認定・要支援認定等の申請を取り下げます。"
+            ws['A25'].value = f"　　　　　{app_date}に行いました要介護認定・要支援認定申請を取り下げることに同意します。"
+
+        # ② 取下年月日（本日）
+        ws['N8'].value = to_wareki(date_cls.today().strftime('%Y-%m-%d'))
+
+        # ③ 被保険者番号（1桁ずつ C8〜L8）
+        ins_num = (form_data.get('insurance_number') or '').replace('-', '').replace(' ', '')
+        for i, digit in enumerate(ins_num[:10]):
+            ws.api.Cells(8, 3 + i).Value = digit
+
+        # ④ フリガナ（ひらがな→カタカナ）
+        furigana = form_data.get('client_furigana', '')
+        kata = ''.join(chr(ord(c) + 0x60) if 'ぁ' <= c <= 'ん' else c for c in furigana)
+        ws['C9'].value = kata
+
+        # ⑤ 生年月日
+        ws['N9'].value = to_wareki(form_data.get('birth_date', ''))
+
+        # ⑥ 氏名
+        ws['C10'].value = form_data.get('client_name', '')
+
+        # ⑦ 性別
+        ws['N11'].value = form_data.get('client_gender', '')
+
+        # ⑧ 被保険者 住所（郵便番号・住所）
+        ws['E12'].value = form_data.get('postal_code', '')
+        ws['C13'].value = form_data.get('client_address', '')
+
+        # ⑨ 被保険者 電話番号
+        ws['N14'].value = form_data.get('client_phone', '')
+
+        # ⑩ 提出代行者（事業所情報）
+        ws['C16'].value = form_data.get('office_name', '')
+        ws['E18'].value = form_data.get('office_postal_code', '')
+        ws['C19'].value = form_data.get('office_address', '')
+        ws['N20'].value = form_data.get('office_phone', '')
+
+        # ⑪ 取下理由
+        ws['B22'].value = form_data.get('withdrawal_reason', '')
+
+        wb.save()
+        wb.close()
+
+        with open(tmp_path, 'rb') as f:
+            content = f.read()
+        return content
+    finally:
+        app.quit()
+        try:
+            os.unlink(tmp_path)
+        except Exception:
+            pass
 
 
 # ========================================

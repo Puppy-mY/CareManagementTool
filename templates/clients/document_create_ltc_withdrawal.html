@@ -1,0 +1,460 @@
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+
+{% block title %}認定申請取下書 - {{ client.name }}様 - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="mb-4 pb-2 border-bottom">
+                <h1 class="h4 mb-1 text-dark fw-bold">
+                    <i class="fas fa-file-alt me-2 text-secondary"></i>認定申請取下書
+                </h1>
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="text-muted small">
+                        <i class="fas fa-user me-1"></i>{{ client.name }} 様
+                    </span>
+                    <button type="button" class="btn btn-outline-secondary btn-back" onclick="goBack()">
+                        <i class="fas fa-arrow-left"></i> 戻る
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <form method="post" id="documentForm"{% if history_id %} action="?history_id={{ history_id }}"{% endif %}>
+                {% csrf_token %}
+
+                <!-- 利用者基本情報（自動反映）アコーディオン -->
+                <div class="accordion mb-4" id="basicInfoAccordion">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button"
+                                    data-bs-toggle="collapse" data-bs-target="#basicInfoCollapse">
+                                <i class="fas fa-user-circle me-2"></i>
+                                <strong>利用者基本情報（自動反映）</strong>
+                                <small class="text-muted ms-2">※利用者データから自動入力</small>
+                            </button>
+                        </h2>
+                        <div id="basicInfoCollapse" class="accordion-collapse collapse">
+                            <div class="accordion-body">
+                                <div class="row g-3 mb-3">
+                                    <div class="col-md-3">
+                                        <label class="form-label">氏名</label>
+                                        <input type="text" name="client_name" class="form-control"
+                                               value="{{ initial.client_name }}" readonly>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">フリガナ</label>
+                                        <input type="text" name="client_furigana" class="form-control"
+                                               value="{{ initial.client_furigana }}" readonly>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">生年月日</label>
+                                        <input type="date" name="birth_date" class="form-control"
+                                               value="{{ initial.birth_date }}" readonly>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label">性別</label>
+                                        <input type="text" name="client_gender" class="form-control"
+                                               value="{{ initial.client_gender }}" readonly>
+                                    </div>
+                                </div>
+                                <div class="row g-3 mb-3">
+                                    <div class="col-md-2">
+                                        <label class="form-label">郵便番号</label>
+                                        <input type="text" name="postal_code" class="form-control"
+                                               value="{{ initial.postal_code }}" readonly>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">住所</label>
+                                        <input type="text" name="client_address" class="form-control"
+                                               value="{{ initial.client_address }}" readonly>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">電話番号</label>
+                                        <input type="text" name="client_phone" class="form-control"
+                                               value="{{ initial.client_phone }}" readonly>
+                                    </div>
+                                </div>
+                                <div class="row g-3 mb-2">
+                                    <div class="col-md-4">
+                                        <label class="form-label">被保険者番号</label>
+                                        <input type="text" name="insurance_number" class="form-control"
+                                               value="{{ initial.insurance_number }}" readonly>
+                                    </div>
+                                </div>
+                                <div class="mt-3 text-end">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm"
+                                            onclick="openClientMasterDrawer()">
+                                        <i class="fas fa-edit me-1"></i>利用者マスタデータを編集
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 入力項目カード -->
+                <div class="card mb-4">
+                    <div class="card-header d-flex align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-edit me-2"></i>入力項目</h5>
+                        <small class="text-muted ms-2">※以下の項目をご入力ください</small>
+                    </div>
+                    <div class="card-body">
+
+                        <!-- 申請年月日（取り下げる申請の日付） -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-12">
+                                <div class="d-flex align-items-center gap-2 mb-1">
+                                    <label class="form-label fw-bold mb-0">申請年月日 <span class="text-danger">*</span></label>
+                                    <div class="birth-era-toggle" title="和暦 / 西暦を切り替え">
+                                        <button type="button" class="era-btn active" id="appDate_era_japanese" onclick="switchAppDateEra('japanese')">和暦</button>
+                                        <button type="button" class="era-btn" id="appDate_era_western" onclick="switchAppDateEra('western')">西暦</button>
+                                    </div>
+                                </div>
+                                <small class="text-muted d-block mb-2">取り下げる更新認定・区分変更の申請を行った日付を入力してください</small>
+                                <div id="appDate_japanese">
+                                    <input type="text" id="appDate_wareki_text" class="form-control" style="max-width: 220px;"
+                                        placeholder="例: 令和7年4月1日" autocomplete="off"
+                                        oninput="syncAppDateFromWareki()">
+                                    <small id="appDate_wareki_preview" style="font-size:0.78em; display:block; margin-top:2px;"></small>
+                                </div>
+                                <div id="appDate_western" style="display:none;">
+                                    <input type="date" id="id_application_date" name="application_date" class="form-control" style="max-width: 220px;"
+                                        value="{{ initial.application_date|default:'' }}">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="border-top: 1px solid #dee2e6; width: 50%; margin: 1.5rem 0;"></div>
+
+                        <!-- 提出代行者（事業所情報）アコーディオン -->
+                        <div class="row g-3 mb-2">
+                            <div class="col-12">
+                                <label class="form-label fw-bold">提出代行者（事業所情報）</label>
+                            </div>
+                        </div>
+                        <div class="accordion mb-4" id="officeInfoAccordion">
+                            <div class="accordion-item" style="border: none; background-color: #f8f9fa; border-radius: 0.5rem;">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button"
+                                            data-bs-toggle="collapse" data-bs-target="#officeInfoCollapse"
+                                            style="background-color: #f8f9fa; padding: 0.5rem 1rem; color: #333;">
+                                        <span id="office_status_icon" class="me-2"><i class="fas fa-check-circle" style="color: rgba(25, 135, 84, 0.5);"></i></span>事業所情報
+                                    </button>
+                                </h2>
+                                <div id="officeInfoCollapse" class="accordion-collapse collapse">
+                                    <div class="accordion-body row g-3" style="padding: 0.5rem 1rem 1rem 1rem;">
+                                        <div class="col-md-8">
+                                            <label class="form-label">事業所名 <span class="text-danger">*</span></label>
+                                            <input type="text" name="office_name" id="office_name" class="form-control"
+                                                   value="{{ initial.office_name }}" placeholder="事業所名を入力">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">郵便番号 <span class="text-danger">*</span></label>
+                                            <input type="text" name="office_postal_code" id="office_postal_code" class="form-control"
+                                                   value="{{ initial.office_postal_code }}" placeholder="000-0000">
+                                        </div>
+                                        <div class="col-12">
+                                            <label class="form-label">住所 <span class="text-danger">*</span></label>
+                                            <input type="text" name="office_address" id="office_address" class="form-control"
+                                                   value="{{ initial.office_address }}" placeholder="住所を入力">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">電話番号 <span class="text-danger">*</span></label>
+                                            <input type="text" name="office_phone" id="office_phone" class="form-control"
+                                                   value="{{ initial.office_phone }}" placeholder="000-000-0000">
+                                        </div>
+                                        <div class="col-12 text-end mt-2">
+                                            <button type="button" class="btn btn-outline-secondary btn-sm"
+                                                    onclick="openWithdrawalOfficeMasterModal()">
+                                                <i class="fas fa-edit me-1"></i>事業所マスタデータを編集
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="border-top: 1px solid #dee2e6; width: 50%; margin: 1.5rem 0;"></div>
+
+                        <!-- 取下理由 -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-12">
+                                <label class="form-label fw-bold">取下理由</label>
+                                <textarea name="withdrawal_reason" id="withdrawal_reason" class="form-control"
+                                          rows="4" placeholder="取下理由を入力してください（任意）">{{ initial.withdrawal_reason }}</textarea>
+                            </div>
+                        </div>
+
+                        <!-- 送信ボタン -->
+                        <div class="d-flex gap-2 justify-content-end mt-4">
+                            <button type="button" class="btn btn-outline-secondary" onclick="submitWithdrawalForm('save')">
+                                <i class="fas fa-save me-1"></i>保存して戻る
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" onclick="submitWithdrawalForm('excel')">
+                                <i class="fas fa-file-excel me-1"></i>Excel出力
+                            </button>
+                        </div>
+                        <input type="hidden" name="action" id="form_action" value="excel">
+
+                    </div>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 事業所マスタ編集モーダル（更新認定申請書と共通構造） -->
+<div class="modal fade" id="withdrawalOfficeMasterModal" tabindex="-1"
+     data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 700px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-building me-2"></i>事業所マスタデータを編集</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="card mb-0">
+                    <div class="card-header d-flex align-items-center">
+                        <h5 class="section-title mb-0"><i class="fas fa-building me-2"></i>事業所情報</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-8">
+                                <label class="form-label">事業所名</label>
+                                <input type="text" id="modal_office_name" class="form-control"
+                                       value="{{ initial.office_name }}">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">郵便番号</label>
+                                <input type="text" id="modal_office_postal_code" class="form-control"
+                                       value="{{ initial.office_postal_code }}">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">住所</label>
+                                <input type="text" id="modal_office_address" class="form-control"
+                                       value="{{ initial.office_address }}">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">電話番号</label>
+                                <input type="text" id="modal_office_phone" class="form-control"
+                                       value="{{ initial.office_phone }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                <button type="button" class="btn btn-primary" onclick="saveWithdrawalOfficeModal()">
+                    <i class="fas fa-save me-1"></i>保存してDBに反映
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function goBack() {
+    if (document.referrer) {
+        window.location.href = document.referrer;
+    } else {
+        window.location.href = "{% url 'client_detail' client.pk %}";
+    }
+}
+
+function submitWithdrawalForm(action) {
+    if (action === 'excel') {
+        if (!validateWithdrawal()) return;
+    }
+    document.getElementById('form_action').value = action;
+    document.getElementById('documentForm').submit();
+}
+
+function validateWithdrawal() {
+    const appDate = document.getElementById('id_application_date')?.value;
+    if (!appDate) {
+        alert('申請年月日を入力してください。');
+        return false;
+    }
+    const officeName = document.getElementById('office_name')?.value;
+    if (!officeName) {
+        alert('提出代行者の事業所名を入力してください。');
+        return false;
+    }
+    return true;
+}
+
+// 事業所情報アコーディオン ステータス更新
+function updateOfficeStatus(animate) {
+    const allFilled = ['office_name', 'office_postal_code', 'office_address', 'office_phone'].every(id => {
+        const el = document.getElementById(id);
+        return el && el.value.trim();
+    });
+    const icon = document.getElementById('office_status_icon');
+    const collapseEl = document.getElementById('officeInfoCollapse');
+    if (allFilled) {
+        icon.innerHTML = '<i class="fas fa-check-circle" style="color: rgba(25, 135, 84, 0.5);"></i>';
+        if (animate) bootstrap.Collapse.getOrCreateInstance(collapseEl, { toggle: false }).hide();
+        else collapseEl.classList.remove('show');
+    } else {
+        icon.innerHTML = '<i class="fas fa-circle-exclamation" style="color: rgba(220, 53, 69, 0.5);"></i>';
+        if (animate) bootstrap.Collapse.getOrCreateInstance(collapseEl, { toggle: false }).show();
+        else collapseEl.classList.add('show');
+    }
+}
+
+// 事業所マスタモーダル
+function openWithdrawalOfficeMasterModal() {
+    document.getElementById('modal_office_name').value        = document.getElementById('office_name').value;
+    document.getElementById('modal_office_postal_code').value = document.getElementById('office_postal_code').value;
+    document.getElementById('modal_office_address').value     = document.getElementById('office_address').value;
+    document.getElementById('modal_office_phone').value       = document.getElementById('office_phone').value;
+    new bootstrap.Modal(document.getElementById('withdrawalOfficeMasterModal')).show();
+}
+
+function saveWithdrawalOfficeModal() {
+    const officeId = {{ request.user.profile.home_care_office.pk|default:'null' }};
+
+    const payload = {
+        name:        document.getElementById('modal_office_name').value,
+        postal_code: document.getElementById('modal_office_postal_code').value,
+        address:     document.getElementById('modal_office_address').value,
+        phone:       document.getElementById('modal_office_phone').value,
+    };
+
+    const reflectToForm = () => {
+        document.getElementById('office_name').value        = payload.name;
+        document.getElementById('office_postal_code').value = payload.postal_code;
+        document.getElementById('office_address').value     = payload.address;
+        document.getElementById('office_phone').value       = payload.phone;
+        updateOfficeStatus(true);
+        bootstrap.Modal.getInstance(document.getElementById('withdrawalOfficeMasterModal')).hide();
+    };
+
+    if (!officeId) {
+        reflectToForm();
+        return;
+    }
+
+    fetch(`/clients/office/${officeId}/update-master/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+        },
+        body: new URLSearchParams(payload),
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) reflectToForm();
+        else alert('保存に失敗しました: ' + (data.error || ''));
+    })
+    .catch(() => reflectToForm());
+}
+
+// 申請年月日 和暦/西暦切替
+(function() {
+    var APP_ERA = [
+        { keys: ['令和','R','r'], start: 2019, label: '令和' },
+        { keys: ['平成','H','h'], start: 1989, label: '平成' },
+        { keys: ['昭和','S','s'], start: 1926, label: '昭和' },
+        { keys: ['大正','T','t'], start: 1912, label: '大正' },
+    ];
+
+    function parseAppWareki(text) {
+        if (!text) return null;
+        text = text.replace(/\s/g, '');
+        var era = null, rest = text;
+        for (var i = 0; i < APP_ERA.length; i++) {
+            for (var k = 0; k < APP_ERA[i].keys.length; k++) {
+                if (text.indexOf(APP_ERA[i].keys[k]) === 0) {
+                    era = APP_ERA[i]; rest = text.slice(APP_ERA[i].keys[k].length); break;
+                }
+            }
+            if (era) break;
+        }
+        if (!era) return null;
+        var m1 = rest.match(/^(\d{1,2})年(\d{1,2})月(\d{1,2})日?$/);
+        if (m1) return { era: era, year: parseInt(m1[1]), month: parseInt(m1[2]), day: parseInt(m1[3]) };
+        var m2 = rest.match(/^(\d{1,2})[.\-\/](\d{1,2})[.\-\/](\d{1,2})$/);
+        if (m2) return { era: era, year: parseInt(m2[1]), month: parseInt(m2[2]), day: parseInt(m2[3]) };
+        return null;
+    }
+
+    function isoToWarekiText(iso) {
+        if (!iso) return '';
+        var p = iso.split('-'); if (p.length < 3) return '';
+        var y = parseInt(p[0]), m = parseInt(p[1]), d = parseInt(p[2]);
+        for (var i = 0; i < APP_ERA.length; i++) {
+            if (y >= APP_ERA[i].start) return APP_ERA[i].label + (y - APP_ERA[i].start + 1) + '年' + m + '月' + d + '日';
+        }
+        return '';
+    }
+
+    window.switchAppDateEra = function(mode) {
+        var jDiv   = document.getElementById('appDate_japanese');
+        var wDiv   = document.getElementById('appDate_western');
+        var hidden = document.getElementById('id_application_date');
+        var wareki = document.getElementById('appDate_wareki_text');
+        if (mode === 'western') {
+            jDiv.style.display = 'none'; wDiv.style.display = '';
+            document.getElementById('appDate_era_western').classList.add('active');
+            document.getElementById('appDate_era_japanese').classList.remove('active');
+        } else {
+            wareki.value = isoToWarekiText(hidden.value);
+            syncAppDateFromWareki();
+            wDiv.style.display = 'none'; jDiv.style.display = '';
+            document.getElementById('appDate_era_japanese').classList.add('active');
+            document.getElementById('appDate_era_western').classList.remove('active');
+            wareki.focus();
+        }
+    };
+
+    window.syncAppDateFromWareki = function() {
+        var text    = document.getElementById('appDate_wareki_text').value;
+        var preview = document.getElementById('appDate_wareki_preview');
+        var hidden  = document.getElementById('id_application_date');
+        var r = parseAppWareki(text);
+        if (r) {
+            var wy = r.era.start + r.year - 1;
+            var mo = String(r.month).padStart(2,'0'), d = String(r.day).padStart(2,'0');
+            hidden.value = wy + '-' + mo + '-' + d;
+            preview.textContent = '→ 西暦 ' + wy + '年' + r.month + '月' + r.day + '日';
+            preview.style.color = '#6c757d';
+        } else {
+            hidden.value = '';
+            preview.textContent = text.length > 0 ? '例: 令和7年4月1日　または　R7.4.1' : '';
+            preview.style.color = '#aaa';
+        }
+    };
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // 申請日の初期化（保存済みデータがある場合）
+        var hidden = document.getElementById('id_application_date');
+        if (hidden && hidden.value) {
+            document.getElementById('appDate_wareki_text').value = isoToWarekiText(hidden.value);
+            syncAppDateFromWareki();
+        }
+
+        // 事業所ステータス初期化
+        updateOfficeStatus(false);
+
+        // input イベントでステータス更新
+        ['office_name', 'office_postal_code', 'office_address', 'office_phone'].forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) el.addEventListener('input', function() { updateOfficeStatus(true); });
+        });
+    });
+})();
+</script>
+{% endblock %}

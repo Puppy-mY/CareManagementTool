@@ -1087,6 +1087,7 @@ function reopenDocument(documentType, historyId, clientId) {
     const typeToUrl = {
         'ltc_renewal':           `/clients/${clientId}/document/ltc-renewal/?history_id=${historyId}`,
         'ltc_change':            `/clients/${clientId}/document/ltc-change/?history_id=${historyId}`,
+        'ltc_withdrawal':        `/clients/${clientId}/document/ltc-withdrawal/?history_id=${historyId}`,
         'careplan_info_request': `/clients/${clientId}/documents/create/careplan_info_request/?history_id=${historyId}`,
     };
     const url = typeToUrl[documentType]
