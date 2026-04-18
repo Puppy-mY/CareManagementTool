@@ -108,24 +108,23 @@
 
                         <!-- 申請年月日（取り下げる申請の日付） -->
                         <div class="row g-3 mb-4">
-                            <div class="col-12">
-                                <div class="d-flex align-items-center gap-2 mb-1">
-                                    <label class="form-label fw-bold mb-0">申請年月日 <span class="text-danger">*</span></label>
+                            <div class="col-md-5">
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    <label class="form-label mb-0">申請年月日 <span class="text-danger">*</span></label>
                                     <div class="birth-era-toggle" title="和暦 / 西暦を切り替え">
                                         <button type="button" class="era-btn active" id="appDate_era_japanese" onclick="switchAppDateEra('japanese')">和暦</button>
                                         <button type="button" class="era-btn" id="appDate_era_western" onclick="switchAppDateEra('western')">西暦</button>
                                     </div>
                                 </div>
-                                <small class="text-muted d-block mb-2">取り下げる更新認定・区分変更の申請を行った日付を入力してください</small>
+                                <div id="appDate_western" style="display:none;">
+                                    <input type="date" id="id_application_date" name="application_date" class="form-control"
+                                        value="{{ initial.application_date|default:'' }}">
+                                </div>
                                 <div id="appDate_japanese">
-                                    <input type="text" id="appDate_wareki_text" class="form-control" style="max-width: 220px;"
+                                    <input type="text" id="appDate_wareki_text" class="form-control"
                                         placeholder="例: 令和7年4月1日" autocomplete="off"
                                         oninput="syncAppDateFromWareki()">
                                     <small id="appDate_wareki_preview" style="font-size:0.78em; display:block; margin-top:2px;"></small>
-                                </div>
-                                <div id="appDate_western" style="display:none;">
-                                    <input type="date" id="id_application_date" name="application_date" class="form-control" style="max-width: 220px;"
-                                        value="{{ initial.application_date|default:'' }}">
                                 </div>
                             </div>
                         </div>
@@ -362,23 +361,24 @@ function saveWithdrawalOfficeModal() {
     .catch(() => reflectToForm());
 }
 
-// 申請年月日 和暦/西暦切替
+// 申請年月日 和暦/西暦切替（生年月日と同じパターン）
 (function() {
-    var APP_ERA = [
+    var ERA_INFO = [
         { keys: ['令和','R','r'], start: 2019, label: '令和' },
         { keys: ['平成','H','h'], start: 1989, label: '平成' },
         { keys: ['昭和','S','s'], start: 1926, label: '昭和' },
         { keys: ['大正','T','t'], start: 1912, label: '大正' },
+        { keys: ['明治','M','m'], start: 1868, label: '明治' },
     ];
 
-    function parseAppWareki(text) {
+    function parseWareki(text) {
         if (!text) return null;
         text = text.replace(/\s/g, '');
         var era = null, rest = text;
-        for (var i = 0; i < APP_ERA.length; i++) {
-            for (var k = 0; k < APP_ERA[i].keys.length; k++) {
-                if (text.indexOf(APP_ERA[i].keys[k]) === 0) {
-                    era = APP_ERA[i]; rest = text.slice(APP_ERA[i].keys[k].length); break;
+        for (var i = 0; i < ERA_INFO.length; i++) {
+            for (var k = 0; k < ERA_INFO[i].keys.length; k++) {
+                if (text.indexOf(ERA_INFO[i].keys[k]) === 0) {
+                    era = ERA_INFO[i]; rest = text.slice(ERA_INFO[i].keys[k].length); break;
                 }
             }
             if (era) break;
@@ -395,19 +395,36 @@ function saveWithdrawalOfficeModal() {
         if (!iso) return '';
         var p = iso.split('-'); if (p.length < 3) return '';
         var y = parseInt(p[0]), m = parseInt(p[1]), d = parseInt(p[2]);
-        for (var i = 0; i < APP_ERA.length; i++) {
-            if (y >= APP_ERA[i].start) return APP_ERA[i].label + (y - APP_ERA[i].start + 1) + '年' + m + '月' + d + '日';
+        for (var i = 0; i < ERA_INFO.length; i++) {
+            if (y >= ERA_INFO[i].start) return ERA_INFO[i].label + (y - ERA_INFO[i].start + 1) + '年' + m + '月' + d + '日';
         }
         return '';
     }
 
+    window.syncAppDateFromWareki = function() {
+        var text    = (document.getElementById('appDate_wareki_text') || {}).value || '';
+        var hidden  = document.getElementById('id_application_date');
+        var preview = document.getElementById('appDate_wareki_preview');
+        var result  = parseWareki(text);
+        if (result) {
+            var wy = result.era.start + result.year - 1;
+            hidden.value = wy + '-' + String(result.month).padStart(2,'0') + '-' + String(result.day).padStart(2,'0');
+            preview.textContent = '→ 西暦 ' + wy + '年' + result.month + '月' + result.day + '日';
+            preview.style.color = '#6c757d';
+        } else {
+            hidden.value = '';
+            preview.textContent = text.length > 0 ? '例: 令和7年4月1日　または　R7.4.1' : '';
+            preview.style.color = '#aaa';
+        }
+    };
+
     window.switchAppDateEra = function(mode) {
-        var jDiv   = document.getElementById('appDate_japanese');
         var wDiv   = document.getElementById('appDate_western');
+        var jDiv   = document.getElementById('appDate_japanese');
         var hidden = document.getElementById('id_application_date');
         var wareki = document.getElementById('appDate_wareki_text');
         if (mode === 'western') {
-            jDiv.style.display = 'none'; wDiv.style.display = '';
+            wDiv.style.display = ''; jDiv.style.display = 'none';
             document.getElementById('appDate_era_western').classList.add('active');
             document.getElementById('appDate_era_japanese').classList.remove('active');
         } else {
@@ -420,26 +437,8 @@ function saveWithdrawalOfficeModal() {
         }
     };
 
-    window.syncAppDateFromWareki = function() {
-        var text    = document.getElementById('appDate_wareki_text').value;
-        var preview = document.getElementById('appDate_wareki_preview');
-        var hidden  = document.getElementById('id_application_date');
-        var r = parseAppWareki(text);
-        if (r) {
-            var wy = r.era.start + r.year - 1;
-            var mo = String(r.month).padStart(2,'0'), d = String(r.day).padStart(2,'0');
-            hidden.value = wy + '-' + mo + '-' + d;
-            preview.textContent = '→ 西暦 ' + wy + '年' + r.month + '月' + r.day + '日';
-            preview.style.color = '#6c757d';
-        } else {
-            hidden.value = '';
-            preview.textContent = text.length > 0 ? '例: 令和7年4月1日　または　R7.4.1' : '';
-            preview.style.color = '#aaa';
-        }
-    };
-
     document.addEventListener('DOMContentLoaded', function() {
-        // 申請日の初期化（保存済みデータがある場合）
+        // 保存済みデータがある場合は和暦に変換して表示
         var hidden = document.getElementById('id_application_date');
         if (hidden && hidden.value) {
             document.getElementById('appDate_wareki_text').value = isoToWarekiText(hidden.value);
