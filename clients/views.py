@@ -44,7 +44,7 @@ try:
     OPENPYXL_AVAILABLE = True
 except ImportError:
     OPENPYXL_AVAILABLE = False
-from .models import Client, LimitCalculation, AdditionalService, ServiceType, ServiceProvider, ClientDementiaStatus, ServiceAddOn, ProviderAddOnSetting, DocumentCreationHistory, Feedback, FeedbackReply, HomeCareSupportOffice, RegionalSupportCenter
+from .models import Client, LimitCalculation, AdditionalService, ServiceType, ServiceProvider, ClientDementiaStatus, ServiceAddOn, ProviderAddOnSetting, DocumentCreationHistory, Feedback, FeedbackReply, HomeCareSupportOffice, RegionalSupportCenter, UserProfile
 from .forms import ClientForm, FeedbackForm, FeedbackEditForm, FeedbackReplyForm, CareInsuranceForm, DisabilityWelfareForm, MedicalCertForm
 
 
@@ -176,7 +176,7 @@ def client_create(request):
         'form': form,
         'title': '新規利用者登録',
     }
-    
+
     return render(request, 'clients/client_form.html', context)
 
 
@@ -198,7 +198,7 @@ def client_edit(request, pk):
         'client': client,
         'title': '利用者情報編集',
     }
-    
+
     return render(request, 'clients/client_form.html', context)
 
 
@@ -1602,15 +1602,21 @@ def _generate_ltc_renewal_excel_bytes(client, form_data):
     # ① 申請年月日
     w('X7', to_wareki(form_data.get('application_date', '')))
 
-    # ② 申請書提出者（事業所）
-    w('G8',  form_data.get('office_furigana', ''))
-    w('G9',  form_data.get('office_name', ''))
-    w('X9',  form_data.get('relation', '介護支援専門員'))
+    # ② 申請書提出者
+    submitter_type = form_data.get('submitter_type', 'office')
+    if submitter_type == 'office':
+        w('G8',  form_data.get('office_furigana', ''))
+        w('G9',  form_data.get('office_name', ''))
+        w('X9',  '介護支援専門員')
+        w('G14', client.charge_manager_display)
+        w('W14', int(form_data['office_number']) if form_data.get('office_number', '').isdigit() else form_data.get('office_number', ''))
+    else:
+        w('G8',  form_data.get('office_furigana', ''))
+        w('G9',  form_data.get('staff_name', ''))
+        w('X9',  form_data.get('relation', ''))
     w('I11', f"〒{form_data.get('office_postal_code', '')}" if form_data.get('office_postal_code') else '')
     w('G12', form_data.get('office_address', ''))
     w('X12', form_data.get('office_phone', ''))
-    w('G14', form_data.get('staff_name', ''))
-    w('W14', int(form_data['office_number']) if form_data.get('office_number', '').isdigit() else form_data.get('office_number', ''))
 
     # ③ 被保険者
     w('G16', int(form_data['insurance_number']) if form_data.get('insurance_number', '').isdigit() else form_data.get('insurance_number', ''))
@@ -1675,17 +1681,28 @@ def _generate_ltc_renewal_excel_bytes(client, form_data):
         with open(tmp.name, 'rb') as f:
             content = f.read()
     os.unlink(tmp.name)
+
+    if submitter_type == 'office':
+        content = _add_oval_to_xlsx_bytes(content, 'K13', to_cell_ref='L13')
+
     return content
 
 
-def _add_oval_to_xlsx_bytes(xlsx_bytes, cell_ref, padding=30000):
-    """xlsxバイト列のcell_refセルに楕円を重ねて返す（ZIP直接操作）。"""
+def _add_oval_to_xlsx_bytes(xlsx_bytes, cell_ref, padding=30000, to_cell_ref=None):
+    """xlsxバイト列のcell_refセルに楕円を重ねて返す（ZIP直接操作）。to_cell_refで終端セルを指定可能。"""
     import io, zipfile
     from lxml import etree
     from openpyxl.utils.cell import coordinate_from_string, column_index_from_string
 
     col_str, row_num = coordinate_from_string(cell_ref)
     col_num = column_index_from_string(col_str)
+
+    if to_cell_ref:
+        to_col_str, to_row_num = coordinate_from_string(to_cell_ref)
+        to_col_num = column_index_from_string(to_col_str)
+    else:
+        to_col_num = col_num
+        to_row_num = row_num
 
     XDR = 'http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing'
     A_NS = 'http://schemas.openxmlformats.org/drawingml/2006/main'
@@ -1699,8 +1716,8 @@ def _add_oval_to_xlsx_bytes(xlsx_bytes, cell_ref, padding=30000):
         f'<xdr:twoCellAnchor xmlns:xdr="{XDR}" xmlns:a="{A_NS}" editAs="oneCell">'
         f'<xdr:from><xdr:col>{col_num - 1}</xdr:col><xdr:colOff>{padding}</xdr:colOff>'
         f'<xdr:row>{row_num - 1}</xdr:row><xdr:rowOff>{padding}</xdr:rowOff></xdr:from>'
-        f'<xdr:to><xdr:col>{col_num}</xdr:col><xdr:colOff>-{padding}</xdr:colOff>'
-        f'<xdr:row>{row_num}</xdr:row><xdr:rowOff>-{padding}</xdr:rowOff></xdr:to>'
+        f'<xdr:to><xdr:col>{to_col_num}</xdr:col><xdr:colOff>-{padding}</xdr:colOff>'
+        f'<xdr:row>{to_row_num}</xdr:row><xdr:rowOff>-{padding}</xdr:rowOff></xdr:to>'
         '<xdr:sp macro="" textlink="">'
         '<xdr:nvSpPr>'
         '<xdr:cNvPr id="2" name="Oval 1"/>'
@@ -1709,7 +1726,7 @@ def _add_oval_to_xlsx_bytes(xlsx_bytes, cell_ref, padding=30000):
         '<xdr:spPr>'
         '<a:prstGeom prst="ellipse"><a:avLst/></a:prstGeom>'
         '<a:noFill/>'
-        '<a:ln w="19050"><a:solidFill><a:srgbClr val="000000"/></a:solidFill></a:ln>'
+        '<a:ln w="9525"><a:solidFill><a:srgbClr val="000000"/></a:solidFill></a:ln>'
         '</xdr:spPr>'
         '<xdr:txBody><a:bodyPr/><a:lstStyle/><a:p/></xdr:txBody>'
         '</xdr:sp>'
@@ -1862,15 +1879,21 @@ def _generate_ltc_change_excel_bytes(client, form_data):
     # ① 申請年月日
     w('X7', to_wareki(form_data.get('application_date', '')))
 
-    # ② 申請書提出者（事業所）
-    w('G8',  form_data.get('office_furigana', ''))
-    w('G9',  form_data.get('office_name', ''))
-    w('X9',  form_data.get('relation', '介護支援専門員'))
+    # ② 申請書提出者
+    submitter_type = form_data.get('submitter_type', 'office')
+    if submitter_type == 'office':
+        w('G8',  form_data.get('office_furigana', ''))
+        w('G9',  form_data.get('office_name', ''))
+        w('X9',  '介護支援専門員')
+        w('G14', client.charge_manager_display)
+        w('W14', int(form_data['office_number']) if form_data.get('office_number', '').isdigit() else form_data.get('office_number', ''))
+    else:
+        w('G8',  form_data.get('office_furigana', ''))
+        w('G9',  form_data.get('staff_name', ''))
+        w('X9',  form_data.get('relation', ''))
     w('I11', form_data.get('office_postal_code', ''))
     w('G12', form_data.get('office_address', ''))
     w('X12', form_data.get('office_phone', ''))
-    w('G14', form_data.get('staff_name', ''))
-    w('W14', int(form_data['office_number']) if form_data.get('office_number', '').isdigit() else form_data.get('office_number', ''))
 
     # ③ 被保険者
     w('G16', int(form_data['insurance_number']) if form_data.get('insurance_number', '').isdigit() else form_data.get('insurance_number', ''))
@@ -1929,6 +1952,10 @@ def _generate_ltc_change_excel_bytes(client, form_data):
         with open(tmp.name, 'rb') as f:
             content = f.read()
     os.unlink(tmp.name)
+
+    if submitter_type == 'office':
+        content = _add_oval_to_xlsx_bytes(content, 'K13', to_cell_ref='L13')
+
     return content
 
 
@@ -1938,7 +1965,7 @@ def document_history_excel(request, pk):
     history = get_object_or_404(DocumentCreationHistory, pk=pk)
     client = history.client
 
-    if history.document_type in ('ltc_renewal', 'ltc_change', 'ltc_withdrawal'):
+    if history.document_type in ('ltc_renewal', 'ltc_change', 'ltc_withdrawal', 'ltc_doctor_change'):
         try:
             if history.document_type == 'ltc_change':
                 content  = _generate_ltc_change_excel_bytes(client, history.form_data)
@@ -1948,6 +1975,11 @@ def document_history_excel(request, pk):
             elif history.document_type == 'ltc_withdrawal':
                 content  = _generate_ltc_withdrawal_excel_bytes(client, history.form_data)
                 dl_label = '認定申請取下書'
+                ct       = 'application/vnd.ms-excel'
+                ext      = '.xls'
+            elif history.document_type == 'ltc_doctor_change':
+                content  = _generate_ltc_doctor_change_excel_bytes(client, history.form_data)
+                dl_label = '認定申請主治医変更届出書'
                 ct       = 'application/vnd.ms-excel'
                 ext      = '.xls'
             else:
@@ -3366,6 +3398,9 @@ def _document_create_ltc_base(request, client_id, doc_type, doc_name, template_n
     # ユーザープロフィールと事業所情報を取得
     profile = getattr(request.user, 'profile', None)
     office = getattr(profile, 'home_care_office', None)
+    # プロファイルに事業所が紐づいていない場合は最初の有効事業所を使用
+    if not office:
+        office = HomeCareSupportOffice.objects.filter(is_active=True).first()
 
     # 担当者氏名（ログインユーザーの氏名）
     user_full_name = profile.get_full_name() if profile else request.user.username
@@ -3421,7 +3456,8 @@ def _document_create_ltc_base(request, client_id, doc_type, doc_name, template_n
         'office_address': (office.address if office else '') or '',
         'office_phone': (office.phone if office else '') or '',
         'staff_name': user_full_name,
-        'relation': '介護支援専門員',
+        'relation': '担当ケアマネ' if (profile and getattr(profile, 'job_type', '') == 'care_manager') else '介護支援専門員',
+        'submitter_type': 'office',
         # 手入力項目
         'application_date': datetime.today().strftime('%Y-%m-%d'),
         'specific_disease': '',
@@ -3453,6 +3489,22 @@ def _document_create_ltc_base(request, client_id, doc_type, doc_name, template_n
         'doctor_notes': '',
         'change_reason': '',
     }
+
+    if doc_type == 'ltc_withdrawal':
+        initial['withdrawal_date'] = datetime.today().strftime('%Y-%m-%d')
+        initial['application_date'] = ''
+        initial['withdrawal_reason'] = ''
+
+    if doc_type == 'ltc_doctor_change':
+        initial['submitter_type'] = 'office'
+        initial['application_type'] = ''
+        initial['original_application_date'] = ''
+        initial['change_reason_type'] = ''
+        initial['change_reason_other'] = ''
+        initial['before_doctor_hospital'] = ''
+        initial['before_doctor_name'] = ''
+        initial['after_doctor_hospital'] = ''
+        initial['after_doctor_name'] = ''
 
     # 履歴からの再編集：保存済みデータで initial を上書き
     history_id = request.GET.get('history_id')
@@ -3491,6 +3543,16 @@ def _document_create_ltc_base(request, client_id, doc_type, doc_name, template_n
             initial['user_full_name_kana'] = profile.get_full_name_kana() if profile else ''
             initial['user_phone']          = profile.phone if profile else ''
             initial['office_phone']        = (office.phone if office else '') or ''
+            # 代行提出モードで事業所名が保存されていない場合のみ現在の事業所から補完
+            if initial.get('submitter_type', 'office') == 'office' and not initial.get('office_name') and office:
+                initial['office_name']        = office.name or ''
+                initial['office_furigana']     = office.furigana or ''
+                initial['office_number']       = office.office_number or ''
+                initial['office_postal_code']  = office.postal_code or ''
+                initial['office_address']      = office.address or ''
+            # 担当者名が保存されていない場合は現在のログインユーザーから補完
+            if not initial.get('staff_name'):
+                initial['staff_name'] = user_full_name
 
         except DocumentCreationHistory.DoesNotExist:
             history_id = None
@@ -3534,13 +3596,15 @@ def _document_create_ltc_base(request, client_id, doc_type, doc_name, template_n
             except DocumentCreationHistory.DoesNotExist:
                 history_id = None
         if not history_id:
-            hist = DocumentCreationHistory.objects.create(
+            hist, _ = DocumentCreationHistory.objects.update_or_create(
                 client=client,
                 document_type=doc_type,
-                document_name=doc_name,
-                form_data=form_data,
-                status='draft',
-                created_by=request.user,
+                defaults={
+                    'document_name': doc_name,
+                    'form_data': form_data,
+                    'status': 'draft',
+                    'created_by': request.user,
+                },
             )
 
         if action == 'save':
@@ -3550,7 +3614,25 @@ def _document_create_ltc_base(request, client_id, doc_type, doc_name, template_n
 
         try:
             from urllib.parse import quote
-            if doc_type == 'ltc_change':
+            if doc_type == 'ltc_withdrawal':
+                content = _generate_ltc_withdrawal_excel_bytes(client, form_data)
+                dl_name = _make_dl_filename(client, doc_name)
+                response = HttpResponse(content, content_type='application/vnd.ms-excel')
+                response['Content-Disposition'] = (
+                    f"attachment; filename=\"download.xls\"; "
+                    f"filename*=UTF-8''{quote(dl_name + '.xls', safe='')}"
+                )
+                return response
+            elif doc_type == 'ltc_doctor_change':
+                content = _generate_ltc_doctor_change_excel_bytes(client, form_data)
+                dl_name = _make_dl_filename(client, doc_name)
+                response = HttpResponse(content, content_type='application/vnd.ms-excel')
+                response['Content-Disposition'] = (
+                    f"attachment; filename=\"download.xls\"; "
+                    f"filename*=UTF-8''{quote(dl_name + '.xls', safe='')}"
+                )
+                return response
+            elif doc_type == 'ltc_change':
                 content = _generate_ltc_change_excel_bytes(client, form_data)
             else:
                 content = _generate_ltc_renewal_excel_bytes(client, form_data)
@@ -3632,15 +3714,62 @@ def _document_create_ltc_base(request, client_id, doc_type, doc_name, template_n
                     'name': hs.get(f'family_doctor_name_{i}', ''),
                 })
 
+    # スタッフ一覧（担当者選択用）
+    from django.contrib.auth import get_user_model as _get_user_model
+    _User = _get_user_model()
+    staff_options = []
+    for _u in _User.objects.filter(is_active=True).select_related('profile').order_by('profile__last_name', 'profile__first_name'):
+        _p = getattr(_u, 'profile', None)
+        if not _p:
+            continue
+        _name = _p.get_full_name() if _p else _u.username
+        if not _name.strip():
+            _name = _u.username
+        _job_display = dict(UserProfile.JOB_TYPE_CHOICES).get(_p.job_type, '') if _p.job_type else ''
+        _relation = '担当ケアマネ' if _p.job_type == 'care_manager' else _job_display
+        staff_options.append({
+            'name': _name,
+            'relation': _relation,
+        })
+
     context = {
         'client': client,
         'initial': initial,
+        'current_office_name':     (office.name          if office else '') or '',
+        'current_office_furigana': (office.furigana       if office else '') or '',
+        'current_office_number':   (office.office_number  if office else '') or '',
+        'current_office_postal':   (office.postal_code    if office else '') or '',
+        'current_office_address':  (office.address        if office else '') or '',
+        'current_office_phone':    (office.phone          if office else '') or '',
         'is_second_insured': is_second_insured,
         'specific_diseases': specific_diseases,
         'doctor_options': doctor_options,
+        'staff_options': staff_options,
         'history_id': history_id or '',
+        'application_type_choices': [
+            ('新規申請', '新規申請'),
+            ('更新申請', '更新申請'),
+            ('変更申請', '変更申請'),
+        ],
+        'change_reason_choices': [
+            ('transferred', '他院に転院（入院）した為'),
+            ('different_doctor', '申請時とかかりつけ医が異なる為'),
+            ('other', 'その他（手入力）'),
+        ],
     }
     return render(request, template_name, context)
+
+
+@login_required
+@user_passes_test(staff_required)
+def document_create_ltc_doctor_change(request, client_id):
+    """認定申請主治医変更届出書 作成画面"""
+    return _document_create_ltc_base(
+        request, client_id,
+        doc_type='ltc_doctor_change',
+        doc_name='認定申請主治医変更届出書',
+        template_name='clients/document_create_ltc_doctor_change.html',
+    )
 
 
 @login_required
@@ -3671,86 +3800,12 @@ def document_create_ltc_change(request, client_id):
 @user_passes_test(staff_required)
 def document_create_ltc_withdrawal(request, client_id):
     """認定申請取下書 作成画面"""
-    client = get_object_or_404(Client, pk=client_id)
-
-    profile = getattr(request.user, 'profile', None)
-    office  = getattr(profile, 'home_care_office', None)
-
-    initial = {
-        'insurance_number': client.insurance_number or '',
-        'client_furigana':  client.furigana or '',
-        'client_name':      client.name or '',
-        'client_gender':    '男' if client.gender == 'male' else ('女' if client.gender == 'female' else ''),
-        'birth_date':       client.birth_date.strftime('%Y-%m-%d') if client.birth_date else '',
-        'postal_code':      client.postal_code or '',
-        'client_address':   client.address or '',
-        'client_phone':     client.phone or '',
-        'office_name':         (office.name         if office else '') or '',
-        'office_postal_code':  (office.postal_code  if office else '') or '',
-        'office_address':      (office.address      if office else '') or '',
-        'office_phone':        (office.phone        if office else '') or '',
-        'application_date':   '',
-        'withdrawal_reason':  '',
-    }
-
-    history_id = request.GET.get('history_id')
-    if history_id and request.method == 'GET':
-        try:
-            hist = DocumentCreationHistory.objects.get(pk=history_id, client=client)
-            saved = hist.form_data or {}
-            for k in initial:
-                if k in saved:
-                    initial[k] = saved[k]
-        except DocumentCreationHistory.DoesNotExist:
-            history_id = None
-
-    if request.method == 'POST':
-        form_data  = {k: request.POST.get(k, '') for k in initial}
-        action     = request.POST.get('action', 'excel')
-        history_id = request.GET.get('history_id')
-
-        if history_id:
-            try:
-                hist = DocumentCreationHistory.objects.get(pk=history_id, client=client)
-                hist.form_data = form_data
-                hist.save()
-            except DocumentCreationHistory.DoesNotExist:
-                history_id = None
-        if not history_id:
-            hist = DocumentCreationHistory.objects.create(
-                client=client,
-                document_type='ltc_withdrawal',
-                document_name='認定申請取下書',
-                form_data=form_data,
-                status='draft',
-                created_by=request.user,
-            )
-
-        if action == 'save':
-            messages.success(request, '認定申請取下書を保存しました。')
-            url = reverse('client_detail', kwargs={'pk': client_id}) + '#documents'
-            return HttpResponseRedirect(url)
-
-        try:
-            from urllib.parse import quote
-            content  = _generate_ltc_withdrawal_excel_bytes(client, form_data)
-            dl_name  = _make_dl_filename(client, '認定申請取下書')
-            response = HttpResponse(content, content_type='application/vnd.ms-excel')
-            response['Content-Disposition'] = (
-                f"attachment; filename=\"download.xls\"; "
-                f"filename*=UTF-8''{quote(dl_name + '.xls', safe='')}"
-            )
-            return response
-        except Exception as e:
-            messages.error(request, f'Excel生成中にエラーが発生しました: {str(e)}')
-            return redirect('client_detail', pk=client_id)
-
-    context = {
-        'client':     client,
-        'initial':    initial,
-        'history_id': history_id or '',
-    }
-    return render(request, 'clients/document_create_ltc_withdrawal.html', context)
+    return _document_create_ltc_base(
+        request, client_id,
+        doc_type='ltc_withdrawal',
+        doc_name='認定申請取下書',
+        template_name='clients/document_create_ltc_withdrawal.html',
+    )
 
 
 def _generate_ltc_withdrawal_excel_bytes(client, form_data):
@@ -3799,10 +3854,8 @@ def _generate_ltc_withdrawal_excel_bytes(client, form_data):
         # ② 取下年月日（本日）
         ws['N8'].value = to_wareki(date_cls.today().strftime('%Y-%m-%d'))
 
-        # ③ 被保険者番号（1桁ずつ C8〜L8）
-        ins_num = (form_data.get('insurance_number') or '').replace('-', '').replace(' ', '')
-        for i, digit in enumerate(ins_num[:10]):
-            ws.api.Cells(8, 3 + i).Value = digit
+        # ③ 被保険者番号
+        ws['C8'].value = form_data.get('insurance_number', '')
 
         # ④ フリガナ（ひらがな→カタカナ）
         furigana = form_data.get('client_furigana', '')
@@ -3833,6 +3886,117 @@ def _generate_ltc_withdrawal_excel_bytes(client, form_data):
 
         # ⑪ 取下理由
         ws['B22'].value = form_data.get('withdrawal_reason', '')
+
+        wb.save()
+        wb.close()
+
+        with open(tmp_path, 'rb') as f:
+            content = f.read()
+        return content
+    finally:
+        app.quit()
+        try:
+            os.unlink(tmp_path)
+        except Exception:
+            pass
+
+
+def _generate_ltc_doctor_change_excel_bytes(client, form_data):
+    """認定申請主治医変更届出書（XLS）のバイト列を生成して返す"""
+    import tempfile, shutil
+    import xlwings as xw
+    from datetime import date as date_cls, datetime as dt_cls
+
+    template_path = os.path.join(
+        settings.BASE_DIR, 'templates', 'forms',
+        'LTCI_Renewal_Doctor_Change_Notice.xls'
+    )
+
+    with tempfile.NamedTemporaryFile(suffix='.xls', delete=False) as tmp:
+        tmp_path = tmp.name
+    shutil.copy(template_path, tmp_path)
+
+    def to_wareki(date_str):
+        if not date_str:
+            return ''
+        try:
+            d = dt_cls.strptime(date_str, '%Y-%m-%d').date()
+            y, m, day = d.year, d.month, d.day
+            if d >= date_cls(2019, 5, 1):
+                return f"令和{y-2018}年{m}月{day}日"
+            elif d >= date_cls(1989, 1, 8):
+                return f"平成{y-1988}年{m}月{day}日"
+            elif d >= date_cls(1926, 12, 25):
+                return f"昭和{y-1925}年{m}月{day}日"
+            else:
+                return f"大正{y-1911}年{m}月{day}日"
+        except Exception:
+            return date_str
+
+    app = xw.App(visible=False)
+    try:
+        wb = app.books.open(tmp_path)
+        ws = wb.sheets[0]
+
+        # 申請日
+        ws['J2'].value = to_wareki(form_data.get('application_date', ''))
+
+        # 申請者（事業所）
+        ws['I3'].value = form_data.get('office_postal_code', '')
+        ws['H4'].value = form_data.get('office_address', '')
+        office_name = form_data.get('office_name', '').strip()
+        staff_name = form_data.get('staff_name', '').strip()
+        ws['H5'].value = f"{office_name}\n{staff_name}" if office_name else staff_name
+        relation = form_data.get('relation', '') or '介護支援専門員'
+        ws['H6'].value = relation
+
+        # 被保険者
+        ins = str(client.insurance_number).strip() if client.insurance_number else ''
+        ws['B11'].value = int(ins) if ins.isdigit() else ins
+        ws['B12'].value = client.name or form_data.get('client_name', '')
+
+        # 更新・区分変更申請日 / 申請区分
+        ws['B13'].value = to_wareki(form_data.get('original_application_date', ''))
+
+        def _circle_range(start_ref, end_ref=None):
+            c1 = ws[start_ref].api
+            if end_ref:
+                c2 = ws[end_ref].api
+                left, top = c1.Left, c1.Top
+                width = c2.Left + c2.Width - c1.Left
+                height = c1.Height
+            else:
+                left, top, width, height = c1.Left, c1.Top, c1.Width, c1.Height
+            shape = ws.api.Shapes.AddShape(9, left, top, width, height)
+            shape.Fill.Visible = False
+            shape.Line.ForeColor.RGB = 0x000000
+
+        app_type = form_data.get('application_type', '')
+        if app_type == '新規申請':
+            _circle_range('F14', 'G14')
+        elif app_type == '更新申請':
+            _circle_range('H14', 'I14')
+        elif app_type == '変更申請':
+            _circle_range('J14')
+
+        # 変更理由：選択肢に応じてセルを楕円で囲む
+        def _circle(cell_ref):
+            _circle_range(cell_ref)
+
+        reason = form_data.get('change_reason_type', '')
+        if reason == 'transferred':
+            _circle('B15')
+        elif reason == 'different_doctor':
+            _circle('B16')
+        elif reason == 'other':
+            _circle('B17')
+            ws['F17'].value = form_data.get('change_reason_other', '')
+
+        # 主治医変更（変更前・変更後）
+        ws['C20'].value = form_data.get('before_doctor_hospital', '')
+        ws['C21'].value = form_data.get('before_doctor_name', '')
+        ws['K20'].value = form_data.get('after_doctor_hospital', '')
+        ws['K21'].value = form_data.get('after_doctor_name', '')
 
         wb.save()
         wb.close()

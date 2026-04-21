@@ -1,4 +1,5 @@
 from django import forms
+from django.contrib.auth.models import User
 from .models import Client, Feedback, FeedbackReply, HomeCareSupportOffice
 
 
@@ -29,6 +30,8 @@ class ClientForm(forms.ModelForm):
             # 家族情報（2人目）
             'family_name2', 'family_relationship2', 'family_relationship_detail2', 'family_address2', 'family_contact2',
             'family_living_status2', 'family_care_status2', 'family_employment2', 'family_notes2',
+            # 担当ケアマネージャー
+            'charge_manager', 'charge_manager_other',
         ]
         
         widgets = {
@@ -109,11 +112,19 @@ class ClientForm(forms.ModelForm):
             'family_employment2': forms.Select(attrs={'class': 'form-select'}),
             'family_contact2': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '例: 090-1234-5678'}),
             'family_notes2': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '特記事項があれば記載'}),
+            # 担当ケアマネージャー（テンプレートで独自UIを使うためhiddenにする）
+            'charge_manager': forms.HiddenInput(),
+            'charge_manager_other': forms.HiddenInput(),
         }
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        
+
+        # charge_manager のクエリセットを設定
+        self.fields['charge_manager'].queryset = User.objects.select_related('profile').order_by('profile__last_name', 'profile__first_name')
+        self.fields['charge_manager'].required = False
+        self.fields['charge_manager'].empty_label = '--- 選択してください ---'
+
         # 必須フィールドにマークを追加
         required_fields = ['insurance_number', 'name', 'furigana', 'birth_date', 'gender']
         for field_name in required_fields:

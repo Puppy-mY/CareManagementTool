@@ -66,7 +66,8 @@ urlpatterns = [
     path('home-care-offices/<int:pk>/edit/', views.home_care_office_edit, name='home_care_office_edit'),
     path('home-care-offices/<int:pk>/delete/', views.home_care_office_delete, name='home_care_office_delete'),
 
-    # 更新認定申請書・区分変更申請書
+    # 更新認定申請書・区分変更申請書・主治医変更届出書
+    path('<str:client_id>/document/ltc-doctor-change/', views.document_create_ltc_doctor_change, name='document_ltc_doctor_change'),
     path('<str:client_id>/document/ltc-renewal/', views.document_create_ltc_renewal, name='document_ltc_renewal'),
     path('<str:client_id>/document/ltc-change/', views.document_create_ltc_change, name='document_ltc_change'),
     path('<str:client_id>/document/ltc-withdrawal/', views.document_create_ltc_withdrawal, name='document_ltc_withdrawal'),
@@ -76,6 +77,7 @@ urlpatterns = [
     # マスタデータ更新API
     path('office/<int:pk>/update-master/', api_views.update_office_master, name='update_office_master'),
     path('center/<int:pk>/update-master/', api_views.update_center_master, name='update_center_master'),
+    path('api/users/', api_views.api_users_list, name='api_users_list'),
 
     # 利用者関連（<str:pk>パターンは最後に配置）
     path('<str:pk>/', views.client_detail, name='client_detail'),

@@ -74,6 +74,16 @@
                                         <input type="text" name="client_phone" class="form-control" value="{{ initial_data.client_phone|default:client.phone }}" readonly>
                                     </div>
                                 </div>
+                                <div style="border-top: 1px solid #dee2e6; width: 50%; margin: 0.5rem 0 0.75rem 0;"></div>
+                                <div class="row g-3 mb-2">
+                                    <div class="col-md-4">
+                                        <label class="form-label">担当ケアマネージャー</label>
+                                        <input type="text" id="disp_charge_manager" class="form-control"
+                                            value="{{ client.charge_manager_display }}" readonly>
+                                        <input type="hidden" name="client_charge_manager_id" value="{{ client.charge_manager_id|default:'' }}">
+                                        <input type="hidden" name="client_charge_manager_other" value="{{ client.charge_manager_other|default:'' }}">
+                                    </div>
+                                </div>
                                 <div class="text-end mt-2">
                                     <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openClientMasterDrawer()">
                                         <i class="fas fa-edit me-1"></i>利用者マスタデータを編集
@@ -398,6 +408,23 @@
                         <input type="text" id="edit_client_phone" class="form-control">
                     </div>
                 </div>
+                <!-- 区切り線 -->
+                <div style="border-top: 1px solid #dee2e6; width: 50%; margin: 1rem 0 0.75rem 0;"></div>
+                <!-- 担当ケアマネージャー -->
+                <div class="row g-3">
+                    <div class="col-md-5">
+                        <label class="form-label">担当ケアマネージャー</label>
+                        <select id="edit_charge_manager_select" class="form-select" onchange="handleModalManagerChange(this)">
+                            <option value="">--- 選択してください ---</option>
+                            <!-- JSで動的に追加 -->
+                        </select>
+                        <input type="hidden" id="edit_charge_manager_id">
+                    </div>
+                    <div class="col-md-5" id="edit_charge_manager_other_wrap" style="display:none;">
+                        <label class="form-label">担当者名（手入力）</label>
+                        <input type="text" id="edit_charge_manager_other" class="form-control" placeholder="担当者名を入力">
+                    </div>
+                </div>
                     </div><!-- card-body -->
                 </div><!-- card -->
             </div>
@@ -558,6 +585,60 @@ function closeMasterDrawer() {
     currentDrawerType = null;
 }
 
+// 担当ケアマネージャー選択変更
+function handleModalManagerChange(sel) {
+    var val = sel.value;
+    var hiddenId = document.getElementById('edit_charge_manager_id');
+    var otherWrap = document.getElementById('edit_charge_manager_other_wrap');
+    if (val === 'other') {
+        hiddenId.value = '';
+        otherWrap.style.display = 'block';
+    } else {
+        hiddenId.value = val;
+        otherWrap.style.display = 'none';
+        document.getElementById('edit_charge_manager_other').value = '';
+    }
+}
+
+// ユーザー一覧をセレクトに設定（ログインユーザー + その他のみ）
+var _LOGIN_USER_ID = '{{ request.user.id }}';
+var _LOGIN_USER_NAME = '{% with p=request.user.profile %}{% if p.last_name %}{{ p.last_name }} {{ p.first_name }}{% else %}{{ request.user.username }}{% endif %}{% endwith %}';
+
+function _populateManagerSelect(currentId, currentOther) {
+    var sel = document.getElementById('edit_charge_manager_select');
+    if (!sel.dataset.loaded) {
+        sel.innerHTML = '<option value="">--- 選択してください ---</option>';
+        var myOpt = document.createElement('option');
+        myOpt.value = _LOGIN_USER_ID;
+        myOpt.textContent = _LOGIN_USER_NAME;
+        sel.appendChild(myOpt);
+        var otherOpt = document.createElement('option');
+        otherOpt.value = 'other';
+        otherOpt.textContent = 'その他（手入力）';
+        sel.appendChild(otherOpt);
+        sel.dataset.loaded = '1';
+    }
+    _setManagerSelectValue(sel, currentId, currentOther);
+}
+
+function _setManagerSelectValue(sel, currentId, currentOther) {
+    var otherWrap = document.getElementById('edit_charge_manager_other_wrap');
+    if (currentId) {
+        sel.value = String(currentId);
+        document.getElementById('edit_charge_manager_id').value = currentId;
+        otherWrap.style.display = 'none';
+    } else if (currentOther) {
+        sel.value = 'other';
+        document.getElementById('edit_charge_manager_id').value = '';
+        document.getElementById('edit_charge_manager_other').value = currentOther;
+        otherWrap.style.display = 'block';
+    } else {
+        sel.value = '';
+        document.getElementById('edit_charge_manager_id').value = '';
+        otherWrap.style.display = 'none';
+    }
+}
+
 // 利用者マスタデータ編集モーダルを開く
 function openClientMasterDrawer() {
     document.getElementById('edit_client_name').value = document.querySelector('input[name="client_name"]').value;
@@ -568,6 +649,10 @@ function openClientMasterDrawer() {
     const genderDisplay = document.querySelector('input[name="client_gender"]')?.value || '';
     document.getElementById('edit_client_gender').value = genderDisplay === '男' ? 'male' : (genderDisplay === '女' ? 'female' : '');
     initModalBirthDate(document.querySelector('input[name="client_birth_date"]').value);
+
+    const currentId = document.querySelector('input[name="client_charge_manager_id"]')?.value || '';
+    const currentOther = document.querySelector('input[name="client_charge_manager_other"]')?.value || '';
+    _populateManagerSelect(currentId, currentOther);
 
     const modalEl = document.getElementById('clientMasterModal');
     (bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl)).show();
@@ -630,6 +715,9 @@ function saveMasterData() {
 // 利用者マスタデータを保存
 function saveClientMasterData() {
     const clientId = {{ client.id }};
+    const mgrSelVal = document.getElementById('edit_charge_manager_select').value;
+    const mgrId = mgrSelVal === 'other' ? '' : (document.getElementById('edit_charge_manager_id').value || '');
+    const mgrOther = mgrSelVal === 'other' ? (document.getElementById('edit_charge_manager_other').value || '') : '';
     const data = {
         name: document.getElementById('edit_client_name').value,
         furigana: document.getElementById('edit_client_furigana').value,
@@ -638,6 +726,8 @@ function saveClientMasterData() {
         address: document.getElementById('edit_client_address').value,
         gender: document.getElementById('edit_client_gender').value,
         phone: document.getElementById('edit_client_phone').value,
+        charge_manager_id: mgrId,
+        charge_manager_other: mgrOther,
     };
 
     if (!data.name || !data.furigana || !data.birth_date || !data.address) {
@@ -663,6 +753,14 @@ function saveClientMasterData() {
             if (genderEl) genderEl.value = data.gender === 'male' ? '男' : (data.gender === 'female' ? '女' : '');
             const phoneEl = document.querySelector('input[name="client_phone"]');
             if (phoneEl) phoneEl.value = data.phone;
+
+            // 担当ケアマネージャーを更新
+            const mgrIdEl = document.querySelector('input[name="client_charge_manager_id"]');
+            if (mgrIdEl) mgrIdEl.value = data.charge_manager_id;
+            const mgrOtherEl = document.querySelector('input[name="client_charge_manager_other"]');
+            if (mgrOtherEl) mgrOtherEl.value = data.charge_manager_other;
+            const dispEl = document.getElementById('disp_charge_manager');
+            if (dispEl) dispEl.value = result.charge_manager_display || data.charge_manager_other || '';
 
             bootstrap.Modal.getInstance(document.getElementById('clientMasterModal')).hide();
             alert('利用者マスタデータを更新しました。');

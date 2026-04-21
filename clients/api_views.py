@@ -1,5 +1,6 @@
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
 from django.http import JsonResponse
 import json
 import logging
@@ -31,9 +32,24 @@ def update_client_master(request, pk):
             client.gender = g if g in ('male', 'female') else ('male' if g == '男' else ('female' if g == '女' else g))
         if 'phone' in data:
             client.phone = data['phone']
+        if 'charge_manager_id' in data:
+            mgr_id = data['charge_manager_id']
+            if mgr_id:
+                try:
+                    client.charge_manager = User.objects.get(pk=int(mgr_id))
+                    client.charge_manager_other = ''
+                except (User.DoesNotExist, ValueError):
+                    client.charge_manager = None
+            else:
+                client.charge_manager = None
+        if 'charge_manager_other' in data:
+            client.charge_manager_other = data['charge_manager_other'] or ''
         client.save()
 
-        return JsonResponse({'success': True, 'message': '利用者マスタデータを更新しました。'})
+        profile = getattr(client.charge_manager, 'profile', None) if client.charge_manager else None
+        mgr_display = (profile.get_full_name() if profile and profile.get_full_name().strip() else (client.charge_manager.username if client.charge_manager else '')) or client.charge_manager_other or ''
+
+        return JsonResponse({'success': True, 'message': '利用者マスタデータを更新しました。', 'charge_manager_display': mgr_display})
     except Exception as e:
         logger.error(f'Error updating client master: {e}')
         return JsonResponse({'success': False, 'error': str(e)})
@@ -145,3 +161,18 @@ def update_center_master(request, pk):
     except Exception as e:
         logger.error(f'Error updating center master: {e}')
         return JsonResponse({'success': False, 'error': str(e)})
+
+
+@login_required
+def api_users_list(request):
+    """ユーザー一覧API（担当ケアマネージャー選択用）"""
+    from .models import UserProfile
+    users = []
+    for u in User.objects.filter(is_active=True).select_related('profile').order_by('profile__last_name', 'profile__first_name'):
+        profile = getattr(u, 'profile', None)
+        name = profile.get_full_name() if profile else ''
+        if not name.strip():
+            name = u.username
+        users.append({'id': u.id, 'name': name})
+    return JsonResponse({'users': users})
+

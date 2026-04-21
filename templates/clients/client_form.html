@@ -271,6 +271,34 @@
                     {% bootstrap_field form.phone show_label=False wrapper_class="mb-3" %}
                 </div>
             </div>
+
+            <!-- 区切り線 -->
+            <div style="border-top: 1px solid #dee2e6; width: 50%; margin: 0.5rem 0 1rem 0;"></div>
+
+            <!-- 担当ケアマネージャー -->
+            <div class="row g-3 mb-2">
+                <div class="col-lg-4 col-md-5">
+                    <label class="form-label">担当ケアマネージャー</label>
+                    <select class="form-select" id="charge_manager_ui_select" onchange="handleChargeManagerChange(this)">
+                        <option value="">--- 選択してください ---</option>
+                        <option value="{{ request.user.id }}"
+                            {% if form.instance.pk and form.instance.charge_manager_id == request.user.id %}selected{% endif %}>
+                            {% with p=request.user.profile %}{% if p.last_name %}{{ p.last_name }} {{ p.first_name }}{% else %}{{ request.user.username }}{% endif %}{% endwith %}
+                        </option>
+                        <option value="other"
+                            {% if form.instance.pk and form.instance.charge_manager_other and not form.instance.charge_manager_id %}selected{% endif %}>
+                            その他（手入力）
+                        </option>
+                    </select>
+                    <input type="hidden" name="charge_manager" id="id_charge_manager" value="{{ form.instance.charge_manager_id|default:'' }}">
+                </div>
+                <div class="col-lg-4 col-md-5" id="charge_manager_other_wrap"
+                    style="display:{% if form.instance.pk and form.instance.charge_manager_other and not form.instance.charge_manager_id %}block{% else %}none{% endif %};">
+                    <label class="form-label">担当者名（手入力）</label>
+                    <input type="text" name="charge_manager_other" id="id_charge_manager_other" class="form-control"
+                        value="{{ form.instance.charge_manager_other|default:'' }}" placeholder="担当者名を入力">
+                </div>
+            </div>
         </div>
     </div>
 
@@ -2070,6 +2098,22 @@ function autoFillLimitCertEnd() {
     });
 
 })();
+</script>
+
+<script>
+function handleChargeManagerChange(sel) {
+    var val = sel.value;
+    var hiddenInput = document.getElementById('id_charge_manager');
+    var otherWrap = document.getElementById('charge_manager_other_wrap');
+    if (val === 'other') {
+        hiddenInput.value = '';
+        otherWrap.style.display = 'block';
+    } else {
+        hiddenInput.value = val;
+        otherWrap.style.display = 'none';
+        document.getElementById('id_charge_manager_other').value = '';
+    }
+}
 </script>
 
 {% endblock %}

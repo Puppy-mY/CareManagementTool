@@ -936,7 +936,7 @@
                                 <tbody>
                                     {% for history in document_histories %}
                                     <tr>
-                                        <td>{% if history.form_data.application_date %}{{ history.form_data.application_date|wareki }}{% else %}{{ history.created_at|wareki }}{% endif %}</td>
+                                        <td>{% if history.document_type == 'ltc_withdrawal' and history.form_data.withdrawal_date %}{{ history.form_data.withdrawal_date|wareki }}{% elif history.form_data.application_date %}{{ history.form_data.application_date|wareki }}{% else %}{{ history.created_at|wareki }}{% endif %}</td>
                                         <td>{{ history.get_document_type_display }}</td>
                                         <td>
                                             <div class="btn-group btn-group-sm d-flex justify-content-end">
@@ -1088,6 +1088,7 @@ function reopenDocument(documentType, historyId, clientId) {
         'ltc_renewal':           `/clients/${clientId}/document/ltc-renewal/?history_id=${historyId}`,
         'ltc_change':            `/clients/${clientId}/document/ltc-change/?history_id=${historyId}`,
         'ltc_withdrawal':        `/clients/${clientId}/document/ltc-withdrawal/?history_id=${historyId}`,
+        'ltc_doctor_change':     `/clients/${clientId}/document/ltc-doctor-change/?history_id=${historyId}`,
         'careplan_info_request': `/clients/${clientId}/documents/create/careplan_info_request/?history_id=${historyId}`,
     };
     const url = typeToUrl[documentType]

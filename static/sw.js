@@ -1,4 +1,4 @@
-const CACHE_NAME = 'care-management-v1';
+const CACHE_NAME = 'care-management-v2';
 
 // キャッシュしてよい静的アセットのみ
 const STATIC_ASSETS = [

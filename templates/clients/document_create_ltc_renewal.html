@@ -80,6 +80,14 @@
                                                value="{{ initial.client_phone }}" readonly>
                                     </div>
                                 </div>
+                                <div style="border-top: 1px solid #dee2e6; width: 50%; margin: 0.5rem 0 0.75rem 0;"></div>
+                                <div class="row g-3 mb-3">
+                                    <div class="col-md-4">
+                                        <label class="form-label">担当ケアマネージャー</label>
+                                        <input type="text" id="disp_charge_manager" class="form-control"
+                                            value="{{ client.charge_manager_display }}" readonly>
+                                    </div>
+                                </div>
                                 <div class="mt-3 text-end">
                                     <button type="button" class="btn btn-outline-secondary btn-sm"
                                             onclick="openClientMasterDrawer()">
@@ -213,17 +221,35 @@
                     </div>
                     <div class="card-body">
 
-                        <!-- 申請書提出者（事業所情報） -->
+                        <!-- 申請書提出者 -->
+                        <input type="hidden" id="id_submitter_type" name="submitter_type" value="{{ initial.submitter_type|default:'office' }}">
                         <div class="row g-3 mb-2">
                             <div class="col-12">
-                                <label class="form-label fw-bold">申請書提出者（事業所情報） <span class="text-danger">*</span></label>
-                                <div class="d-flex flex-column gap-2" style="width: fit-content;">
-                                    <select id="renewal_provider_select" class="form-select" style="width: 400px;" onchange="toggleRenewalProvider()">
-                                        <option value="auto" selected>{{ initial.office_name|default:"（事業所未設定）" }}</option>
-                                        <option value="other">その他（手入力）</option>
-                                    </select>
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    <label class="form-label fw-bold mb-0">申請書提出者 <span class="text-danger">*</span></label>
+                                    <div class="birth-era-toggle">
+                                        <button type="button" class="era-btn {% if initial.submitter_type != 'person' %}active{% endif %}" id="submitter_btn_office" onclick="switchSubmitterType('office')">代行提出</button>
+                                        <button type="button" class="era-btn {% if initial.submitter_type == 'person' %}active{% endif %}" id="submitter_btn_person" onclick="switchSubmitterType('person')">その他</button>
+                                    </div>
                                 </div>
-                                <small class="text-muted mt-1">※その他を選択すると、事業所情報を手入力できます</small>
+                                <!-- 事業所モード -->
+                                <div id="submitter_office_section" {% if initial.submitter_type == 'person' %}style="display:none;"{% endif %}>
+                                    <div class="mb-1">
+                                        <select id="renewal_provider_select" class="form-select" style="width: 400px;" onchange="toggleRenewalProvider()">
+                                            <option value="auto" selected>{{ initial.office_name|default:"（事業所未設定）" }}</option>
+                                            <option value="other">その他（手入力）</option>
+                                        </select>
+                                    </div>
+                                    <div id="office_other_fields" class="mb-1" style="display:none;">
+                                        <input type="text" id="office_other_name" class="form-control" style="width:400px;" placeholder="事業所名を記入">
+                                    </div>
+                                </div>
+                                <!-- その他モード -->
+                                <div id="submitter_person_section" {% if initial.submitter_type != 'person' %}style="display:none;"{% endif %}>
+                                    <div class="mb-1">
+                                        <input type="text" name="staff_name" id="renewal_staff_name" class="form-control" style="width:400px;" placeholder="例：山田 太郎" value="{% if initial.submitter_type == 'person' %}{{ initial.staff_name }}{% endif %}">
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -231,22 +257,27 @@
                             <div class="accordion-item" style="border: none; background-color: #f8f9fa; border-radius: 0.5rem;">
                                 <h2 class="accordion-header">
                                     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#renewalDetailCollapse" aria-expanded="false" aria-controls="renewalDetailCollapse" style="background-color: #f8f9fa; padding: 0.5rem 1rem; color: #333;">
-                                        <span id="renewal_status_icon" class="me-2"><i class="fas fa-check-circle" style="color: rgba(25, 135, 84, 0.5);"></i></span>事業所情報
+                                        <span id="renewal_status_icon" class="me-2"><i class="fas fa-check-circle" style="color: rgba(25, 135, 84, 0.5);"></i></span>申請書提出者情報
                                     </button>
                                 </h2>
                                 <div id="renewalDetailCollapse" class="accordion-collapse collapse">
                                     <div class="accordion-body row g-3" style="padding: 0.5rem 1rem 1rem 1rem;">
                                         <input type="hidden" name="office_furigana" id="renewal_office_furigana" value="{{ initial.office_furigana }}">
                                         <input type="hidden" name="office_name" id="renewal_office_name" value="{{ initial.office_name }}">
-                                        <div class="col-md-4">
+                                        <div class="col-md-5" id="renewal_applicant_furigana_row" {% if initial.submitter_type != 'person' %}style="display:none;"{% endif %}>
+                                            <label class="form-label">申請者フリガナ</label>
+                                            <input type="text" id="renewal_applicant_furigana_input" class="form-control" placeholder="例：ヤマダ タロウ" value="{% if initial.submitter_type == 'person' %}{{ initial.office_furigana }}{% endif %}">
+                                        </div>
+                                        <div class="col-md-4" id="renewal_office_number_row" {% if initial.submitter_type == 'person' %}style="display:none;"{% endif %}>
                                             <label class="form-label">事業所番号 <span class="text-danger">*</span></label>
                                             <input type="text" name="office_number" id="renewal_office_number" class="form-control" value="{{ initial.office_number }}" readonly>
                                         </div>
                                         <div class="col-12">
                                             <label class="form-label">所在地 <span class="text-danger">*</span></label>
                                             <div class="d-flex gap-2">
-                                                <div class="input-group" style="width: 140px; flex-shrink: 0;">
-                                                    <input type="text" name="office_postal_code" id="renewal_postal_code" class="form-control" value="{{ initial.office_postal_code }}" placeholder="000-0000" maxlength="8" style="width: 90px;" readonly>
+                                                <div class="input-group" style="width: 160px; flex-shrink: 0;">
+                                                    <span class="input-group-text">〒</span>
+                                                    <input type="text" name="office_postal_code" id="renewal_postal_code" class="form-control" value="{{ initial.office_postal_code }}" placeholder="000-0000" maxlength="8" readonly>
                                                 </div>
                                                 <div class="flex-grow-1">
                                                     <input type="text" name="office_address" id="renewal_office_address" class="form-control" value="{{ initial.office_address }}" placeholder="住所を入力" readonly>
@@ -257,13 +288,9 @@
                                             <label class="form-label">電話番号 <span class="text-danger">*</span></label>
                                             <input type="text" name="office_phone" id="renewal_office_phone" class="form-control" value="{{ initial.office_phone }}" placeholder="電話番号を入力" readonly>
                                         </div>
-                                        <div class="col-md-4">
+                                        <div class="col-md-4" id="renewal_relation_row" {% if initial.submitter_type != 'person' %}style="display:none;"{% endif %}>
                                             <label class="form-label">本人との関係 <span class="text-danger">*</span></label>
-                                            <input type="text" name="relation" id="renewal_relation" class="form-control" value="{{ initial.relation }}" placeholder="例: 介護支援専門員">
-                                        </div>
-                                        <div class="col-md-4">
-                                            <label class="form-label">担当者氏名 <span class="text-danger">*</span></label>
-                                            <input type="text" name="staff_name" id="renewal_staff_name" class="form-control" value="{{ initial.staff_name }}" placeholder="担当者氏名を入力">
+                                            <input type="text" name="relation" id="renewal_relation" class="form-control" value="{% if initial.submitter_type == 'person' %}{{ initial.relation }}{% endif %}" placeholder="例：長男、次女など" oninput="updateRenewalStatusIcon()">
                                         </div>
                                         <div id="renewal_edit_button_wrapper" class="col-12 text-end mt-2">
                                             <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openRenewalOfficeMasterModal()">
@@ -844,6 +871,22 @@
                                 <input type="text" id="edit_client_phone" class="form-control">
                             </div>
                         </div>
+                        <!-- 区切り線 -->
+                        <div style="border-top: 1px solid #dee2e6; width: 50%; margin: 1rem 0 0.75rem 0;"></div>
+                        <!-- 担当ケアマネージャー -->
+                        <div class="row g-3">
+                            <div class="col-md-5">
+                                <label class="form-label">担当ケアマネージャー</label>
+                                <select id="edit_charge_manager_select" class="form-select" onchange="handleModalManagerChange(this)">
+                                    <option value="">--- 選択してください ---</option>
+                                </select>
+                                <input type="hidden" id="edit_charge_manager_id">
+                            </div>
+                            <div class="col-md-5" id="edit_charge_manager_other_wrap" style="display:none;">
+                                <label class="form-label">担当者名（手入力）</label>
+                                <input type="text" id="edit_charge_manager_other" class="form-control" placeholder="担当者名を入力">
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1174,6 +1217,61 @@ function saveMasterData() {
     if (currentDrawerType === 'client') saveClientMasterData();
 }
 
+var _LOGIN_USER_ID = '{{ request.user.id }}';
+var _LOGIN_USER_NAME = '{% with p=request.user.profile %}{% if p.last_name %}{{ p.last_name }} {{ p.first_name }}{% else %}{{ request.user.username }}{% endif %}{% endwith %}';
+// 現在の事業所マスタ情報（モード切替時に復元用・常に最新の事業所から）
+var _OFFICE_NAME     = '{{ current_office_name }}';
+var _OFFICE_FURIGANA = '{{ current_office_furigana }}';
+var _OFFICE_NUMBER   = '{{ current_office_number }}';
+var _OFFICE_POSTAL   = '{{ current_office_postal }}';
+var _OFFICE_ADDRESS  = '{{ current_office_address }}';
+var _OFFICE_PHONE    = '{{ current_office_phone }}';
+
+function handleModalManagerChange(sel) {
+    var val = sel.value;
+    var hiddenId = document.getElementById('edit_charge_manager_id');
+    var otherWrap = document.getElementById('edit_charge_manager_other_wrap');
+    if (val === 'other') {
+        hiddenId.value = '';
+        otherWrap.style.display = 'block';
+    } else {
+        hiddenId.value = val;
+        otherWrap.style.display = 'none';
+        document.getElementById('edit_charge_manager_other').value = '';
+    }
+}
+
+function _populateManagerSelect(currentId, currentOther) {
+    var sel = document.getElementById('edit_charge_manager_select');
+    if (!sel.dataset.loaded) {
+        sel.innerHTML = '<option value="">--- 選択してください ---</option>';
+        var myOpt = document.createElement('option');
+        myOpt.value = _LOGIN_USER_ID;
+        myOpt.textContent = _LOGIN_USER_NAME;
+        sel.appendChild(myOpt);
+        var otherOpt = document.createElement('option');
+        otherOpt.value = 'other';
+        otherOpt.textContent = 'その他（手入力）';
+        sel.appendChild(otherOpt);
+        sel.dataset.loaded = '1';
+    }
+    var otherWrap = document.getElementById('edit_charge_manager_other_wrap');
+    if (currentId) {
+        sel.value = String(currentId);
+        document.getElementById('edit_charge_manager_id').value = currentId;
+        otherWrap.style.display = 'none';
+    } else if (currentOther) {
+        sel.value = 'other';
+        document.getElementById('edit_charge_manager_id').value = '';
+        document.getElementById('edit_charge_manager_other').value = currentOther;
+        otherWrap.style.display = 'block';
+    } else {
+        sel.value = '';
+        document.getElementById('edit_charge_manager_id').value = '';
+        otherWrap.style.display = 'none';
+    }
+}
+
 function openClientMasterDrawer() {
     document.getElementById('edit_client_name').value = document.querySelector('[name=client_name]').value;
     document.getElementById('edit_client_furigana').value = document.querySelector('[name=client_furigana]').value;
@@ -1183,6 +1281,7 @@ function openClientMasterDrawer() {
     const genderDisplay = document.querySelector('[name=client_gender]')?.value || '';
     document.getElementById('edit_client_gender').value = genderDisplay === '男' ? 'male' : (genderDisplay === '女' ? 'female' : '');
     initModalBirthDate(document.querySelector('[name=birth_date]').value);
+    _populateManagerSelect('{{ client.charge_manager_id|default:"" }}', '{{ client.charge_manager_other|default:"" }}');
     const modalEl = document.getElementById('clientMasterModal');
     (bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl)).show();
 }
@@ -1197,25 +1296,47 @@ function saveClientMasterData() {
     const g = document.getElementById('edit_client_gender').value;
     const genderEl = document.querySelector('[name=client_gender]');
     if (genderEl) genderEl.value = g === 'male' ? '男' : (g === 'female' ? '女' : '');
+    const mgrSelVal = document.getElementById('edit_charge_manager_select').value;
+    const mgrId = mgrSelVal === 'other' ? '' : (document.getElementById('edit_charge_manager_id').value || '');
+    const mgrOther = mgrSelVal === 'other' ? (document.getElementById('edit_charge_manager_other').value || '') : '';
+    fetch('/clients/{{ client.id }}/update-master/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value },
+        body: JSON.stringify({ charge_manager_id: mgrId, charge_manager_other: mgrOther })
+    }).then(r => r.json()).then(result => {
+        if (result.success) {
+            const dispEl = document.getElementById('disp_charge_manager');
+            if (dispEl) dispEl.value = result.charge_manager_display || mgrOther || '';
+        }
+    });
     bootstrap.Modal.getInstance(document.getElementById('clientMasterModal')).hide();
 }
+
 
 // 申請書提出者：その他 / auto トグル
 function toggleRenewalProvider() {
     const selectEl = document.getElementById('renewal_provider_select');
     const editBtnWrapper = document.getElementById('renewal_edit_button_wrapper');
-    const fieldIds = ['renewal_office_furigana', 'renewal_office_name', 'renewal_office_number',
-                      'renewal_postal_code', 'renewal_office_address', 'renewal_office_phone'];
+    const otherFields = document.getElementById('office_other_fields');
+    const accordionFields = ['renewal_office_furigana', 'renewal_office_name', 'renewal_office_number',
+                             'renewal_postal_code', 'renewal_office_address', 'renewal_office_phone'];
 
     if (selectEl.value === 'other') {
+        if (otherFields) otherFields.style.display = '';
         if (editBtnWrapper) editBtnWrapper.classList.add('d-none');
-        fieldIds.forEach(function(id) {
+        accordionFields.forEach(function(id) {
             const el = document.getElementById(id);
             if (el) { el.removeAttribute('readonly'); el.value = ''; }
         });
+        // アコーディオンを自動展開（番号・住所・電話を入力できるよう）
+        var collapseEl = document.getElementById('renewalDetailCollapse');
+        if (collapseEl && !collapseEl.classList.contains('show')) {
+            bootstrap.Collapse.getOrCreateInstance(collapseEl).show();
+        }
     } else {
+        if (otherFields) otherFields.style.display = 'none';
         if (editBtnWrapper) editBtnWrapper.classList.remove('d-none');
-        fieldIds.forEach(function(id) {
+        accordionFields.forEach(function(id) {
             const el = document.getElementById(id);
             if (el) { el.setAttribute('readonly', 'readonly'); el.value = el.defaultValue; }
         });
@@ -1223,34 +1344,98 @@ function toggleRenewalProvider() {
     updateRenewalStatusIcon();
 }
 
+// 申請書提出者：事業所 / 担当者 トグル
+function switchSubmitterType(type) {
+    document.getElementById('id_submitter_type').value = type;
+    document.getElementById('submitter_office_section').style.display = type === 'office' ? '' : 'none';
+    document.getElementById('submitter_person_section').style.display = type === 'person' ? '' : 'none';
+    document.getElementById('submitter_btn_office').classList.toggle('active', type === 'office');
+    document.getElementById('submitter_btn_person').classList.toggle('active', type === 'person');
+    // 担当者モード時は事業所番号を非表示、本人との関係・フリガナを表示
+    var officeNumberRow = document.getElementById('renewal_office_number_row');
+    if (officeNumberRow) officeNumberRow.style.display = type === 'person' ? 'none' : '';
+    var relationRow = document.getElementById('renewal_relation_row');
+    if (relationRow) relationRow.style.display = type === 'person' ? '' : 'none';
+    var furiganaRow = document.getElementById('renewal_applicant_furigana_row');
+    if (furiganaRow) furiganaRow.style.display = type === 'person' ? '' : 'none';
+    // 事業所マスタ編集ボタンは代行提出モードのみ表示
+    var editBtnWrapper = document.getElementById('renewal_edit_button_wrapper');
+    if (editBtnWrapper) editBtnWrapper.style.display = type === 'person' ? 'none' : '';
+    // 担当者モード時はアコーディオン内フィールドを編集可能・空白に
+    // フリガナ表示入力欄もクリア
+    var furiganaInput = document.getElementById('renewal_applicant_furigana_input');
+    if (furiganaInput) furiganaInput.value = '';
+    var editableFields = ['renewal_office_furigana', 'renewal_office_name',
+                          'renewal_office_number', 'renewal_postal_code',
+                          'renewal_office_address', 'renewal_office_phone',
+                          'renewal_relation'];
+    if (type === 'person') {
+        editableFields.forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) { el.removeAttribute('readonly'); el.value = ''; }
+        });
+    } else {
+        // その他モードの入力欄をクリア
+        var staffNameEl = document.getElementById('renewal_staff_name');
+        if (staffNameEl) staffNameEl.value = '';
+        var furiganaInEl = document.getElementById('renewal_applicant_furigana_input');
+        if (furiganaInEl) furiganaInEl.value = '';
+        // 代行提出モードに戻す：常に最新の事業所マスタ値で復元
+        var officeRestore = {
+            'renewal_office_furigana': _OFFICE_FURIGANA,
+            'renewal_office_name':     _OFFICE_NAME,
+            'renewal_office_number':   _OFFICE_NUMBER,
+            'renewal_postal_code':     _OFFICE_POSTAL,
+            'renewal_office_address':  _OFFICE_ADDRESS,
+            'renewal_office_phone':    _OFFICE_PHONE,
+            'renewal_relation':        '',
+        };
+        Object.keys(officeRestore).forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) { el.setAttribute('readonly', 'readonly'); el.value = officeRestore[id]; }
+        });
+        // ドロップダウンのoption textも更新
+        var sel = document.getElementById('renewal_provider_select');
+        if (sel && sel.options[0]) sel.options[0].text = _OFFICE_NAME || '（事業所未設定）';
+    }
+    updateRenewalStatusIcon();
+}
+
+
 // ステータスアイコン更新
 function updateRenewalStatusIcon() {
     const statusIcon = document.getElementById('renewal_status_icon');
     if (!statusIcon) return;
-    const selectEl  = document.getElementById('renewal_provider_select');
-    const staffName = document.getElementById('renewal_staff_name');
-    const relation  = document.getElementById('renewal_relation');
-    let isComplete  = staffName && staffName.value.trim() !== ''
-                   && relation  && relation.value.trim()  !== '';
+    const submitterType = document.getElementById('id_submitter_type').value;
+    const selectEl = document.getElementById('renewal_provider_select');
+    let isComplete = true;
 
-    if (selectEl && selectEl.value === 'other') {
+    if (submitterType === 'person') {
+        // その他モード：申請者名・本人との関係・住所がすべて必須
+        const staffName = document.getElementById('renewal_staff_name');
+        const relation  = document.getElementById('renewal_relation');
+        const address   = document.getElementById('renewal_office_address');
+        isComplete = !!(staffName && staffName.value.trim())
+                  && !!(relation  && relation.value.trim())
+                  && !!(address   && address.value.trim());
+    } else if (selectEl && selectEl.value === 'other') {
+        // 代行提出・その他選択時：事業所番号・住所・電話が必須
         const officeNum = document.getElementById('renewal_office_number');
         const address   = document.getElementById('renewal_office_address');
         const phone     = document.getElementById('renewal_office_phone');
-        isComplete = isComplete
-            && officeNum && officeNum.value.trim() !== ''
-            && address   && address.value.trim()   !== ''
-            && phone     && phone.value.trim()     !== '';
+        isComplete = officeNum && officeNum.value.trim() !== ''
+                  && address   && address.value.trim()   !== ''
+                  && phone     && phone.value.trim()     !== '';
     }
+
     statusIcon.innerHTML = isComplete
         ? '<i class="fas fa-check-circle" style="color: rgba(25, 135, 84, 0.5);"></i>'
         : '<i class="fas fa-circle-exclamation" style="color: rgba(220, 53, 69, 0.5);"></i>';
-    // 未完了時は展開・完了時は閉じる
     const renewalCollapse = document.getElementById('renewalDetailCollapse');
     if (renewalCollapse) {
         if (!isComplete && !renewalCollapse.classList.contains('show')) {
             new bootstrap.Collapse(renewalCollapse, { toggle: false }).show();
-        } else if (isComplete && renewalCollapse.classList.contains('show') && !renewalCollapse.contains(document.activeElement)) {
+        } else if (isComplete && submitterType !== 'person' && renewalCollapse.classList.contains('show') && !renewalCollapse.contains(document.activeElement)) {
             new bootstrap.Collapse(renewalCollapse, { toggle: false }).hide();
         }
     }
@@ -1984,13 +2169,84 @@ function switchCertPeriodEra(mode) {
 })();
 
 document.addEventListener('DOMContentLoaded', function() {
+    // 事業所その他：事業所名入力 → アコーディオン内hidden同期
+    var officeOtherName = document.getElementById('office_other_name');
+    var renewalOfficeName = document.getElementById('renewal_office_name');
+    if (officeOtherName && renewalOfficeName) {
+        officeOtherName.addEventListener('input', function() { renewalOfficeName.value = this.value; });
+    }
+    // 全角スペース → 半角スペース変換
+    function normalizeSpace(el) {
+        var pos = el.selectionStart;
+        var before = el.value;
+        el.value = before.replace(/　/g, ' ');
+        if (el.value !== before) el.setSelectionRange(pos, pos);
+    }
+
+    // 申請者フリガナ入力 → hidden同期 + 全角スペース変換
+    var furiganaInput = document.getElementById('renewal_applicant_furigana_input');
+    var furiganaHidden = document.getElementById('renewal_office_furigana');
+    if (furiganaInput && furiganaHidden) {
+        furiganaInput.addEventListener('input', function() {
+            normalizeSpace(this);
+            furiganaHidden.value = this.value;
+        });
+    }
+
+    // 申請者名 全角スペース変換
+    var staffNameInput = document.getElementById('renewal_staff_name');
+    if (staffNameInput) {
+        staffNameInput.addEventListener('input', function() { normalizeSpace(this); });
+    }
+
     // 入力イベントリスナー
-    ['renewal_staff_name', 'renewal_relation', 'renewal_office_number',
-     'renewal_office_address', 'renewal_office_phone'].forEach(function(id) {
+    ['renewal_office_number', 'renewal_office_address', 'renewal_office_phone',
+     'renewal_staff_name'].forEach(function(id) {
         const el = document.getElementById(id);
         if (el) el.addEventListener('input', updateRenewalStatusIcon);
     });
-    updateRenewalStatusIcon();
+
+    // 履歴読み込み時の初期UI状態を適用（値はクリアしない）
+    (function() {
+        var type = (document.getElementById('id_submitter_type').value || 'office');
+        if (type !== 'person') { updateRenewalStatusIcon(); return; }
+
+        // readonlyを外す
+        ['renewal_office_furigana', 'renewal_office_name', 'renewal_office_number',
+         'renewal_postal_code', 'renewal_office_address', 'renewal_office_phone',
+         'renewal_relation'].forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) el.removeAttribute('readonly');
+        });
+        // 編集ボタン非表示
+        var editBtn = document.getElementById('renewal_edit_button_wrapper');
+        if (editBtn) editBtn.style.display = 'none';
+        // フリガナ表示欄にhidden値を反映（views.pyでofficeフリガナが入っていた場合の補正）
+        if (furiganaInput && furiganaHidden) {
+            furiganaInput.value = furiganaHidden.value;
+        }
+        // 既存値の全角スペースを正規化
+        if (staffNameInput) normalizeSpace(staffNameInput);
+        if (furiganaInput)  normalizeSpace(furiganaInput);
+        updateRenewalStatusIcon();
+    })();
+
+    // フォーム送信時に全角スペースを一括正規化
+    var ltcForm = document.querySelector('form');
+    if (ltcForm) {
+        ltcForm.addEventListener('submit', function() {
+            [staffNameInput, furiganaInput].forEach(function(el) {
+                if (el) {
+                    el.value = el.value.replace(/　/g, ' ');
+                    if (furiganaHidden && el === furiganaInput) furiganaHidden.value = el.value;
+                }
+            });
+            if (staffNameInput) {
+                var hiddenStaff = document.getElementById('renewal_staff_name');
+                // staffNameInput IS renewal_staff_name（textフィールド）なので追加処理不要
+            }
+        });
+    }
 
     // モーダル保存ボタン
     const saveBtn = document.getElementById('renewalOfficeSaveBtn');

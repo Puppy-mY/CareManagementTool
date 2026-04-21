@@ -232,6 +232,10 @@ class Client(models.Model):
     family_contact2 = models.CharField('連絡先（2人目）', max_length=15, blank=True)
     family_notes2 = models.TextField('備考（2人目）', blank=True)
     
+    # 担当ケアマネージャー
+    charge_manager = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='担当ケアマネージャー', related_name='managed_clients')
+    charge_manager_other = models.CharField('担当ケアマネージャー（手入力）', max_length=100, blank=True)
+
     # 作成・更新情報
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, verbose_name='作成者')
     created_at = models.DateTimeField('作成日時', auto_now_add=True)
@@ -249,6 +253,17 @@ class Client(models.Model):
     def client_id(self):
         # 後方互換性のために被保険者番号をclient_idとして返す
         return self.insurance_number
+
+    @property
+    def charge_manager_display(self):
+        if self.charge_manager_id:
+            profile = getattr(self.charge_manager, 'profile', None)
+            if profile:
+                name = profile.get_full_name()
+                if name.strip():
+                    return name
+            return self.charge_manager.username
+        return self.charge_manager_other or ''
 
     @property
     def full_family_relationship1(self):
@@ -535,6 +550,7 @@ class DocumentCreationHistory(models.Model):
         ('ltc_renewal', '更新認定申請書'),
         ('ltc_change', '区分変更申請書'),
         ('ltc_withdrawal', '認定申請取下書'),
+        ('ltc_doctor_change', '認定申請主治医変更届出書'),
         ('careplan_info_request', '介護サービス計画作成に係る資料提供申請書'),
         ('care_plan', 'ケアプラン'),
         ('assessment', 'アセスメント'),
