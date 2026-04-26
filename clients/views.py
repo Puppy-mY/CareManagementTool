@@ -1688,7 +1688,7 @@ def _generate_ltc_renewal_excel_bytes(client, form_data):
     return content
 
 
-def _add_oval_to_xlsx_bytes(xlsx_bytes, cell_ref, padding=30000, to_cell_ref=None):
+def _add_oval_to_xlsx_bytes(xlsx_bytes, cell_ref, padding=30000, to_cell_ref=None, line_width_emu=9525):
     """xlsxバイト列のcell_refセルに楕円を重ねて返す（ZIP直接操作）。to_cell_refで終端セルを指定可能。"""
     import io, zipfile
     from lxml import etree
@@ -1726,7 +1726,7 @@ def _add_oval_to_xlsx_bytes(xlsx_bytes, cell_ref, padding=30000, to_cell_ref=Non
         '<xdr:spPr>'
         '<a:prstGeom prst="ellipse"><a:avLst/></a:prstGeom>'
         '<a:noFill/>'
-        '<a:ln w="9525"><a:solidFill><a:srgbClr val="000000"/></a:solidFill></a:ln>'
+        f'<a:ln w="{line_width_emu}"><a:solidFill><a:srgbClr val="000000"/></a:solidFill></a:ln>'
         '</xdr:spPr>'
         '<xdr:txBody><a:bodyPr/><a:lstStyle/><a:p/></xdr:txBody>'
         '</xdr:sp>'
@@ -1965,7 +1965,7 @@ def document_history_excel(request, pk):
     history = get_object_or_404(DocumentCreationHistory, pk=pk)
     client = history.client
 
-    if history.document_type in ('ltc_renewal', 'ltc_change', 'ltc_withdrawal', 'ltc_doctor_change', 'ltc_address_change'):
+    if history.document_type in ('ltc_renewal', 'ltc_change', 'ltc_withdrawal', 'ltc_doctor_change', 'ltc_address_change', 'ltc_burden_address_change'):
         try:
             if history.document_type == 'ltc_change':
                 content  = _generate_ltc_change_excel_bytes(client, history.form_data)
@@ -1985,6 +1985,11 @@ def document_history_excel(request, pk):
             elif history.document_type == 'ltc_address_change':
                 content  = _generate_ltc_address_change_excel_bytes(client, history.form_data)
                 dl_label = '介護保険送付先変更届'
+                ct       = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                ext      = '.xlsx'
+            elif history.document_type == 'ltc_burden_address_change':
+                content  = _generate_ltc_burden_address_change_excel_bytes(client, history.form_data)
+                dl_label = '介護保険負担限度額・割合証送付先変更届'
                 ct       = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
                 ext      = '.xlsx'
             else:
@@ -3523,11 +3528,22 @@ def _document_create_ltc_base(request, client_id, doc_type, doc_name, template_n
         initial['submitter_type'] = 'office'
         initial['relation'] = '介護支援専門員'
         initial['staff_name_cm'] = user_full_name
-        initial['change_reason'] = ''
-        initial['delivery_type'] = '1'
-        initial['alt_postal_code'] = ''
-        initial['alt_address'] = ''
-        initial['alt_name'] = ''
+        initial['reason_for_change'] = ''
+        initial['delivery_destination'] = 'submitter'
+        initial['delivery_postal_code'] = ''
+        initial['delivery_address'] = ''
+        initial['delivery_addressee'] = ''
+
+    if doc_type == 'ltc_burden_address_change':
+        initial['submitter_type'] = 'office'
+        initial['relation'] = '介護支援専門員'
+        initial['staff_name_cm'] = user_full_name
+        initial['change_doc_gendo'] = ''
+        initial['change_doc_wariai'] = ''
+        initial['delivery_destination'] = 'submitter'
+        initial['delivery_postal_code'] = ''
+        initial['delivery_address'] = ''
+        initial['delivery_addressee'] = ''
 
     # 履歴からの再編集：保存済みデータで initial を上書き
     history_id = request.GET.get('history_id')
@@ -3658,6 +3674,8 @@ def _document_create_ltc_base(request, client_id, doc_type, doc_name, template_n
                 return response
             elif doc_type == 'ltc_address_change':
                 content = _generate_ltc_address_change_excel_bytes(client, form_data)
+            elif doc_type == 'ltc_burden_address_change':
+                content = _generate_ltc_burden_address_change_excel_bytes(client, form_data)
                 dl_name = _make_dl_filename(client, doc_name)
                 response = HttpResponse(content, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
                 response['Content-Disposition'] = (
@@ -3802,6 +3820,18 @@ def document_create_ltc_doctor_change(request, client_id):
         doc_type='ltc_doctor_change',
         doc_name='認定申請主治医変更届出書',
         template_name='clients/document_create_ltc_doctor_change.html',
+    )
+
+
+@login_required
+@user_passes_test(staff_required)
+def document_create_ltc_burden_address_change(request, client_id):
+    """介護保険負担限度額・割合証送付先変更届 作成画面"""
+    return _document_create_ltc_base(
+        request, client_id,
+        doc_type='ltc_burden_address_change',
+        doc_name='介護保険負担限度額・割合証送付先変更届',
+        template_name='clients/document_create_ltc_burden_address_change.html',
     )
 
 
@@ -4096,47 +4126,178 @@ def _generate_ltc_address_change_excel_bytes(client, form_data):
         except Exception:
             return date_str
 
-    # 届出日（J4）
+    # J4: 届出提出日
     w('J4', to_wareki(form_data.get('application_date', '')))
 
-    # 申請者情報
+    # 届出提出者情報
     submitter_type = form_data.get('submitter_type', 'office')
     if submitter_type == 'office':
-        office_name = form_data.get('office_name', '').strip()
-        staff_cm    = form_data.get('staff_name_cm', '').strip()
-        w('F10', office_name)
-        w('E15', staff_cm)
-        w('E13', form_data.get('relation', '介護支援専門員'))
+        # E10: 事業所名、E16: 届出提出者名
+        w('E10', form_data.get('office_name', '').strip())
+        w('E16', form_data.get('staff_name_office', form_data.get('staff_name', '')).strip())
     else:
-        w('F10', form_data.get('staff_name', '').strip())
-        w('E13', form_data.get('relation', ''))
-        w('E15', '')
+        # E10: 届出提出者名のみ、E16: 空
+        w('E10', form_data.get('staff_name', '').strip())
+        w('E16', '')
 
-    postal = form_data.get('office_postal_code', '') if submitter_type == 'office' else form_data.get('postal_code', '')
-    address = form_data.get('office_address', '') if submitter_type == 'office' else form_data.get('client_address', '')
-    w('E11', f'〒{postal}' if postal else '')
-    w('E12', address)
-    w('E14', form_data.get('office_phone', '') if submitter_type == 'office' else form_data.get('client_phone', ''))
+    w('F12', form_data.get('office_postal_code', ''))
+    w('E13', form_data.get('office_address', ''))
+    w('E15', form_data.get('office_phone', ''))
 
-    # 被保険者
-    ins = str(client.insurance_number).strip() if client.insurance_number else ''
-    w('E17', int(ins) if ins.isdigit() else ins)
-    w('E18', client.name or form_data.get('client_name', ''))
+    # E14: 本人との関係
+    w('E14', form_data.get('relation', ''))
 
-    # 変更理由
-    w('C19', form_data.get('change_reason', ''))
+    # E18〜N18: 被保険者番号を1文字ずつ（数値として記載）
+    ins = str(client.insurance_number or '').strip()
+    for i, col in enumerate(['E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N']):
+        ch = ins[i] if i < len(ins) else ''
+        w(f'{col}18', int(ch) if ch.isdigit() else ch)
 
-    # 送付先
-    delivery_type = form_data.get('delivery_type', '1')
-    if delivery_type == '2':
-        alt_postal = form_data.get('alt_postal_code', '')
-        w('F23', f'〒{alt_postal}' if alt_postal else '')
-        w('F24', form_data.get('alt_address', ''))
-        w('F25', form_data.get('alt_name', ''))
+    # E19: この方の氏名
+    w('E19', client.name or form_data.get('client_name', ''))
+
+    # C20: 変更理由
+    w('C20', form_data.get('reason_for_change', ''))
+
+    # 送付先が「その他」の場合：送付先住所等を記入
+    delivery_destination = form_data.get('delivery_destination', 'submitter')
+    if delivery_destination == 'other':
+        w('G24', form_data.get('delivery_postal_code', ''))
+        w('F25', form_data.get('delivery_address', ''))
+        w('F28', form_data.get('delivery_addressee', ''))
 
     buf = io.BytesIO()
     wb.save(buf)
-    return buf.getvalue()
+    content = buf.getvalue()
+
+    # 送付先の丸囲み（線幅 0.5pt = 6350 EMU）
+    if delivery_destination == 'other':
+        content = _add_oval_to_xlsx_bytes(content, 'C26', line_width_emu=6350)
+    else:
+        content = _add_oval_to_xlsx_bytes(content, 'C23', line_width_emu=6350)
+
+    return content
+
+
+def _generate_ltc_burden_address_change_excel_bytes(client, form_data):
+    """介護保険負担限度額・割合証送付先変更届（XLSX）のバイト列を生成して返す"""
+    from openpyxl import load_workbook
+    from openpyxl.cell import MergedCell
+    import io
+    from datetime import date as date_cls, datetime as dt_cls
+
+    template_path = os.path.join(
+        settings.BASE_DIR, 'templates', 'forms',
+        'LTCI_Burden_Limit_Address_Change_Notice.xlsx'
+    )
+    wb = load_workbook(template_path)
+    ws = wb.active
+
+    def w(ref, value):
+        cell = ws[ref]
+        if not isinstance(cell, MergedCell):
+            cell.value = value
+
+    def to_wareki(date_str):
+        if not date_str:
+            return ''
+        try:
+            d = dt_cls.strptime(date_str, '%Y-%m-%d').date()
+            y, m, day = d.year, d.month, d.day
+            if d >= date_cls(2019, 5, 1):   return f'令和{y-2018}年{m}月{day}日'
+            elif d >= date_cls(1989, 1, 8): return f'平成{y-1988}年{m}月{day}日'
+            elif d >= date_cls(1926,12,25): return f'昭和{y-1925}年{m}月{day}日'
+            else:                           return f'大正{y-1911}年{m}月{day}日'
+        except Exception:
+            return date_str
+
+    def to_wareki_date(d):
+        if not d: return ''
+        y, m, day = d.year, d.month, d.day
+        if d >= date_cls(2019, 5, 1):   return f'令和{y-2018}年{m}月{day}日'
+        elif d >= date_cls(1989, 1, 8): return f'平成{y-1988}年{m}月{day}日'
+        elif d >= date_cls(1926,12,25): return f'昭和{y-1925}年{m}月{day}日'
+        else:                           return f'大正{y-1911}年{m}月{day}日'
+
+    submitter_type = form_data.get('submitter_type', 'office')
+
+    # AO10: 届出提出日
+    w('AO10', to_wareki(form_data.get('application_date', '')))
+
+    # L12: 届出提出者（代行提出→届出提出事業所＋改行＋届出提出者名、その他→届出提出者名のみ）
+    from openpyxl.styles import Alignment
+    if submitter_type == 'office':
+        office_name    = form_data.get('office_name', '').strip()
+        submitter_name = form_data.get('staff_name_office', '').strip()
+        ws['L12'].value = f'{office_name}\n{submitter_name}'
+        ws['L12'].alignment = Alignment(wrap_text=True, horizontal='center', vertical='center')
+    else:
+        w('L12', form_data.get('staff_name', '').strip())
+
+    # L15: 届出提出者住所（〒postal 住所）
+    postal  = form_data.get('office_postal_code', '').strip()
+    address = form_data.get('office_address', '').strip()
+    w('L15', f'〒{postal}　{address}' if postal else address)
+
+    # AQ16: 届出提出者電話番号
+    w('AQ16', form_data.get('office_phone', ''))
+
+    # L17: 利用者氏名
+    w('L17', client.name or '')
+
+    # AN17: 利用者性別
+    gender_map = {'male': '男', 'female': '女'}
+    w('AN17', gender_map.get(client.gender, client.gender or ''))
+
+    # L18: 利用者住所（〒postal 住所）
+    c_postal  = (client.postal_code or '').strip()
+    c_address = (client.address or '').strip()
+    w('L18', f'〒{c_postal}　{c_address}' if c_postal else c_address)
+
+    # L19〜AD19: 介護保険被保険者番号を1文字ずつ（数値）
+    # 各桁は2列結合セルのため、結合先頭セルのみに書き込む
+    ins = str(client.insurance_number or '').strip()
+    cols_ins = ['L', 'N', 'P', 'R', 'T', 'V', 'X', 'Z', 'AB', 'AD']
+    for i, col in enumerate(cols_ins):
+        ch = ins[i] if i < len(ins) else ''
+        w(f'{col}19', int(ch) if ch.isdigit() else ch)
+
+    # AN19: 生年月日（和暦）
+    w('AN19', to_wareki_date(client.birth_date))
+
+    # L20: 本人との関係
+    w('L20', form_data.get('relation', ''))
+
+    # 送付先を変更するもの
+    if form_data.get('change_doc_gendo') == 'yes':
+        w('L24', '■')
+    if form_data.get('change_doc_wariai') == 'yes':
+        w('L26', '■')
+
+    # 送付先
+    delivery = form_data.get('delivery_destination', 'submitter')
+    if delivery == 'submitter':
+        w('L31', '■')
+    elif delivery in ('office_address', 'client_address'):
+        w('L33', '■')
+    elif delivery == 'other':
+        w('L35', '■')
+        w('Y36', form_data.get('delivery_postal_code', ''))
+        w('V37', form_data.get('delivery_address', ''))
+        w('V38', form_data.get('delivery_addressee', ''))
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    content = buf.getvalue()
+
+    # 送付先が「届出提出者の住所へ送付」→ T33〜W33 をまるで囲う
+    if delivery == 'office_address':
+        content = _add_oval_to_xlsx_bytes(content, 'T33', to_cell_ref='W33', line_width_emu=6350)
+    # 送付先が「利用者住所へ送付」→ AD33〜AG33 をまるで囲う
+    elif delivery == 'client_address':
+        content = _add_oval_to_xlsx_bytes(content, 'AD33', to_cell_ref='AG33', line_width_emu=6350)
+
+    return content
 
 
 # ========================================

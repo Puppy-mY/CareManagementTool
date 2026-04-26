@@ -551,6 +551,8 @@ class DocumentCreationHistory(models.Model):
         ('ltc_change', '区分変更申請書'),
         ('ltc_withdrawal', '認定申請取下書'),
         ('ltc_doctor_change', '認定申請主治医変更届出書'),
+        ('ltc_address_change', '介護保険被保険者証送付先変更届'),
+        ('ltc_burden_address_change', '介護保険負担限度額・割合証送付先変更届'),
         ('careplan_info_request', '介護サービス計画作成に係る資料提供申請書'),
         ('care_plan', 'ケアプラン'),
         ('assessment', 'アセスメント'),

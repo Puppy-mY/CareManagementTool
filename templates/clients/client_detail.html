@@ -634,7 +634,7 @@
                                                 </tr>
                                                 <tr>
                                                     <th class="bg-light text-muted align-middle insurance-th"><span class="text-nowrap">被保険者番号</span><br><span class="text-nowrap">記号・番号・枝番</span></th>
-                                                    <td class="align-middle" style="font-size: 0.85rem;">
+                                                    <td class="align-middle" style="font-size: 0.9rem;">
                                                         {% if client.medical_insurance_symbol or client.medical_insurance_number or client.medical_insurance_branch %}
                                                             {% if client.medical_insurance_symbol %}<div>記号 {{ client.medical_insurance_symbol }}</div>{% endif %}
                                                             {% if client.medical_insurance_number %}<div>番号 {{ client.medical_insurance_number }}</div>{% endif %}
@@ -678,7 +678,7 @@
                                 <!-- 介護保険関係 -->
                                 <div class="card w-100 shadow-sm border rounded-0">
                                     <div class="card-header bg-light py-2 rounded-0" style="border-bottom: 1px solid #dee2e6;">
-                                        <h6 class="mb-0 text-secondary" style="font-size: 0.95rem;"><i class="fas fa-wheelchair me-2"></i>介護保険関係</h6>
+                                        <h6 class="mb-0 text-secondary" style="font-size: 0.9rem;"><i class="fas fa-wheelchair me-2"></i>介護保険関係</h6>
                                     </div>
                                     <div class="card-body p-0">
                                         <table class="table table-bordered mb-0" style="table-layout: fixed; font-size: 0.9rem; border-style: hidden;">
@@ -707,7 +707,7 @@
                                 <!-- 障害福祉関係 -->
                                 <div class="card w-100 shadow-sm border rounded-0">
                                     <div class="card-header bg-light py-2 rounded-0" style="border-bottom: 1px solid #dee2e6;">
-                                        <h6 class="mb-0 text-secondary" style="font-size: 0.95rem;"><i class="fas fa-hands-helping me-2"></i>障害福祉関係</h6>
+                                        <h6 class="mb-0 text-secondary" style="font-size: 0.9rem;"><i class="fas fa-hands-helping me-2"></i>障害福祉関係</h6>
                                     </div>
                                     <div class="card-body p-0">
                                         <table class="table table-bordered mb-0" style="table-layout: fixed; font-size: 0.9rem; border-style: hidden;">
@@ -745,7 +745,7 @@
                                 <!-- 医療関係 -->
                                 <div class="card w-100 shadow-sm border rounded-0">
                                     <div class="card-header bg-light py-2 rounded-0" style="border-bottom: 1px solid #dee2e6;">
-                                        <h6 class="mb-0 text-secondary" style="font-size: 0.95rem;"><i class="fas fa-notes-medical me-2"></i>医療関係</h6>
+                                        <h6 class="mb-0 text-secondary" style="font-size: 0.9rem;"><i class="fas fa-notes-medical me-2"></i>医療関係</h6>
                                     </div>
                                     <div class="card-body p-0">
                                         <table class="table table-bordered mb-0" style="table-layout: fixed; font-size: 0.9rem; border-style: hidden;">
@@ -794,7 +794,7 @@
                                 <!-- 生活保護 -->
                                 <div class="card w-100 shadow-sm border rounded-0">
                                     <div class="card-header bg-light py-2 rounded-0" style="border-bottom: 1px solid #dee2e6;">
-                                        <h6 class="mb-0 text-secondary" style="font-size: 0.95rem;"><i class="fas fa-hand-holding-heart me-2"></i>生活保護</h6>
+                                        <h6 class="mb-0 text-secondary" style="font-size: 0.9rem;"><i class="fas fa-hand-holding-heart me-2"></i>生活保護</h6>
                                     </div>
                                     <div class="card-body p-0">
                                         <table class="table table-bordered mb-0" style="table-layout: fixed; font-size: 0.9rem; border-style: hidden;">
@@ -936,8 +936,8 @@
                                 <tbody>
                                     {% for history in document_histories %}
                                     <tr>
-                                        <td>{% if history.document_type == 'ltc_withdrawal' and history.form_data.withdrawal_date %}{{ history.form_data.withdrawal_date|wareki }}{% elif history.form_data.application_date %}{{ history.form_data.application_date|wareki }}{% else %}{{ history.created_at|wareki }}{% endif %}</td>
-                                        <td>{{ history.get_document_type_display }}</td>
+                                        <td style="font-size: 0.9rem;">{% if history.document_type == 'ltc_withdrawal' and history.form_data.withdrawal_date %}{{ history.form_data.withdrawal_date|wareki }}{% elif history.form_data.application_date %}{{ history.form_data.application_date|wareki }}{% else %}{{ history.created_at|wareki }}{% endif %}</td>
+                                        <td style="font-size: 0.9rem;">{{ history.get_document_type_display }}</td>
                                         <td>
                                             <div class="btn-group btn-group-sm d-flex justify-content-end">
                                                 <button type="button" class="btn btn-outline-secondary btn-sm btn-preview-doc" style="transition: all 0.2s ease; font-size: 0.7rem; line-height: 1.2;" disabled>
@@ -1089,6 +1089,8 @@ function reopenDocument(documentType, historyId, clientId) {
         'ltc_change':            `/clients/${clientId}/document/ltc-change/?history_id=${historyId}`,
         'ltc_withdrawal':        `/clients/${clientId}/document/ltc-withdrawal/?history_id=${historyId}`,
         'ltc_doctor_change':     `/clients/${clientId}/document/ltc-doctor-change/?history_id=${historyId}`,
+        'ltc_address_change':         `/clients/${clientId}/document/ltc-address-change/?history_id=${historyId}`,
+        'ltc_burden_address_change':  `/clients/${clientId}/document/ltc-burden-address-change/?history_id=${historyId}`,
         'careplan_info_request': `/clients/${clientId}/documents/create/careplan_info_request/?history_id=${historyId}`,
     };
     const url = typeToUrl[documentType]

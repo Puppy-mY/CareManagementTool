@@ -68,6 +68,7 @@ urlpatterns = [
 
     # 更新認定申請書・区分変更申請書・主治医変更届出書
     path('<str:client_id>/document/ltc-doctor-change/', views.document_create_ltc_doctor_change, name='document_ltc_doctor_change'),
+    path('<str:client_id>/document/ltc-burden-address-change/', views.document_create_ltc_burden_address_change, name='document_ltc_burden_address_change'),
     path('<str:client_id>/document/ltc-renewal/', views.document_create_ltc_renewal, name='document_ltc_renewal'),
     path('<str:client_id>/document/ltc-change/', views.document_create_ltc_change, name='document_ltc_change'),
     path('<str:client_id>/document/ltc-withdrawal/', views.document_create_ltc_withdrawal, name='document_ltc_withdrawal'),
