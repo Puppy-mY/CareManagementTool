@@ -1965,7 +1965,7 @@ def document_history_excel(request, pk):
     history = get_object_or_404(DocumentCreationHistory, pk=pk)
     client = history.client
 
-    if history.document_type in ('ltc_renewal', 'ltc_change', 'ltc_withdrawal', 'ltc_doctor_change'):
+    if history.document_type in ('ltc_renewal', 'ltc_change', 'ltc_withdrawal', 'ltc_doctor_change', 'ltc_address_change'):
         try:
             if history.document_type == 'ltc_change':
                 content  = _generate_ltc_change_excel_bytes(client, history.form_data)
@@ -1975,13 +1975,18 @@ def document_history_excel(request, pk):
             elif history.document_type == 'ltc_withdrawal':
                 content  = _generate_ltc_withdrawal_excel_bytes(client, history.form_data)
                 dl_label = '認定申請取下書'
-                ct       = 'application/vnd.ms-excel'
-                ext      = '.xls'
+                ct       = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                ext      = '.xlsx'
             elif history.document_type == 'ltc_doctor_change':
                 content  = _generate_ltc_doctor_change_excel_bytes(client, history.form_data)
                 dl_label = '認定申請主治医変更届出書'
-                ct       = 'application/vnd.ms-excel'
-                ext      = '.xls'
+                ct       = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                ext      = '.xlsx'
+            elif history.document_type == 'ltc_address_change':
+                content  = _generate_ltc_address_change_excel_bytes(client, history.form_data)
+                dl_label = '介護保険送付先変更届'
+                ct       = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                ext      = '.xlsx'
             else:
                 content  = _generate_ltc_renewal_excel_bytes(client, history.form_data)
                 dl_label = '更新認定申請書'
@@ -1993,7 +1998,7 @@ def document_history_excel(request, pk):
         from urllib.parse import quote
         dl_name  = _make_dl_filename(client, dl_label)
         response = HttpResponse(content, content_type=ct)
-        response['Content-Disposition'] = f"attachment; filename=\"download{ext}\"; filename*=UTF-8''{quote(dl_name + ext, safe='')}"
+        response['Content-Disposition'] = f"attachment; filename=\"download{ext}\"; filename*=UTF-8''{quote(dl_name, safe='')}"
         return response
 
     return generate_document_excel(
@@ -2017,15 +2022,15 @@ def document_file_management(request):
             'items': [
                 {'name': '更新認定申請書',           'filename': getattr(settings, 'LTC_RENEWAL_FILENAME', 'LTC_Certification_Renewal_R8.4-.xlsx')},
                 {'name': '区分変更申請書',           'filename': getattr(settings, 'LTC_CHANGE_FILENAME',   'LTC_Certification_Change_R8.4-.xlsx')},
-                {'name': '認定申請主治医変更届出書', 'filename': '介護保険要介護（更新）・要支援（更新）申請書主治医変更届出書.xls'},
-                {'name': '認定申請取下書',           'filename': '介護保険要介護認定・要支援認定取下書.xls'},
+                {'name': '認定申請主治医変更届出書', 'filename': 'LTCI_Renewal_Doctor_Change_Notice.xlsx'},
+                {'name': '認定申請取下書',           'filename': 'LTCI_Certification_Withdrawal_Request.xlsx'},
             ],
         },
         {
             'section': '送付先変更・再交付関係',
             'items': [
                 {'name': '介護保険関係・再交付申請書',              'filename': 'LTC_Reissue_Application.xlsx'},
-                {'name': '介護保険被保険者証の送付先変更届',        'filename': '（未設定）'},
+                {'name': '介護保険被保険者証の送付先変更届',        'filename': 'LTCI_Address_Change_Notice.xlsx'},
                 {'name': '介護保険負担限度額・割合証送付先変更届',  'filename': '（未設定）'},
             ],
         },
@@ -3455,7 +3460,11 @@ def _document_create_ltc_base(request, client_id, doc_type, doc_name, template_n
         'office_postal_code': (office.postal_code if office else '') or '',
         'office_address': (office.address if office else '') or '',
         'office_phone': (office.phone if office else '') or '',
+        'office_manager_name': (office.manager_name if office else '') or '',
+        'office_fax': (office.fax if office else '') or '',
+        'office_is_active': office.is_active if office else True,
         'staff_name': user_full_name,
+        'staff_name_office': user_full_name,
         'relation': '担当ケアマネ' if (profile and getattr(profile, 'job_type', '') == 'care_manager') else '介護支援専門員',
         'submitter_type': 'office',
         # 手入力項目
@@ -3491,12 +3500,16 @@ def _document_create_ltc_base(request, client_id, doc_type, doc_name, template_n
     }
 
     if doc_type == 'ltc_withdrawal':
+        initial['submitter_type'] = 'office'
+        initial['relation'] = '介護支援専門員'
+        initial['staff_name_office'] = initial.get('staff_name', '')
         initial['withdrawal_date'] = datetime.today().strftime('%Y-%m-%d')
         initial['application_date'] = ''
         initial['withdrawal_reason'] = ''
 
     if doc_type == 'ltc_doctor_change':
         initial['submitter_type'] = 'office'
+        initial['relation'] = '介護支援専門員'
         initial['application_type'] = ''
         initial['original_application_date'] = ''
         initial['change_reason_type'] = ''
@@ -3505,6 +3518,16 @@ def _document_create_ltc_base(request, client_id, doc_type, doc_name, template_n
         initial['before_doctor_name'] = ''
         initial['after_doctor_hospital'] = ''
         initial['after_doctor_name'] = ''
+
+    if doc_type == 'ltc_address_change':
+        initial['submitter_type'] = 'office'
+        initial['relation'] = '介護支援専門員'
+        initial['staff_name_cm'] = user_full_name
+        initial['change_reason'] = ''
+        initial['delivery_type'] = '1'
+        initial['alt_postal_code'] = ''
+        initial['alt_address'] = ''
+        initial['alt_name'] = ''
 
     # 履歴からの再編集：保存済みデータで initial を上書き
     history_id = request.GET.get('history_id')
@@ -3542,11 +3565,11 @@ def _document_create_ltc_base(request, client_id, doc_type, doc_name, template_n
             initial['user_full_name']      = user_full_name
             initial['user_full_name_kana'] = profile.get_full_name_kana() if profile else ''
             initial['user_phone']          = profile.phone if profile else ''
-            initial['office_phone']        = (office.phone if office else '') or ''
+            initial['office_phone']        = (office.phone    if office else '') or ''
+            initial['office_furigana']     = (office.furigana if office else '') or ''
             # 代行提出モードで事業所名が保存されていない場合のみ現在の事業所から補完
             if initial.get('submitter_type', 'office') == 'office' and not initial.get('office_name') and office:
                 initial['office_name']        = office.name or ''
-                initial['office_furigana']     = office.furigana or ''
                 initial['office_number']       = office.office_number or ''
                 initial['office_postal_code']  = office.postal_code or ''
                 initial['office_address']      = office.address or ''
@@ -3583,7 +3606,8 @@ def _document_create_ltc_base(request, client_id, doc_type, doc_name, template_n
         form_data['user_full_name']      = user_full_name
         form_data['user_full_name_kana'] = profile.get_full_name_kana() if profile else ''
         form_data['user_phone']          = profile.phone if profile else ''
-        form_data['office_phone']        = (office.phone if office else '') or ''
+        form_data['office_phone']        = (office.phone    if office else '') or ''
+        form_data['office_furigana']     = (office.furigana if office else '') or ''
         action = request.POST.get('action', 'excel')
         history_id = request.GET.get('history_id')
 
@@ -3617,19 +3641,28 @@ def _document_create_ltc_base(request, client_id, doc_type, doc_name, template_n
             if doc_type == 'ltc_withdrawal':
                 content = _generate_ltc_withdrawal_excel_bytes(client, form_data)
                 dl_name = _make_dl_filename(client, doc_name)
-                response = HttpResponse(content, content_type='application/vnd.ms-excel')
+                response = HttpResponse(content, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
                 response['Content-Disposition'] = (
-                    f"attachment; filename=\"download.xls\"; "
-                    f"filename*=UTF-8''{quote(dl_name + '.xls', safe='')}"
+                    f"attachment; filename=\"download.xlsx\"; "
+                    f"filename*=UTF-8''{quote(dl_name, safe='')}"
                 )
                 return response
             elif doc_type == 'ltc_doctor_change':
                 content = _generate_ltc_doctor_change_excel_bytes(client, form_data)
                 dl_name = _make_dl_filename(client, doc_name)
-                response = HttpResponse(content, content_type='application/vnd.ms-excel')
+                response = HttpResponse(content, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
                 response['Content-Disposition'] = (
-                    f"attachment; filename=\"download.xls\"; "
-                    f"filename*=UTF-8''{quote(dl_name + '.xls', safe='')}"
+                    f"attachment; filename=\"download.xlsx\"; "
+                    f"filename*=UTF-8''{quote(dl_name, safe='')}"
+                )
+                return response
+            elif doc_type == 'ltc_address_change':
+                content = _generate_ltc_address_change_excel_bytes(client, form_data)
+                dl_name = _make_dl_filename(client, doc_name)
+                response = HttpResponse(content, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+                response['Content-Disposition'] = (
+                    f"attachment; filename=\"download.xlsx\"; "
+                    f"filename*=UTF-8''{quote(dl_name, safe='')}"
                 )
                 return response
             elif doc_type == 'ltc_change':
@@ -3808,20 +3841,29 @@ def document_create_ltc_withdrawal(request, client_id):
     )
 
 
+@login_required
+@user_passes_test(staff_required)
+def document_create_ltc_address_change(request, client_id):
+    """介護保険送付先変更届 作成画面"""
+    return _document_create_ltc_base(
+        request, client_id,
+        doc_type='ltc_address_change',
+        doc_name='介護保険送付先変更届',
+        template_name='clients/document_create_ltc_address_change.html',
+    )
+
+
 def _generate_ltc_withdrawal_excel_bytes(client, form_data):
-    """認定申請取下書（XLS）のバイト列を生成して返す"""
-    import tempfile, shutil
-    import xlwings as xw
+    """認定申請取下書（XLSX）のバイト列を生成して返す"""
+    from openpyxl import load_workbook
+    from openpyxl.cell import MergedCell
+    import io
     from datetime import date as date_cls, datetime as dt_cls
 
     template_path = os.path.join(
         settings.BASE_DIR, 'templates', 'forms',
-        'LTCI_Certification_Withdrawal_Request.xls'
+        'LTCI_Certification_Withdrawal_Request.xlsx'
     )
-
-    with tempfile.NamedTemporaryFile(suffix='.xls', delete=False) as tmp:
-        tmp_path = tmp.name
-    shutil.copy(template_path, tmp_path)
 
     def to_wareki(date_str):
         if not date_str:
@@ -3840,79 +3882,79 @@ def _generate_ltc_withdrawal_excel_bytes(client, form_data):
         except Exception:
             return date_str
 
-    app = xw.App(visible=False)
-    try:
-        wb = app.books.open(tmp_path)
-        ws = wb.sheets[0]
+    wb = load_workbook(template_path)
+    ws = wb.active
 
-        # ① 申請年月日（取り下げる申請の日付）
-        app_date = to_wareki(form_data.get('application_date', ''))
-        if app_date:
-            ws['B5'].value  = f"{app_date}に行いました介護保険要介護認定・要支援認定等の申請を取り下げます。"
-            ws['A25'].value = f"　　　　　{app_date}に行いました要介護認定・要支援認定申請を取り下げることに同意します。"
+    def w(ref, value):
+        cell = ws[ref]
+        if not isinstance(cell, MergedCell):
+            cell.value = value
 
-        # ② 取下年月日（本日）
-        ws['N8'].value = to_wareki(date_cls.today().strftime('%Y-%m-%d'))
+    # ① 申請年月日
+    app_date = to_wareki(form_data.get('application_date', ''))
+    if app_date:
+        w('B5', f"{app_date}に行いました介護保険要介護認定・要支援認定等の申請を取り下げます。")
+        w('A25', f"　　　　　{app_date}に行いました要介護認定・要支援認定申請を取り下げることに同意します。")
 
-        # ③ 被保険者番号
-        ws['C8'].value = form_data.get('insurance_number', '')
+    # ② 取下年月日（本日）
+    w('N8', to_wareki(date_cls.today().strftime('%Y-%m-%d')))
 
-        # ④ フリガナ（ひらがな→カタカナ）
-        furigana = form_data.get('client_furigana', '')
-        kata = ''.join(chr(ord(c) + 0x60) if 'ぁ' <= c <= 'ん' else c for c in furigana)
-        ws['C9'].value = kata
+    # ③ 被保険者番号
+    w('C8', form_data.get('insurance_number', ''))
 
-        # ⑤ 生年月日
-        ws['N9'].value = to_wareki(form_data.get('birth_date', ''))
+    # ④ フリガナ（ひらがな→カタカナ）
+    furigana = form_data.get('client_furigana', '')
+    kata = ''.join(chr(ord(c) + 0x60) if 'ぁ' <= c <= 'ん' else c for c in furigana)
+    w('C9', kata)
 
-        # ⑥ 氏名
-        ws['C10'].value = form_data.get('client_name', '')
+    # ⑤ 生年月日
+    w('N9', to_wareki(form_data.get('birth_date', '')))
 
-        # ⑦ 性別
-        ws['N11'].value = form_data.get('client_gender', '')
+    # ⑥ 氏名
+    w('C10', form_data.get('client_name', ''))
 
-        # ⑧ 被保険者 住所（郵便番号・住所）
-        ws['E12'].value = form_data.get('postal_code', '')
-        ws['C13'].value = form_data.get('client_address', '')
+    # ⑦ 性別
+    w('N11', form_data.get('client_gender', ''))
 
-        # ⑨ 被保険者 電話番号
-        ws['N14'].value = form_data.get('client_phone', '')
+    # ⑧ 被保険者 住所
+    w('E12', form_data.get('postal_code', ''))
+    w('C13', form_data.get('client_address', ''))
 
-        # ⑩ 提出代行者（事業所情報）
-        ws['C16'].value = form_data.get('office_name', '')
-        ws['E18'].value = form_data.get('office_postal_code', '')
-        ws['C19'].value = form_data.get('office_address', '')
-        ws['N20'].value = form_data.get('office_phone', '')
+    # ⑨ 被保険者 電話番号
+    w('N14', form_data.get('client_phone', ''))
 
-        # ⑪ 取下理由
-        ws['B22'].value = form_data.get('withdrawal_reason', '')
+    # ⑩ 提出代行者
+    submitter_type = form_data.get('submitter_type', 'office')
+    if submitter_type == 'office':
+        office_name = form_data.get('office_name', '').strip()
+        staff_name  = form_data.get('staff_name_office', '').strip()
+        w('C16', f"{office_name}\n{staff_name}" if office_name else staff_name)
+    else:
+        w('C16', form_data.get('staff_name', '').strip())
+    w('E18', form_data.get('office_postal_code', ''))
+    w('C19', form_data.get('office_address', ''))
+    w('N20', form_data.get('office_phone', ''))
 
-        wb.save()
-        wb.close()
+    # ⑪ 取下理由
+    w('B22', form_data.get('withdrawal_reason', ''))
 
-        with open(tmp_path, 'rb') as f:
-            content = f.read()
-        return content
-    finally:
-        app.quit()
-        try:
-            os.unlink(tmp_path)
-        except Exception:
-            pass
+    buf = io.BytesIO()
+    wb.save(buf)
+    return buf.getvalue()
 
 
 def _generate_ltc_doctor_change_excel_bytes(client, form_data):
-    """認定申請主治医変更届出書（XLS）のバイト列を生成して返す"""
+    """認定申請主治医変更届出書（XLSX）のバイト列を生成して返す"""
     import tempfile, shutil
     import xlwings as xw
     from datetime import date as date_cls, datetime as dt_cls
 
     template_path = os.path.join(
         settings.BASE_DIR, 'templates', 'forms',
-        'LTCI_Renewal_Doctor_Change_Notice.xls'
+        'LTCI_Renewal_Doctor_Change_Notice.xlsx'
     )
 
-    with tempfile.NamedTemporaryFile(suffix='.xls', delete=False) as tmp:
+    with tempfile.NamedTemporaryFile(suffix='.xlsx', delete=False) as tmp:
         tmp_path = tmp.name
     shutil.copy(template_path, tmp_path)
 
@@ -3934,21 +3976,26 @@ def _generate_ltc_doctor_change_excel_bytes(client, form_data):
             return date_str
 
     app = xw.App(visible=False)
+    app.display_alerts = False
     try:
-        wb = app.books.open(tmp_path)
+        wb = app.books.open(tmp_path, update_links=False, read_only=False)
         ws = wb.sheets[0]
 
         # 申請日
         ws['J2'].value = to_wareki(form_data.get('application_date', ''))
 
-        # 申請者（事業所）
+        # 申請者
+        submitter_type = form_data.get('submitter_type', 'office')
         ws['I3'].value = form_data.get('office_postal_code', '')
         ws['H4'].value = form_data.get('office_address', '')
-        office_name = form_data.get('office_name', '').strip()
-        staff_name = form_data.get('staff_name', '').strip()
-        ws['H5'].value = f"{office_name}\n{staff_name}" if office_name else staff_name
-        relation = form_data.get('relation', '') or '介護支援専門員'
-        ws['H6'].value = relation
+        if submitter_type == 'office':
+            office_name = form_data.get('office_name', '').strip()
+            staff_name  = form_data.get('staff_name_office', '').strip()
+            ws['H5'].value = f"{office_name}\n{staff_name}" if office_name else staff_name
+            ws['H6'].value = form_data.get('relation', '介護支援専門員')
+        else:
+            ws['H5'].value = form_data.get('staff_name', '').strip()
+            ws['H6'].value = form_data.get('relation', '')
 
         # 被保険者
         ins = str(client.insurance_number).strip() if client.insurance_number else ''
@@ -3969,6 +4016,7 @@ def _generate_ltc_doctor_change_excel_bytes(client, form_data):
                 left, top, width, height = c1.Left, c1.Top, c1.Width, c1.Height
             shape = ws.api.Shapes.AddShape(9, left, top, width, height)
             shape.Fill.Visible = False
+            shape.Line.Weight = 0.5
             shape.Line.ForeColor.RGB = 0x000000
 
         app_type = form_data.get('application_type', '')
@@ -3994,11 +4042,11 @@ def _generate_ltc_doctor_change_excel_bytes(client, form_data):
 
         # 主治医変更（変更前・変更後）
         ws['C20'].value = form_data.get('before_doctor_hospital', '')
-        ws['C21'].value = form_data.get('before_doctor_name', '')
-        ws['K20'].value = form_data.get('after_doctor_hospital', '')
+        ws['K20'].value = form_data.get('before_doctor_name', '')
+        ws['C21'].value = form_data.get('after_doctor_hospital', '')
         ws['K21'].value = form_data.get('after_doctor_name', '')
 
-        wb.save()
+        wb.save(tmp_path)
         wb.close()
 
         with open(tmp_path, 'rb') as f:
@@ -4010,6 +4058,85 @@ def _generate_ltc_doctor_change_excel_bytes(client, form_data):
             os.unlink(tmp_path)
         except Exception:
             pass
+
+
+def _generate_ltc_address_change_excel_bytes(client, form_data):
+    """介護保険送付先変更届（XLSX）のバイト列を生成して返す"""
+    from openpyxl import load_workbook
+    from openpyxl.cell import MergedCell
+    import io
+    from datetime import date as date_cls, datetime as dt_cls
+
+    template_path = os.path.join(
+        settings.BASE_DIR, 'templates', 'forms',
+        'LTCI_Address_Change_Notice.xlsx'
+    )
+    wb = load_workbook(template_path)
+    ws = wb.active
+
+    def w(ref, value):
+        cell = ws[ref]
+        if not isinstance(cell, MergedCell):
+            cell.value = value
+
+    def to_wareki(date_str):
+        if not date_str:
+            return ''
+        try:
+            d = dt_cls.strptime(date_str, '%Y-%m-%d').date()
+            y, m, day = d.year, d.month, d.day
+            if d >= date_cls(2019, 5, 1):
+                return f"令和{y-2018}年{m}月{day}日"
+            elif d >= date_cls(1989, 1, 8):
+                return f"平成{y-1988}年{m}月{day}日"
+            elif d >= date_cls(1926, 12, 25):
+                return f"昭和{y-1925}年{m}月{day}日"
+            else:
+                return f"大正{y-1911}年{m}月{day}日"
+        except Exception:
+            return date_str
+
+    # 届出日（J4）
+    w('J4', to_wareki(form_data.get('application_date', '')))
+
+    # 申請者情報
+    submitter_type = form_data.get('submitter_type', 'office')
+    if submitter_type == 'office':
+        office_name = form_data.get('office_name', '').strip()
+        staff_cm    = form_data.get('staff_name_cm', '').strip()
+        w('F10', office_name)
+        w('E15', staff_cm)
+        w('E13', form_data.get('relation', '介護支援専門員'))
+    else:
+        w('F10', form_data.get('staff_name', '').strip())
+        w('E13', form_data.get('relation', ''))
+        w('E15', '')
+
+    postal = form_data.get('office_postal_code', '') if submitter_type == 'office' else form_data.get('postal_code', '')
+    address = form_data.get('office_address', '') if submitter_type == 'office' else form_data.get('client_address', '')
+    w('E11', f'〒{postal}' if postal else '')
+    w('E12', address)
+    w('E14', form_data.get('office_phone', '') if submitter_type == 'office' else form_data.get('client_phone', ''))
+
+    # 被保険者
+    ins = str(client.insurance_number).strip() if client.insurance_number else ''
+    w('E17', int(ins) if ins.isdigit() else ins)
+    w('E18', client.name or form_data.get('client_name', ''))
+
+    # 変更理由
+    w('C19', form_data.get('change_reason', ''))
+
+    # 送付先
+    delivery_type = form_data.get('delivery_type', '1')
+    if delivery_type == '2':
+        alt_postal = form_data.get('alt_postal_code', '')
+        w('F23', f'〒{alt_postal}' if alt_postal else '')
+        w('F24', form_data.get('alt_address', ''))
+        w('F25', form_data.get('alt_name', ''))
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    return buf.getvalue()
 
 
 # ========================================

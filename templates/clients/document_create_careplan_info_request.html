@@ -34,12 +34,73 @@
             <div class="accordion-body row g-3" style="padding: 0.5rem 1rem 1rem 1rem;">
                 <div class="col-md-6">
                     <label class="form-label">管理者名 <span class="text-danger">*</span></label>
-                    <input type="text" name="manager_name" id="manager_name" class="form-control" value="{% if initial_data.manager_name %}{{ initial_data.manager_name }}{% elif user.profile.home_care_office.manager_name %}{{ user.profile.home_care_office.manager_name }}{% else %}倉野　美和{% endif %}" required>
+                    <input type="text" name="manager_name" id="manager_name" class="form-control" value="{{ user.profile.home_care_office.manager_name }}" readonly required>
                 </div>
                 <div class="col-md-6">
                     <label class="form-label">電話番号 <span class="text-danger">*</span></label>
-                    <input type="text" name="office_phone" id="office_phone" class="form-control" value="{% if initial_data.office_phone %}{{ initial_data.office_phone }}{% elif user.profile.home_care_office %}{{ user.profile.home_care_office.phone }}{% else %}059-253-6599{% endif %}" required>
+                    <input type="text" name="office_phone" id="office_phone" class="form-control" value="{{ user.profile.home_care_office.phone }}" readonly required>
                 </div>
+                <div class="col-12 text-end mt-2">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openInfoRequestOfficeMasterModal()">
+                        <i class="fas fa-edit me-1"></i>事業所マスタデータを編集
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 事業所マスタ編集モーダル -->
+<div class="modal fade" id="infoRequestOfficeModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <input type="hidden" id="info_modal_pk" value="{% if user.profile.home_care_office %}{{ user.profile.home_care_office.pk }}{% endif %}">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-hospital me-2"></i>居宅介護支援事業所編集</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="infoRequestOfficeModalError" class="alert alert-danger d-none"></div>
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label">事業所名 <span class="text-danger">*</span></label>
+                        <input type="text" id="info_modal_name" class="form-control" value="{{ user.profile.home_care_office.name }}" placeholder="例: 居宅介護支援事業所 安濃津ろまん" required>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">フリガナ</label>
+                        <input type="text" id="info_modal_furigana" class="form-control" value="{{ user.profile.home_care_office.furigana }}" placeholder="例: キョタクカイゴシエンジギョウショ アノツロマン">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">事業所番号 <span class="text-danger">*</span></label>
+                        <input type="text" id="info_modal_office_number" class="form-control" value="{{ user.profile.home_care_office.office_number }}" placeholder="例: 2470100419" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">管理者名</label>
+                        <input type="text" id="info_modal_manager_name" class="form-control" value="{{ user.profile.home_care_office.manager_name }}" placeholder="例: 山田 太郎">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">郵便番号</label>
+                        <input type="text" id="info_modal_postal_code" class="form-control" value="{{ user.profile.home_care_office.postal_code }}" placeholder="例: 514-0009">
+                    </div>
+                    <div class="col-md-8">
+                        <label class="form-label">住所</label>
+                        <input type="text" id="info_modal_address" class="form-control" value="{{ user.profile.home_care_office.address }}" placeholder="例: 三重県津市羽所町○○">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">電話番号</label>
+                        <input type="text" id="info_modal_phone" class="form-control" value="{{ user.profile.home_care_office.phone }}" placeholder="例: 059-123-4567">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">FAX</label>
+                        <input type="text" id="info_modal_fax" class="form-control" value="{{ user.profile.home_care_office.fax }}" placeholder="例: 059-123-4568">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                <button type="button" class="btn btn-primary" id="infoRequestOfficeSaveBtn">
+                    <i class="fas fa-save me-1"></i>保存して反映
+                </button>
             </div>
         </div>
     </div>
@@ -146,6 +207,14 @@ function updateSectionStatus(iconId, collapseId, fieldIds, animate) {
     }
 }
 
+var _DB_MANAGER_NAME = '{{ user.profile.home_care_office.manager_name }}';
+var _DB_OFFICE_PHONE = '{{ user.profile.home_care_office.phone }}';
+
+function openInfoRequestOfficeMasterModal() {
+    document.getElementById('infoRequestOfficeModalError').classList.add('d-none');
+    new bootstrap.Modal(document.getElementById('infoRequestOfficeModal')).show();
+}
+
 function toggleOfficeName() {
     const sel = document.getElementById('office_name_select');
     const input = document.getElementById('office_name');
@@ -158,14 +227,16 @@ function toggleOfficeName() {
     if (sel.value === 'other') {
         input.classList.remove('d-none');
         input.required = true;
-        if (managerEl) managerEl.value = '';
-        if (phoneEl) phoneEl.value = '';
+        if (managerEl) { managerEl.removeAttribute('readonly'); managerEl.value = ''; }
+        if (phoneEl)   { phoneEl.removeAttribute('readonly');   phoneEl.value = ''; }
         if (staffNameEl) staffNameEl.value = '';
         if (staffTitleEl) staffTitleEl.value = '';
     } else {
         input.classList.add('d-none');
         input.required = false;
         input.value = '';
+        if (managerEl) { managerEl.setAttribute('readonly', 'readonly'); managerEl.value = _DB_MANAGER_NAME; }
+        if (phoneEl)   { phoneEl.setAttribute('readonly', 'readonly');   phoneEl.value = _DB_OFFICE_PHONE; }
     }
     typeField.value = sel.value;
     refreshSectionStatuses(true);
@@ -197,10 +268,76 @@ function initDocumentSpecific() {
     refreshSectionStatuses(false);
 
     // input イベントで随時ステータス更新（アニメーションあり）
-    ['manager_name', 'office_phone', 'staff_name', 'staff_job_title'].forEach(id => {
+    ['staff_name', 'staff_job_title'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.addEventListener('input', () => refreshSectionStatuses(true));
     });
+
+    // 事業所マスタ編集モーダル保存
+    const officeModalSaveBtn = document.getElementById('infoRequestOfficeSaveBtn');
+    if (officeModalSaveBtn) {
+        officeModalSaveBtn.addEventListener('click', function() {
+            const pk = document.getElementById('info_modal_pk').value;
+            if (!pk) { alert('事業所が設定されていません。'); return; }
+
+            const name         = document.getElementById('info_modal_name').value.trim();
+            const furigana     = document.getElementById('info_modal_furigana').value.trim();
+            const officeNumber = document.getElementById('info_modal_office_number').value.trim();
+            const managerName  = document.getElementById('info_modal_manager_name').value.trim();
+            const postalCode   = document.getElementById('info_modal_postal_code').value.trim();
+            const address      = document.getElementById('info_modal_address').value.trim();
+            const phone        = document.getElementById('info_modal_phone').value.trim();
+            const fax          = document.getElementById('info_modal_fax').value.trim();
+
+            if (!name || !officeNumber) {
+                const errEl = document.getElementById('infoRequestOfficeModalError');
+                errEl.textContent = '事業所名と事業所番号は必須です。';
+                errEl.classList.remove('d-none');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('name', name);
+            formData.append('furigana', furigana);
+            formData.append('office_number', officeNumber);
+            formData.append('manager_name', managerName);
+            formData.append('postal_code', postalCode);
+            formData.append('address', address);
+            formData.append('phone', phone);
+            formData.append('fax', fax);
+            formData.append('is_active', 'true');
+
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            fetch(`/clients/home-care-offices/${pk}/edit/`, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
+                body: formData,
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    // readonly フィールドに反映
+                    _DB_MANAGER_NAME = managerName;
+                    _DB_OFFICE_PHONE = phone;
+                    const managerEl = document.getElementById('manager_name');
+                    const phoneEl   = document.getElementById('office_phone');
+                    if (managerEl) { managerEl.value = managerName; managerEl.defaultValue = managerName; }
+                    if (phoneEl)   { phoneEl.value = phone;         phoneEl.defaultValue = phone; }
+                    bootstrap.Modal.getInstance(document.getElementById('infoRequestOfficeModal')).hide();
+                    refreshSectionStatuses(true);
+                } else {
+                    const errEl = document.getElementById('infoRequestOfficeModalError');
+                    errEl.textContent = data.error || '保存に失敗しました。';
+                    errEl.classList.remove('d-none');
+                }
+            })
+            .catch(() => {
+                const errEl = document.getElementById('infoRequestOfficeModalError');
+                errEl.textContent = '通信エラーが発生しました。';
+                errEl.classList.remove('d-none');
+            });
+        });
+    }
 }
 
 // 申請日 和暦/西暦

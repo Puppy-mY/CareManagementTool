@@ -914,15 +914,19 @@
                 <div class="row g-3">
                     <div class="col-12">
                         <label class="form-label">事業所名 <span class="text-danger">*</span></label>
-                        <input type="text" id="renewal_modal_name" class="form-control" value="{{ initial.office_name }}">
+                        <input type="text" id="renewal_modal_name" class="form-control" value="{{ initial.office_name }}" placeholder="例: 居宅介護支援事業所 安濃津ろまん" required>
                     </div>
                     <div class="col-12">
                         <label class="form-label">フリガナ</label>
-                        <input type="text" id="renewal_modal_furigana" class="form-control" value="{{ initial.office_furigana }}">
+                        <input type="text" id="renewal_modal_furigana" class="form-control" value="{{ initial.office_furigana }}" placeholder="例: キョタクカイゴシエンジギョウショ アノツロマン">
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">事業所番号 <span class="text-danger">*</span></label>
-                        <input type="text" id="renewal_modal_office_number" class="form-control" value="{{ initial.office_number }}">
+                        <input type="text" id="renewal_modal_office_number" class="form-control" value="{{ initial.office_number }}" placeholder="例: 2470100419" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">管理者名</label>
+                        <input type="text" id="renewal_modal_manager_name" class="form-control" value="{{ initial.office_manager_name }}" placeholder="例: 山田 太郎">
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">郵便番号</label>
@@ -930,11 +934,15 @@
                     </div>
                     <div class="col-md-8">
                         <label class="form-label">住所</label>
-                        <input type="text" id="renewal_modal_address" class="form-control" value="{{ initial.office_address }}">
+                        <input type="text" id="renewal_modal_address" class="form-control" value="{{ initial.office_address }}" placeholder="例: 三重県津市羽所町○○">
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">電話番号</label>
-                        <input type="text" id="renewal_modal_phone" class="form-control" value="{{ initial.office_phone }}">
+                        <input type="text" id="renewal_modal_phone" class="form-control" value="{{ initial.office_phone }}" placeholder="例: 059-123-4567">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">FAX</label>
+                        <input type="text" id="renewal_modal_fax" class="form-control" value="{{ initial.office_fax }}" placeholder="例: 059-123-4568">
                     </div>
                 </div>
             </div>
@@ -2255,12 +2263,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const pk = document.getElementById('renewal_modal_pk').value;
         if (!pk) { alert('事業所が設定されていません。'); return; }
 
-        const name        = document.getElementById('renewal_modal_name').value.trim();
-        const furigana    = document.getElementById('renewal_modal_furigana').value.trim();
+        const name         = document.getElementById('renewal_modal_name').value.trim();
+        const furigana     = document.getElementById('renewal_modal_furigana').value.trim();
         const officeNumber = document.getElementById('renewal_modal_office_number').value.trim();
-        const postalCode  = document.getElementById('renewal_modal_postal_code').value.trim();
-        const address     = document.getElementById('renewal_modal_address').value.trim();
-        const phone       = document.getElementById('renewal_modal_phone').value.trim();
+        const managerName  = document.getElementById('renewal_modal_manager_name').value.trim();
+        const postalCode   = document.getElementById('renewal_modal_postal_code').value.trim();
+        const address      = document.getElementById('renewal_modal_address').value.trim();
+        const phone        = document.getElementById('renewal_modal_phone').value.trim();
+        const fax          = document.getElementById('renewal_modal_fax').value.trim();
 
         if (!name || !officeNumber) {
             const errEl = document.getElementById('renewalOfficeModalError');
@@ -2273,9 +2283,11 @@ document.addEventListener('DOMContentLoaded', function() {
         formData.append('name', name);
         formData.append('furigana', furigana);
         formData.append('office_number', officeNumber);
+        formData.append('manager_name', managerName);
         formData.append('postal_code', postalCode);
         formData.append('address', address);
         formData.append('phone', phone);
+        formData.append('fax', fax);
         formData.append('is_active', 'true');
 
         const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
