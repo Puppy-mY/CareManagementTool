@@ -609,7 +609,7 @@
                 <ul class="document-list">
                     <li class="document-item" onclick="selectDocument('介護保険被保険者証の送付先変更届', '利用可能', event)">介護保険被保険者証の送付先変更届（今回のみ変更）</li>
                     <li class="document-item" onclick="selectDocument('介護保険負担限度額・割合証送付先変更届', '利用可能', event)">介護保険負担限度額・割合証送付先変更届</li>
-                    <li class="document-item" onclick="selectDocument('介護保険関係・再交付申請書', '開発中', event)">介護保険関係・再交付申請書（開発中）</li>
+                    <li class="document-item" onclick="selectDocument('介護保険関係・再交付申請書', '利用可能', event)">介護保険関係・再交付申請書</li>
                 </ul>
             </div>
 
@@ -625,7 +625,7 @@
             <div class="document-section">
                 <h6 class="document-section-title">居宅サービス利用説明・確認</h6>
                 <ul class="document-list">
-                    <li class="document-item" onclick="selectDocument('居宅サービス事業所の選択に関する説明に係る確認書', '開発中', event)">居宅サービス事業所の選択に関する説明に係る確認書（開発中）</li>
+                    <li class="document-item" onclick="selectDocument('居宅サービス事業所の選択に関する説明に係る確認書', '利用可能', event)">居宅サービス事業所の選択に関する説明に係る確認書</li>
                 </ul>
             </div>
 
@@ -1799,6 +1799,10 @@ function selectDocument(documentName, status, event) {
                 `/clients/${currentClientId}/document/ltc-address-change/`,
             '介護保険負担限度額・割合証送付先変更届':
                 `/clients/${currentClientId}/document/ltc-burden-address-change/`,
+            '介護保険関係・再交付申請書':
+                `/clients/${currentClientId}/document/ltc-reissue-application/`,
+            '居宅サービス事業所の選択に関する説明に係る確認書':
+                `/clients/${currentClientId}/document/kyotaku-selection-confirmation/`,
         };
 
         const url = documentUrlMap[documentName];

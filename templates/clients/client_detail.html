@@ -1091,6 +1091,8 @@ function reopenDocument(documentType, historyId, clientId) {
         'ltc_doctor_change':     `/clients/${clientId}/document/ltc-doctor-change/?history_id=${historyId}`,
         'ltc_address_change':         `/clients/${clientId}/document/ltc-address-change/?history_id=${historyId}`,
         'ltc_burden_address_change':  `/clients/${clientId}/document/ltc-burden-address-change/?history_id=${historyId}`,
+        'ltc_reissue_application':    `/clients/${clientId}/document/ltc-reissue-application/?history_id=${historyId}`,
+        'kyotaku_selection_confirmation': `/clients/${clientId}/document/kyotaku-selection-confirmation/?history_id=${historyId}`,
         'careplan_info_request': `/clients/${clientId}/documents/create/careplan_info_request/?history_id=${historyId}`,
     };
     const url = typeToUrl[documentType]

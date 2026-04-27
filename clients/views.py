@@ -1688,8 +1688,9 @@ def _generate_ltc_renewal_excel_bytes(client, form_data):
     return content
 
 
-def _add_oval_to_xlsx_bytes(xlsx_bytes, cell_ref, padding=30000, to_cell_ref=None, line_width_emu=9525):
-    """xlsxバイト列のcell_refセルに楕円を重ねて返す（ZIP直接操作）。to_cell_refで終端セルを指定可能。"""
+def _add_oval_to_xlsx_bytes(xlsx_bytes, cell_ref, padding=30000, to_cell_ref=None, line_width_emu=9525, row_extra_emu=0):
+    """xlsxバイト列のcell_refセルに楕円を重ねて返す（ZIP直接操作）。to_cell_refで終端セルを指定可能。
+    row_extra_emu: 上下それぞれをセル境界からはみ出させるEMU量（1mm≒36000）。均等に上下拡張。"""
     import io, zipfile
     from lxml import etree
     from openpyxl.utils.cell import coordinate_from_string, column_index_from_string
@@ -1704,6 +1705,9 @@ def _add_oval_to_xlsx_bytes(xlsx_bytes, cell_ref, padding=30000, to_cell_ref=Non
         to_col_num = col_num
         to_row_num = row_num
 
+    from_row_off = padding - row_extra_emu
+    to_row_off   = row_extra_emu - padding
+
     XDR = 'http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing'
     A_NS = 'http://schemas.openxmlformats.org/drawingml/2006/main'
     RELS_NS = 'http://schemas.openxmlformats.org/package/2006/relationships'
@@ -1715,9 +1719,9 @@ def _add_oval_to_xlsx_bytes(xlsx_bytes, cell_ref, padding=30000, to_cell_ref=Non
     anchor_xml = (
         f'<xdr:twoCellAnchor xmlns:xdr="{XDR}" xmlns:a="{A_NS}" editAs="oneCell">'
         f'<xdr:from><xdr:col>{col_num - 1}</xdr:col><xdr:colOff>{padding}</xdr:colOff>'
-        f'<xdr:row>{row_num - 1}</xdr:row><xdr:rowOff>{padding}</xdr:rowOff></xdr:from>'
+        f'<xdr:row>{row_num - 1}</xdr:row><xdr:rowOff>{from_row_off}</xdr:rowOff></xdr:from>'
         f'<xdr:to><xdr:col>{to_col_num}</xdr:col><xdr:colOff>-{padding}</xdr:colOff>'
-        f'<xdr:row>{to_row_num}</xdr:row><xdr:rowOff>-{padding}</xdr:rowOff></xdr:to>'
+        f'<xdr:row>{to_row_num}</xdr:row><xdr:rowOff>{to_row_off}</xdr:rowOff></xdr:to>'
         '<xdr:sp macro="" textlink="">'
         '<xdr:nvSpPr>'
         '<xdr:cNvPr id="2" name="Oval 1"/>'
@@ -3512,6 +3516,31 @@ def _document_create_ltc_base(request, client_id, doc_type, doc_name, template_n
         initial['application_date'] = ''
         initial['withdrawal_reason'] = ''
 
+    if doc_type == 'kyotaku_selection_confirmation':
+        initial['submitter_type'] = 'office'
+        initial['relation'] = '介護支援専門員'
+        initial['staff_name_office'] = initial.get('staff_name', '')
+        initial['withdrawal_date'] = datetime.today().strftime('%Y-%m-%d')
+        initial['service_houmon'] = 'yes'
+        initial['service_tsusho'] = 'yes'
+        initial['service_fukushi'] = 'yes'
+        initial['service_chiiki'] = ''
+        initial['selection_reason'] = 'shinki'
+        initial['selection_reason_text'] = '施設内または近辺に事業所があり、緊急時等に対応が可能など利用者に利便性がある。'
+        initial['explanation_material'] = 'kaigo'
+        initial['explanation_material_sonota'] = ''
+        initial['explanation_person'] = client.charge_manager_display if hasattr(client, 'charge_manager_display') else ''
+        initial['client_confirmation'] = 'print'
+        from .models import KyotakuServiceOffice
+        svc_offices = KyotakuServiceOffice.objects.all()
+        svc_map = {(o.service_type, o.order): o for o in svc_offices}
+        for svc in ['houmon', 'tsusho', 'fukushi', 'chiiki']:
+            for i in range(1, 6):
+                obj = svc_map.get((svc, i))
+                initial[f'{svc}_{i}_number'] = obj.office_number if obj else ''
+                initial[f'{svc}_{i}_name']   = obj.office_name   if obj else ''
+                initial[f'{svc}_{i}_corp']   = obj.corp_name     if obj else ''
+
     if doc_type == 'ltc_doctor_change':
         initial['submitter_type'] = 'office'
         initial['relation'] = '介護支援専門員'
@@ -3545,6 +3574,20 @@ def _document_create_ltc_base(request, client_id, doc_type, doc_name, template_n
         initial['delivery_address'] = ''
         initial['delivery_addressee'] = ''
 
+    if doc_type == 'ltc_reissue_application':
+        initial['submitter_type'] = 'office'
+        initial['relation'] = '介護支援専門員'
+        initial['reissue_doc_hokensha'] = ''
+        initial['reissue_doc_shikaku'] = ''
+        initial['reissue_doc_jukyushikaku'] = ''
+        initial['reissue_doc_wariai'] = ''
+        initial['reissue_doc_gendo'] = ''
+        initial['reissue_doc_shakaifukushi'] = ''
+        initial['reissue_doc_sonota'] = ''
+        initial['reissue_doc_sonota_text'] = ''
+        initial['reissue_reason'] = 'lost'
+        initial['reissue_reason_other'] = ''
+
     # 履歴からの再編集：保存済みデータで initial を上書き
     history_id = request.GET.get('history_id')
     if history_id and request.method == 'GET':
@@ -3576,6 +3619,16 @@ def _document_create_ltc_base(request, client_id, doc_type, doc_name, template_n
                         initial[wareki_key] = _to_wareki_display(d)
                     except Exception:
                         pass
+
+            # 利用者情報は常にDBの最新値を使用（保存済みform_dataで古くなるのを防ぐ）
+            initial['client_name']     = client.name or ''
+            initial['client_furigana'] = client.furigana or ''
+            initial['client_gender']   = '男' if client.gender == 'male' else ('女' if client.gender == 'female' else '')
+            initial['birth_date']      = client.birth_date.strftime('%Y-%m-%d') if client.birth_date else ''
+            initial['postal_code']     = client.postal_code or ''
+            initial['client_address']  = client.address or ''
+            initial['client_phone']    = client.phone or ''
+            initial['insurance_number'] = client.insurance_number or ''
 
             # ユーザー情報は常に最新を使用（保存値ではなくログインユーザーから）
             initial['user_full_name']      = user_full_name
@@ -3663,6 +3716,15 @@ def _document_create_ltc_base(request, client_id, doc_type, doc_name, template_n
                     f"filename*=UTF-8''{quote(dl_name, safe='')}"
                 )
                 return response
+            elif doc_type == 'kyotaku_selection_confirmation':
+                content = _generate_kyotaku_selection_confirmation_excel_bytes(client, form_data)
+                dl_name = _make_dl_filename(client, doc_name)
+                response = HttpResponse(content, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+                response['Content-Disposition'] = (
+                    f"attachment; filename=\"download.xlsx\"; "
+                    f"filename*=UTF-8''{quote(dl_name, safe='')}"
+                )
+                return response
             elif doc_type == 'ltc_doctor_change':
                 content = _generate_ltc_doctor_change_excel_bytes(client, form_data)
                 dl_name = _make_dl_filename(client, doc_name)
@@ -3676,6 +3738,15 @@ def _document_create_ltc_base(request, client_id, doc_type, doc_name, template_n
                 content = _generate_ltc_address_change_excel_bytes(client, form_data)
             elif doc_type == 'ltc_burden_address_change':
                 content = _generate_ltc_burden_address_change_excel_bytes(client, form_data)
+                dl_name = _make_dl_filename(client, doc_name)
+                response = HttpResponse(content, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+                response['Content-Disposition'] = (
+                    f"attachment; filename=\"download.xlsx\"; "
+                    f"filename*=UTF-8''{quote(dl_name, safe='')}"
+                )
+                return response
+            elif doc_type == 'ltc_reissue_application':
+                content = _generate_ltc_reissue_application_excel_bytes(client, form_data)
                 dl_name = _make_dl_filename(client, doc_name)
                 response = HttpResponse(content, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
                 response['Content-Disposition'] = (
@@ -3837,6 +3908,18 @@ def document_create_ltc_burden_address_change(request, client_id):
 
 @login_required
 @user_passes_test(staff_required)
+def document_create_ltc_reissue_application(request, client_id):
+    """介護保険関係・再交付申請書 作成画面"""
+    return _document_create_ltc_base(
+        request, client_id,
+        doc_type='ltc_reissue_application',
+        doc_name='介護保険関係・再交付申請書',
+        template_name='clients/document_create_ltc_reissue_application.html',
+    )
+
+
+@login_required
+@user_passes_test(staff_required)
 def document_create_ltc_renewal(request, client_id):
     """更新認定申請書 作成画面"""
     return _document_create_ltc_base(
@@ -3868,6 +3951,18 @@ def document_create_ltc_withdrawal(request, client_id):
         doc_type='ltc_withdrawal',
         doc_name='認定申請取下書',
         template_name='clients/document_create_ltc_withdrawal.html',
+    )
+
+
+@login_required
+@user_passes_test(staff_required)
+def document_create_kyotaku_selection_confirmation(request, client_id):
+    """居宅サービス事業所の選択に関する説明に係る確認書 作成画面"""
+    return _document_create_ltc_base(
+        request, client_id,
+        doc_type='kyotaku_selection_confirmation',
+        doc_name='居宅サービス事業所の選択に関する説明に係る確認書',
+        template_name='clients/document_create_kyotaku_selection_confirmation.html',
     )
 
 
@@ -3968,6 +4063,30 @@ def _generate_ltc_withdrawal_excel_bytes(client, form_data):
     # ⑪ 取下理由
     w('B22', form_data.get('withdrawal_reason', ''))
 
+    buf = io.BytesIO()
+    wb.save(buf)
+    return buf.getvalue()
+
+
+def _generate_kyotaku_selection_confirmation_excel_bytes(client, form_data):
+    """居宅サービス事業所の選択に関する説明に係る確認書（XLSX）のバイト列を生成して返す"""
+    from openpyxl import load_workbook
+    from openpyxl.cell import MergedCell
+    import io
+
+    template_path = os.path.join(
+        settings.BASE_DIR, 'templates', 'forms',
+        'kyotaku_selection_confirmation.xlsx'
+    )
+    wb = load_workbook(template_path)
+    ws = wb.active
+
+    def w(ref, value):
+        cell = ws[ref]
+        if not isinstance(cell, MergedCell):
+            cell.value = value
+
+    # セルマッピングは後で設定
     buf = io.BytesIO()
     wb.save(buf)
     return buf.getvalue()
@@ -4296,6 +4415,150 @@ def _generate_ltc_burden_address_change_excel_bytes(client, form_data):
     # 送付先が「利用者住所へ送付」→ AD33〜AG33 をまるで囲う
     elif delivery == 'client_address':
         content = _add_oval_to_xlsx_bytes(content, 'AD33', to_cell_ref='AG33', line_width_emu=6350)
+
+    return content
+
+
+def _generate_ltc_reissue_application_excel_bytes(client, form_data):
+    """介護保険関係・再交付申請書（XLSX）のバイト列を生成して返す"""
+    from openpyxl import load_workbook
+    from openpyxl.cell import MergedCell
+    from openpyxl.styles import Alignment
+    import io
+    from datetime import date as date_cls, datetime as dt_cls
+
+    template_path = os.path.join(
+        settings.BASE_DIR, 'templates', 'forms',
+        'LTC_Reissue_Application.xlsx'
+    )
+    wb = load_workbook(template_path)
+    ws = wb.active
+
+    def w(ref, value):
+        cell = ws[ref]
+        if not isinstance(cell, MergedCell):
+            cell.value = value
+
+    def to_wareki(date_str):
+        if not date_str:
+            return ''
+        try:
+            d = dt_cls.strptime(date_str, '%Y-%m-%d').date()
+            y, m, day = d.year, d.month, d.day
+            if d >= date_cls(2019, 5, 1):   return f'令和{y-2018}年{m}月{day}日'
+            elif d >= date_cls(1989, 1, 8): return f'平成{y-1988}年{m}月{day}日'
+            elif d >= date_cls(1926,12,25): return f'昭和{y-1925}年{m}月{day}日'
+            else:                           return f'大正{y-1911}年{m}月{day}日'
+        except Exception:
+            return date_str
+
+    def to_wareki_date(d):
+        if not d: return ''
+        y, m, day = d.year, d.month, d.day
+        if d >= date_cls(2019, 5, 1):   return f'令和{y-2018}年{m}月{day}日'
+        elif d >= date_cls(1989, 1, 8): return f'平成{y-1988}年{m}月{day}日'
+        elif d >= date_cls(1926,12,25): return f'昭和{y-1925}年{m}月{day}日'
+        else:                           return f'大正{y-1911}年{m}月{day}日'
+
+    submitter_type = form_data.get('submitter_type', 'office')
+
+    # AQ12: 申請年月日
+    w('AQ12', to_wareki(form_data.get('application_date', '')))
+
+    # K14: 申請書提出者
+    if submitter_type == 'self':
+        w('K14', client.name or '')
+    elif submitter_type == 'office':
+        office_name    = form_data.get('office_name', '').strip()
+        submitter_name = form_data.get('staff_name_office', '').strip()
+        ws['K14'].value = f'{office_name}\n{submitter_name}'
+        ws['K14'].alignment = Alignment(wrap_text=True, horizontal='center', vertical='center')
+    else:
+        w('K14', form_data.get('staff_name', '').strip())
+
+    # AQ14: 本人との関係
+    w('AQ14', '本人' if submitter_type == 'self' else form_data.get('relation', ''))
+
+    # K16: 郵便番号と住所
+    if submitter_type == 'self':
+        c_postal  = (client.postal_code or '').strip()
+        c_address = (client.address or '').strip()
+        w('K16', f'〒{c_postal}　{c_address}' if c_postal else c_address)
+    else:
+        postal  = form_data.get('office_postal_code', '').strip()
+        address = form_data.get('office_address', '').strip()
+        w('K16', f'〒{postal}　{address}' if postal else address)
+
+    # AK17: 電話番号
+    if submitter_type == 'self':
+        w('AK17', client.phone or '')
+    else:
+        w('AK17', form_data.get('office_phone', ''))
+
+    # M20〜AE20: 介護保険被保険者番号を1文字ずつ（2セル結合、数値として入力）
+    ins = str(client.insurance_number or '').strip()
+    cols_ins = ['M', 'O', 'Q', 'S', 'U', 'W', 'Y', 'AA', 'AC', 'AE']
+    for i, col in enumerate(cols_ins):
+        ch = ins[i] if i < len(ins) else ''
+        w(f'{col}20', int(ch) if ch.isdigit() else ch)
+
+    # M22: 利用者フリガナ
+    w('M22', client.furigana or '')
+
+    # M23: 利用者名
+    w('M23', client.name or '')
+
+    # AK22: 生年月日（和暦）
+    w('AK22', to_wareki_date(client.birth_date))
+
+    # AK24: 性別
+    gender_map = {'male': '男', 'female': '女'}
+    w('AK24', gender_map.get(client.gender, client.gender or ''))
+
+    # M27: 利用者住所（本人申請の場合は空白）
+    if submitter_type != 'self':
+        c_postal  = (client.postal_code or '').strip()
+        c_address = (client.address or '').strip()
+        w('M27', f'〒{c_postal}　{c_address}' if c_postal else c_address)
+
+    # AK31: 利用者電話番号（本人申請の場合は空白）
+    if submitter_type != 'self':
+        w('AK31', client.phone or '')
+
+    # W47: その他証書名
+    w('W47', form_data.get('reissue_doc_sonota_text', '') if form_data.get('reissue_doc_sonota') == 'yes' else '')
+
+    # AP51: 再交付申請の理由その他テキスト
+    reason = form_data.get('reissue_reason', 'lost')
+    w('AP51', form_data.get('reissue_reason_other', '') if reason == 'other' else '')
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    content = buf.getvalue()
+
+    # 再交付を希望する証書：チェックされた項目を楕円で囲う（上下均等に1mm広げる）
+    doc_oval_map = [
+        ('reissue_doc_hokensha',     'P35', 'AA35'),
+        ('reissue_doc_shikaku',      'P37', 'Z37'),
+        ('reissue_doc_jukyushikaku', 'P39', 'Y39'),
+        ('reissue_doc_wariai',       'P41', 'AA41'),
+        ('reissue_doc_gendo',        'P43', 'AE43'),
+        ('reissue_doc_shakaifukushi','P45', 'AI45'),
+        ('reissue_doc_sonota',       'P47', 'T47'),
+    ]
+    for field, from_cell, to_cell in doc_oval_map:
+        if form_data.get(field) == 'yes':
+            content = _add_oval_to_xlsx_bytes(content, from_cell, to_cell_ref=to_cell, padding=8000, line_width_emu=6350, row_extra_emu=36000)
+
+    # 再交付申請の理由：楕円で囲う
+    reason_oval_map = {
+        'lost':    ('O51', 'V53'),
+        'damaged': ('AA51', 'AG53'),
+        'other':   ('AJ51', 'AM53'),
+    }
+    if reason in reason_oval_map:
+        fc, tc = reason_oval_map[reason]
+        content = _add_oval_to_xlsx_bytes(content, fc, to_cell_ref=tc, line_width_emu=6350)
 
     return content
 

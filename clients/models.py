@@ -553,6 +553,8 @@ class DocumentCreationHistory(models.Model):
         ('ltc_doctor_change', '認定申請主治医変更届出書'),
         ('ltc_address_change', '介護保険被保険者証送付先変更届'),
         ('ltc_burden_address_change', '介護保険負担限度額・割合証送付先変更届'),
+        ('ltc_reissue_application', '介護保険関係・再交付申請書'),
+        ('kyotaku_selection_confirmation', '居宅サービス事業所の選択に関する説明に係る確認書'),
         ('careplan_info_request', '介護サービス計画作成に係る資料提供申請書'),
         ('care_plan', 'ケアプラン'),
         ('assessment', 'アセスメント'),
@@ -585,6 +587,30 @@ class DocumentCreationHistory(models.Model):
     def formatted_created_at(self):
         """作成日時の表示用フォーマット"""
         return self.created_at.strftime('%Y/%m/%d %H:%M')
+
+
+class KyotakuServiceOffice(models.Model):
+    """居宅サービス確認書用・事業所リストマスタ"""
+    SERVICE_TYPE_CHOICES = [
+        ('houmon',  '訪問介護'),
+        ('tsusho',  '通所介護'),
+        ('fukushi', '福祉用具貸与'),
+        ('chiiki',  '地域密着型通所介護'),
+    ]
+    service_type  = models.CharField('サービス種別', max_length=20, choices=SERVICE_TYPE_CHOICES)
+    order         = models.IntegerField('順番')
+    office_number = models.CharField('事業所番号', max_length=30, blank=True)
+    office_name   = models.CharField('事業所名',   max_length=100, blank=True)
+    corp_name     = models.CharField('法人名',     max_length=100, blank=True)
+
+    class Meta:
+        unique_together = [('service_type', 'order')]
+        ordering = ['service_type', 'order']
+        verbose_name = '居宅サービス確認書事業所'
+        verbose_name_plural = '居宅サービス確認書事業所'
+
+    def __str__(self):
+        return f'{self.get_service_type_display()} {self.order}: {self.office_name}'
 
 
 class UserProfile(models.Model):

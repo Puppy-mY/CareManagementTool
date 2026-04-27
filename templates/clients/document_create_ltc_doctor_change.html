@@ -847,29 +847,46 @@ function openClientMasterDrawer() {
 }
 
 function saveClientMasterData() {
-    document.querySelector('[name=client_furigana]').value = document.getElementById('edit_client_furigana').value;
-    document.querySelector('[name=client_name]').value = document.getElementById('edit_client_name').value;
-    document.querySelector('[name=birth_date]').value = document.getElementById('edit_client_birth_date').value;
-    document.querySelector('[name=postal_code]').value = document.getElementById('edit_client_postal_code').value;
-    document.querySelector('[name=client_address]').value = document.getElementById('edit_client_address').value;
-    document.querySelector('[name=client_phone]').value = document.getElementById('edit_client_phone').value;
-    const g = document.getElementById('edit_client_gender').value;
-    const genderEl = document.querySelector('[name=client_gender]');
-    if (genderEl) genderEl.value = g === 'male' ? '男' : (g === 'female' ? '女' : '');
+    const name      = document.getElementById('edit_client_name').value;
+    const furigana  = document.getElementById('edit_client_furigana').value;
+    const birthDate = document.getElementById('edit_client_birth_date').value;
+    const postalCode= document.getElementById('edit_client_postal_code').value;
+    const address   = document.getElementById('edit_client_address').value;
+    const phone     = document.getElementById('edit_client_phone').value;
+    const gender    = document.getElementById('edit_client_gender').value;
     const mgrSelVal = document.getElementById('edit_charge_manager_select').value;
-    const mgrId = mgrSelVal === 'other' ? '' : (document.getElementById('edit_charge_manager_id').value || '');
-    const mgrOther = mgrSelVal === 'other' ? (document.getElementById('edit_charge_manager_other').value || '') : '';
+    const mgrId     = mgrSelVal === 'other' ? '' : (document.getElementById('edit_charge_manager_id').value || '');
+    const mgrOther  = mgrSelVal === 'other' ? (document.getElementById('edit_charge_manager_other').value || '') : '';
+
+    // フォームフィールドを即時反映
+    document.querySelector('[name=client_furigana]').value = furigana;
+    document.querySelector('[name=client_name]').value = name;
+    document.querySelector('[name=birth_date]').value = birthDate;
+    document.querySelector('[name=postal_code]').value = postalCode;
+    document.querySelector('[name=client_address]').value = address;
+    document.querySelector('[name=client_phone]').value = phone;
+    const genderEl = document.querySelector('[name=client_gender]');
+    if (genderEl) genderEl.value = gender === 'male' ? '男' : (gender === 'female' ? '女' : '');
+
     fetch('/clients/{{ client.id }}/update-master/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value },
-        body: JSON.stringify({ charge_manager_id: mgrId, charge_manager_other: mgrOther })
+        body: JSON.stringify({
+            name, furigana, birth_date: birthDate,
+            postal_code: postalCode, address, phone, gender,
+            charge_manager_id: mgrId, charge_manager_other: mgrOther
+        })
     }).then(r => r.json()).then(result => {
         if (result.success) {
             const dispEl = document.getElementById('disp_charge_manager');
             if (dispEl) dispEl.value = result.charge_manager_display || mgrOther || '';
+            bootstrap.Modal.getInstance(document.getElementById('clientMasterModal')).hide();
+        } else {
+            alert('保存に失敗しました: ' + (result.error || '不明なエラー'));
         }
+    }).catch(() => {
+        alert('通信エラーが発生しました。');
     });
-    bootstrap.Modal.getInstance(document.getElementById('clientMasterModal')).hide();
 }
 
 

@@ -5,7 +5,7 @@ from django.http import JsonResponse
 import json
 import logging
 
-from .models import Client, HomeCareSupportOffice, RegionalSupportCenter
+from .models import Client, HomeCareSupportOffice, RegionalSupportCenter, KyotakuServiceOffice
 
 logger = logging.getLogger(__name__)
 
@@ -21,17 +21,29 @@ def update_client_master(request, pk):
         data = json.loads(request.body)
 
         # データを更新
-        client.name = data.get('name', client.name)
-        client.furigana = data.get('furigana', client.furigana)
-        client.birth_date = data.get('birth_date', client.birth_date)
-        client.address = data.get('address', client.address)
+        if data.get('name'):
+            client.name = data['name']
+        if data.get('furigana'):
+            client.furigana = data['furigana']
+        if data.get('address'):
+            client.address = data['address']
         if 'postal_code' in data:
             client.postal_code = data['postal_code']
+        if 'phone' in data:
+            client.phone = data['phone']
         if 'gender' in data:
             g = data['gender']
             client.gender = g if g in ('male', 'female') else ('male' if g == '男' else ('female' if g == '女' else g))
-        if 'phone' in data:
-            client.phone = data['phone']
+        if 'birth_date' in data:
+            bd = data['birth_date']
+            if bd:
+                try:
+                    from datetime import datetime as _dt
+                    client.birth_date = _dt.strptime(bd, '%Y-%m-%d').date()
+                except (ValueError, TypeError):
+                    pass
+            else:
+                client.birth_date = None
         if 'charge_manager_id' in data:
             mgr_id = data['charge_manager_id']
             if mgr_id:
@@ -176,3 +188,28 @@ def api_users_list(request):
         users.append({'id': u.id, 'name': name})
     return JsonResponse({'users': users})
 
+
+
+@login_required
+def update_kyotaku_service_offices(request, service_type):
+    """居宅サービス確認書事業所リスト更新API"""
+    VALID = {'houmon', 'tsusho', 'fukushi', 'chiiki'}
+    if request.method != 'POST' or service_type not in VALID:
+        return JsonResponse({'success': False, 'error': 'Invalid request'})
+    try:
+        data = json.loads(request.body)
+        offices = data.get('offices', [])
+        for i, office in enumerate(offices[:5], 1):
+            KyotakuServiceOffice.objects.update_or_create(
+                service_type=service_type,
+                order=i,
+                defaults={
+                    'office_number': office.get('number', ''),
+                    'office_name':   office.get('name', ''),
+                    'corp_name':     office.get('corp', ''),
+                }
+            )
+        return JsonResponse({'success': True})
+    except Exception as e:
+        logger.error(f'Error updating kyotaku service offices: {e}')
+        return JsonResponse({'success': False, 'error': str(e)})

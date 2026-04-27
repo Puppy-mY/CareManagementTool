@@ -69,15 +69,18 @@ urlpatterns = [
     # 更新認定申請書・区分変更申請書・主治医変更届出書
     path('<str:client_id>/document/ltc-doctor-change/', views.document_create_ltc_doctor_change, name='document_ltc_doctor_change'),
     path('<str:client_id>/document/ltc-burden-address-change/', views.document_create_ltc_burden_address_change, name='document_ltc_burden_address_change'),
+    path('<str:client_id>/document/ltc-reissue-application/', views.document_create_ltc_reissue_application, name='document_ltc_reissue_application'),
     path('<str:client_id>/document/ltc-renewal/', views.document_create_ltc_renewal, name='document_ltc_renewal'),
     path('<str:client_id>/document/ltc-change/', views.document_create_ltc_change, name='document_ltc_change'),
     path('<str:client_id>/document/ltc-withdrawal/', views.document_create_ltc_withdrawal, name='document_ltc_withdrawal'),
+    path('<str:client_id>/document/kyotaku-selection-confirmation/', views.document_create_kyotaku_selection_confirmation, name='document_kyotaku_selection_confirmation'),
     path('<str:client_id>/document/ltc-address-change/', views.document_create_ltc_address_change, name='document_ltc_address_change'),
     path('<str:client_id>/cert-info/update/', views.client_cert_info_update, name='client_cert_info_update'),
     path('<str:client_id>/medical-info/update/', views.client_medical_info_update, name='client_medical_info_update'),
 
     # マスタデータ更新API
     path('office/<int:pk>/update-master/', api_views.update_office_master, name='update_office_master'),
+    path('kyotaku-service-offices/<str:service_type>/update/', api_views.update_kyotaku_service_offices, name='update_kyotaku_service_offices'),
     path('center/<int:pk>/update-master/', api_views.update_center_master, name='update_center_master'),
     path('api/users/', api_views.api_users_list, name='api_users_list'),
 
