@@ -275,29 +275,36 @@
                         <!-- 説明に使用した資料 -->
                         <div class="row g-3 mb-3">
                             <div class="col-12">
-                                <label class="form-label fw-bold d-block">説明に使用した資料</label>
-                                <div class="form-check mb-2">
-                                    <input class="form-check-input" type="radio" name="explanation_material" id="mat_shitei" value="shitei" {% if initial.explanation_material == 'shitei' %}checked{% endif %}>
-                                    <label class="form-check-label" for="mat_shitei">指定居宅介護支援事業所が作成した説明資料</label>
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    <label class="form-label fw-bold mb-0">説明に使用した資料</label>
+                                    <div class="birth-era-toggle" title="クリックして編集">
+                                        <button type="button" class="era-btn" id="mat_edit_btn" onclick="toggleMatEdit()">編集</button>
+                                    </div>
                                 </div>
-                                <div class="form-check mb-2">
-                                    <input class="form-check-input" type="radio" name="explanation_material" id="mat_shicho" value="shicho" {% if initial.explanation_material == 'shicho' %}checked{% endif %}>
-                                    <label class="form-check-label" for="mat_shicho">市町が発行する事業所一覧表</label>
-                                </div>
-                                <div class="form-check mb-2">
-                                    <input class="form-check-input" type="radio" name="explanation_material" id="mat_kaigo" value="kaigo" {% if initial.explanation_material == 'kaigo' or not initial.explanation_material %}checked{% endif %}>
-                                    <label class="form-check-label" for="mat_kaigo">介護サービス情報公表システム</label>
-                                </div>
-                                <div class="form-check mb-2">
-                                    <input class="form-check-input" type="radio" name="explanation_material" id="mat_pamphlet" value="pamphlet" {% if initial.explanation_material == 'pamphlet' %}checked{% endif %}>
-                                    <label class="form-check-label" for="mat_pamphlet">各サービス事業所のパンフレット</label>
-                                </div>
-                                <div class="form-check mb-2">
-                                    <input class="form-check-input" type="radio" name="explanation_material" id="mat_sonota" value="sonota" {% if initial.explanation_material == 'sonota' %}checked{% endif %} onchange="toggleMatSonota()">
-                                    <label class="form-check-label" for="mat_sonota">その他</label>
-                                </div>
-                                <div id="mat_sonota_field" class="ms-4 mt-1" style="{% if initial.explanation_material != 'sonota' %}display:none;{% endif %}">
-                                    <input type="text" name="explanation_material_sonota" class="form-control" style="max-width:420px;" value="{{ initial.explanation_material_sonota }}" placeholder="資料名を入力してください">
+                                <div id="mat_options">
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="radio" name="explanation_material" id="mat_shitei" value="shitei" {% if initial.explanation_material == 'shitei' %}checked{% endif %} onchange="onMatChange()">
+                                        <label class="form-check-label" for="mat_shitei">指定居宅介護支援事業所が作成した説明資料</label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="radio" name="explanation_material" id="mat_shicho" value="shicho" {% if initial.explanation_material == 'shicho' %}checked{% endif %} onchange="onMatChange()">
+                                        <label class="form-check-label" for="mat_shicho">市町が発行する事業所一覧表</label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="radio" name="explanation_material" id="mat_kaigo" value="kaigo" {% if initial.explanation_material == 'kaigo' or not initial.explanation_material %}checked{% endif %} onchange="onMatChange()">
+                                        <label class="form-check-label" for="mat_kaigo">介護サービス情報公表システム</label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="radio" name="explanation_material" id="mat_pamphlet" value="pamphlet" {% if initial.explanation_material == 'pamphlet' %}checked{% endif %} onchange="onMatChange()">
+                                        <label class="form-check-label" for="mat_pamphlet">各サービス事業所のパンフレット</label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="radio" name="explanation_material" id="mat_sonota" value="sonota" {% if initial.explanation_material == 'sonota' %}checked{% endif %} onchange="onMatChange()">
+                                        <label class="form-check-label" for="mat_sonota">その他</label>
+                                    </div>
+                                    <div id="mat_sonota_field" class="ms-4 mt-1" style="{% if initial.explanation_material != 'sonota' %}display:none;{% endif %}">
+                                        <input type="text" name="explanation_material_sonota" id="mat_sonota_text" class="form-control" style="max-width:420px;" value="{{ initial.explanation_material_sonota }}" placeholder="資料名を入力してください">
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -2377,13 +2384,37 @@ document.addEventListener('DOMContentLoaded', function() {
         if (warekiInput) { warekiInput.value = toWarekiText(dateStr || ''); syncModalBirthFromWareki(); }
     };
 })();
+
+// ---- 説明に使用した資料：編集ロック制御 ----
+function _applyMatLock(locked) {
+    document.querySelectorAll('#mat_options input[name="explanation_material"]').forEach(function(r) {
+        r.style.pointerEvents = locked ? 'none' : '';
+    });
+    document.querySelectorAll('#mat_options .form-check').forEach(function(c) {
+        c.style.opacity = (locked && !c.querySelector('.form-check-input').checked) ? '0.3' : '1';
+    });
+    var sonotaInput = document.getElementById('mat_sonota_text');
+    if (sonotaInput) sonotaInput.readOnly = locked;
+    var btn = document.getElementById('mat_edit_btn');
+    if (btn) btn.classList.toggle('active', !locked);
+}
+
+function toggleMatEdit() { _applyMatLock(false); }
+
+function onMatChange() {
+    var checked = document.querySelector('#mat_options input[name="explanation_material"]:checked');
+    var sonotaField = document.getElementById('mat_sonota_field');
+    if (sonotaField) sonotaField.style.display = (checked && checked.value === 'sonota') ? 'block' : 'none';
+}
+
+document.addEventListener('DOMContentLoaded', function() { _applyMatLock(true); });
 </script>
 
 <style>
 .svc-nav-link { display: block; padding: 0.5rem 1.2rem; font-size: 0.9rem; font-weight: 500; color: #6c757d; background-color: #ffffff; border: 1px solid #dee2e6; border-bottom: none; border-top-left-radius: 0.375rem; border-top-right-radius: 0.375rem; cursor: pointer; text-decoration: none; transition: background 0.15s, color 0.15s; }
 .svc-nav-link.active { background-color: #f5f5f5; color: #333; border-color: #999; font-weight: bold; }
 .svc-nav-link:not(.active):hover { background-color: #e9ecef; color: #495057; }
-#serviceTabContent .tab-pane.show { border-color: #999 !important; }
+#serviceTabContent .svc-tab-pane { border-color: #999 !important; }
 #serviceTabContent .table-responsive { overflow-x: auto; }
 #serviceTabContent table { white-space: nowrap; }
 .birth-era-toggle { display: inline-flex; border: 1px solid #ced4da; border-radius: 0.375rem; overflow: hidden; font-size: 0.72rem; flex-shrink: 0; }

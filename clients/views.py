@@ -4070,26 +4070,178 @@ def _generate_ltc_withdrawal_excel_bytes(client, form_data):
 
 def _generate_kyotaku_selection_confirmation_excel_bytes(client, form_data):
     """居宅サービス事業所の選択に関する説明に係る確認書（XLSX）のバイト列を生成して返す"""
-    from openpyxl import load_workbook
-    from openpyxl.cell import MergedCell
-    import io
+    import tempfile, shutil, re
+    import xlwings as xw
+    from openpyxl.utils import column_index_from_string, get_column_letter
+    from datetime import date as date_cls, datetime as dt_cls
 
     template_path = os.path.join(
         settings.BASE_DIR, 'templates', 'forms',
-        'kyotaku_selection_confirmation.xlsx'
+        'care_provider_selection_confirm.xlsx'
     )
-    wb = load_workbook(template_path)
-    ws = wb.active
+    with tempfile.NamedTemporaryFile(suffix='.xlsx', delete=False) as tmp:
+        tmp_path = tmp.name
+    shutil.copy(template_path, tmp_path)
 
-    def w(ref, value):
-        cell = ws[ref]
-        if not isinstance(cell, MergedCell):
-            cell.value = value
+    def to_wareki(date_str):
+        if not date_str:
+            return ''
+        try:
+            d = dt_cls.strptime(date_str, '%Y-%m-%d').date()
+            y, m, day = d.year, d.month, d.day
+            if d >= date_cls(2019, 5, 1):
+                return f"令和{y - 2018}年{m}月{day}日"
+            elif d >= date_cls(1989, 1, 8):
+                return f"平成{y - 1988}年{m}月{day}日"
+            elif d >= date_cls(1926, 12, 25):
+                return f"昭和{y - 1925}年{m}月{day}日"
+            else:
+                return f"大正{y - 1911}年{m}月{day}日"
+        except Exception:
+            return date_str
 
-    # セルマッピングは後で設定
-    buf = io.BytesIO()
-    wb.save(buf)
-    return buf.getvalue()
+    def shift(ref, col_offset):
+        """セル参照に列オフセットを加算 (例: 'T11' + 32 → 'AZ11')"""
+        m = re.match(r'^([A-Z]+)(\d+)$', ref)
+        if not m:
+            return ref
+        col_str, row_str = m.groups()
+        return get_column_letter(column_index_from_string(col_str) + col_offset) + row_str
+
+    def wrap_text(text, max_len=44, max_lines=5):
+        lines = []
+        for para in text.split('\n'):
+            while para:
+                lines.append(para[:max_len])
+                para = para[max_len:]
+        return (lines + [''] * max_lines)[:max_lines]
+
+    app = xw.App(visible=False)
+    app.display_alerts = False
+    try:
+        wb = app.books.open(tmp_path, update_links=False, read_only=False)
+        ws = wb.sheets[0]
+
+        def circle(start_ref, end_ref=None):
+            c1 = ws[start_ref].api
+            if end_ref:
+                c2 = ws[end_ref].api
+                left, top = c1.Left, c1.Top
+                width = c2.Left + c2.Width - c1.Left
+                height = c1.Height
+            else:
+                left, top, width, height = c1.Left, c1.Top, c1.Width, c1.Height
+            shp = ws.api.Shapes.AddShape(9, left, top, width, height)
+            shp.Fill.Visible = False
+            shp.Line.Weight = 0.5
+            shp.Line.ForeColor.RGB = 0x000000
+
+        # (フォームフィールド名, プレフィックス, サービス選択○開始, 終了, 列オフセット)
+        ALL_SERVICES = [
+            ('service_houmon', 'houmon', 'J7',  'L7',   0),
+            ('service_tsusho', 'tsusho', 'AS7', 'AV7', 32),
+            ('service_fukushi','fukushi', 'CC7', 'CG7', 64),
+            ('service_chiiki', 'chiiki',  'DN7', 'DT7', 96),
+        ]
+        selected = [s for s in ALL_SERVICES if form_data.get(s[0]) == 'yes']
+
+        # ① 該当サービスに○
+        for field, prefix, cs, ce, offset in selected:
+            circle(cs, ce)
+
+        # ② 選択理由に○（各フォームに共通）
+        reason_map = {
+            'shinki':  ('T11', 'V11'),
+            'henkou':  ('X11', 'AA11'),
+            'koushin': ('AC11', 'AE11'),
+        }
+        rs, re_ = reason_map.get(form_data.get('selection_reason', 'shinki'), ('T11', 'V11'))
+        for field, prefix, cs, ce, offset in selected:
+            circle(shift(rs, offset), shift(re_, offset))
+
+        # ③ 選択理由テキスト（5行・各44文字以内）
+        lines = wrap_text(form_data.get('selection_reason_text', ''))
+        for field, prefix, cs, ce, offset in selected:
+            for i, line in enumerate(lines):
+                ws[shift(f'B{12 + i}', offset)].value = line
+
+        # ④ 事業所情報（5件分）
+        for field, prefix, cs, ce, offset in selected:
+            for i in range(1, 6):
+                row = 19 + i
+                ws[shift(f'D{row}', offset)].value = form_data.get(f'{prefix}_{i}_number', '')
+                ws[shift(f'I{row}', offset)].value = form_data.get(f'{prefix}_{i}_name', '')
+                ws[shift(f'U{row}', offset)].value = form_data.get(f'{prefix}_{i}_corp', '')
+
+        # ⑤ 事業所番号1番に○（初期固定、B20:C20の範囲）
+        init_circle = {
+            'houmon':  ('B20',  'C20'),
+            'tsusho':  ('AH20', 'AI20'),
+            'fukushi': ('BN20', 'BO20'),
+            'chiiki':  ('CT20', 'CU20'),
+        }
+        for field, prefix, cs, ce, offset in selected:
+            s, e = init_circle[prefix]
+            circle(s, e)
+
+        # ⑥ 説明に使用した資料に○
+        material_map = {
+            'shitei':   'B30',
+            'shicho':   'R30',
+            'kaigo':    'B31',
+            'pamphlet': 'O31',
+            'sonota':   'B32',
+        }
+        material = form_data.get('explanation_material', 'kaigo')
+        mat_cell = material_map.get(material, 'B31')
+        for field, prefix, cs, ce, offset in selected:
+            circle(shift(mat_cell, offset))
+
+        # その他の場合、内容をG32に反映
+        if material == 'sonota':
+            sonota_text = form_data.get('explanation_material_sonota', '')
+            for field, prefix, cs, ce, offset in selected:
+                ws[shift('G32', offset)].value = sonota_text
+
+        # ⑦ 説明日
+        explanation_date = to_wareki(form_data.get('withdrawal_date', ''))
+        for field, prefix, cs, ce, offset in selected:
+            ws[shift('G34', offset)].value = explanation_date
+            ws[shift('D42', offset)].value = explanation_date
+
+        # ⑧ 説明者
+        person = form_data.get('explanation_person', '')
+        for field, prefix, cs, ce, offset in selected:
+            ws[shift('O36', offset)].value = person
+
+        # ⑨ 利用者氏名（印字する場合）
+        if form_data.get('client_confirmation') == 'yes':
+            name = (client.name or '').replace('　', ' ')
+            for field, prefix, cs, ce, offset in selected:
+                ws[shift('I44', offset)].value = name
+
+        # ★ 未選択サービスのフォームを列削除（右→左の順で実行）
+        selected_fields = {s[0] for s in selected}
+        for field, start_col, count in [
+            ('service_chiiki',  97, 34),  # Form4: CS〜DZ
+            ('service_fukushi', 65, 32),  # Form3: BM〜CR
+            ('service_tsusho',  33, 32),  # Form2: AG〜BL
+            ('service_houmon',   1, 32),  # Form1: A〜AF
+        ]:
+            if field not in selected_fields:
+                s_col = get_column_letter(start_col)
+                e_col = get_column_letter(start_col + count - 1)
+                ws.api.Columns(f'{s_col}:{e_col}').Delete()
+
+        wb.save()
+        wb.close()
+    finally:
+        app.quit()
+
+    with open(tmp_path, 'rb') as f:
+        content = f.read()
+    os.unlink(tmp_path)
+    return content
 
 
 def _generate_ltc_doctor_change_excel_bytes(client, form_data):
