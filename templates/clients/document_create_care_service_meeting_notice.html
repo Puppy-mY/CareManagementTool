@@ -278,7 +278,7 @@
                                 </td>
                                 <td class="align-middle" style="font-size:0.85rem;">
                                     {% if o.persons %}
-                                    {% for p in o.persons|slice:":2" %}{% if not forloop.first %}<br>{% endif %}{{ p }}{% endfor %}{% if o.persons|length > 2 %}<br><span class="text-muted">他</span>{% endif %}
+                                    {% for p in o.persons|slice:":2" %}{% if not forloop.first %}<br>{% endif %}{{ p }} 様{% endfor %}{% if o.persons|length > 2 %}<br><span class="text-muted">他</span>{% endif %}
                                     {% else %}<span class="text-muted">―</span>{% endif %}
                                 </td>
                             </tr>
