@@ -210,7 +210,7 @@
                         <thead>
                             <tr>
                                 <th style="width:40px; background-color:#f5f5f5;"></th>
-                                <th style="background-color:#f5f5f5;">事業所名</th>
+                                <th style="background-color:#f5f5f5;">サービス事業所</th>
                                 <th style="width:130px; background-color:#f5f5f5;">業種</th>
                                 <th style="width:150px; background-color:#f5f5f5;">電話番号 / FAX</th>
                             </tr>
@@ -230,6 +230,7 @@
                                 </td>
                                 <td class="align-middle">
                                     <label for="modal_office_{{ o.id }}" style="cursor:pointer;margin:0;" onclick="event.stopPropagation()">
+                                        {% if o.furigana %}<small class="text-muted d-block" style="font-size:0.75rem;">{{ o.furigana }}</small>{% endif %}
                                         <span class="fw-bold">{{ o.name }}</span>
                                         {% if o.persons %}<br><small class="text-muted">{{ o.persons|join:"・" }}</small>{% endif %}
                                     </label>
@@ -252,8 +253,8 @@
                                     {% endif %}
                                 </td>
                                 <td class="align-middle" style="font-size:0.85rem; white-space:nowrap;">
-                                    {{ o.phone|default:"―" }}<br>
-                                    <span class="text-muted">{{ o.fax|default:"―" }}</span>
+                                    <i class="fas fa-phone me-1 text-muted" style="font-size:0.75rem;"></i>{{ o.phone|default:"―" }}<br>
+                                    <i class="fas fa-fax me-1 text-muted" style="font-size:0.75rem;"></i><span class="text-muted">{{ o.fax|default:"―" }}</span>
                                 </td>
                             </tr>
                             {% empty %}
@@ -762,7 +763,7 @@ function _applySvcFilterBtnStyle(btn, isActive) {
         btn.style.backgroundColor = color;
         btn.style.borderColor     = '#999999';
         btn.style.color           = '#000000';
-        btn.style.fontWeight      = 'bold';
+        btn.style.fontWeight      = '';
         btn.classList.add('active');
         btn.classList.remove('btn-outline-secondary');
         btn.classList.add('btn-secondary');
