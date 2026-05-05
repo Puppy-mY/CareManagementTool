@@ -633,7 +633,7 @@
                 <h6 class="document-section-title">計画作成及び担当者会議</h6>
                 <ul class="document-list">
                     <li class="document-item" onclick="selectDocument('フェースシート', '開発中', event)">フェースシート（開発中）</li>
-                    <li class="document-item" onclick="selectDocument('サービス担当者会議開催のご案内', '開発中', event)">サービス担当者会議開催のご案内（開発中）</li>
+                    <li class="document-item" onclick="selectDocument('サービス担当者会議開催のご案内', '利用可能', event)">サービス担当者会議開催のご案内</li>
                 </ul>
             </div>
 
@@ -1803,6 +1803,8 @@ function selectDocument(documentName, status, event) {
                 `/clients/${currentClientId}/document/ltc-reissue-application/`,
             '居宅サービス事業所の選択に関する説明に係る確認書':
                 `/clients/${currentClientId}/document/kyotaku-selection-confirmation/`,
+            'サービス担当者会議開催のご案内':
+                `/clients/${currentClientId}/document/care-service-meeting-notice/`,
         };
 
         const url = documentUrlMap[documentName];

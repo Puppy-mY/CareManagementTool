@@ -1,0 +1,885 @@
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+
+{% block title %}サービス担当者会議開催のご案内 - {{ client.name }}様 - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="mb-4 pb-2 border-bottom">
+                <h1 class="h4 mb-1 text-dark fw-bold">
+                    <i class="fas fa-file-alt me-2 text-secondary"></i>サービス担当者会議開催のご案内
+                </h1>
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="text-muted small">
+                        <i class="fas fa-user me-1"></i>{{ client.name }} 様
+                    </span>
+                    <button type="button" class="btn btn-outline-secondary btn-back" onclick="goBack()">
+                        <i class="fas fa-arrow-left"></i> 戻る
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <form method="post" id="documentForm"{% if history_id %} action="?history_id={{ history_id }}"{% endif %}>
+                {% csrf_token %}
+
+                <!-- 利用者基本情報（アコーディオン） -->
+                <div class="accordion mb-4" id="basicInfoAccordion">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button"
+                                    data-bs-toggle="collapse" data-bs-target="#basicInfoCollapse">
+                                <i class="fas fa-user-circle me-2"></i>
+                                <strong>利用者基本情報（自動反映）</strong>
+                                <small class="text-muted ms-2">※利用者データから自動入力</small>
+                            </button>
+                        </h2>
+                        <div id="basicInfoCollapse" class="accordion-collapse collapse">
+                            <div class="accordion-body">
+                                <div class="row g-3 mb-3">
+                                    <div class="col-md-3">
+                                        <label class="form-label">氏名</label>
+                                        <input type="text" name="client_name" class="form-control"
+                                               value="{{ initial.client_name }}" readonly>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">フリガナ</label>
+                                        <input type="text" name="client_furigana" class="form-control"
+                                               value="{{ initial.client_furigana }}" readonly>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">生年月日</label>
+                                        <input type="date" name="birth_date" class="form-control"
+                                               value="{{ initial.birth_date }}" readonly>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label">性別</label>
+                                        <input type="text" name="client_gender" class="form-control"
+                                               value="{{ initial.client_gender }}" readonly>
+                                    </div>
+                                </div>
+                                <div class="row g-3 mb-3">
+                                    <div class="col-md-2">
+                                        <label class="form-label">郵便番号</label>
+                                        <input type="text" name="postal_code" class="form-control"
+                                               value="{{ initial.postal_code }}" readonly>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">住所</label>
+                                        <input type="text" name="client_address" class="form-control"
+                                               value="{{ initial.client_address }}" readonly>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">電話番号</label>
+                                        <input type="text" name="client_phone" class="form-control"
+                                               value="{{ initial.client_phone }}" readonly>
+                                    </div>
+                                </div>
+                                <div style="border-top: 1px solid #dee2e6; width: 50%; margin: 0.5rem 0 0.75rem 0;"></div>
+                                <div class="row g-3 mb-3">
+                                    <div class="col-md-4">
+                                        <label class="form-label">担当ケアマネージャー</label>
+                                        <input type="text" id="disp_charge_manager" class="form-control"
+                                            value="{{ client.charge_manager_display }}" readonly>
+                                    </div>
+                                </div>
+                                <div class="mt-3 text-end">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm"
+                                            onclick="openClientMasterDrawer()">
+                                        <i class="fas fa-edit me-1"></i>利用者マスタデータを編集
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 入力項目 -->
+                <div class="card mb-4">
+                    <div class="card-header d-flex align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-edit me-2"></i>入力項目</h5>
+                        <small class="text-muted ms-2">※以下の項目をご入力ください</small>
+                    </div>
+                    <div class="card-body">
+
+                        <!-- 案内を出す事業所 -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-12">
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    <label class="form-label fw-bold mb-0">案内を出す事業所 <span class="text-danger">*</span></label>
+                                    <a href="{% url 'care_service_office_list' %}" target="_blank" class="btn btn-outline-secondary btn-sm" style="font-size:0.72rem;">
+                                        <i class="fas fa-cog me-1"></i>マスタ編集
+                                    </a>
+                                </div>
+
+                                <!-- 選択済みタグ表示 -->
+                                <div id="selected_offices_tags" class="d-flex flex-wrap gap-2 mb-2"></div>
+
+                                <!-- hidden inputs（フォーム送信用） -->
+                                <div id="selected_offices_inputs"></div>
+
+                                {% if care_offices %}
+                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openOfficeSelectModal()">
+                                    <i class="fas fa-list me-1"></i>事業所を選択
+                                </button>
+                                {% else %}
+                                <div class="alert alert-light border text-muted small">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    <a href="{% url 'care_service_office_list' %}" target="_blank">介護サービス事業所マスタ</a>に事業所を登録すると、ここで選択できます。
+                                </div>
+                                {% endif %}
+
+                                <div id="fax_notice" class="mt-2 small text-muted" style="display:none;">
+                                    <i class="fas fa-fax me-1"></i>FAX番号が登録された事業所はFAX送付状が自動で作成されます
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- アクションボタン -->
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <button type="button" class="btn btn-outline-secondary btn-back px-4 py-2"
+                                        onclick="goBack()">
+                                    <i class="fas fa-arrow-left me-1"></i> 戻る
+                                </button>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button type="submit" name="action" value="excel"
+                                        class="btn btn-outline-secondary excel-btn px-4 py-2">
+                                    <i class="fas fa-file-excel me-1"></i> Excel出力
+                                </button>
+                                <button type="submit" name="action" value="excel_fax"
+                                        id="btn_excel_fax"
+                                        class="btn btn-outline-secondary excel-btn px-4 py-2"
+                                        style="display:none;">
+                                    <i class="fas fa-fax me-1"></i> Excel＋FAX送付状
+                                </button>
+                                <button type="submit" name="action" value="save"
+                                        class="btn btn-outline-secondary save-btn px-4 py-2">
+                                    <i class="fas fa-save me-1"></i> 保存
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 事業所選択モーダル -->
+<div class="modal fade" id="officeSelectModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-list me-2"></i>事業所を選択</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- 検索 -->
+                <div class="mb-2">
+                    <input type="text" id="office_modal_search" class="form-control"
+                           placeholder="事業所名で検索..." oninput="applyOfficeFilter()">
+                </div>
+                <!-- サービス種別フィルター -->
+                <div class="d-flex flex-wrap gap-1 mb-3" id="svc_filter_btns">
+                    <button type="button" class="btn btn-sm btn-secondary svc-filter-btn active" data-svc="">すべて</button>
+                    {% regroup care_offices by service_type as grouped_for_filter %}
+                    {% for group in grouped_for_filter %}
+                    {% if group.grouper %}
+                    <button type="button" class="btn btn-sm btn-outline-secondary svc-filter-btn" data-svc="{{ group.grouper }}">{{ group.grouper }}</button>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                <div id="office_modal_list">
+                    {% regroup care_offices by service_type as grouped_offices %}
+                    {% for group in grouped_offices %}
+                    <div class="office-group mb-3" data-group="{{ group.grouper }}">
+                        <div class="fw-bold text-muted small border-bottom pb-1 mb-2">
+                            {{ group.grouper|default:"（種別未設定）" }}
+                        </div>
+                        {% for o in group.list %}
+                        <div class="form-check office-modal-item ps-4 py-1"
+                             data-name="{{ o.name }}" data-id="{{ o.id }}">
+                            <input class="form-check-input office-modal-check" type="checkbox"
+                                   id="modal_office_{{ o.id }}" value="{{ o.id }}"
+                                   data-id="{{ o.id }}"
+                                   data-name="{{ o.name }}"
+                                   data-fax="{{ o.fax }}">
+                            <label class="form-check-label w-100" for="modal_office_{{ o.id }}" style="cursor:pointer;">
+                                <span class="fw-bold">{{ o.name }}</span>
+                                {% if o.persons %}<span class="text-muted small ms-2">{{ o.persons|join:"・" }}</span>{% endif %}
+                                {% if o.fax %}<span class="text-muted small ms-2"><i class="fas fa-fax"></i> {{ o.fax }}</span>{% endif %}
+                            </label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% empty %}
+                    <p class="text-muted text-center py-3">事業所が登録されていません</p>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="modal-footer justify-content-between">
+                <span id="office_select_count" class="text-muted small"></span>
+                <div>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                    <button type="button" class="btn btn-primary" onclick="confirmOfficeSelection()">
+                        <i class="fas fa-check me-1"></i>確定
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 事業所マスタ編集モーダル -->
+<div class="modal fade" id="serviceEditModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 700px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="serviceEditModalTitle"><i class="fas fa-edit me-2"></i>事業所マスタ編集</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <table class="table table-bordered table-sm">
+                    <thead class="table-light">
+                        <tr><th style="width:6%;"></th><th style="width:18%;">事業所番号</th><th style="width:38%;">事業所名</th><th>法人名</th></tr>
+                    </thead>
+                    <tbody id="serviceEditTableBody"></tbody>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                <button type="button" class="btn btn-primary" onclick="saveServiceMaster()">
+                    <i class="fas fa-save me-1"></i>保存して反映
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 利用者マスタ編集モーダル -->
+<div class="modal fade" id="clientMasterModal" tabindex="-1" aria-labelledby="clientMasterModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 700px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="clientMasterModalLabel">
+                    <i class="fas fa-user-edit me-2"></i>利用者マスタデータ編集
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="card mb-0">
+                    <div class="card-header d-flex align-items-center">
+                        <h5 class="section-title"><i class="fas fa-id-card me-2"></i>基本情報</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-3">
+                                <label class="form-label">氏名 <span class="text-danger">*</span></label>
+                                <input type="text" id="edit_client_name" class="form-control" required>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">ふりがな <span class="text-danger">*</span></label>
+                                <input type="text" id="edit_client_furigana" class="form-control" required placeholder="ひらがなで入力">
+                            </div>
+                            <div class="col-md-4">
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    <label class="form-label mb-0">生年月日 <span class="text-danger">*</span></label>
+                                    <div class="birth-era-toggle" title="和暦 / 西暦を切り替え">
+                                        <button type="button" class="era-btn active" id="modal_birth_era_japanese" onclick="switchModalBirthEra('japanese')">和暦</button>
+                                        <button type="button" class="era-btn" id="modal_birth_era_western" onclick="switchModalBirthEra('western')">西暦</button>
+                                    </div>
+                                </div>
+                                <input type="hidden" id="edit_client_birth_date">
+                                <div id="modal_birth_japanese_div">
+                                    <input type="text" id="modal_birth_wareki_text" class="form-control"
+                                        placeholder="例: 昭和40年3月15日" autocomplete="off"
+                                        oninput="syncModalBirthFromWareki()">
+                                    <small id="modal_birth_preview" style="font-size:0.78em; display:block; margin-top:2px;"></small>
+                                </div>
+                                <div id="modal_birth_western_div" style="display:none;">
+                                    <input type="date" id="modal_birth_western_input" class="form-control"
+                                        oninput="document.getElementById('edit_client_birth_date').value = this.value">
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">性別</label>
+                                <select id="edit_client_gender" class="form-select">
+                                    <option value="">-</option>
+                                    <option value="male">男</option>
+                                    <option value="female">女</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label class="form-label">郵便番号</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light text-muted">〒</span>
+                                    <input type="text" id="edit_client_postal_code" class="form-control" placeholder="000-0000" maxlength="8">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">住所 <span class="text-danger">*</span></label>
+                                <input type="text" id="edit_client_address" class="form-control" required>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">電話番号</label>
+                                <input type="text" id="edit_client_phone" class="form-control">
+                            </div>
+                        </div>
+                        <!-- 区切り線 -->
+                        <div style="border-top: 1px solid #dee2e6; width: 50%; margin: 1rem 0 0.75rem 0;"></div>
+                        <!-- 担当ケアマネージャー -->
+                        <div class="row g-3">
+                            <div class="col-md-5">
+                                <label class="form-label">担当ケアマネージャー</label>
+                                <select id="edit_charge_manager_select" class="form-select" onchange="handleModalManagerChange(this)">
+                                    <option value="">--- 選択してください ---</option>
+                                </select>
+                                <input type="hidden" id="edit_charge_manager_id">
+                            </div>
+                            <div class="col-md-5" id="edit_charge_manager_other_wrap" style="display:none;">
+                                <label class="form-label">担当者名（手入力）</label>
+                                <input type="text" id="edit_charge_manager_other" class="form-control" placeholder="担当者名を入力">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                <button type="button" class="btn btn-primary" onclick="saveClientMasterData()">
+                    <i class="fas fa-save me-1"></i>保存して反映
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 事業所マスタ編集モーダル -->
+<div class="modal fade" id="renewalOfficeModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <input type="hidden" id="renewal_modal_pk" value="{% if user.profile.home_care_office %}{{ user.profile.home_care_office.pk }}{% endif %}">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-hospital me-2"></i>居宅介護支援事業所編集</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="renewalOfficeModalError" class="alert alert-danger d-none"></div>
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label">事業所名 <span class="text-danger">*</span></label>
+                        <input type="text" id="renewal_modal_name" class="form-control" value="{{ initial.office_name }}" placeholder="例: 居宅介護支援事業所 安濃津ろまん" required>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">フリガナ</label>
+                        <input type="text" id="renewal_modal_furigana" class="form-control" value="{{ initial.office_furigana }}" placeholder="例: キョタクカイゴシエンジギョウショ アノツロマン">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">事業所番号 <span class="text-danger">*</span></label>
+                        <input type="text" id="renewal_modal_office_number" class="form-control" value="{{ initial.office_number }}" placeholder="例: 2470100419" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">管理者名</label>
+                        <input type="text" id="renewal_modal_manager_name" class="form-control" value="{{ initial.office_manager_name }}" placeholder="例: 山田 太郎">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">郵便番号</label>
+                        <input type="text" id="renewal_modal_postal_code" class="form-control" value="{{ initial.office_postal_code }}" placeholder="例: 514-0009">
+                    </div>
+                    <div class="col-md-8">
+                        <label class="form-label">住所</label>
+                        <input type="text" id="renewal_modal_address" class="form-control" value="{{ initial.office_address }}" placeholder="例: 三重県津市羽所町○○">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">電話番号</label>
+                        <input type="text" id="renewal_modal_phone" class="form-control" value="{{ initial.office_phone }}" placeholder="例: 059-123-4567">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">FAX</label>
+                        <input type="text" id="renewal_modal_fax" class="form-control" value="{{ initial.office_fax }}" placeholder="例: 059-123-4568">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                <button type="button" class="btn btn-primary" id="renewalOfficeSaveBtn">
+                    <i class="fas fa-save me-1"></i>保存して反映
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- マスタデータ編集ドロワー -->
+<div id="masterDataDrawer" class="master-drawer">
+    <div class="master-drawer-content">
+        <div class="master-drawer-header">
+            <h5 id="drawerTitle"><i class="fas fa-edit me-2"></i>マスタデータ編集</h5>
+            <button type="button" class="btn-close-drawer" onclick="closeMasterDrawer()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="master-drawer-body" id="drawerBody"></div>
+        <div class="master-drawer-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeMasterDrawer()">
+                <i class="fas fa-times me-1"></i>キャンセル
+            </button>
+            <button type="button" class="btn btn-primary" onclick="saveMasterData()">
+                <i class="fas fa-save me-1"></i>保存
+            </button>
+        </div>
+    </div>
+</div>
+<div id="drawerOverlay" class="drawer-overlay" onclick="closeMasterDrawer()"></div>
+
+<!-- 認定情報編集モーダル -->
+<div class="modal fade" id="certInfoModal" tabindex="-1" aria-labelledby="certInfoModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 700px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="certInfoModalLabel">
+                    <i class="fas fa-id-card me-2"></i>介護保険被保険者証 認定情報の編集
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="certInfoModalError" class="alert alert-danger d-none mb-3"></div>
+                <div class="card mb-0">
+                    <div class="card-header d-flex align-items-center">
+                        <h5 class="section-title"><i class="fas fa-id-card me-2"></i>介護保険情報</h5>
+                    </div>
+                    <div class="card-body">
+                <div class="row g-3">
+                    <!-- 1行目: 被保険者番号 / 要介護度 / 認定日 -->
+                    <div class="col-md-4">
+                        <label class="form-label">被保険者番号 <span class="text-danger">*</span></label>
+                        <input type="text" id="cert_modal_insurance" class="form-control" maxlength="10">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">要介護度 <span class="text-danger">*</span></label>
+                        <select id="cert_modal_care_level" class="form-select">
+                            <option value="">選択してください</option>
+                            <option value="independent">自立</option>
+                            <option value="support1">要支援1</option>
+                            <option value="support2">要支援2</option>
+                            <option value="care1">要介護1</option>
+                            <option value="care2">要介護2</option>
+                            <option value="care3">要介護3</option>
+                            <option value="care4">要介護4</option>
+                            <option value="care5">要介護5</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <label class="form-label mb-0">認定日</label>
+                            <div class="birth-era-toggle" title="和暦 / 西暦を切り替え">
+                                <button type="button" class="era-btn active" id="certDate_era_japanese" onclick="switchCertDateEra('japanese')">和暦</button>
+                                <button type="button" class="era-btn" id="certDate_era_western" onclick="switchCertDateEra('western')">西暦</button>
+                            </div>
+                        </div>
+                        <div id="certDate_japanese">
+                            <input type="text" id="certDate_wareki_text" class="form-control"
+                                placeholder="例: 令和6年4月1日" autocomplete="off"
+                                oninput="syncCertModalDate('date')">
+                            <small id="certDate_wareki_preview" style="font-size:0.78em; display:block; margin-top:2px;"></small>
+                        </div>
+                        <div id="certDate_western" style="display:none;">
+                            <input type="date" id="cert_modal_cert_date" class="form-control">
+                        </div>
+                    </div>
+                    <!-- 認定期間（開始・終了 横並び、共有トグル） -->
+                    <div class="col-12">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <label class="form-label mb-0">認定期間</label>
+                            <div class="birth-era-toggle" title="和暦 / 西暦を切り替え">
+                                <button type="button" class="era-btn active" id="certPeriod_era_japanese" onclick="switchCertPeriodEra('japanese')">和暦</button>
+                                <button type="button" class="era-btn" id="certPeriod_era_western" onclick="switchCertPeriodEra('western')">西暦</button>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-start gap-2">
+                            <!-- 開始 -->
+                            <div>
+                                <div id="certStart_japanese">
+                                    <input type="text" id="certStart_wareki_text" class="form-control" style="width:200px;"
+                                        placeholder="例: 令和6年4月1日" autocomplete="off"
+                                        oninput="syncCertModalDate('start')">
+                                    <small id="certStart_wareki_preview" style="font-size:0.78em; display:block; margin-top:2px;"></small>
+                                </div>
+                                <div id="certStart_western" style="display:none;">
+                                    <input type="date" id="cert_modal_start" class="form-control" style="width:200px;">
+                                </div>
+                            </div>
+                            <span class="text-muted" style="padding-top:0.45rem;">～</span>
+                            <!-- 終了 -->
+                            <div>
+                                <div id="certEnd_japanese">
+                                    <input type="text" id="certEnd_wareki_text" class="form-control" style="width:200px;"
+                                        placeholder="例: 令和8年3月31日" autocomplete="off"
+                                        oninput="syncCertModalDate('end')">
+                                    <small id="certEnd_wareki_preview" style="font-size:0.78em; display:block; margin-top:2px;"></small>
+                                </div>
+                                <div id="certEnd_western" style="display:none;">
+                                    <input type="date" id="cert_modal_end" class="form-control" style="width:200px;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- 負担割合 -->
+                    <div class="col-md-4">
+                        <label class="form-label">負担割合</label>
+                        <select id="cert_modal_care_burden" class="form-select">
+                            <option value="">選択してください</option>
+                            <option value="1割負担">1割負担</option>
+                            <option value="2割負担">2割負担</option>
+                            <option value="3割負担">3割負担</option>
+                        </select>
+                    </div>
+                </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                <button type="button" class="btn btn-primary" id="certInfoSaveBtn">
+                    <i class="fas fa-save me-1"></i>保存
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 医療保険情報編集モーダル -->
+<div class="modal fade" id="medicalInfoModal" tabindex="-1" aria-labelledby="medicalInfoModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 700px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="medicalInfoModalLabel">
+                    <i class="fas fa-hospital me-2"></i>医療保険情報の編集
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="medicalInfoModalError" class="alert alert-danger d-none mb-3"></div>
+                <div class="card mb-0">
+                    <div class="card-header d-flex align-items-center">
+                        <h5 class="section-title"><i class="fas fa-notes-medical me-2"></i>医療保険関係</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3 mb-3">
+                            <!-- 医療保険種別 -->
+                            <div class="col-md-6">
+                                <label class="form-label">医療保険種別</label>
+                                <select id="medical_modal_type" class="form-select" onchange="toggleMedicalModalSymbolBranch(true)">
+                                    <option value="">----------</option>
+                                    <option value="national_health">国民健康保険</option>
+                                    <option value="latter_stage_elderly">後期高齢者医療</option>
+                                    <option value="health_insurance_association">健康保険（協会けんぽ）</option>
+                                    <option value="health_insurance_union">健康保険（組合）</option>
+                                    <option value="mutual_aid">共済組合</option>
+                                    <option value="seamen">船員保険</option>
+                                    <option value="other">その他</option>
+                                </select>
+                            </div>
+                        </div>
+                        <!-- 被保険者番号 記号・番号・枝番 -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-12">
+                                <label class="form-label">被保険者番号</label>
+                                <div class="d-flex align-items-center gap-2 flex-wrap">
+                                    <span class="text-nowrap" id="medical_modal_symbol_label">記号</span>
+                                    <div style="width:120px;" id="medical_modal_symbol_wrapper">
+                                        <input type="text" id="medical_modal_symbol" class="form-control">
+                                    </div>
+                                    <span class="text-nowrap">番号</span>
+                                    <div style="width:200px;">
+                                        <input type="text" id="medical_modal_number" class="form-control">
+                                    </div>
+                                    <span class="text-nowrap" id="medical_modal_branch_label">枝番</span>
+                                    <div style="width:80px;" id="medical_modal_branch_wrapper">
+                                        <input type="text" id="medical_modal_branch" class="form-control">
+                                    </div>
+                                </div>
+                                <small class="text-muted mt-1 d-block">医療保険証に記載されている被保険者番号です（介護保険の被保険者番号とは別の番号）</small>
+                            </div>
+                        </div>
+                        <!-- 負担割合 -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label">負担割合</label>
+                                <select id="medical_modal_burden" class="form-select">
+                                    <option value="">----------</option>
+                                    <option value="1割負担">1割負担</option>
+                                    <option value="2割負担">2割負担</option>
+                                    <option value="3割負担">3割負担</option>
+                                </select>
+                            </div>
+                        </div>
+                        <!-- 保険者名称・保険者番号 -->
+                        <div class="row g-3">
+                            <div class="col-md-8">
+                                <label class="form-label">保険者名称・交付者</label>
+                                <select id="medical_modal_insurer_preset" class="form-select mb-2" style="display:none;">
+                                    <option value="">----------</option>
+                                </select>
+                                <div id="medical_modal_insurer_manual_wrapper">
+                                    <input type="text" id="medical_modal_insurer_name" class="form-control">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">保険者番号</label>
+                                <input type="text" id="medical_modal_insurer_number" class="form-control">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                <button type="button" class="btn btn-primary" id="medicalInfoSaveBtn">
+                    <i class="fas fa-save me-1"></i>保存
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ---- ナビゲーション ----
+function goBack() {
+    if (document.referrer) { history.back(); }
+    else { window.location.href = '/clients/'; }
+}
+
+// ---- 利用者マスタドロワー（基本情報アコーディオン用） ----
+function openClientMasterDrawer() {
+    var overlay = document.getElementById('drawer-overlay');
+    var drawer  = document.getElementById('clientMasterDrawer');
+    if (overlay) { overlay.style.display = 'block'; setTimeout(function(){ overlay.style.opacity = '1'; }, 10); }
+    if (drawer)  drawer.classList.add('open');
+}
+function closeClientMasterDrawer() {
+    var overlay = document.getElementById('drawer-overlay');
+    var drawer  = document.getElementById('clientMasterDrawer');
+    if (overlay) { overlay.style.opacity = '0'; setTimeout(function(){ overlay.style.display = 'none'; }, 300); }
+    if (drawer)  drawer.classList.remove('open');
+}
+
+// ---- 案内を出す事業所（選択モーダル） ----
+var _selectedOffices = {};  // {id: {id, name, fax}}
+
+function openOfficeSelectModal() {
+    // モーダルチェックを現在の選択状態に合わせる
+    document.querySelectorAll('.office-modal-check').forEach(function(c) {
+        c.checked = !!_selectedOffices[c.dataset.id];
+    });
+    document.getElementById('office_modal_search').value = '';
+    _activeSvcFilter = '';
+    document.querySelectorAll('.svc-filter-btn').forEach(function(b) {
+        var isAll = b.dataset.svc === '';
+        b.classList.toggle('active', isAll);
+        b.classList.toggle('btn-secondary', isAll);
+        b.classList.toggle('btn-outline-secondary', !isAll);
+    });
+    applyOfficeFilter();
+    _updateModalCount();
+    new bootstrap.Modal(document.getElementById('officeSelectModal')).show();
+}
+
+var _activeSvcFilter = '';
+
+function applyOfficeFilter() {
+    var q   = (document.getElementById('office_modal_search').value || '').toLowerCase();
+    var svc = _activeSvcFilter;
+
+    document.querySelectorAll('.office-modal-item').forEach(function(item) {
+        var name     = (item.dataset.name || '').toLowerCase();
+        var matchQ   = !q   || name.includes(q);
+        var matchSvc = !svc || item.closest('.office-group').dataset.group === svc;
+        item.style.display = (matchQ && matchSvc) ? '' : 'none';
+    });
+    document.querySelectorAll('.office-group').forEach(function(g) {
+        var visible = Array.from(g.querySelectorAll('.office-modal-item')).some(function(i){ return i.style.display !== 'none'; });
+        g.style.display = visible ? '' : 'none';
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.svc-filter-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.svc-filter-btn').forEach(function(b) {
+                b.classList.remove('active', 'btn-secondary');
+                b.classList.add('btn-outline-secondary');
+            });
+            this.classList.add('active', 'btn-secondary');
+            this.classList.remove('btn-outline-secondary');
+            _activeSvcFilter = this.dataset.svc;
+            applyOfficeFilter();
+        });
+    });
+    document.querySelectorAll('.office-modal-check').forEach(function(c) {
+        c.addEventListener('change', _updateModalCount);
+    });
+});
+
+function _updateModalCount() {
+    var checked = document.querySelectorAll('.office-modal-check:checked').length;
+    var el = document.getElementById('office_select_count');
+    if (el) el.textContent = checked > 0 ? checked + '件選択中' : '';
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.office-modal-check').forEach(function(c) {
+        c.addEventListener('change', _updateModalCount);
+    });
+});
+
+function confirmOfficeSelection() {
+    _selectedOffices = {};
+    document.querySelectorAll('.office-modal-check:checked').forEach(function(c) {
+        _selectedOffices[c.dataset.id] = { id: c.dataset.id, name: c.dataset.name, fax: c.dataset.fax };
+    });
+    _renderSelectedTags();
+    bootstrap.Modal.getInstance(document.getElementById('officeSelectModal')).hide();
+}
+
+function removeOffice(id) {
+    delete _selectedOffices[id];
+    // モーダル内チェックも外す
+    var chk = document.getElementById('modal_office_' + id);
+    if (chk) chk.checked = false;
+    _renderSelectedTags();
+}
+
+function _renderSelectedTags() {
+    var offices = Object.values(_selectedOffices);
+    var tagsEl  = document.getElementById('selected_offices_tags');
+    var inputEl = document.getElementById('selected_offices_inputs');
+
+    var tagsHtml = '';
+    var inputHtml = '';
+    offices.forEach(function(o) {
+        tagsHtml += '<span class="badge rounded-pill border d-flex align-items-center gap-1 px-2 py-1" '
+                  + 'style="font-size:0.85rem;font-weight:normal;color:#333;background:#f8f9fa;">'
+                  + '<span>' + _escHtml(o.name) + '</span>'
+                  + '<button type="button" class="btn-close btn-close-sm ms-1" style="font-size:0.6rem;" '
+                  + 'onclick="removeOffice(\'' + o.id + '\')" title="削除"></button>'
+                  + '</span>';
+        inputHtml += '<input type="hidden" name="selected_office" value="' + o.id + '">';
+    });
+
+    tagsEl.innerHTML  = tagsHtml || '<span class="text-muted small">未選択</span>';
+    inputEl.innerHTML = inputHtml;
+    _updateFaxUI();
+}
+
+function _updateFaxUI() {
+    var hasFax = Object.values(_selectedOffices).some(function(o){ return o.fax; });
+    var notice = document.getElementById('fax_notice');
+    var faxBtn = document.getElementById('btn_excel_fax');
+    if (notice) notice.style.display = hasFax ? '' : 'none';
+    if (faxBtn) faxBtn.style.display = hasFax ? '' : 'none';
+}
+
+function _escHtml(s) {
+    return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+document.addEventListener('DOMContentLoaded', function() { _renderSelectedTags(); });
+</script>
+
+
+<style>
+.svc-nav-link { display: block; padding: 0.5rem 1.2rem; font-size: 0.9rem; font-weight: 500; color: #6c757d; background-color: #ffffff; border: 1px solid #dee2e6; border-bottom: none; border-top-left-radius: 0.375rem; border-top-right-radius: 0.375rem; cursor: pointer; text-decoration: none; transition: background 0.15s, color 0.15s; }
+.svc-nav-link.active { background-color: #f5f5f5; color: #333; border-color: #999; font-weight: bold; }
+.svc-nav-link:not(.active):hover { background-color: #e9ecef; color: #495057; }
+#serviceTabContent .svc-tab-pane { border-color: #999 !important; }
+#serviceTabContent .table-responsive { overflow-x: auto; }
+#serviceTabContent table { white-space: nowrap; }
+.birth-era-toggle { display: inline-flex; border: 1px solid #ced4da; border-radius: 0.375rem; overflow: hidden; font-size: 0.72rem; flex-shrink: 0; }
+.birth-era-toggle .era-btn { background: #fff; border: none; padding: 2px 7px; cursor: pointer; color: #6c757d; font-size: 0.72rem; line-height: 1.5; transition: background 0.15s, color 0.15s; }
+.birth-era-toggle .era-btn:not(:last-child) { border-right: 1px solid #ced4da; }
+.birth-era-toggle .era-btn.active { background: #6c757d; color: #fff; }
+.birth-era-toggle .era-btn:hover:not(.active) { background: #f0f0f0; }
+.btn { transition: all 0.2s ease; }
+.btn:hover { transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+.btn.btn-outline-secondary.btn-back:hover {
+    background-color: #f5f5f5 !important; border-color: #999 !important; color: #333 !important;
+}
+.btn.btn-outline-secondary.excel-btn:hover {
+    background-color: #d1f2d1 !important; border-color: #198754 !important; color: #198754 !important;
+}
+.btn.btn-outline-secondary.save-btn:hover {
+    background-color: #f8d7da !important; border-color: #dc3545 !important; color: #dc3545 !important;
+}
+.card-header { border-bottom: 2px solid #dee2e6; }
+input[readonly], textarea[readonly] {
+    background-color: #f0f0f0 !important; cursor: not-allowed !important; color: #6c757d !important;
+}
+input[readonly]:focus, textarea[readonly]:focus {
+    background-color: #f0f0f0 !important; box-shadow: none !important;
+}
+.master-drawer {
+    position: fixed; top: 0; right: -500px; width: 500px; height: 100vh;
+    background-color: white; box-shadow: -2px 0 10px rgba(0,0,0,0.3);
+    z-index: 1050; transition: right 0.3s ease-in-out; overflow: hidden;
+}
+.master-drawer.open { right: 0; }
+.master-drawer-content { display: flex; flex-direction: column; height: 100%; }
+.master-drawer-header {
+    padding: 1.5rem; border-bottom: 1px solid #dee2e6;
+    display: flex; justify-content: space-between; align-items: center;
+    background-color: #f8f9fa;
+}
+.master-drawer-header h5 { margin: 0; font-size: 1.25rem; font-weight: 600; }
+.btn-close-drawer {
+    background: none; border: none; font-size: 1.5rem; cursor: pointer;
+    color: #6c757d; padding: 0; width: 30px; height: 30px;
+    display: flex; align-items: center; justify-content: center; transition: color 0.2s;
+}
+.btn-close-drawer:hover { color: #000; }
+.master-drawer-body { flex: 1; padding: 1.5rem; overflow-y: auto; }
+.master-drawer-footer {
+    padding: 1rem 1.5rem; border-top: 1px solid #dee2e6;
+    display: flex; justify-content: flex-end; gap: 0.5rem; background-color: #f8f9fa;
+}
+.drawer-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
+    background-color: rgba(0,0,0,0.5); z-index: 1040; display: none; opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+}
+.drawer-overlay.show { display: block; opacity: 1; }
+#renewal_detail_section .accordion-button,
+#renewal_detail_section .accordion-button:not(.collapsed),
+#certInfoAccordion .accordion-button,
+#certInfoAccordion .accordion-button:not(.collapsed),
+#medicalInfoAccordion .accordion-button,
+#medicalInfoAccordion .accordion-button:not(.collapsed),
+#surveyLocationAccordion .accordion-button,
+#surveyLocationAccordion .accordion-button:not(.collapsed),
+#surveyContactAccordion .accordion-button,
+#surveyContactAccordion .accordion-button:not(.collapsed),
+#doctorInfoAccordion .accordion-button,
+#doctorInfoAccordion .accordion-button:not(.collapsed) {
+    color: #333 !important;
+    background-color: #f8f9fa !important;
+}
+</style>
+{% endblock %}

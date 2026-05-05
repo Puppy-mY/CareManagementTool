@@ -834,6 +834,50 @@ class RegionalSupportCenter(models.Model):
         return f"{self.name} ({self.office_number})"
 
 
+class CareServiceOffice(models.Model):
+    """介護サービス事業所（サービス担当者会議案内用マスタ）"""
+
+    SERVICE_TYPE_CHOICES = [
+        ('', '事業所種別を選択して下さい。'),
+        ('訪問介護',             '訪問介護'),
+        ('訪問看護',             '訪問看護'),
+        ('訪問入浴介護',         '訪問入浴介護'),
+        ('訪問リハビリテーション', '訪問リハビリテーション'),
+        ('通所介護',             '通所介護'),
+        ('通所リハビリテーション', '通所リハビリテーション'),
+        ('地域密着型通所介護',    '地域密着型通所介護'),
+        ('短期入所生活介護',      '短期入所生活介護'),
+        ('短期入所療養介護',      '短期入所療養介護'),
+        ('福祉用具貸与',          '福祉用具貸与'),
+        ('特定福祉用具販売',      '特定福祉用具販売'),
+        ('小規模多機能型居宅介護', '小規模多機能型居宅介護'),
+    ]
+
+    name         = models.CharField('事業所名', max_length=100)
+    furigana     = models.CharField('フリガナ', max_length=100, blank=True)
+    service_type = models.CharField('事業所種類', max_length=50, blank=True,
+                                    choices=SERVICE_TYPE_CHOICES)
+    office_number = models.CharField('事業所番号', max_length=20, blank=True)
+    postal_code   = models.CharField('郵便番号', max_length=10, blank=True)
+    address       = models.CharField('住所', max_length=200, blank=True)
+    phone         = models.CharField('電話番号', max_length=20, blank=True)
+    fax           = models.CharField('FAX番号', max_length=20, blank=True)
+    persons       = models.JSONField('担当者名', default=list, blank=True)
+    created_at    = models.DateTimeField('作成日時', auto_now_add=True)
+    updated_at    = models.DateTimeField('更新日時', auto_now=True)
+
+    class Meta:
+        verbose_name = '介護サービス事業所'
+        verbose_name_plural = '介護サービス事業所'
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+    def persons_display(self):
+        return '、'.join(self.persons) if self.persons else ''
+
+
 # シグナルハンドラー: ログイン時に1ヶ月以上ログインがないユーザーを自動無効化
 from django.contrib.auth.signals import user_logged_in
 from django.dispatch import receiver

@@ -44,7 +44,7 @@ try:
     OPENPYXL_AVAILABLE = True
 except ImportError:
     OPENPYXL_AVAILABLE = False
-from .models import Client, LimitCalculation, AdditionalService, ServiceType, ServiceProvider, ClientDementiaStatus, ServiceAddOn, ProviderAddOnSetting, DocumentCreationHistory, Feedback, FeedbackReply, HomeCareSupportOffice, RegionalSupportCenter, UserProfile
+from .models import Client, LimitCalculation, AdditionalService, ServiceType, ServiceProvider, ClientDementiaStatus, ServiceAddOn, ProviderAddOnSetting, DocumentCreationHistory, Feedback, FeedbackReply, HomeCareSupportOffice, RegionalSupportCenter, UserProfile, CareServiceOffice
 from .forms import ClientForm, FeedbackForm, FeedbackEditForm, FeedbackReplyForm, CareInsuranceForm, DisabilityWelfareForm, MedicalCertForm
 
 
@@ -3400,7 +3400,7 @@ def client_medical_info_update(request, client_id):
 # 更新認定申請書 / 区分変更申請書
 # ========================================
 
-def _document_create_ltc_base(request, client_id, doc_type, doc_name, template_name):
+def _document_create_ltc_base(request, client_id, doc_type, doc_name, template_name, extra_context=None):
     """更新認定申請書・区分変更申請書の共通ロジック"""
     from django.conf import settings as dj_settings
     from openpyxl import load_workbook
@@ -3879,6 +3879,8 @@ def _document_create_ltc_base(request, client_id, doc_type, doc_name, template_n
             ('other', 'その他（手入力）'),
         ],
     }
+    if extra_context:
+        context.update(extra_context)
     return render(request, template_name, context)
 
 
@@ -3963,6 +3965,20 @@ def document_create_kyotaku_selection_confirmation(request, client_id):
         doc_type='kyotaku_selection_confirmation',
         doc_name='居宅サービス事業所の選択に関する説明に係る確認書',
         template_name='clients/document_create_kyotaku_selection_confirmation.html',
+    )
+
+
+@login_required
+@user_passes_test(staff_required)
+def document_create_care_service_meeting_notice(request, client_id):
+    """サービス担当者会議開催のご案内 作成画面"""
+    care_offices = list(CareServiceOffice.objects.all())
+    return _document_create_ltc_base(
+        request, client_id,
+        doc_type='care_service_meeting_notice',
+        doc_name='サービス担当者会議開催のご案内',
+        template_name='clients/document_create_care_service_meeting_notice.html',
+        extra_context={'care_offices': care_offices},
     )
 
 
@@ -4893,3 +4909,89 @@ def support_center_api(request):
             'area': center.area,
         })
     return JsonResponse(data, safe=False)
+
+
+# ============================================================
+# 介護サービス事業所マスタ
+# ============================================================
+
+@login_required
+@user_passes_test(staff_required)
+def care_service_office_list(request):
+    """介護サービス事業所一覧"""
+    offices = CareServiceOffice.objects.all()
+    return render(request, 'clients/care_service_office_list.html', {
+        'offices': offices,
+        'service_type_choices': CareServiceOffice.SERVICE_TYPE_CHOICES,
+    })
+
+
+@login_required
+@user_passes_test(staff_required)
+def care_service_office_create(request):
+    """介護サービス事業所 作成（AJAX）"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'POSTのみ'})
+    name          = request.POST.get('name', '').strip()
+    furigana      = request.POST.get('furigana', '').strip()
+    service_type  = request.POST.get('service_type', '').strip()
+    office_number = request.POST.get('office_number', '').strip()
+    postal_code   = request.POST.get('postal_code', '').strip()
+    address       = request.POST.get('address', '').strip()
+    phone         = request.POST.get('phone', '').strip()
+    fax           = request.POST.get('fax', '').strip()
+    persons       = [p.strip() for p in request.POST.getlist('person_name') if p.strip()]
+    if not name:
+        return JsonResponse({'success': False, 'error': '事業所名は必須です。'})
+    if not service_type:
+        return JsonResponse({'success': False, 'error': '事業所種類を選択してください。'})
+    if not phone or not fax:
+        return JsonResponse({'success': False, 'error': '電話番号とFAX番号は必須です。'})
+    office = CareServiceOffice.objects.create(
+        name=name, furigana=furigana, service_type=service_type,
+        office_number=office_number, postal_code=postal_code, address=address,
+        phone=phone, fax=fax, persons=persons,
+    )
+    return JsonResponse({'success': True, 'id': office.id})
+
+
+@login_required
+@user_passes_test(staff_required)
+def care_service_office_update(request, pk):
+    """介護サービス事業所 更新（AJAX）"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'POSTのみ'})
+    try:
+        office = CareServiceOffice.objects.get(pk=pk)
+    except CareServiceOffice.DoesNotExist:
+        return JsonResponse({'success': False, 'error': '見つかりません。'})
+    office.name          = request.POST.get('name', office.name).strip()
+    office.furigana      = request.POST.get('furigana', office.furigana).strip()
+    office.service_type  = request.POST.get('service_type', '').strip()
+    office.office_number = request.POST.get('office_number', office.office_number).strip()
+    office.postal_code   = request.POST.get('postal_code', office.postal_code).strip()
+    office.address       = request.POST.get('address', office.address).strip()
+    office.phone         = request.POST.get('phone', office.phone).strip()
+    office.fax           = request.POST.get('fax', office.fax).strip()
+    office.persons       = [p.strip() for p in request.POST.getlist('person_name') if p.strip()]
+    if not office.name:
+        return JsonResponse({'success': False, 'error': '事業所名は必須です。'})
+    if not office.service_type:
+        return JsonResponse({'success': False, 'error': '事業所種類を選択してください。'})
+    if not office.phone or not office.fax:
+        return JsonResponse({'success': False, 'error': '電話番号とFAX番号は必須です。'})
+    office.save()
+    return JsonResponse({'success': True})
+
+
+@login_required
+@user_passes_test(staff_required)
+def care_service_office_delete(request, pk):
+    """介護サービス事業所 削除（AJAX）"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'POSTのみ'})
+    try:
+        CareServiceOffice.objects.get(pk=pk).delete()
+        return JsonResponse({'success': True})
+    except CareServiceOffice.DoesNotExist:
+        return JsonResponse({'success': False, 'error': '見つかりません。'})
