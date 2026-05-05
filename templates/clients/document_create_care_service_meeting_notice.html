@@ -252,7 +252,6 @@
                                     <label for="modal_office_{{ o.id }}" style="cursor:pointer;margin:0;" onclick="event.stopPropagation()">
                                         {% if o.furigana %}<small class="text-muted d-block" style="font-size:0.75rem;">{{ o.furigana }}</small>{% endif %}
                                         <span class="fw-bold">{{ o.name }}</span>
-                                        {% if o.persons %}<br><small class="text-muted">{{ o.persons|join:"・" }}</small>{% endif %}
                                     </label>
                                 </td>
                                 <td class="align-middle">
@@ -275,6 +274,7 @@
                                 <td class="align-middle" style="font-size:0.85rem; white-space:nowrap;">
                                     <i class="fas fa-phone me-1 text-muted" style="font-size:0.75rem;"></i>{{ o.phone|default:"―" }}<br>
                                     <i class="fas fa-fax me-1 text-muted" style="font-size:0.75rem;"></i><span class="text-muted">{{ o.fax|default:"―" }}</span>
+                                    {% if o.persons %}<br><small class="text-muted"><i class="fas fa-user me-1" style="font-size:0.7rem;"></i>{% for p in o.persons|slice:":2" %}{% if not forloop.first %}・{% endif %}{{ p }}{% endfor %}{% if o.persons|length > 2 %} 他{% endif %}</small>{% endif %}
                                 </td>
                             </tr>
                             {% empty %}
