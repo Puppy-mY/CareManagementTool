@@ -1969,7 +1969,7 @@ def document_history_excel(request, pk):
     history = get_object_or_404(DocumentCreationHistory, pk=pk)
     client = history.client
 
-    if history.document_type in ('ltc_renewal', 'ltc_change', 'ltc_withdrawal', 'ltc_doctor_change', 'ltc_address_change', 'ltc_burden_address_change'):
+    if history.document_type in ('ltc_renewal', 'ltc_change', 'ltc_withdrawal', 'ltc_doctor_change', 'ltc_address_change', 'ltc_burden_address_change', 'ltc_reissue_application', 'kyotaku_selection_confirmation'):
         try:
             if history.document_type == 'ltc_change':
                 content  = _generate_ltc_change_excel_bytes(client, history.form_data)
@@ -1994,6 +1994,16 @@ def document_history_excel(request, pk):
             elif history.document_type == 'ltc_burden_address_change':
                 content  = _generate_ltc_burden_address_change_excel_bytes(client, history.form_data)
                 dl_label = '介護保険負担限度額・割合証送付先変更届'
+                ct       = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                ext      = '.xlsx'
+            elif history.document_type == 'ltc_reissue_application':
+                content  = _generate_ltc_reissue_application_excel_bytes(client, history.form_data)
+                dl_label = '介護保険関係・再交付申請書'
+                ct       = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                ext      = '.xlsx'
+            elif history.document_type == 'kyotaku_selection_confirmation':
+                content  = _generate_kyotaku_selection_confirmation_excel_bytes(client, history.form_data)
+                dl_label = '居宅サービス事業所の選択に関する説明に係る確認書'
                 ct       = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
                 ext      = '.xlsx'
             else:
