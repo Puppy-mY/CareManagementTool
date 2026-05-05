@@ -7,3 +7,5 @@ whitenoise
 dj-database-url
 markdown
 openpyxl
+lxml
+reportlab
