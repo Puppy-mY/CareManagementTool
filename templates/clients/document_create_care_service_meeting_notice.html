@@ -194,11 +194,13 @@
                 </div>
                 <!-- サービス種別フィルター -->
                 <div class="d-flex flex-wrap gap-1 mb-3" id="svc_filter_btns">
-                    <button type="button" class="btn btn-sm btn-secondary svc-filter-btn active" data-svc="">すべて</button>
+                    <button type="button" class="btn btn-sm svc-filter-btn active" data-svc="" data-color="#f5f5f5">すべて</button>
                     {% regroup care_offices by service_type as grouped_for_filter %}
                     {% for group in grouped_for_filter %}
                     {% if group.grouper %}
-                    <button type="button" class="btn btn-sm btn-outline-secondary svc-filter-btn" data-svc="{{ group.grouper }}">{{ group.grouper }}</button>
+                    <button type="button" class="btn btn-sm svc-filter-btn"
+                        data-svc="{{ group.grouper }}"
+                        data-color="{% if group.grouper == '訪問介護' %}#fff9c4{% elif group.grouper == '訪問看護' %}#ffd5d5{% elif group.grouper == '訪問入浴介護' %}#d5eaf9{% elif group.grouper == '訪問リハビリテーション' %}#ffebee{% elif group.grouper == '通所介護' or group.grouper == '地域密着型通所介護' %}#e8f5e8{% elif group.grouper == '通所リハビリテーション' %}#fff3e0{% elif group.grouper == '福祉用具貸与' or group.grouper == '特定福祉用具販売' %}#f3e5f5{% elif group.grouper == '短期入所生活介護' or group.grouper == '短期入所療養介護' or group.grouper == '小規模多機能型居宅介護' %}#f5f0e8{% else %}#f5f5f5{% endif %}">{{ group.grouper }}</button>
                     {% endif %}
                     {% endfor %}
                 </div>
@@ -717,17 +719,16 @@ function closeClientMasterDrawer() {
 var _selectedOffices = {};  // {id: {id, name, fax}}
 
 function openOfficeSelectModal() {
-    // モーダルチェックを現在の選択状態に合わせる
     document.querySelectorAll('.office-modal-check').forEach(function(c) {
         c.checked = !!_selectedOffices[c.dataset.id];
     });
     document.getElementById('office_modal_search').value = '';
     _activeSvcFilter = '';
+    // フィルターボタンをすべてリセットして「すべて」をアクティブに
     document.querySelectorAll('.svc-filter-btn').forEach(function(b) {
         var isAll = b.dataset.svc === '';
         b.classList.toggle('active', isAll);
-        b.classList.toggle('btn-secondary', isAll);
-        b.classList.toggle('btn-outline-secondary', !isAll);
+        _applySvcFilterBtnStyle(b, isAll);
     });
     applyOfficeFilter();
     _updateModalCount();
@@ -757,19 +758,58 @@ function toggleOfficeRow(tr) {
     }
 }
 
+function _applySvcFilterBtnStyle(btn, isActive) {
+    var color = btn.dataset.color || '#f5f5f5';
+    if (isActive) {
+        btn.style.backgroundColor = color;
+        btn.style.borderColor     = '#999999';
+        btn.style.color           = '#000000';
+        btn.style.fontWeight      = 'bold';
+    } else {
+        btn.style.backgroundColor = '';
+        btn.style.borderColor     = '';
+        btn.style.color           = '';
+        btn.style.fontWeight      = '';
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
+    // 初期状態：すべてボタンをアクティブカラーに
+    var allBtn = document.querySelector('.svc-filter-btn[data-svc=""]');
+    if (allBtn) _applySvcFilterBtnStyle(allBtn, true);
+
     document.querySelectorAll('.svc-filter-btn').forEach(function(btn) {
+        var color = btn.dataset.color || '#f5f5f5';
+
+        // ホバー
+        btn.addEventListener('mouseenter', function() {
+            if (!this.classList.contains('active')) {
+                this.style.backgroundColor = color;
+                this.style.borderColor     = '#999999';
+                this.style.color           = '#000000';
+            }
+        });
+        btn.addEventListener('mouseleave', function() {
+            if (!this.classList.contains('active')) {
+                this.style.backgroundColor = '';
+                this.style.borderColor     = '';
+                this.style.color           = '';
+            }
+        });
+
+        // クリック
         btn.addEventListener('click', function() {
             document.querySelectorAll('.svc-filter-btn').forEach(function(b) {
-                b.classList.remove('active', 'btn-secondary');
-                b.classList.add('btn-outline-secondary');
+                b.classList.remove('active');
+                _applySvcFilterBtnStyle(b, false);
             });
-            this.classList.add('active', 'btn-secondary');
-            this.classList.remove('btn-outline-secondary');
+            this.classList.add('active');
+            _applySvcFilterBtnStyle(this, true);
             _activeSvcFilter = this.dataset.svc;
             applyOfficeFilter();
         });
     });
+
     document.querySelectorAll('.office-modal-check').forEach(function(c) {
         c.addEventListener('change', _updateModalCount);
     });
