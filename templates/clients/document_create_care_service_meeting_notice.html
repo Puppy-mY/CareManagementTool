@@ -999,6 +999,21 @@ function cmAddPerson(val) {
 
 function cmOpenCreate() {
     _cmFormSource = _cmFormSource || 'manager';
+    var src = _cmFormSource;
+    // 管理モーダルが開いていれば先に閉じる
+    var managerInst = bootstrap.Modal.getInstance(document.getElementById('careOfficeManagerModal'));
+    if (src === 'manager' && managerInst) {
+        managerInst.hide();
+        document.getElementById('careOfficeManagerModal').addEventListener('hidden.bs.modal', function handler() {
+            this.removeEventListener('hidden.bs.modal', handler);
+            _cmDoOpenCreate();
+        });
+    } else {
+        _cmDoOpenCreate();
+    }
+}
+
+function _cmDoOpenCreate() {
     document.getElementById('cm_pk').value = '';
     document.getElementById('cmFormTitle').textContent = '新規登録';
     document.getElementById('cmOfficeForm').reset();
@@ -1031,12 +1046,14 @@ function cmCloseForm() {
     var src = _cmFormSource;
     _cmFormSource = 'manager';
     bootstrap.Modal.getInstance(document.getElementById('cmOfficeFormModal')).hide();
-    if (src === 'select') {
-        document.getElementById('cmOfficeFormModal').addEventListener('hidden.bs.modal', function handler() {
-            this.removeEventListener('hidden.bs.modal', handler);
+    document.getElementById('cmOfficeFormModal').addEventListener('hidden.bs.modal', function handler() {
+        this.removeEventListener('hidden.bs.modal', handler);
+        if (src === 'select') {
             openOfficeSelectModal();
-        });
-    }
+        } else {
+            new bootstrap.Modal(document.getElementById('careOfficeManagerModal')).show();
+        }
+    });
 }
 
 function cmConfirmDelete(pk, name) {
@@ -1071,17 +1088,19 @@ document.addEventListener('DOMContentLoaded', function() {
         }).then(r => r.json()).then(function(data) {
             if (data.success) {
                 if (!pk) {
-                    // 新規登録：UIに追加してモーダルを閉じる
+                    // 新規登録：UIに追加してモーダルを閉じ、元のモーダルに戻る
                     _cmAddRowToSelectModal(data);
                     _cmAddItemToManagerAccordion(data);
                     _cmFormSource = 'manager';
                     bootstrap.Modal.getInstance(document.getElementById('cmOfficeFormModal')).hide();
-                    if (src === 'select') {
-                        document.getElementById('cmOfficeFormModal').addEventListener('hidden.bs.modal', function handler() {
-                            this.removeEventListener('hidden.bs.modal', handler);
+                    document.getElementById('cmOfficeFormModal').addEventListener('hidden.bs.modal', function handler() {
+                        this.removeEventListener('hidden.bs.modal', handler);
+                        if (src === 'select') {
                             openOfficeSelectModal();
-                        });
-                    }
+                        } else {
+                            new bootstrap.Modal(document.getElementById('careOfficeManagerModal')).show();
+                        }
+                    });
                 } else {
                     location.reload();
                 }
@@ -1526,16 +1545,21 @@ document.addEventListener('DOMContentLoaded', function() { _renderSelectedTable(
 
 
 <style>
-/* 事業所選択モーダル・選択済みテーブル共通スタイル */
+/* 事業所選択モーダル・選択済みテーブル・内部モーダル共通スタイル */
 #officeSelectModal .table-bordered th,
 #officeSelectModal .table-bordered td,
 #selected_offices_table_wrap .table-bordered th,
-#selected_offices_table_wrap .table-bordered td { border-left: none; border-right: none; }
+#selected_offices_table_wrap .table-bordered td,
+#internalOfficeModal .table-bordered th,
+#internalOfficeModal .table-bordered td { border-left: none; border-right: none; }
 #officeSelectModal .table td,
 #officeSelectModal .table th,
 #selected_offices_table_wrap .table td,
-#selected_offices_table_wrap .table th { vertical-align: middle; }
+#selected_offices_table_wrap .table th,
+#internalOfficeModal .table td,
+#internalOfficeModal .table th { vertical-align: middle; }
 #officeSelectModal tbody tr.office-modal-item:hover { background-color: rgba(0,0,0,0.04); }
+#internalOfficeModal tbody tr:hover { background-color: rgba(0,0,0,0.04); }
 .svc-type-badge {
     display: inline-block;
     padding: 3px 7px;
