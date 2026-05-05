@@ -412,6 +412,9 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title"><i class="fas fa-list me-2"></i>事業所を選択</h5>
+                <button type="button" class="btn btn-outline-secondary btn-sm me-2" onclick="cmOpenCreateFromSelect()">
+                    <i class="fas fa-plus me-1"></i>新規登録
+                </button>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
@@ -935,6 +938,15 @@
 <script>
 // ---- 外部事業所マスタ管理 ----
 var _cmDeletePk = null;
+
+function cmOpenCreateFromSelect() {
+    // 選択モーダルを一時的に隠して新規登録フォームを開く
+    bootstrap.Modal.getInstance(document.getElementById('officeSelectModal')).hide();
+    document.getElementById('officeSelectModal').addEventListener('hidden.bs.modal', function handler() {
+        this.removeEventListener('hidden.bs.modal', handler);
+        cmOpenCreate();
+    });
+}
 
 function openCareOfficeManager() {
     document.getElementById('cmSearch').value = '';
