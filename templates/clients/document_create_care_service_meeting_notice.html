@@ -377,42 +377,70 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
+                <div class="mb-2">
+                    <input type="text" id="internal_modal_search" class="form-control"
+                           placeholder="事業所名・業種で検索..." oninput="applyInternalFilter()">
+                </div>
                 <div class="table-responsive">
                     <table class="table table-hover table-bordered mb-0" style="font-size:0.9rem;">
                         <thead>
                             <tr>
                                 <th style="width:40px; background-color:#f5f5f5;"></th>
-                                <th style="background-color:#f5f5f5;">事業所名</th>
+                                <th style="background-color:#f5f5f5;">サービス事業所</th>
+                                <th style="width:90px; background-color:#f5f5f5;">業種</th>
+                                <th style="width:150px; background-color:#f5f5f5;">電話 / FAX</th>
+                                <th style="width:120px; background-color:#f5f5f5;">担当者</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            {% for name in internal_office_choices %}
-                            <tr style="cursor:pointer;" onclick="toggleImRow(this)">
+                        <tbody id="internal_modal_list">
+                            {% for o in care_offices %}
+                            <tr class="internal-modal-item" style="cursor:pointer;"
+                                data-name="{{ o.name }}" data-svc="{{ o.service_type }}"
+                                onclick="toggleInternalRow(this)">
                                 <td class="text-center align-middle">
                                     <input class="form-check-input internal-modal-chk" type="checkbox"
-                                           id="im_{{ forloop.counter }}" value="{{ name }}"
+                                           id="im_{{ o.id }}" value="{{ o.id }}"
+                                           data-id="{{ o.id }}"
+                                           data-name="{{ o.name }}"
+                                           data-furigana="{{ o.furigana }}"
+                                           data-svc="{{ o.service_type }}"
+                                           data-phone="{{ o.phone }}"
+                                           data-fax="{{ o.fax }}"
+                                           data-persons="{{ o.persons|join:',' }}"
                                            onclick="event.stopPropagation()">
                                 </td>
                                 <td class="align-middle">
-                                    <label for="im_{{ forloop.counter }}" style="cursor:pointer;margin:0;">{{ name }}</label>
+                                    <label for="im_{{ o.id }}" style="cursor:pointer;margin:0;" onclick="event.stopPropagation()">
+                                        {% if o.furigana %}<small class="text-muted d-block" style="font-size:0.75rem;">{{ o.furigana }}</small>{% endif %}
+                                        <span class="fw-bold">{{ o.name }}</span>
+                                    </label>
+                                </td>
+                                <td class="align-middle">
+                                    {% if o.service_type %}
+                                    <span class="svc-type-badge"
+                                        {% if o.service_type == '訪問介護' %}style="background-color:#fff9c4;"
+                                        {% elif o.service_type == '訪問看護' %}style="background-color:#ffd5d5;"
+                                        {% elif o.service_type == '訪問入浴介護' %}style="background-color:#d5eaf9;"
+                                        {% elif o.service_type == '訪問リハビリテーション' %}style="background-color:#ffebee;"
+                                        {% elif o.service_type == '通所介護' or o.service_type == '地域密着型通所介護' %}style="background-color:#e8f5e8;"
+                                        {% elif o.service_type == '通所リハビリテーション' %}style="background-color:#fff3e0;"
+                                        {% elif o.service_type == '福祉用具貸与' or o.service_type == '特定福祉用具販売' %}style="background-color:#f3e5f5;"
+                                        {% elif o.service_type == '短期入所生活介護' or o.service_type == '短期入所療養介護' or o.service_type == '小規模多機能型居宅介護' %}style="background-color:#f5f0e8;"
+                                        {% else %}style="background-color:#f5f5f5;"{% endif %}>{{ o.service_type }}</span>
+                                    {% else %}<span class="text-muted">―</span>{% endif %}
+                                </td>
+                                <td class="align-middle" style="font-size:0.85rem; white-space:nowrap;">
+                                    <i class="fas fa-phone me-1 text-muted" style="font-size:0.75rem;"></i>{{ o.phone|default:"―" }}<br>
+                                    <i class="fas fa-fax me-1 text-muted" style="font-size:0.75rem;"></i><span class="text-muted">{{ o.fax|default:"―" }}</span>
+                                </td>
+                                <td class="align-middle" style="font-size:0.85rem;">
+                                    {% if o.persons %}{% for p in o.persons|slice:":2" %}{% if not forloop.first %}<br>{% endif %}{{ p }} 様{% if forloop.last and o.persons|length > 2 %} <span class="text-muted">他</span>{% endif %}{% endfor %}
+                                    {% else %}<span class="text-muted">―</span>{% endif %}
                                 </td>
                             </tr>
+                            {% empty %}
+                            <tr><td colspan="5" class="text-center text-muted py-3">事業所が登録されていません</td></tr>
                             {% endfor %}
-                            <tr style="cursor:pointer;" onclick="toggleImRow(this)">
-                                <td class="text-center align-middle">
-                                    <input class="form-check-input internal-modal-chk" type="checkbox"
-                                           id="im_other" value="__other__"
-                                           onchange="toggleImOther(this);event.stopPropagation();"
-                                           onclick="event.stopPropagation()">
-                                </td>
-                                <td class="align-middle">
-                                    <label for="im_other" style="cursor:pointer;margin:0;">その他（手入力）</label>
-                                    <div id="im_other_wrap" class="mt-1" style="display:none;">
-                                        <input type="text" id="im_other_text" class="form-control form-control-sm"
-                                               style="max-width:280px;" placeholder="事業所名を入力" onclick="event.stopPropagation()">
-                                    </div>
-                                </td>
-                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -1123,38 +1151,30 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // ---- 内部事業所モーダル ----
-var _selectedInternal = {}; // { value: displayName }
+var _selectedInternal = {}; // { id: {id, name, furigana, svc, phone, fax, persons} }
 
 function openInternalOfficeModal() {
+    document.getElementById('internal_modal_search').value = '';
+    applyInternalFilter();
     document.querySelectorAll('.internal-modal-chk').forEach(function(c) {
-        c.checked = !!_selectedInternal[c.value];
+        c.checked = !!_selectedInternal[c.dataset.id];
     });
-    var otherText = _selectedInternal['__other__'] || '';
-    var otherInp = document.getElementById('im_other_text');
-    if (otherInp) otherInp.value = (otherText !== '__other__') ? otherText : '';
-    var wrap = document.getElementById('im_other_wrap');
-    if (wrap) wrap.style.display = _selectedInternal['__other__'] ? '' : 'none';
     _updateInternalCount();
     new bootstrap.Modal(document.getElementById('internalOfficeModal')).show();
 }
 
-function toggleImRow(tr) {
+function toggleInternalRow(tr) {
     var chk = tr.querySelector('.internal-modal-chk');
-    if (chk) {
-        chk.checked = !chk.checked;
-        if (chk.value === '__other__') toggleImOther(chk);
-        _updateInternalCount();
-    }
+    if (chk) { chk.checked = !chk.checked; _updateInternalCount(); }
 }
 
-function toggleImOther(chk) {
-    var wrap = document.getElementById('im_other_wrap');
-    if (wrap) wrap.style.display = chk.checked ? '' : 'none';
-    if (!chk.checked) {
-        var inp = document.getElementById('im_other_text');
-        if (inp) inp.value = '';
-    }
-    _updateInternalCount();
+function applyInternalFilter() {
+    var q = (document.getElementById('internal_modal_search').value || '').toLowerCase();
+    document.querySelectorAll('.internal-modal-item').forEach(function(item) {
+        var name = (item.dataset.name || '').toLowerCase();
+        var svc  = (item.dataset.svc  || '').toLowerCase();
+        item.style.display = (!q || name.includes(q) || svc.includes(q)) ? '' : 'none';
+    });
 }
 
 function _updateInternalCount() {
@@ -1166,26 +1186,26 @@ function _updateInternalCount() {
 function confirmInternalSelection() {
     _selectedInternal = {};
     document.querySelectorAll('.internal-modal-chk:checked').forEach(function(c) {
-        if (c.value === '__other__') {
-            var t = (document.getElementById('im_other_text').value || '').trim();
-            if (t) _selectedInternal['__other__'] = t;
-        } else {
-            _selectedInternal[c.value] = c.value;
-        }
+        var d = c.dataset;
+        _selectedInternal[d.id] = {
+            id: d.id, name: d.name, furigana: d.furigana || '',
+            svc: d.svc || '', phone: d.phone || '', fax: d.fax || '',
+            persons: d.persons ? d.persons.split(',').filter(Boolean) : [],
+        };
     });
     _renderInternalTags();
     bootstrap.Modal.getInstance(document.getElementById('internalOfficeModal')).hide();
 }
 
-function removeInternal(key) {
-    delete _selectedInternal[key];
-    var chk = document.querySelector('.internal-modal-chk[value="' + key + '"]');
+function removeInternal(id) {
+    delete _selectedInternal[id];
+    var chk = document.querySelector('#im_' + id);
     if (chk) chk.checked = false;
     _renderInternalTags();
 }
 
 function _renderInternalTags() {
-    var items   = Object.entries(_selectedInternal);
+    var items   = Object.values(_selectedInternal);
     var wrap    = document.getElementById('internal_selected_wrap');
     var empty   = document.getElementById('internal_selected_empty');
     var tagsEl  = document.getElementById('internal_selected_tags');
@@ -1200,18 +1220,14 @@ function _renderInternalTags() {
     wrap.style.display  = '';
     empty.style.display = 'none';
 
-    var tagsHtml  = '';
-    var inputHtml = '';
-    items.forEach(function(kv) {
-        var key = kv[0], label = kv[1];
+    var tagsHtml = '', inputHtml = '';
+    items.forEach(function(o) {
         tagsHtml += '<span class="badge rounded-pill border d-flex align-items-center gap-1 px-2 py-1" '
                   + 'style="font-size:0.85rem;font-weight:normal;color:#333;background:#f8f9fa;">'
-                  + '<span>' + _escHtml(label) + '</span>'
+                  + '<span>' + _escHtml(o.name) + '</span>'
                   + '<button type="button" class="btn-close btn-close-sm ms-1" style="font-size:0.6rem;" '
-                  + 'onclick="removeInternal(\'' + _escHtml(key) + '\')" title="削除"></button>'
-                  + '</span>';
-        var saveVal = (key === '__other__') ? label : key;
-        inputHtml += '<input type="hidden" name="internal_office" value="' + _escHtml(saveVal) + '">';
+                  + 'onclick="removeInternal(\'' + o.id + '\')" title="削除"></button></span>';
+        inputHtml += '<input type="hidden" name="internal_office" value="' + _escHtml(o.id) + '">';
     });
     tagsEl.innerHTML  = tagsHtml;
     inputEl.innerHTML = inputHtml;
