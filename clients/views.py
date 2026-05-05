@@ -4975,7 +4975,12 @@ def care_service_office_create(request):
         office_number=office_number, postal_code=postal_code, address=address,
         phone=phone, fax=fax, persons=persons,
     )
-    return JsonResponse({'success': True, 'id': office.id})
+    return JsonResponse({
+        'success': True, 'id': office.id,
+        'name': office.name, 'furigana': office.furigana,
+        'service_type': office.service_type, 'phone': office.phone,
+        'fax': office.fax, 'persons': office.persons,
+    })
 
 
 @login_required

@@ -370,28 +370,51 @@
 
 <!-- 内部事業所選択モーダル -->
 <div class="modal fade" id="internalOfficeModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
-    <div class="modal-dialog modal-dialog-scrollable" style="max-width:500px;">
+    <div class="modal-dialog modal-dialog-scrollable" style="max-width:700px;">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title"><i class="fas fa-list me-2"></i>内部の事業所を選択</h5>
+                <h5 class="modal-title"><i class="fas fa-list me-2"></i>【内部】事業所を選択</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                {% for name in internal_office_choices %}
-                <div class="form-check py-1 border-bottom">
-                    <input class="form-check-input internal-modal-chk" type="checkbox"
-                           id="im_{{ forloop.counter }}" value="{{ name }}">
-                    <label class="form-check-label w-100" for="im_{{ forloop.counter }}" style="cursor:pointer;">{{ name }}</label>
-                </div>
-                {% endfor %}
-                <div class="form-check py-1">
-                    <input class="form-check-input internal-modal-chk" type="checkbox"
-                           id="im_other" value="__other__" onchange="toggleImOther(this)">
-                    <label class="form-check-label w-100" for="im_other" style="cursor:pointer;">その他（手入力）</label>
-                </div>
-                <div id="im_other_wrap" class="mt-2 ps-4" style="display:none;">
-                    <input type="text" id="im_other_text" class="form-control form-control-sm"
-                           style="max-width:280px;" placeholder="事業所名を入力">
+                <div class="table-responsive">
+                    <table class="table table-hover table-bordered mb-0" style="font-size:0.9rem;">
+                        <thead>
+                            <tr>
+                                <th style="width:40px; background-color:#f5f5f5;"></th>
+                                <th style="background-color:#f5f5f5;">事業所名</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for name in internal_office_choices %}
+                            <tr style="cursor:pointer;" onclick="toggleImRow(this)">
+                                <td class="text-center align-middle">
+                                    <input class="form-check-input internal-modal-chk" type="checkbox"
+                                           id="im_{{ forloop.counter }}" value="{{ name }}"
+                                           onclick="event.stopPropagation()">
+                                </td>
+                                <td class="align-middle">
+                                    <label for="im_{{ forloop.counter }}" style="cursor:pointer;margin:0;">{{ name }}</label>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            <tr style="cursor:pointer;" onclick="toggleImRow(this)">
+                                <td class="text-center align-middle">
+                                    <input class="form-check-input internal-modal-chk" type="checkbox"
+                                           id="im_other" value="__other__"
+                                           onchange="toggleImOther(this);event.stopPropagation();"
+                                           onclick="event.stopPropagation()">
+                                </td>
+                                <td class="align-middle">
+                                    <label for="im_other" style="cursor:pointer;margin:0;">その他（手入力）</label>
+                                    <div id="im_other_wrap" class="mt-1" style="display:none;">
+                                        <input type="text" id="im_other_text" class="form-control form-control-sm"
+                                               style="max-width:280px;" placeholder="事業所名を入力" onclick="event.stopPropagation()">
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
             <div class="modal-footer justify-content-between">
@@ -939,8 +962,10 @@
 // ---- 外部事業所マスタ管理 ----
 var _cmDeletePk = null;
 
+var _cmFormSource = 'manager'; // 'manager' or 'select'
+
 function cmOpenCreateFromSelect() {
-    // 選択モーダルを一時的に隠して新規登録フォームを開く
+    _cmFormSource = 'select';
     bootstrap.Modal.getInstance(document.getElementById('officeSelectModal')).hide();
     document.getElementById('officeSelectModal').addEventListener('hidden.bs.modal', function handler() {
         this.removeEventListener('hidden.bs.modal', handler);
@@ -973,6 +998,7 @@ function cmAddPerson(val) {
 }
 
 function cmOpenCreate() {
+    _cmFormSource = _cmFormSource || 'manager';
     document.getElementById('cm_pk').value = '';
     document.getElementById('cmFormTitle').textContent = '新規登録';
     document.getElementById('cmOfficeForm').reset();
@@ -1002,7 +1028,15 @@ function cmOpenEdit(pk) {
 }
 
 function cmCloseForm() {
+    var src = _cmFormSource;
+    _cmFormSource = 'manager';
     bootstrap.Modal.getInstance(document.getElementById('cmOfficeFormModal')).hide();
+    if (src === 'select') {
+        document.getElementById('cmOfficeFormModal').addEventListener('hidden.bs.modal', function handler() {
+            this.removeEventListener('hidden.bs.modal', handler);
+            openOfficeSelectModal();
+        });
+    }
 }
 
 function cmConfirmDelete(pk, name) {
@@ -1029,13 +1063,31 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         var pk  = document.getElementById('cm_pk').value;
         var url = pk ? '/clients/care-service-offices/' + pk + '/update/' : '/clients/care-service-offices/create/';
+        var src = _cmFormSource;
         fetch(url, {
             method: 'POST',
             headers: { 'X-CSRFToken': csrfToken },
             body: new FormData(this),
         }).then(r => r.json()).then(function(data) {
-            if (data.success) { location.reload(); }
-            else { errEl.textContent = data.error || 'エラーが発生しました。'; errEl.classList.remove('d-none'); }
+            if (data.success) {
+                if (!pk) {
+                    // 新規登録：UIに追加してモーダルを閉じる
+                    _cmAddRowToSelectModal(data);
+                    _cmAddItemToManagerAccordion(data);
+                    _cmFormSource = 'manager';
+                    bootstrap.Modal.getInstance(document.getElementById('cmOfficeFormModal')).hide();
+                    if (src === 'select') {
+                        document.getElementById('cmOfficeFormModal').addEventListener('hidden.bs.modal', function handler() {
+                            this.removeEventListener('hidden.bs.modal', handler);
+                            openOfficeSelectModal();
+                        });
+                    }
+                } else {
+                    location.reload();
+                }
+            } else {
+                errEl.textContent = data.error || 'エラーが発生しました。'; errEl.classList.remove('d-none');
+            }
         });
     });
 
@@ -1065,6 +1117,15 @@ function openInternalOfficeModal() {
     if (wrap) wrap.style.display = _selectedInternal['__other__'] ? '' : 'none';
     _updateInternalCount();
     new bootstrap.Modal(document.getElementById('internalOfficeModal')).show();
+}
+
+function toggleImRow(tr) {
+    var chk = tr.querySelector('.internal-modal-chk');
+    if (chk) {
+        chk.checked = !chk.checked;
+        if (chk.value === '__other__') toggleImOther(chk);
+        _updateInternalCount();
+    }
 }
 
 function toggleImOther(chk) {
@@ -1257,6 +1318,86 @@ document.addEventListener('DOMContentLoaded', function() {
         c.addEventListener('change', _updateModalCount);
     });
 });
+
+function _cmAddItemToManagerAccordion(data) {
+    var accordion = document.getElementById('cmAccordion');
+    if (!accordion) return;
+    var id   = data.id;
+    var name = data.name || '';
+    var persons = (data.persons || []).map(function(p){ return p + ' 様'; }).join('、') || '-';
+    var item = document.createElement('div');
+    item.className = 'accordion-item cm-office-item';
+    item.dataset.pk = id;
+    item.dataset.name = name;
+    item.dataset.furigana = data.furigana || '';
+    item.dataset.officeNumber = '';
+    item.dataset.postalCode = '';
+    item.dataset.address = '';
+    item.dataset.phone = data.phone || '';
+    item.dataset.fax = data.fax || '';
+    item.dataset.persons = (data.persons || []).join(',');
+    item.dataset.serviceType = data.service_type || '';
+    item.innerHTML = '<h2 class="accordion-header">'
+        + '<button class="accordion-button collapsed py-2" type="button" data-bs-toggle="collapse" data-bs-target="#cmOffice' + id + '">'
+        + '<span><span class="fw-bold">' + _escHtml(name) + '</span></span></button></h2>'
+        + '<div id="cmOffice' + id + '" class="accordion-collapse collapse">'
+        + '<div class="accordion-body py-2">'
+        + '<table class="table table-sm table-bordered mb-2" style="font-size:0.85rem;">'
+        + '<tr><th style="width:100px;" class="table-light">事業所種類</th><td>' + _escHtml(data.service_type || '-') + '</td></tr>'
+        + '<tr><th class="table-light">電話番号</th><td>' + _escHtml(data.phone || '-') + '</td></tr>'
+        + '<tr><th class="table-light">FAX番号</th><td>' + _escHtml(data.fax || '-') + '</td></tr>'
+        + '<tr><th class="table-light">担当者名</th><td>' + _escHtml(persons) + '</td></tr>'
+        + '</table>'
+        + '<div class="text-end">'
+        + '<button type="button" class="btn btn-sm btn-outline-secondary" onclick="cmOpenEdit(' + id + ')"><i class="fas fa-edit me-1"></i>編集</button>'
+        + ' <button type="button" class="btn btn-sm btn-outline-danger" onclick="cmConfirmDelete(' + id + ',\'' + _escHtml(name) + '\')"><i class="fas fa-trash me-1"></i>削除</button>'
+        + '</div></div></div>';
+    accordion.appendChild(item);
+}
+
+function _cmAddRowToSelectModal(data) {
+    var tbody = document.getElementById('office_modal_list');
+    if (!tbody) return;
+    var id      = data.id;
+    var name    = data.name || '';
+    var furigana= data.furigana || '';
+    var svc     = data.service_type || '';
+    var phone   = data.phone || '';
+    var fax     = data.fax || '';
+    var persons = data.persons || [];
+
+    var bg = _SVC_COLORS[svc] || '#f5f5f5';
+    var badge = svc ? '<span class="svc-type-badge" style="background-color:' + bg + ';">' + _escHtml(svc) + '</span>' : '<span class="text-muted">―</span>';
+    var personHtml = persons.slice(0, 2).map(function(p){ return _escHtml(p) + ' 様'; }).join('<br>')
+                   + (persons.length > 2 ? ' <span class="text-muted">他</span>' : '');
+
+    var tr = document.createElement('tr');
+    tr.className = 'office-modal-item';
+    tr.style.cursor = 'pointer';
+    tr.dataset.name = name;
+    tr.dataset.svc  = svc;
+    tr.setAttribute('onclick', 'toggleOfficeRow(this)');
+    tr.innerHTML = '<td class="text-center align-middle">'
+        + '<input class="form-check-input office-modal-check" type="checkbox" id="modal_office_' + id + '" value="' + id + '"'
+        + ' data-id="' + id + '" data-name="' + _escHtml(name) + '" data-furigana="' + _escHtml(furigana) + '"'
+        + ' data-svc="' + _escHtml(svc) + '" data-phone="' + _escHtml(phone) + '" data-fax="' + _escHtml(fax) + '"'
+        + ' data-persons="' + persons.map(_escHtml).join(',') + '" onclick="event.stopPropagation()">'
+        + '</td>'
+        + '<td class="align-middle"><label for="modal_office_' + id + '" style="cursor:pointer;margin:0;" onclick="event.stopPropagation()">'
+        + (furigana ? '<small class="text-muted d-block" style="font-size:0.75rem;">' + _escHtml(furigana) + '</small>' : '')
+        + '<span class="fw-bold">' + _escHtml(name) + '</span></label></td>'
+        + '<td class="align-middle">' + badge + '</td>'
+        + '<td class="align-middle" style="font-size:0.85rem;white-space:nowrap;">'
+        + '<i class="fas fa-phone me-1 text-muted" style="font-size:0.75rem;"></i>' + _escHtml(phone || '―') + '<br>'
+        + '<i class="fas fa-fax me-1 text-muted" style="font-size:0.75rem;"></i><span class="text-muted">' + _escHtml(fax || '―') + '</span>'
+        + '</td>'
+        + '<td class="align-middle" style="font-size:0.85rem;">' + (personHtml || '<span class="text-muted">―</span>') + '</td>';
+    tbody.appendChild(tr);
+
+    // チェックイベント登録
+    var chk = tr.querySelector('.office-modal-check');
+    if (chk) chk.addEventListener('change', _updateModalCount);
+}
 
 var _SVC_COLORS = {
     '訪問介護':           '#fff9c4',
