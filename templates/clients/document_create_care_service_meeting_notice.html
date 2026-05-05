@@ -180,7 +180,7 @@
 
 <!-- 事業所選択モーダル -->
 <div class="modal fade" id="officeSelectModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
-    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-dialog modal-dialog-scrollable" style="max-width:700px;">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title"><i class="fas fa-list me-2"></i>事業所を選択</h5>
@@ -190,7 +190,7 @@
                 <!-- 検索 -->
                 <div class="mb-2">
                     <input type="text" id="office_modal_search" class="form-control"
-                           placeholder="事業所名で検索..." oninput="applyOfficeFilter()">
+                           placeholder="事業所名・業種で検索..." oninput="applyOfficeFilter()">
                 </div>
                 <!-- サービス種別フィルター -->
                 <div class="d-flex flex-wrap gap-1 mb-3" id="svc_filter_btns">
@@ -202,32 +202,47 @@
                     {% endif %}
                     {% endfor %}
                 </div>
-                <div id="office_modal_list">
-                    {% regroup care_offices by service_type as grouped_offices %}
-                    {% for group in grouped_offices %}
-                    <div class="office-group mb-3" data-group="{{ group.grouper }}">
-                        <div class="fw-bold text-muted small border-bottom pb-1 mb-2">
-                            {{ group.grouper|default:"（種別未設定）" }}
-                        </div>
-                        {% for o in group.list %}
-                        <div class="form-check office-modal-item ps-4 py-1"
-                             data-name="{{ o.name }}" data-id="{{ o.id }}">
-                            <input class="form-check-input office-modal-check" type="checkbox"
-                                   id="modal_office_{{ o.id }}" value="{{ o.id }}"
-                                   data-id="{{ o.id }}"
-                                   data-name="{{ o.name }}"
-                                   data-fax="{{ o.fax }}">
-                            <label class="form-check-label w-100" for="modal_office_{{ o.id }}" style="cursor:pointer;">
-                                <span class="fw-bold">{{ o.name }}</span>
-                                {% if o.persons %}<span class="text-muted small ms-2">{{ o.persons|join:"・" }}</span>{% endif %}
-                                {% if o.fax %}<span class="text-muted small ms-2"><i class="fas fa-fax"></i> {{ o.fax }}</span>{% endif %}
-                            </label>
-                        </div>
-                        {% endfor %}
-                    </div>
-                    {% empty %}
-                    <p class="text-muted text-center py-3">事業所が登録されていません</p>
-                    {% endfor %}
+                <!-- 事業所テーブル -->
+                <div class="table-responsive">
+                    <table class="table table-hover table-bordered mb-0" style="font-size:0.9rem;">
+                        <thead>
+                            <tr style="background-color:#f5f5f5;">
+                                <th style="width:40px;"></th>
+                                <th>事業所名</th>
+                                <th style="width:130px;">業種</th>
+                                <th style="width:150px;">電話番号 / FAX</th>
+                            </tr>
+                        </thead>
+                        <tbody id="office_modal_list">
+                            {% for o in care_offices %}
+                            <tr class="office-modal-item" style="cursor:pointer;"
+                                data-name="{{ o.name }}" data-svc="{{ o.service_type }}"
+                                onclick="toggleOfficeRow(this)">
+                                <td class="text-center align-middle">
+                                    <input class="form-check-input office-modal-check" type="checkbox"
+                                           id="modal_office_{{ o.id }}" value="{{ o.id }}"
+                                           data-id="{{ o.id }}"
+                                           data-name="{{ o.name }}"
+                                           data-fax="{{ o.fax }}"
+                                           onclick="event.stopPropagation()">
+                                </td>
+                                <td class="align-middle">
+                                    <label for="modal_office_{{ o.id }}" style="cursor:pointer;margin:0;" onclick="event.stopPropagation()">
+                                        <span class="fw-bold">{{ o.name }}</span>
+                                        {% if o.persons %}<br><small class="text-muted">{{ o.persons|join:"・" }}</small>{% endif %}
+                                    </label>
+                                </td>
+                                <td class="align-middle">{{ o.service_type|default:"―" }}</td>
+                                <td class="align-middle" style="font-size:0.85rem; white-space:nowrap;">
+                                    {{ o.phone|default:"―" }}<br>
+                                    <span class="text-muted">{{ o.fax|default:"―" }}</span>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="4" class="text-center text-muted py-3">事業所が登録されていません</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
             </div>
             <div class="modal-footer justify-content-between">
@@ -711,14 +726,19 @@ function applyOfficeFilter() {
 
     document.querySelectorAll('.office-modal-item').forEach(function(item) {
         var name     = (item.dataset.name || '').toLowerCase();
-        var matchQ   = !q   || name.includes(q);
-        var matchSvc = !svc || item.closest('.office-group').dataset.group === svc;
+        var svcType  = (item.dataset.svc  || '').toLowerCase();
+        var matchQ   = !q   || name.includes(q) || svcType.includes(q);
+        var matchSvc = !svc || item.dataset.svc === svc;
         item.style.display = (matchQ && matchSvc) ? '' : 'none';
     });
-    document.querySelectorAll('.office-group').forEach(function(g) {
-        var visible = Array.from(g.querySelectorAll('.office-modal-item')).some(function(i){ return i.style.display !== 'none'; });
-        g.style.display = visible ? '' : 'none';
-    });
+}
+
+function toggleOfficeRow(tr) {
+    var chk = tr.querySelector('.office-modal-check');
+    if (chk) {
+        chk.checked = !chk.checked;
+        _updateModalCount();
+    }
 }
 
 document.addEventListener('DOMContentLoaded', function() {
