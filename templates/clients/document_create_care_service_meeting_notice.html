@@ -271,10 +271,9 @@
                                     <span class="text-muted">―</span>
                                     {% endif %}
                                 </td>
-                                <td class="align-middle" style="font-size:0.85rem; white-space:nowrap;">
-                                    <i class="fas fa-phone me-1 text-muted" style="font-size:0.75rem;"></i>{{ o.phone|default:"―" }}<br>
+                                <td class="align-middle" style="font-size:0.85rem;">
+                                    <i class="fas fa-phone me-1 text-muted" style="font-size:0.75rem;"></i>{{ o.phone|default:"―" }}{% if o.persons %} <small class="text-muted ms-2"><i class="fas fa-user me-1" style="font-size:0.7rem;"></i>{% for p in o.persons|slice:":2" %}{% if not forloop.first %}・{% endif %}{{ p }}{% endfor %}{% if o.persons|length > 2 %} 他{% endif %}</small>{% endif %}<br>
                                     <i class="fas fa-fax me-1 text-muted" style="font-size:0.75rem;"></i><span class="text-muted">{{ o.fax|default:"―" }}</span>
-                                    {% if o.persons %}<br><small class="text-muted"><i class="fas fa-user me-1" style="font-size:0.7rem;"></i>{% for p in o.persons|slice:":2" %}{% if not forloop.first %}・{% endif %}{{ p }}{% endfor %}{% if o.persons|length > 2 %} 他{% endif %}</small>{% endif %}
                                 </td>
                             </tr>
                             {% empty %}
@@ -909,8 +908,9 @@ function _renderSelectedTable() {
         // 担当者プルダウン（常にselect表示）
         var personOpts = '<option value="">―</option>';
         o.persons.forEach(function(p) {
+            var display = _escHtml(p) + ' 様';
             var sel = (o.person === p) ? ' selected' : '';
-            personOpts += '<option value="' + _escHtml(p) + '"' + sel + '>' + _escHtml(p) + '</option>';
+            personOpts += '<option value="' + _escHtml(p) + '"' + sel + '>' + display + '</option>';
         });
         var personCell = '<select class="form-select form-select-sm" onchange="_onPersonChange(\'' + o.id + '\', this.value)">' + personOpts + '</select>';
 

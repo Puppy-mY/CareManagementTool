@@ -4950,7 +4950,7 @@ def care_service_office_create(request):
     address       = request.POST.get('address', '').strip()
     phone         = request.POST.get('phone', '').strip()
     fax           = request.POST.get('fax', '').strip()
-    persons       = [p.strip() for p in request.POST.getlist('person_name') if p.strip()]
+    persons       = [p.strip().replace('　', ' ') for p in request.POST.getlist('person_name') if p.strip()]
     if not name:
         return JsonResponse({'success': False, 'error': '事業所名は必須です。'})
     if not service_type:
@@ -4983,7 +4983,7 @@ def care_service_office_update(request, pk):
     office.address       = request.POST.get('address', office.address).strip()
     office.phone         = request.POST.get('phone', office.phone).strip()
     office.fax           = request.POST.get('fax', office.fax).strip()
-    office.persons       = [p.strip() for p in request.POST.getlist('person_name') if p.strip()]
+    office.persons       = [p.strip().replace('　', ' ') for p in request.POST.getlist('person_name') if p.strip()]
     if not office.name:
         return JsonResponse({'success': False, 'error': '事業所名は必須です。'})
     if not office.service_type:
