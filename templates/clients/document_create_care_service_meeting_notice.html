@@ -906,15 +906,13 @@ function _renderSelectedTable() {
         // 電話・FAX
         var telCell = '<i class="fas fa-phone me-1 text-muted" style="font-size:0.75rem;"></i>' + _escHtml(o.phone || '―')
                     + '<br><i class="fas fa-fax me-1 text-muted" style="font-size:0.75rem;"></i><span class="text-muted">' + _escHtml(o.fax || '―') + '</span>';
-        // 担当者プルダウン
+        // 担当者プルダウン（常にselect表示）
         var personOpts = '<option value="">―</option>';
         o.persons.forEach(function(p) {
             var sel = (o.person === p) ? ' selected' : '';
             personOpts += '<option value="' + _escHtml(p) + '"' + sel + '>' + _escHtml(p) + '</option>';
         });
-        var personCell = o.persons.length
-            ? '<select class="form-select form-select-sm" onchange="_onPersonChange(\'' + o.id + '\', this.value)">' + personOpts + '</select>'
-            : '<span class="text-muted small">―</span>';
+        var personCell = '<select class="form-select form-select-sm" onchange="_onPersonChange(\'' + o.id + '\', this.value)">' + personOpts + '</select>';
 
         rows += '<tr>'
               + '<td class="align-middle">' + nameCell + '</td>'
