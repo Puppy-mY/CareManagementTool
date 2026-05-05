@@ -412,9 +412,6 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title"><i class="fas fa-list me-2"></i>事業所を選択</h5>
-                <button type="button" class="btn btn-outline-secondary btn-sm me-2" onclick="cmOpenCreateFromSelect()">
-                    <i class="fas fa-plus me-1"></i>新規登録
-                </button>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
@@ -424,7 +421,7 @@
                            placeholder="事業所名・業種で検索..." oninput="applyOfficeFilter()">
                 </div>
                 <!-- サービス種別フィルター -->
-                <div class="d-flex flex-wrap gap-1 mb-3" id="svc_filter_btns">
+                <div class="d-flex flex-wrap gap-1 mb-3 align-items-center" id="svc_filter_btns">
                     <button type="button" class="btn btn-sm btn-secondary svc-filter-btn active" data-svc="" data-color="#f5f5f5">すべて</button>
                     {% regroup care_offices by service_type as grouped_for_filter %}
                     {% for group in grouped_for_filter %}
@@ -434,6 +431,9 @@
                         data-color="{% if group.grouper == '訪問介護' %}#fff9c4{% elif group.grouper == '訪問看護' %}#ffd5d5{% elif group.grouper == '訪問入浴介護' %}#d5eaf9{% elif group.grouper == '訪問リハビリテーション' %}#ffebee{% elif group.grouper == '通所介護' or group.grouper == '地域密着型通所介護' %}#e8f5e8{% elif group.grouper == '通所リハビリテーション' %}#fff3e0{% elif group.grouper == '福祉用具貸与' or group.grouper == '特定福祉用具販売' %}#f3e5f5{% elif group.grouper == '短期入所生活介護' or group.grouper == '短期入所療養介護' or group.grouper == '小規模多機能型居宅介護' %}#f5f0e8{% else %}#f5f5f5{% endif %}">{{ group.grouper }}</button>
                     {% endif %}
                     {% endfor %}
+                    <button type="button" class="btn btn-sm btn-outline-secondary ms-auto" onclick="cmOpenCreateFromSelect()">
+                        <i class="fas fa-plus me-1"></i>新規登録
+                    </button>
                 </div>
                 <!-- 事業所テーブル -->
                 <div class="table-responsive">
