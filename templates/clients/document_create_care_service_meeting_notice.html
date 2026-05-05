@@ -231,48 +231,68 @@
                         <i class="fas fa-plus me-1"></i>新規登録
                     </button>
                 </div>
-                <!-- 一覧アコーディオン -->
-                <div class="accordion accordion-flush" id="cmAccordion">
-                    {% for office in care_offices %}
-                    <div class="accordion-item cm-office-item"
-                         data-pk="{{ office.pk }}"
-                         data-name="{{ office.name }}"
-                         data-furigana="{{ office.furigana|default:'' }}"
-                         data-office-number="{{ office.office_number|default:'' }}"
-                         data-postal-code="{{ office.postal_code|default:'' }}"
-                         data-address="{{ office.address|default:'' }}"
-                         data-phone="{{ office.phone|default:'' }}"
-                         data-fax="{{ office.fax|default:'' }}"
-                         data-persons="{{ office.persons|join:',' }}"
-                         data-service-type="{{ office.service_type|default:'' }}">
-                        <h2 class="accordion-header">
-                            <button class="accordion-button collapsed py-2" type="button"
-                                    data-bs-toggle="collapse" data-bs-target="#cmOffice{{ office.pk }}">
-                                <span>
+                <!-- 一覧テーブル -->
+                <div class="table-responsive">
+                    <table class="table table-hover table-bordered mb-0" style="font-size:0.9rem;" id="cmTable">
+                        <thead>
+                            <tr>
+                                <th style="background-color:#f5f5f5;">サービス事業所</th>
+                                <th style="width:90px; background-color:#f5f5f5;">業種</th>
+                                <th style="width:150px; background-color:#f5f5f5;">電話 / FAX</th>
+                                <th style="width:120px; background-color:#f5f5f5;">担当者</th>
+                                <th style="width:90px; background-color:#f5f5f5;">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cmAccordion">
+                            {% for office in care_offices %}
+                            <tr class="cm-office-item"
+                                data-pk="{{ office.pk }}"
+                                data-name="{{ office.name }}"
+                                data-furigana="{{ office.furigana|default:'' }}"
+                                data-office-number="{{ office.office_number|default:'' }}"
+                                data-postal-code="{{ office.postal_code|default:'' }}"
+                                data-address="{{ office.address|default:'' }}"
+                                data-phone="{{ office.phone|default:'' }}"
+                                data-fax="{{ office.fax|default:'' }}"
+                                data-persons="{{ office.persons|join:',' }}"
+                                data-service-type="{{ office.service_type|default:'' }}">
+                                <td class="align-middle">
+                                    {% if office.office_number %}<small class="text-muted d-block" style="font-size:0.72rem;">{{ office.office_number }}</small>{% endif %}
                                     {% if office.furigana %}<small class="text-muted d-block" style="font-size:0.75rem;">{{ office.furigana }}</small>{% endif %}
                                     <span class="fw-bold">{{ office.name }}</span>
-                                </span>
-                            </button>
-                        </h2>
-                        <div id="cmOffice{{ office.pk }}" class="accordion-collapse collapse">
-                            <div class="accordion-body py-2">
-                                <table class="table table-sm table-bordered mb-2" style="font-size:0.85rem;">
-                                    <tr><th style="width:100px;" class="table-light">事業所種類</th><td>{{ office.service_type|default:"-" }}</td></tr>
-                                    <tr><th class="table-light">事業所番号</th><td>{{ office.office_number|default:"-" }}</td></tr>
-                                    <tr><th class="table-light">電話番号</th><td>{{ office.phone|default:"-" }}</td></tr>
-                                    <tr><th class="table-light">FAX番号</th><td>{{ office.fax|default:"-" }}</td></tr>
-                                    <tr><th class="table-light">担当者名</th><td>{% if office.persons %}{% for p in office.persons %}{% if not forloop.first %}、{% endif %}{{ p }} 様{% endfor %}{% else %}-{% endif %}</td></tr>
-                                </table>
-                                <div class="text-end">
-                                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="cmOpenEdit({{ office.pk }})"><i class="fas fa-edit me-1"></i>編集</button>
-                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="cmConfirmDelete({{ office.pk }},'{{ office.name|escapejs }}')"><i class="fas fa-trash me-1"></i>削除</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    {% empty %}
-                    <p class="text-muted text-center py-3">事業所が登録されていません</p>
-                    {% endfor %}
+                                </td>
+                                <td class="align-middle">
+                                    {% if office.service_type %}
+                                    <span class="svc-type-badge"
+                                        {% if office.service_type == '訪問介護' %}style="background-color:#fff9c4;"
+                                        {% elif office.service_type == '訪問看護' %}style="background-color:#ffd5d5;"
+                                        {% elif office.service_type == '訪問入浴介護' %}style="background-color:#d5eaf9;"
+                                        {% elif office.service_type == '訪問リハビリテーション' %}style="background-color:#ffebee;"
+                                        {% elif office.service_type == '通所介護' or office.service_type == '地域密着型通所介護' %}style="background-color:#e8f5e8;"
+                                        {% elif office.service_type == '通所リハビリテーション' %}style="background-color:#fff3e0;"
+                                        {% elif office.service_type == '福祉用具貸与' or office.service_type == '特定福祉用具販売' %}style="background-color:#f3e5f5;"
+                                        {% elif office.service_type == '短期入所生活介護' or office.service_type == '短期入所療養介護' or office.service_type == '小規模多機能型居宅介護' %}style="background-color:#f5f0e8;"
+                                        {% else %}style="background-color:#f5f5f5;"{% endif %}>{{ office.service_type }}</span>
+                                    {% else %}<span class="text-muted">―</span>{% endif %}
+                                </td>
+                                <td class="align-middle" style="font-size:0.85rem; white-space:nowrap;">
+                                    <i class="fas fa-phone me-1 text-muted" style="font-size:0.75rem;"></i>{{ office.phone|default:"―" }}<br>
+                                    <i class="fas fa-fax me-1 text-muted" style="font-size:0.75rem;"></i><span class="text-muted">{{ office.fax|default:"―" }}</span>
+                                </td>
+                                <td class="align-middle" style="font-size:0.85rem;">
+                                    {% if office.persons %}{% for p in office.persons|slice:":2" %}{% if not forloop.first %}<br>{% endif %}{{ p }} 様{% if forloop.last and office.persons|length > 2 %} <span class="text-muted">他</span>{% endif %}{% endfor %}
+                                    {% else %}<span class="text-muted">―</span>{% endif %}
+                                </td>
+                                <td class="align-middle text-center">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="cmOpenEdit({{ office.pk }})" title="編集"><i class="fas fa-edit"></i></button>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="cmConfirmDelete({{ office.pk }},'{{ office.name|escapejs }}')" title="削除"><i class="fas fa-trash"></i></button>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="5" class="text-center text-muted py-3">事業所が登録されていません</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
             </div>
             <div class="modal-footer">
@@ -1010,10 +1030,11 @@ function openCareOfficeManager() {
 function cmFilter() {
     var q = document.getElementById('cmSearch').value.toLowerCase();
     document.querySelectorAll('.cm-office-item').forEach(function(item) {
-        var name     = (item.dataset.name     || '').toLowerCase();
-        var furigana = (item.dataset.furigana || '').toLowerCase();
-        var persons  = (item.dataset.persons  || '').toLowerCase();
-        item.style.display = (!q || name.includes(q) || furigana.includes(q) || persons.includes(q)) ? '' : 'none';
+        var name     = (item.dataset.name        || '').toLowerCase();
+        var furigana = (item.dataset.furigana    || '').toLowerCase();
+        var persons  = (item.dataset.persons     || '').toLowerCase();
+        var num      = (item.dataset.officeNumber|| '').toLowerCase();
+        item.style.display = (!q || name.includes(q) || furigana.includes(q) || persons.includes(q) || num.includes(q)) ? '' : 'none';
     });
 }
 
@@ -1355,39 +1376,32 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function _cmAddItemToManagerAccordion(data) {
-    var accordion = document.getElementById('cmAccordion');
-    if (!accordion) return;
-    var id   = data.id;
-    var name = data.name || '';
-    var persons = (data.persons || []).map(function(p){ return p + ' 様'; }).join('、') || '-';
-    var item = document.createElement('div');
-    item.className = 'accordion-item cm-office-item';
-    item.dataset.pk = id;
-    item.dataset.name = name;
-    item.dataset.furigana = data.furigana || '';
-    item.dataset.officeNumber = '';
-    item.dataset.postalCode = '';
-    item.dataset.address = '';
-    item.dataset.phone = data.phone || '';
-    item.dataset.fax = data.fax || '';
-    item.dataset.persons = (data.persons || []).join(',');
-    item.dataset.serviceType = data.service_type || '';
-    item.innerHTML = '<h2 class="accordion-header">'
-        + '<button class="accordion-button collapsed py-2" type="button" data-bs-toggle="collapse" data-bs-target="#cmOffice' + id + '">'
-        + '<span><span class="fw-bold">' + _escHtml(name) + '</span></span></button></h2>'
-        + '<div id="cmOffice' + id + '" class="accordion-collapse collapse">'
-        + '<div class="accordion-body py-2">'
-        + '<table class="table table-sm table-bordered mb-2" style="font-size:0.85rem;">'
-        + '<tr><th style="width:100px;" class="table-light">事業所種類</th><td>' + _escHtml(data.service_type || '-') + '</td></tr>'
-        + '<tr><th class="table-light">電話番号</th><td>' + _escHtml(data.phone || '-') + '</td></tr>'
-        + '<tr><th class="table-light">FAX番号</th><td>' + _escHtml(data.fax || '-') + '</td></tr>'
-        + '<tr><th class="table-light">担当者名</th><td>' + _escHtml(persons) + '</td></tr>'
-        + '</table>'
-        + '<div class="text-end">'
-        + '<button type="button" class="btn btn-sm btn-outline-secondary" onclick="cmOpenEdit(' + id + ')"><i class="fas fa-edit me-1"></i>編集</button>'
-        + ' <button type="button" class="btn btn-sm btn-outline-danger" onclick="cmConfirmDelete(' + id + ',\'' + _escHtml(name) + '\')"><i class="fas fa-trash me-1"></i>削除</button>'
-        + '</div></div></div>';
-    accordion.appendChild(item);
+    var tbody = document.getElementById('cmAccordion');
+    if (!tbody) return;
+    var id  = data.id;
+    var svc = data.service_type || '';
+    var bg  = _SVC_COLORS[svc] || '#f5f5f5';
+    var badge = svc ? '<span class="svc-type-badge" style="background-color:' + bg + ';">' + _escHtml(svc) + '</span>' : '<span class="text-muted">―</span>';
+    var persons = (data.persons || []).slice(0, 2).map(function(p){ return _escHtml(p) + ' 様'; }).join('<br>')
+                + ((data.persons || []).length > 2 ? ' <span class="text-muted">他</span>' : '');
+    var tr = document.createElement('tr');
+    tr.className = 'cm-office-item';
+    tr.dataset.pk = id; tr.dataset.name = data.name || '';
+    tr.dataset.furigana = data.furigana || ''; tr.dataset.officeNumber = '';
+    tr.dataset.phone = data.phone || ''; tr.dataset.fax = data.fax || '';
+    tr.dataset.persons = (data.persons || []).join(','); tr.dataset.serviceType = svc;
+    tr.innerHTML = '<td class="align-middle">'
+        + (data.furigana ? '<small class="text-muted d-block" style="font-size:0.75rem;">' + _escHtml(data.furigana) + '</small>' : '')
+        + '<span class="fw-bold">' + _escHtml(data.name || '') + '</span></td>'
+        + '<td class="align-middle">' + badge + '</td>'
+        + '<td class="align-middle" style="font-size:0.85rem;white-space:nowrap;">'
+        + '<i class="fas fa-phone me-1 text-muted" style="font-size:0.75rem;"></i>' + _escHtml(data.phone || '―') + '<br>'
+        + '<i class="fas fa-fax me-1 text-muted" style="font-size:0.75rem;"></i><span class="text-muted">' + _escHtml(data.fax || '―') + '</span></td>'
+        + '<td class="align-middle" style="font-size:0.85rem;">' + (persons || '<span class="text-muted">―</span>') + '</td>'
+        + '<td class="align-middle text-center">'
+        + '<button type="button" class="btn btn-sm btn-outline-secondary" onclick="cmOpenEdit(' + id + ')" title="編集"><i class="fas fa-edit"></i></button> '
+        + '<button type="button" class="btn btn-sm btn-outline-danger" onclick="cmConfirmDelete(' + id + ',\'' + _escHtml(data.name || '') + '\')" title="削除"><i class="fas fa-trash"></i></button></td>';
+    tbody.appendChild(tr);
 }
 
 function _cmAddRowToSelectModal(data) {
@@ -1576,6 +1590,10 @@ document.addEventListener('DOMContentLoaded', function() { _renderSelectedTable(
 #internalOfficeModal .table th { vertical-align: middle; }
 #officeSelectModal tbody tr.office-modal-item:hover { background-color: rgba(0,0,0,0.04); }
 #internalOfficeModal tbody tr:hover { background-color: rgba(0,0,0,0.04); }
+#careOfficeManagerModal .table-bordered th,
+#careOfficeManagerModal .table-bordered td { border-left: none; border-right: none; }
+#careOfficeManagerModal .table td,
+#careOfficeManagerModal .table th { vertical-align: middle; }
 .svc-type-badge {
     display: inline-block;
     padding: 3px 7px;
