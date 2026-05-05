@@ -1074,21 +1074,35 @@ function _cmDoOpenCreate() {
 
 function cmOpenEdit(pk) {
     var item = document.querySelector('.cm-office-item[data-pk="' + pk + '"]');
-    document.getElementById('cm_pk').value = pk;
-    document.getElementById('cmFormTitle').textContent = '事業所編集';
-    document.getElementById('cm_name').value = item.dataset.name || '';
-    document.getElementById('cm_furigana').value = item.dataset.furigana || '';
-    document.getElementById('cm_office_number').value = item.dataset.officeNumber || '';
-    document.getElementById('cm_postal_code').value = item.dataset.postalCode || '';
-    document.getElementById('cm_address').value = item.dataset.address || '';
-    document.getElementById('cm_phone').value = item.dataset.phone || '';
-    document.getElementById('cm_fax').value = item.dataset.fax || '';
-    document.getElementById('cm_service_type').value = item.dataset.serviceType || '';
-    document.getElementById('cmFormError').classList.add('d-none');
-    document.getElementById('cm_persons_container').innerHTML = '';
-    var persons = item.dataset.persons ? item.dataset.persons.split(',').filter(Boolean) : [];
-    if (!persons.length) cmAddPerson(); else persons.forEach(function(p) { cmAddPerson(p); });
-    new bootstrap.Modal(document.getElementById('cmOfficeFormModal')).show();
+    _cmFormSource = 'manager';
+    // 管理モーダルを先に閉じる
+    var managerInst = bootstrap.Modal.getInstance(document.getElementById('careOfficeManagerModal'));
+    function _doOpenEdit() {
+        document.getElementById('cm_pk').value = pk;
+        document.getElementById('cmFormTitle').textContent = '事業所編集';
+        document.getElementById('cm_name').value = item.dataset.name || '';
+        document.getElementById('cm_furigana').value = item.dataset.furigana || '';
+        document.getElementById('cm_office_number').value = item.dataset.officeNumber || '';
+        document.getElementById('cm_postal_code').value = item.dataset.postalCode || '';
+        document.getElementById('cm_address').value = item.dataset.address || '';
+        document.getElementById('cm_phone').value = item.dataset.phone || '';
+        document.getElementById('cm_fax').value = item.dataset.fax || '';
+        document.getElementById('cm_service_type').value = item.dataset.serviceType || '';
+        document.getElementById('cmFormError').classList.add('d-none');
+        document.getElementById('cm_persons_container').innerHTML = '';
+        var persons = item.dataset.persons ? item.dataset.persons.split(',').filter(Boolean) : [];
+        if (!persons.length) cmAddPerson(); else persons.forEach(function(p) { cmAddPerson(p); });
+        new bootstrap.Modal(document.getElementById('cmOfficeFormModal')).show();
+    }
+    if (managerInst) {
+        managerInst.hide();
+        document.getElementById('careOfficeManagerModal').addEventListener('hidden.bs.modal', function handler() {
+            this.removeEventListener('hidden.bs.modal', handler);
+            _doOpenEdit();
+        });
+    } else {
+        _doOpenEdit();
+    }
 }
 
 function cmCloseForm() {
@@ -1108,11 +1122,25 @@ function cmCloseForm() {
 function cmConfirmDelete(pk, name) {
     _cmDeletePk = pk;
     document.getElementById('cmDeleteName').textContent = name;
-    new bootstrap.Modal(document.getElementById('cmDeleteModal')).show();
+    // 管理モーダルを先に閉じる
+    var managerInst = bootstrap.Modal.getInstance(document.getElementById('careOfficeManagerModal'));
+    if (managerInst) {
+        managerInst.hide();
+        document.getElementById('careOfficeManagerModal').addEventListener('hidden.bs.modal', function handler() {
+            this.removeEventListener('hidden.bs.modal', handler);
+            new bootstrap.Modal(document.getElementById('cmDeleteModal')).show();
+        });
+    } else {
+        new bootstrap.Modal(document.getElementById('cmDeleteModal')).show();
+    }
 }
 
 function cmCloseDelete() {
     bootstrap.Modal.getInstance(document.getElementById('cmDeleteModal')).hide();
+    document.getElementById('cmDeleteModal').addEventListener('hidden.bs.modal', function handler() {
+        this.removeEventListener('hidden.bs.modal', handler);
+        new bootstrap.Modal(document.getElementById('careOfficeManagerModal')).show();
+    });
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -1151,7 +1179,14 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                     });
                 } else {
-                    location.reload();
+                    // 編集：テーブル行を更新して管理モーダルに戻る
+                    _cmUpdateRowInManager(data);
+                    _cmFormSource = 'manager';
+                    bootstrap.Modal.getInstance(document.getElementById('cmOfficeFormModal')).hide();
+                    document.getElementById('cmOfficeFormModal').addEventListener('hidden.bs.modal', function handler() {
+                        this.removeEventListener('hidden.bs.modal', handler);
+                        new bootstrap.Modal(document.getElementById('careOfficeManagerModal')).show();
+                    });
                 }
             } else {
                 errEl.textContent = data.error || 'エラーが発生しました。'; errEl.classList.remove('d-none');
@@ -1161,12 +1196,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
     document.getElementById('cmDeleteConfirmBtn').addEventListener('click', function() {
         if (!_cmDeletePk) return;
-        var csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-        fetch('/clients/care-service-offices/' + _cmDeletePk + '/delete/', {
+        var pk = _cmDeletePk;
+        fetch('/clients/care-service-offices/' + pk + '/delete/', {
             method: 'POST', headers: { 'X-CSRFToken': csrfToken },
         }).then(r => r.json()).then(function(data) {
-            if (data.success) { location.reload(); }
-            else { alert(data.error); }
+            if (data.success) {
+                // テーブルから行を削除して管理モーダルに戻る
+                var row = document.querySelector('.cm-office-item[data-pk="' + pk + '"]');
+                if (row) row.remove();
+                bootstrap.Modal.getInstance(document.getElementById('cmDeleteModal')).hide();
+                document.getElementById('cmDeleteModal').addEventListener('hidden.bs.modal', function handler() {
+                    this.removeEventListener('hidden.bs.modal', handler);
+                    new bootstrap.Modal(document.getElementById('careOfficeManagerModal')).show();
+                });
+            } else { alert(data.error); }
         });
     });
 });
@@ -1374,6 +1417,35 @@ document.addEventListener('DOMContentLoaded', function() {
         c.addEventListener('change', _updateModalCount);
     });
 });
+
+function _cmUpdateRowInManager(data) {
+    var row = document.querySelector('.cm-office-item[data-pk="' + data.id + '"]');
+    if (!row) return;
+    // data属性を更新
+    row.dataset.name = data.name || '';
+    row.dataset.furigana = data.furigana || '';
+    row.dataset.officeNumber = data.office_number || '';
+    row.dataset.phone = data.phone || '';
+    row.dataset.fax = data.fax || '';
+    row.dataset.persons = (data.persons || []).join(',');
+    row.dataset.serviceType = data.service_type || '';
+    // セルを再描画
+    var svc = data.service_type || '';
+    var bg  = _SVC_COLORS[svc] || '#f5f5f5';
+    var badge = svc ? '<span class="svc-type-badge" style="background-color:' + bg + ';">' + _escHtml(svc) + '</span>' : '<span class="text-muted">―</span>';
+    var persons = (data.persons || []).slice(0, 2).map(function(p){ return _escHtml(p) + ' 様'; }).join('<br>')
+                + ((data.persons || []).length > 2 ? ' <span class="text-muted">他</span>' : '');
+    var cells = row.querySelectorAll('td');
+    if (cells[0]) cells[0].innerHTML =
+        (data.office_number ? '<small class="text-muted d-block" style="font-size:0.72rem;">' + _escHtml(data.office_number) + '</small>' : '')
+        + (data.furigana ? '<small class="text-muted d-block" style="font-size:0.75rem;">' + _escHtml(data.furigana) + '</small>' : '')
+        + '<span class="fw-bold">' + _escHtml(data.name || '') + '</span>';
+    if (cells[1]) cells[1].innerHTML = badge;
+    if (cells[2]) cells[2].innerHTML =
+        '<i class="fas fa-phone me-1 text-muted" style="font-size:0.75rem;"></i>' + _escHtml(data.phone || '―') + '<br>'
+        + '<i class="fas fa-fax me-1 text-muted" style="font-size:0.75rem;"></i><span class="text-muted">' + _escHtml(data.fax || '―') + '</span>';
+    if (cells[3]) cells[3].innerHTML = persons || '<span class="text-muted">―</span>';
+}
 
 function _cmAddItemToManagerAccordion(data) {
     var tbody = document.getElementById('cmAccordion');

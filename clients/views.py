@@ -5009,7 +5009,12 @@ def care_service_office_update(request, pk):
     if not office.phone or not office.fax:
         return JsonResponse({'success': False, 'error': '電話番号とFAX番号は必須です。'})
     office.save()
-    return JsonResponse({'success': True})
+    return JsonResponse({
+        'success': True, 'id': office.id,
+        'name': office.name, 'furigana': office.furigana,
+        'service_type': office.service_type, 'office_number': office.office_number,
+        'phone': office.phone, 'fax': office.fax, 'persons': office.persons,
+    })
 
 
 @login_required
