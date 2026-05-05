@@ -4000,6 +4000,7 @@ def document_create_care_service_meeting_notice(request, client_id):
         extra_context={
             'care_offices': care_offices,
             'internal_office_choices': internal_office_choices,
+            'service_type_choices': CareServiceOffice.SERVICE_TYPE_CHOICES,
         },
     )
 

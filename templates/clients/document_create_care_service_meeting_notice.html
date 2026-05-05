@@ -132,9 +132,9 @@
                             <div class="col-12">
                                 <div class="d-flex align-items-center gap-2 mb-2">
                                     <label class="form-label fw-bold mb-0">【外部】案内を出す事業所</label>
-                                    <a href="{% url 'care_service_office_list' %}" target="_blank" class="btn btn-outline-secondary btn-sm" style="font-size:0.72rem;">
-                                        <i class="fas fa-cog me-1"></i>マスタ編集
-                                    </a>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" style="font-size:0.72rem;" onclick="openCareOfficeManager()">
+                                        <i class="fas fa-cog me-1"></i>外部事業所を編集
+                                    </button>
                                 </div>
 
                                 <!-- 選択済みテーブル表示 -->
@@ -215,6 +215,159 @@
 </div>
 
 <!-- 事業所選択モーダル -->
+<!-- 外部事業所マスタ管理モーダル -->
+<div class="modal fade" id="careOfficeManagerModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-scrollable" style="max-width:700px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-cog me-2"></i>外部事業所マスタ編集</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- 検索 + 新規 -->
+                <div class="d-flex gap-2 mb-3">
+                    <input type="text" id="cmSearch" class="form-control form-control-sm" placeholder="事業所名・フリガナ・担当者名で検索" oninput="cmFilter()">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="cmOpenCreate()" style="white-space:nowrap;">
+                        <i class="fas fa-plus me-1"></i>新規登録
+                    </button>
+                </div>
+                <!-- 一覧アコーディオン -->
+                <div class="accordion accordion-flush" id="cmAccordion">
+                    {% for office in care_offices %}
+                    <div class="accordion-item cm-office-item"
+                         data-pk="{{ office.pk }}"
+                         data-name="{{ office.name }}"
+                         data-furigana="{{ office.furigana|default:'' }}"
+                         data-office-number="{{ office.office_number|default:'' }}"
+                         data-postal-code="{{ office.postal_code|default:'' }}"
+                         data-address="{{ office.address|default:'' }}"
+                         data-phone="{{ office.phone|default:'' }}"
+                         data-fax="{{ office.fax|default:'' }}"
+                         data-persons="{{ office.persons|join:',' }}"
+                         data-service-type="{{ office.service_type|default:'' }}">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed py-2" type="button"
+                                    data-bs-toggle="collapse" data-bs-target="#cmOffice{{ office.pk }}">
+                                <span>
+                                    {% if office.furigana %}<small class="text-muted d-block" style="font-size:0.75rem;">{{ office.furigana }}</small>{% endif %}
+                                    <span class="fw-bold">{{ office.name }}</span>
+                                </span>
+                            </button>
+                        </h2>
+                        <div id="cmOffice{{ office.pk }}" class="accordion-collapse collapse">
+                            <div class="accordion-body py-2">
+                                <table class="table table-sm table-bordered mb-2" style="font-size:0.85rem;">
+                                    <tr><th style="width:100px;" class="table-light">事業所種類</th><td>{{ office.service_type|default:"-" }}</td></tr>
+                                    <tr><th class="table-light">事業所番号</th><td>{{ office.office_number|default:"-" }}</td></tr>
+                                    <tr><th class="table-light">電話番号</th><td>{{ office.phone|default:"-" }}</td></tr>
+                                    <tr><th class="table-light">FAX番号</th><td>{{ office.fax|default:"-" }}</td></tr>
+                                    <tr><th class="table-light">担当者名</th><td>{% if office.persons %}{% for p in office.persons %}{% if not forloop.first %}、{% endif %}{{ p }} 様{% endfor %}{% else %}-{% endif %}</td></tr>
+                                </table>
+                                <div class="text-end">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="cmOpenEdit({{ office.pk }})"><i class="fas fa-edit me-1"></i>編集</button>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="cmConfirmDelete({{ office.pk }},'{{ office.name|escapejs }}')"><i class="fas fa-trash me-1"></i>削除</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted text-center py-3">事業所が登録されていません</p>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 外部事業所 編集・新規モーダル -->
+<div class="modal fade" id="cmOfficeFormModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="cmOfficeForm">
+                <input type="hidden" id="cm_pk" value="">
+                <div class="modal-header">
+                    <h5 class="modal-title"><span id="cmFormTitle">新規登録</span></h5>
+                    <button type="button" class="btn-close" onclick="cmCloseForm()"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="cmFormError" class="alert alert-danger d-none"></div>
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label">事業所種類 <span class="text-danger">*</span></label>
+                            <select id="cm_service_type" name="service_type" class="form-select">
+                                {% for key, label in service_type_choices %}
+                                <option value="{{ key }}">{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">事業所名 <span class="text-danger">*</span></label>
+                            <input type="text" id="cm_name" name="name" class="form-control" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">フリガナ</label>
+                            <input type="text" id="cm_furigana" name="furigana" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">事業所番号</label>
+                            <input type="text" id="cm_office_number" name="office_number" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">郵便番号</label>
+                            <input type="text" id="cm_postal_code" name="postal_code" class="form-control">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">住所</label>
+                            <input type="text" id="cm_address" name="address" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">電話番号 <span class="text-danger">*</span></label>
+                            <input type="text" id="cm_phone" name="phone" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">FAX番号 <span class="text-danger">*</span></label>
+                            <input type="text" id="cm_fax" name="fax" class="form-control" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">担当者名</label>
+                            <div id="cm_persons_container"></div>
+                            <button type="button" class="btn btn-outline-secondary btn-sm mt-1" onclick="cmAddPerson()">
+                                <i class="fas fa-plus me-1"></i>担当者を追加
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="cmCloseForm()">キャンセル</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i>保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 外部事業所 削除確認モーダル -->
+<div class="modal fade" id="cmDeleteModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h6 class="modal-title"><i class="fas fa-exclamation-triangle text-danger me-1"></i>削除確認</h6>
+                <button type="button" class="btn-close" onclick="cmCloseDelete()"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0"><strong id="cmDeleteName"></strong>を削除しますか？</p>
+            </div>
+            <div class="modal-footer py-2">
+                <button type="button" class="btn btn-sm btn-secondary" onclick="cmCloseDelete()">キャンセル</button>
+                <button type="button" class="btn btn-sm btn-danger" id="cmDeleteConfirmBtn">削除</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- 内部事業所選択モーダル -->
 <div class="modal fade" id="internalOfficeModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-scrollable" style="max-width:500px;">
@@ -780,6 +933,112 @@
 
 {% block extra_js %}
 <script>
+// ---- 外部事業所マスタ管理 ----
+var _cmDeletePk = null;
+
+function openCareOfficeManager() {
+    document.getElementById('cmSearch').value = '';
+    cmFilter();
+    new bootstrap.Modal(document.getElementById('careOfficeManagerModal')).show();
+}
+
+function cmFilter() {
+    var q = document.getElementById('cmSearch').value.toLowerCase();
+    document.querySelectorAll('.cm-office-item').forEach(function(item) {
+        var name     = (item.dataset.name     || '').toLowerCase();
+        var furigana = (item.dataset.furigana || '').toLowerCase();
+        var persons  = (item.dataset.persons  || '').toLowerCase();
+        item.style.display = (!q || name.includes(q) || furigana.includes(q) || persons.includes(q)) ? '' : 'none';
+    });
+}
+
+function cmAddPerson(val) {
+    var div = document.createElement('div');
+    div.className = 'd-flex gap-2 mb-2';
+    div.innerHTML = '<input type="text" name="person_name" class="form-control" placeholder="例: 山田　太郎" value="' + (val || '') + '">'
+                  + '<button type="button" class="btn btn-outline-danger btn-sm px-2" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>';
+    document.getElementById('cm_persons_container').appendChild(div);
+}
+
+function cmOpenCreate() {
+    document.getElementById('cm_pk').value = '';
+    document.getElementById('cmFormTitle').textContent = '新規登録';
+    document.getElementById('cmOfficeForm').reset();
+    document.getElementById('cmFormError').classList.add('d-none');
+    document.getElementById('cm_persons_container').innerHTML = '';
+    cmAddPerson();
+    new bootstrap.Modal(document.getElementById('cmOfficeFormModal')).show();
+}
+
+function cmOpenEdit(pk) {
+    var item = document.querySelector('.cm-office-item[data-pk="' + pk + '"]');
+    document.getElementById('cm_pk').value = pk;
+    document.getElementById('cmFormTitle').textContent = '事業所編集';
+    document.getElementById('cm_name').value = item.dataset.name || '';
+    document.getElementById('cm_furigana').value = item.dataset.furigana || '';
+    document.getElementById('cm_office_number').value = item.dataset.officeNumber || '';
+    document.getElementById('cm_postal_code').value = item.dataset.postalCode || '';
+    document.getElementById('cm_address').value = item.dataset.address || '';
+    document.getElementById('cm_phone').value = item.dataset.phone || '';
+    document.getElementById('cm_fax').value = item.dataset.fax || '';
+    document.getElementById('cm_service_type').value = item.dataset.serviceType || '';
+    document.getElementById('cmFormError').classList.add('d-none');
+    document.getElementById('cm_persons_container').innerHTML = '';
+    var persons = item.dataset.persons ? item.dataset.persons.split(',').filter(Boolean) : [];
+    if (!persons.length) cmAddPerson(); else persons.forEach(function(p) { cmAddPerson(p); });
+    new bootstrap.Modal(document.getElementById('cmOfficeFormModal')).show();
+}
+
+function cmCloseForm() {
+    bootstrap.Modal.getInstance(document.getElementById('cmOfficeFormModal')).hide();
+}
+
+function cmConfirmDelete(pk, name) {
+    _cmDeletePk = pk;
+    document.getElementById('cmDeleteName').textContent = name;
+    new bootstrap.Modal(document.getElementById('cmDeleteModal')).show();
+}
+
+function cmCloseDelete() {
+    bootstrap.Modal.getInstance(document.getElementById('cmDeleteModal')).hide();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    var csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    document.getElementById('cmOfficeForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        var errEl = document.getElementById('cmFormError');
+        if (!document.getElementById('cm_service_type').value) {
+            errEl.textContent = '事業所種類を選択してください。'; errEl.classList.remove('d-none'); return;
+        }
+        if (!document.getElementById('cm_phone').value.trim() || !document.getElementById('cm_fax').value.trim()) {
+            errEl.textContent = '電話番号とFAX番号は必須です。'; errEl.classList.remove('d-none'); return;
+        }
+        var pk  = document.getElementById('cm_pk').value;
+        var url = pk ? '/clients/care-service-offices/' + pk + '/update/' : '/clients/care-service-offices/create/';
+        fetch(url, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrfToken },
+            body: new FormData(this),
+        }).then(r => r.json()).then(function(data) {
+            if (data.success) { location.reload(); }
+            else { errEl.textContent = data.error || 'エラーが発生しました。'; errEl.classList.remove('d-none'); }
+        });
+    });
+
+    document.getElementById('cmDeleteConfirmBtn').addEventListener('click', function() {
+        if (!_cmDeletePk) return;
+        var csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        fetch('/clients/care-service-offices/' + _cmDeletePk + '/delete/', {
+            method: 'POST', headers: { 'X-CSRFToken': csrfToken },
+        }).then(r => r.json()).then(function(data) {
+            if (data.success) { location.reload(); }
+            else { alert(data.error); }
+        });
+    });
+});
+
 // ---- 内部事業所モーダル ----
 var _selectedInternal = {}; // { value: displayName }
 
