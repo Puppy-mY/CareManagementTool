@@ -206,11 +206,11 @@
                 <div class="table-responsive">
                     <table class="table table-hover table-bordered mb-0" style="font-size:0.9rem;">
                         <thead>
-                            <tr style="background-color:#f5f5f5;">
-                                <th style="width:40px;"></th>
-                                <th>事業所名</th>
-                                <th style="width:130px;">業種</th>
-                                <th style="width:150px;">電話番号 / FAX</th>
+                            <tr>
+                                <th style="width:40px; background-color:#f5f5f5;"></th>
+                                <th style="background-color:#f5f5f5;">事業所名</th>
+                                <th style="width:130px; background-color:#f5f5f5;">業種</th>
+                                <th style="width:150px; background-color:#f5f5f5;">電話番号 / FAX</th>
                             </tr>
                         </thead>
                         <tbody id="office_modal_list">
@@ -827,6 +827,13 @@ document.addEventListener('DOMContentLoaded', function() { _renderSelectedTags()
 
 
 <style>
+/* 事業所選択モーダルのテーブル: アセスメント一覧と同じスタイル */
+#officeSelectModal .table-bordered th,
+#officeSelectModal .table-bordered td { border-left: none; border-right: none; }
+#officeSelectModal .table td,
+#officeSelectModal .table th { vertical-align: middle; }
+#officeSelectModal tbody tr.office-modal-item:hover { background-color: rgba(0,0,0,0.04); }
+
 .svc-nav-link { display: block; padding: 0.5rem 1.2rem; font-size: 0.9rem; font-weight: 500; color: #6c757d; background-color: #ffffff; border: 1px solid #dee2e6; border-bottom: none; border-top-left-radius: 0.375rem; border-top-right-radius: 0.375rem; cursor: pointer; text-decoration: none; transition: background 0.15s, color 0.15s; }
 .svc-nav-link.active { background-color: #f5f5f5; color: #333; border-color: #999; font-weight: bold; }
 .svc-nav-link:not(.active):hover { background-color: #e9ecef; color: #495057; }
