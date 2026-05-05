@@ -3983,12 +3983,24 @@ def document_create_kyotaku_selection_confirmation(request, client_id):
 def document_create_care_service_meeting_notice(request, client_id):
     """サービス担当者会議開催のご案内 作成画面"""
     care_offices = list(CareServiceOffice.objects.all())
+    internal_office_choices = [
+        'ヘルパーステーション　安濃津ろまん',
+        '訪問看護ステーション　安濃津ろまん',
+        'デイサービス　安濃津ろまん',
+        '福祉用具貸与・販売安濃津ろまん',
+        'ローレル薬局',
+        '老人保健施設ロマン訪問リハビリ',
+        '在宅複合型施設花紬',
+    ]
     return _document_create_ltc_base(
         request, client_id,
         doc_type='care_service_meeting_notice',
         doc_name='サービス担当者会議開催のご案内',
         template_name='clients/document_create_care_service_meeting_notice.html',
-        extra_context={'care_offices': care_offices},
+        extra_context={
+            'care_offices': care_offices,
+            'internal_office_choices': internal_office_choices,
+        },
     )
 
 

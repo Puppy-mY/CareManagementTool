@@ -107,11 +107,31 @@
                     </div>
                     <div class="card-body">
 
-                        <!-- 案内を出す事業所 -->
+                        <!-- 案内を出す内部の事業所 -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-12">
+                                <label class="form-label fw-bold mb-2">案内を出す内部の事業所</label>
+
+                                <!-- 選択済み表示 -->
+                                <div id="internal_selected_wrap" class="mb-2" style="display:none;">
+                                    <div class="d-flex flex-wrap gap-2" id="internal_selected_tags"></div>
+                                </div>
+                                <div id="internal_selected_empty" class="text-muted small mb-2">未選択</div>
+
+                                <!-- hidden inputs -->
+                                <div id="internal_selected_inputs"></div>
+
+                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openInternalOfficeModal()">
+                                    <i class="fas fa-list me-1"></i>事業所を選択
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 案内を出す外部の事業所 -->
                         <div class="row g-3 mb-4">
                             <div class="col-12">
                                 <div class="d-flex align-items-center gap-2 mb-2">
-                                    <label class="form-label fw-bold mb-0">案内を出す事業所 <span class="text-danger">*</span></label>
+                                    <label class="form-label fw-bold mb-0">案内を出す外部の事業所</label>
                                     <a href="{% url 'care_service_office_list' %}" target="_blank" class="btn btn-outline-secondary btn-sm" style="font-size:0.72rem;">
                                         <i class="fas fa-cog me-1"></i>マスタ編集
                                     </a>
@@ -195,6 +215,45 @@
 </div>
 
 <!-- 事業所選択モーダル -->
+<!-- 内部事業所選択モーダル -->
+<div class="modal fade" id="internalOfficeModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-scrollable" style="max-width:500px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-list me-2"></i>内部の事業所を選択</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                {% for name in internal_office_choices %}
+                <div class="form-check py-1 border-bottom">
+                    <input class="form-check-input internal-modal-chk" type="checkbox"
+                           id="im_{{ forloop.counter }}" value="{{ name }}">
+                    <label class="form-check-label w-100" for="im_{{ forloop.counter }}" style="cursor:pointer;">{{ name }}</label>
+                </div>
+                {% endfor %}
+                <div class="form-check py-1">
+                    <input class="form-check-input internal-modal-chk" type="checkbox"
+                           id="im_other" value="__other__" onchange="toggleImOther(this)">
+                    <label class="form-check-label w-100" for="im_other" style="cursor:pointer;">その他（手入力）</label>
+                </div>
+                <div id="im_other_wrap" class="mt-2 ps-4" style="display:none;">
+                    <input type="text" id="im_other_text" class="form-control form-control-sm"
+                           style="max-width:280px;" placeholder="事業所名を入力">
+                </div>
+            </div>
+            <div class="modal-footer justify-content-between">
+                <span id="internal_select_count" class="text-muted small"></span>
+                <div>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                    <button type="button" class="btn btn-primary" onclick="confirmInternalSelection()">
+                        <i class="fas fa-check me-1"></i>確定
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="modal fade" id="officeSelectModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-scrollable" style="max-width:700px;">
         <div class="modal-content">
@@ -721,6 +780,99 @@
 
 {% block extra_js %}
 <script>
+// ---- 内部事業所モーダル ----
+var _selectedInternal = {}; // { value: displayName }
+
+function openInternalOfficeModal() {
+    document.querySelectorAll('.internal-modal-chk').forEach(function(c) {
+        c.checked = !!_selectedInternal[c.value];
+    });
+    var otherText = _selectedInternal['__other__'] || '';
+    var otherInp = document.getElementById('im_other_text');
+    if (otherInp) otherInp.value = (otherText !== '__other__') ? otherText : '';
+    var wrap = document.getElementById('im_other_wrap');
+    if (wrap) wrap.style.display = _selectedInternal['__other__'] ? '' : 'none';
+    _updateInternalCount();
+    new bootstrap.Modal(document.getElementById('internalOfficeModal')).show();
+}
+
+function toggleImOther(chk) {
+    var wrap = document.getElementById('im_other_wrap');
+    if (wrap) wrap.style.display = chk.checked ? '' : 'none';
+    if (!chk.checked) {
+        var inp = document.getElementById('im_other_text');
+        if (inp) inp.value = '';
+    }
+    _updateInternalCount();
+}
+
+function _updateInternalCount() {
+    var n = document.querySelectorAll('.internal-modal-chk:checked').length;
+    var el = document.getElementById('internal_select_count');
+    if (el) el.textContent = n > 0 ? n + '件選択中' : '';
+}
+
+function confirmInternalSelection() {
+    _selectedInternal = {};
+    document.querySelectorAll('.internal-modal-chk:checked').forEach(function(c) {
+        if (c.value === '__other__') {
+            var t = (document.getElementById('im_other_text').value || '').trim();
+            if (t) _selectedInternal['__other__'] = t;
+        } else {
+            _selectedInternal[c.value] = c.value;
+        }
+    });
+    _renderInternalTags();
+    bootstrap.Modal.getInstance(document.getElementById('internalOfficeModal')).hide();
+}
+
+function removeInternal(key) {
+    delete _selectedInternal[key];
+    var chk = document.querySelector('.internal-modal-chk[value="' + key + '"]');
+    if (chk) chk.checked = false;
+    _renderInternalTags();
+}
+
+function _renderInternalTags() {
+    var items   = Object.entries(_selectedInternal);
+    var wrap    = document.getElementById('internal_selected_wrap');
+    var empty   = document.getElementById('internal_selected_empty');
+    var tagsEl  = document.getElementById('internal_selected_tags');
+    var inputEl = document.getElementById('internal_selected_inputs');
+
+    if (!items.length) {
+        wrap.style.display  = 'none';
+        empty.style.display = '';
+        inputEl.innerHTML   = '';
+        return;
+    }
+    wrap.style.display  = '';
+    empty.style.display = 'none';
+
+    var tagsHtml  = '';
+    var inputHtml = '';
+    items.forEach(function(kv) {
+        var key = kv[0], label = kv[1];
+        tagsHtml += '<span class="badge rounded-pill border d-flex align-items-center gap-1 px-2 py-1" '
+                  + 'style="font-size:0.85rem;font-weight:normal;color:#333;background:#f8f9fa;">'
+                  + '<span>' + _escHtml(label) + '</span>'
+                  + '<button type="button" class="btn-close btn-close-sm ms-1" style="font-size:0.6rem;" '
+                  + 'onclick="removeInternal(\'' + _escHtml(key) + '\')" title="削除"></button>'
+                  + '</span>';
+        var saveVal = (key === '__other__') ? label : key;
+        inputHtml += '<input type="hidden" name="internal_office" value="' + _escHtml(saveVal) + '">';
+    });
+    tagsEl.innerHTML  = tagsHtml;
+    inputEl.innerHTML = inputHtml;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    _renderInternalTags();
+    document.querySelectorAll('.internal-modal-chk').forEach(function(c) {
+        c.addEventListener('change', _updateInternalCount);
+    });
+});
+
 // ---- ナビゲーション ----
 function goBack() {
     if (document.referrer) { history.back(); }
