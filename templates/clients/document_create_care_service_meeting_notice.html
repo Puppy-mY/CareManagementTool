@@ -232,7 +232,23 @@
                                         {% if o.persons %}<br><small class="text-muted">{{ o.persons|join:"・" }}</small>{% endif %}
                                     </label>
                                 </td>
-                                <td class="align-middle">{{ o.service_type|default:"―" }}</td>
+                                <td class="align-middle">
+                                    {% if o.service_type %}
+                                    <span class="svc-type-badge"
+                                        {% if o.service_type == '訪問介護' %}style="background-color:#fff9c4;"
+                                        {% elif o.service_type == '訪問看護' %}style="background-color:#ffd5d5;"
+                                        {% elif o.service_type == '訪問入浴介護' %}style="background-color:#d5eaf9;"
+                                        {% elif o.service_type == '訪問リハビリテーション' %}style="background-color:#ffebee;"
+                                        {% elif o.service_type == '通所介護' or o.service_type == '地域密着型通所介護' %}style="background-color:#e8f5e8;"
+                                        {% elif o.service_type == '通所リハビリテーション' %}style="background-color:#fff3e0;"
+                                        {% elif o.service_type == '福祉用具貸与' or o.service_type == '特定福祉用具販売' %}style="background-color:#f3e5f5;"
+                                        {% elif o.service_type == '短期入所生活介護' or o.service_type == '短期入所療養介護' or o.service_type == '小規模多機能型居宅介護' %}style="background-color:#f5f0e8;"
+                                        {% else %}style="background-color:#f5f5f5;"
+                                        {% endif %}>{{ o.service_type }}</span>
+                                    {% else %}
+                                    <span class="text-muted">―</span>
+                                    {% endif %}
+                                </td>
                                 <td class="align-middle" style="font-size:0.85rem; white-space:nowrap;">
                                     {{ o.phone|default:"―" }}<br>
                                     <span class="text-muted">{{ o.fax|default:"―" }}</span>
@@ -833,6 +849,15 @@ document.addEventListener('DOMContentLoaded', function() { _renderSelectedTags()
 #officeSelectModal .table td,
 #officeSelectModal .table th { vertical-align: middle; }
 #officeSelectModal tbody tr.office-modal-item:hover { background-color: rgba(0,0,0,0.04); }
+.svc-type-badge {
+    display: inline-block;
+    padding: 3px 7px;
+    border: 1px solid #999999;
+    border-radius: 4px;
+    font-size: 12px;
+    color: #000000;
+    white-space: nowrap;
+}
 
 .svc-nav-link { display: block; padding: 0.5rem 1.2rem; font-size: 0.9rem; font-weight: 500; color: #6c757d; background-color: #ffffff; border: 1px solid #dee2e6; border-bottom: none; border-top-left-radius: 0.375rem; border-top-right-radius: 0.375rem; cursor: pointer; text-decoration: none; transition: background 0.15s, color 0.15s; }
 .svc-nav-link.active { background-color: #f5f5f5; color: #333; border-color: #999; font-weight: bold; }
