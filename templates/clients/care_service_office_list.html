@@ -95,7 +95,7 @@ select.text-muted option:not([value=""]) { color: #212529; }
                   <tr><th class="table-light">住所</th><td>{{ office.address|default:"-" }}</td></tr>
                   <tr><th class="table-light">電話番号</th><td>{{ office.phone|default:"-" }}</td></tr>
                   <tr><th class="table-light">FAX番号</th><td>{{ office.fax|default:"-" }}</td></tr>
-                  <tr><th class="table-light">担当者名</th><td>{{ office.persons_display|default:"-" }}</td></tr>
+                  <tr><th class="table-light">担当者名</th><td>{% if office.persons %}{% for p in office.persons %}{% if not forloop.first %}、{% endif %}{{ p }} 様{% endfor %}{% else %}-{% endif %}</td></tr>
                 </table>
               </div>
               <div class="col-md-4 text-end">
