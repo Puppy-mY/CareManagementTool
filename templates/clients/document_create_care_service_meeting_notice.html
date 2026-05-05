@@ -125,7 +125,7 @@
                                                 <tr>
                                                     <th style="background-color:#f5f5f5;">サービス事業所</th>
                                                     <th style="width:90px; background-color:#f5f5f5;">業種</th>
-                                                    <th style="width:105px; background-color:#f5f5f5;">電話番号<br>FAX</th>
+                                                    <th style="width:200px; background-color:#f5f5f5;">電話 / FAX</th>
                                                     <th style="width:170px; background-color:#f5f5f5;">担当者（送付状宛先）</th>
                                                     <th style="width:40px; background-color:#f5f5f5;"></th>
                                                 </tr>
@@ -228,7 +228,7 @@
                                 <th style="width:40px; background-color:#f5f5f5;"></th>
                                 <th style="background-color:#f5f5f5;">サービス事業所</th>
                                 <th style="width:130px; background-color:#f5f5f5;">業種</th>
-                                <th style="width:150px; background-color:#f5f5f5;">電話番号<br>FAX</th>
+                                <th style="width:200px; background-color:#f5f5f5;">電話 / FAX</th>
                             </tr>
                         </thead>
                         <tbody id="office_modal_list">
@@ -273,7 +273,8 @@
                                     {% endif %}
                                 </td>
                                 <td class="align-middle" style="font-size:0.85rem; white-space:nowrap;">
-                                    <i class="fas fa-phone me-1 text-muted" style="font-size:0.75rem;"></i>{{ o.phone|default:"―" }}<br>
+                                    <i class="fas fa-phone me-1 text-muted" style="font-size:0.75rem;"></i>{{ o.phone|default:"―" }}
+                                    <span class="text-muted mx-1">/</span>
                                     <i class="fas fa-fax me-1 text-muted" style="font-size:0.75rem;"></i><span class="text-muted">{{ o.fax|default:"―" }}</span>
                                 </td>
                             </tr>
@@ -905,7 +906,8 @@ function _renderSelectedTable() {
                      + '<span class="fw-bold">' + _escHtml(o.name) + '</span>';
         // 電話・FAX
         var telCell = '<i class="fas fa-phone me-1 text-muted" style="font-size:0.75rem;"></i>' + _escHtml(o.phone || '―')
-                    + '<br><i class="fas fa-fax me-1 text-muted" style="font-size:0.75rem;"></i><span class="text-muted">' + _escHtml(o.fax || '―') + '</span>';
+                    + ' <span class="text-muted mx-1">/</span> '
+                    + '<i class="fas fa-fax me-1 text-muted" style="font-size:0.75rem;"></i><span class="text-muted">' + _escHtml(o.fax || '―') + '</span>';
         // 担当者プルダウン（常にselect表示）
         var personOpts = '<option value="">―</option>';
         o.persons.forEach(function(p) {
@@ -917,7 +919,7 @@ function _renderSelectedTable() {
         rows += '<tr>'
               + '<td class="align-middle">' + nameCell + '</td>'
               + '<td class="align-middle">' + _svcBadge(o.svc) + '</td>'
-              + '<td class="align-middle" style="font-size:0.8rem;white-space:nowrap;">' + telCell + '</td>'
+              + '<td class="align-middle" style="font-size:0.8rem;">' + telCell + '</td>'
               + '<td class="align-middle">' + personCell + '</td>'
               + '<td class="text-center align-middle">'
               +   '<button type="button" class="btn btn-sm btn-outline-secondary" style="padding:2px 7px;font-size:0.75rem;" onclick="removeOffice(\'' + o.id + '\')" title="削除">'
