@@ -117,8 +117,24 @@
                                     </a>
                                 </div>
 
-                                <!-- 選択済みタグ表示 -->
-                                <div id="selected_offices_tags" class="d-flex flex-wrap gap-2 mb-2"></div>
+                                <!-- 選択済みテーブル表示 -->
+                                <div id="selected_offices_table_wrap" class="mb-2" style="display:none;">
+                                    <div class="table-responsive">
+                                        <table class="table table-hover table-bordered mb-0" style="font-size:0.9rem;">
+                                            <thead>
+                                                <tr>
+                                                    <th style="background-color:#f5f5f5;">サービス事業所</th>
+                                                    <th style="width:130px; background-color:#f5f5f5;">業種</th>
+                                                    <th style="width:150px; background-color:#f5f5f5;">電話番号 / FAX</th>
+                                                    <th style="width:170px; background-color:#f5f5f5;">担当者（送付状宛先）</th>
+                                                    <th style="width:40px; background-color:#f5f5f5;"></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="selected_offices_tbody"></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div id="selected_offices_empty" class="text-muted small mb-2">未選択</div>
 
                                 <!-- hidden inputs（フォーム送信用） -->
                                 <div id="selected_offices_inputs"></div>
@@ -225,7 +241,11 @@
                                            id="modal_office_{{ o.id }}" value="{{ o.id }}"
                                            data-id="{{ o.id }}"
                                            data-name="{{ o.name }}"
+                                           data-furigana="{{ o.furigana }}"
+                                           data-svc="{{ o.service_type }}"
+                                           data-phone="{{ o.phone }}"
                                            data-fax="{{ o.fax }}"
+                                           data-persons="{{ o.persons|join:',' }}"
                                            onclick="event.stopPropagation()">
                                 </td>
                                 <td class="align-middle">
@@ -810,43 +830,115 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
+var _SVC_COLORS = {
+    '訪問介護':           '#fff9c4',
+    '訪問看護':           '#ffd5d5',
+    '訪問入浴介護':       '#d5eaf9',
+    '訪問リハビリテーション': '#ffebee',
+    '通所介護':           '#e8f5e8',
+    '地域密着型通所介護': '#e8f5e8',
+    '通所リハビリテーション': '#fff3e0',
+    '福祉用具貸与':       '#f3e5f5',
+    '特定福祉用具販売':   '#f3e5f5',
+    '短期入所生活介護':   '#f5f0e8',
+    '短期入所療養介護':   '#f5f0e8',
+    '小規模多機能型居宅介護': '#f5f0e8',
+};
+
+function _svcBadge(svc) {
+    if (!svc) return '<span class="text-muted">―</span>';
+    var bg = _SVC_COLORS[svc] || '#f5f5f5';
+    return '<span class="svc-type-badge" style="background-color:' + bg + ';">' + _escHtml(svc) + '</span>';
+}
+
 function confirmOfficeSelection() {
     _selectedOffices = {};
     document.querySelectorAll('.office-modal-check:checked').forEach(function(c) {
-        _selectedOffices[c.dataset.id] = { id: c.dataset.id, name: c.dataset.name, fax: c.dataset.fax };
+        var d = c.dataset;
+        _selectedOffices[d.id] = {
+            id:       d.id,
+            name:     d.name,
+            furigana: d.furigana || '',
+            svc:      d.svc || '',
+            phone:    d.phone || '',
+            fax:      d.fax || '',
+            persons:  d.persons ? d.persons.split(',').filter(Boolean) : [],
+            person:   _selectedOffices[d.id] ? _selectedOffices[d.id].person : '',
+        };
     });
-    _renderSelectedTags();
+    _renderSelectedTable();
     bootstrap.Modal.getInstance(document.getElementById('officeSelectModal')).hide();
 }
 
 function removeOffice(id) {
     delete _selectedOffices[id];
-    // モーダル内チェックも外す
     var chk = document.getElementById('modal_office_' + id);
     if (chk) chk.checked = false;
-    _renderSelectedTags();
+    _renderSelectedTable();
 }
 
-function _renderSelectedTags() {
-    var offices = Object.values(_selectedOffices);
-    var tagsEl  = document.getElementById('selected_offices_tags');
-    var inputEl = document.getElementById('selected_offices_inputs');
+function _onPersonChange(id, val) {
+    if (_selectedOffices[id]) _selectedOffices[id].person = val;
+    _updateHiddenInputs();
+}
 
-    var tagsHtml = '';
-    var inputHtml = '';
+function _renderSelectedTable() {
+    var offices  = Object.values(_selectedOffices);
+    var wrap     = document.getElementById('selected_offices_table_wrap');
+    var empty    = document.getElementById('selected_offices_empty');
+    var tbody    = document.getElementById('selected_offices_tbody');
+
+    if (!offices.length) {
+        wrap.style.display  = 'none';
+        empty.style.display = '';
+        _updateHiddenInputs();
+        _updateFaxUI();
+        return;
+    }
+    wrap.style.display  = '';
+    empty.style.display = 'none';
+
+    var rows = '';
     offices.forEach(function(o) {
-        tagsHtml += '<span class="badge rounded-pill border d-flex align-items-center gap-1 px-2 py-1" '
-                  + 'style="font-size:0.85rem;font-weight:normal;color:#333;background:#f8f9fa;">'
-                  + '<span>' + _escHtml(o.name) + '</span>'
-                  + '<button type="button" class="btn-close btn-close-sm ms-1" style="font-size:0.6rem;" '
-                  + 'onclick="removeOffice(\'' + o.id + '\')" title="削除"></button>'
-                  + '</span>';
-        inputHtml += '<input type="hidden" name="selected_office" value="' + o.id + '">';
-    });
+        // フリガナ＋事業所名
+        var nameCell = (o.furigana ? '<small class="text-muted d-block" style="font-size:0.75rem;">' + _escHtml(o.furigana) + '</small>' : '')
+                     + '<span class="fw-bold">' + _escHtml(o.name) + '</span>';
+        // 電話・FAX
+        var telCell = '<i class="fas fa-phone me-1 text-muted" style="font-size:0.75rem;"></i>' + _escHtml(o.phone || '―')
+                    + '<br><i class="fas fa-fax me-1 text-muted" style="font-size:0.75rem;"></i><span class="text-muted">' + _escHtml(o.fax || '―') + '</span>';
+        // 担当者プルダウン
+        var personOpts = '<option value="">―</option>';
+        o.persons.forEach(function(p) {
+            var sel = (o.person === p) ? ' selected' : '';
+            personOpts += '<option value="' + _escHtml(p) + '"' + sel + '>' + _escHtml(p) + '</option>';
+        });
+        var personCell = o.persons.length
+            ? '<select class="form-select form-select-sm" onchange="_onPersonChange(\'' + o.id + '\', this.value)">' + personOpts + '</select>'
+            : '<span class="text-muted small">―</span>';
 
-    tagsEl.innerHTML  = tagsHtml || '<span class="text-muted small">未選択</span>';
-    inputEl.innerHTML = inputHtml;
+        rows += '<tr>'
+              + '<td class="align-middle">' + nameCell + '</td>'
+              + '<td class="align-middle">' + _svcBadge(o.svc) + '</td>'
+              + '<td class="align-middle" style="font-size:0.85rem;white-space:nowrap;">' + telCell + '</td>'
+              + '<td class="align-middle">' + personCell + '</td>'
+              + '<td class="text-center align-middle">'
+              +   '<button type="button" class="btn btn-sm btn-outline-secondary" style="padding:2px 7px;font-size:0.75rem;" onclick="removeOffice(\'' + o.id + '\')" title="削除">'
+              +   '<i class="fas fa-times"></i></button>'
+              + '</td>'
+              + '</tr>';
+    });
+    tbody.innerHTML = rows;
+    _updateHiddenInputs();
     _updateFaxUI();
+}
+
+function _updateHiddenInputs() {
+    var inputHtml = '';
+    Object.values(_selectedOffices).forEach(function(o) {
+        inputHtml += '<input type="hidden" name="selected_office" value="' + _escHtml(o.id) + '">';
+        inputHtml += '<input type="hidden" name="selected_office_person_' + _escHtml(o.id) + '" value="' + _escHtml(o.person || '') + '">';
+    });
+    document.getElementById('selected_offices_inputs').innerHTML = inputHtml;
 }
 
 function _updateFaxUI() {
@@ -861,16 +953,20 @@ function _escHtml(s) {
     return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-document.addEventListener('DOMContentLoaded', function() { _renderSelectedTags(); });
+document.addEventListener('DOMContentLoaded', function() { _renderSelectedTable(); });
 </script>
 
 
 <style>
-/* 事業所選択モーダルのテーブル: アセスメント一覧と同じスタイル */
+/* 事業所選択モーダル・選択済みテーブル共通スタイル */
 #officeSelectModal .table-bordered th,
-#officeSelectModal .table-bordered td { border-left: none; border-right: none; }
+#officeSelectModal .table-bordered td,
+#selected_offices_table_wrap .table-bordered th,
+#selected_offices_table_wrap .table-bordered td { border-left: none; border-right: none; }
 #officeSelectModal .table td,
-#officeSelectModal .table th { vertical-align: middle; }
+#officeSelectModal .table th,
+#selected_offices_table_wrap .table td,
+#selected_offices_table_wrap .table th { vertical-align: middle; }
 #officeSelectModal tbody tr.office-modal-item:hover { background-color: rgba(0,0,0,0.04); }
 .svc-type-badge {
     display: inline-block;
