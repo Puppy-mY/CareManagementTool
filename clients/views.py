@@ -5,7 +5,7 @@ def staff_required(user):
     return user.is_active and (user.is_staff or user.is_superuser)
 from django.contrib import messages
 from django.core.paginator import Paginator
-from django.db.models import Q
+from django.db.models import Q, Max as _Max
 from django.http import JsonResponse, HttpResponse, HttpResponseRedirect
 from django.urls import reverse
 from django.template.loader import render_to_string
@@ -44,7 +44,7 @@ try:
     OPENPYXL_AVAILABLE = True
 except ImportError:
     OPENPYXL_AVAILABLE = False
-from .models import Client, LimitCalculation, AdditionalService, ServiceType, ServiceProvider, ClientDementiaStatus, ServiceAddOn, ProviderAddOnSetting, DocumentCreationHistory, Feedback, FeedbackReply, HomeCareSupportOffice, RegionalSupportCenter, UserProfile, CareServiceOffice
+from .models import Client, LimitCalculation, AdditionalService, ServiceType, ServiceProvider, ClientDementiaStatus, ServiceAddOn, ProviderAddOnSetting, DocumentCreationHistory, Feedback, FeedbackReply, HomeCareSupportOffice, RegionalSupportCenter, UserProfile, CareServiceOffice, MeetingPlaceOption, MeetingAgendaOption, MedicalInstitution
 from .forms import ClientForm, FeedbackForm, FeedbackEditForm, FeedbackReplyForm, CareInsuranceForm, DisabilityWelfareForm, MedicalCertForm
 
 
@@ -877,6 +877,25 @@ def document_create(request, client_id, document_type):
             'client_care_burden': client.care_burden or '',
         }
 
+    # 資料提供申請書：申請者事業所情報を initial_data に設定
+    if document_type == 'careplan_info_request':
+        from .models import HomeCareSupportOffice
+        _cp_office = getattr(getattr(request.user, 'profile', None), 'home_care_office', None)
+        if not _cp_office:
+            _cp_office = HomeCareSupportOffice.objects.filter(is_active=True).order_by('name').first()
+        if _cp_office:
+            # 常時セット（モーダルAPI・表示名に必要）
+            initial_data['office_furigana']     = _cp_office.furigana     or ''
+            initial_data['office_fax']          = _cp_office.fax          or ''
+            initial_data['office_manager_name'] = _cp_office.manager_name or ''
+            initial_data['office_company_name'] = getattr(_cp_office, 'company_name', '') or ''
+            initial_data.setdefault('office_name',        _cp_office.name          or '')
+            initial_data.setdefault('office_number',      _cp_office.office_number or '')
+            initial_data.setdefault('office_postal_code', _cp_office.postal_code   or '')
+            initial_data.setdefault('office_address',     _cp_office.address        or '')
+            initial_data.setdefault('office_phone',       _cp_office.phone          or '')
+        initial_data.setdefault('submitter_type', 'office')
+
     # 事業所情報を initial_data に設定
     # ユーザープロフィールの所属事業所、なければDBの最初の有効事業所を使用
     if document_type in ('kyotaku_service_plan_request', 'kyotaku_preventive_service_plan_request'):
@@ -958,10 +977,19 @@ def document_create(request, client_id, document_type):
             'kyotaku_staff_name': request.POST.get('kyotaku_staff_name'),
 
             # 情報提供依頼書（申請者・担当者情報）
-            'office_name_type': request.POST.get('office_name_type', 'anoutsu'),
-            'staff_name': request.POST.get('staff_name'),
-            'staff_job_title': request.POST.get('staff_job_title'),
-            'manager_name': request.POST.get('manager_name'),
+            'submitter_type':    request.POST.get('submitter_type', 'office'),
+            'office_furigana':   request.POST.get('office_furigana', ''),
+            'office_name':       request.POST.get('office_name', ''),
+            'office_number':     request.POST.get('office_number', ''),
+            'office_postal_code':request.POST.get('office_postal_code', ''),
+            'office_address':    request.POST.get('office_address', ''),
+            'office_phone':      request.POST.get('office_phone', ''),
+            'office_fax':        request.POST.get('office_fax', ''),
+            'office_manager_name':request.POST.get('office_manager_name', ''),
+            'staff_name_office': request.POST.get('staff_name_office', ''),
+            'relation':          request.POST.get('relation', ''),
+            'staff_name':        request.POST.get('staff_name'),
+            'staff_job_title':   request.POST.get('staff_job_title'),
             'request_doc_chousasho': request.POST.get('request_doc_chousasho'),
             'request_doc_ikensho': request.POST.get('request_doc_ikensho'),
 
@@ -1113,12 +1141,20 @@ def document_create(request, client_id, document_type):
                 'area': center.area,
             })
 
+    _kyotaku_office = getattr(getattr(request.user, 'profile', None), 'home_care_office', None)
+    if not _kyotaku_office:
+        _kyotaku_office = HomeCareSupportOffice.objects.filter(is_active=True).first()
+    import json as _json2
+    _kyotaku_staff = _build_office_staff_options(_kyotaku_office)
+
     context = {
         'client': client,
         'document_type': document_type,
         'document_name': document_name,
         'initial_data': initial_data,
         'support_centers_json': json.dumps(support_centers_data, ensure_ascii=False),
+        'office_staff_options': _kyotaku_staff,
+        'office_staff_options_json': _json2.dumps(_kyotaku_staff),
     }
 
     # ドキュメントタイプに応じてテンプレートを選択
@@ -1336,13 +1372,10 @@ def generate_document_excel(request, client, document_type, document_name, form_
                 app_date_wareki = to_wareki(datetime.now().date())
             safe_write_cell(coords.get('request_date'), app_date_wareki)
 
-            # 申請者情報
-            if form_data.get('office_name_type', 'anoutsu') == 'anoutsu':
-                office_name_val = '居宅介護支援事業所　安濃津ろまん'
-            else:
-                office_name_val = form_data.get('office_name', '')
+            # 申請者情報（submitter_section と同一フィールド）
+            office_name_val = form_data.get('office_name', '') or '居宅介護支援事業所　安濃津ろまん'
             safe_write_cell(coords.get('office_name'), office_name_val)
-            safe_write_cell(coords.get('manager_name'), form_data.get('manager_name', ''))
+            safe_write_cell(coords.get('manager_name'), form_data.get('office_manager_name', ''))
             safe_write_cell(coords.get('office_phone'), form_data.get('office_phone', ''))
 
             # 提供依頼資料のチェックボックス表現
@@ -1351,9 +1384,9 @@ def generate_document_excel(request, client, document_type, document_name, form_
             if form_data.get('request_doc_ikensho') == 'yes':
                 safe_write_cell(coords.get('request_doc_ikensho'), '■\u3000介護保険の認定に係る主治医意見書')
 
-            # 提供申請者情報
-            safe_write_cell(coords.get('staff_name'), form_data.get('staff_name', ''))
-            safe_write_cell(coords.get('staff_job_title'), form_data.get('staff_job_title', ''))
+            # 担当者・本人との関係
+            safe_write_cell(coords.get('staff_name_office'), form_data.get('staff_name_office', ''))
+            safe_write_cell(coords.get('relation'), form_data.get('relation', ''))
 
             # 被保険者情報（同意欄）
             safe_write_cell(coords.get('client_address'), form_data.get('client_address', client.address))
@@ -1608,10 +1641,10 @@ def _generate_ltc_renewal_excel_bytes(client, form_data):
         w('G8',  form_data.get('office_furigana', ''))
         w('G9',  form_data.get('office_name', ''))
         w('X9',  '介護支援専門員')
-        w('G14', client.charge_manager_display)
+        w('G14', form_data.get('staff_name_office', ''))
         w('W14', int(form_data['office_number']) if form_data.get('office_number', '').isdigit() else form_data.get('office_number', ''))
     else:
-        w('G8',  form_data.get('office_furigana', ''))
+        w('G8',  form_data.get('applicant_furigana', ''))
         w('G9',  form_data.get('staff_name', ''))
         w('X9',  form_data.get('relation', ''))
     w('I11', f"〒{form_data.get('office_postal_code', '')}" if form_data.get('office_postal_code') else '')
@@ -1652,17 +1685,23 @@ def _generate_ltc_renewal_excel_bytes(client, form_data):
     if form_data.get('specific_disease'):
         w('G28', form_data.get('specific_disease', ''))
 
-    # ⑧ 認定調査 場所
-    w('G32', form_data.get('survey_location', ''))
+    # ⑧ 認定調査 場所（自宅の場合はG32に反映しない）
+    survey_loc = form_data.get('survey_location', '')
+    if survey_loc == 'other':
+        survey_loc = form_data.get('survey_location_other', '')
+    if survey_loc != '自宅':
+        w('G32', survey_loc)
     w('S31', f"〒{form_data.get('survey_location_postal', '')}" if form_data.get('survey_location_postal') else '')
     w('O32', form_data.get('survey_location_address', ''))
     w('W33', form_data.get('survey_location_phone', ''))
 
-    # ⑨ 認定調査 連絡先
-    w('I34', form_data.get('survey_contact_furigana', ''))
-    w('I35', form_data.get('survey_contact_name', ''))
-    w('O35', form_data.get('survey_contact_relation', ''))
-    w('T35', form_data.get('survey_contact_phone', ''))
+    # ⑨ 認定調査 連絡先（本人の場合は反映しない）
+    survey_contact_type = form_data.get('survey_contact_type', '')
+    if survey_contact_type != '本人':
+        w('I34', form_data.get('survey_contact_furigana', ''))
+        w('I35', form_data.get('survey_contact_name', ''))
+        w('O35', form_data.get('survey_contact_relation', ''))
+        w('T35', form_data.get('survey_contact_phone', ''))
     w('G36', form_data.get('survey_contact_preferred_time', ''))
     w('G37', form_data.get('survey_contact_notes', ''))
 
@@ -1671,8 +1710,12 @@ def _generate_ltc_renewal_excel_bytes(client, form_data):
     if form_data.get('doctor_outside_city') == 'yes':
         w('S41', f"〒{form_data.get('doctor_postal_code', '')}" if form_data.get('doctor_postal_code') else '')
         w('Q42', form_data.get('doctor_address', ''))
+        w('U43', form_data.get('doctor_phone', ''))
+    else:
+        w('S41', '')
+        w('Q42', '')
+        w('U43', '')
     w('G42', form_data.get('doctor_name', ''))
-    w('U43', form_data.get('doctor_phone', ''))
     w('G46', form_data.get('doctor_notes', ''))
 
     with tempfile.NamedTemporaryFile(delete=False, suffix='.xlsx') as tmp:
@@ -1892,7 +1935,7 @@ def _generate_ltc_change_excel_bytes(client, form_data):
         w('G14', client.charge_manager_display)
         w('W14', int(form_data['office_number']) if form_data.get('office_number', '').isdigit() else form_data.get('office_number', ''))
     else:
-        w('G8',  form_data.get('office_furigana', ''))
+        w('G8',  form_data.get('applicant_furigana', ''))
         w('G9',  form_data.get('staff_name', ''))
         w('X9',  form_data.get('relation', ''))
     w('I11', form_data.get('office_postal_code', ''))
@@ -1927,27 +1970,37 @@ def _generate_ltc_change_excel_bytes(client, form_data):
     if form_data.get('specific_disease'):
         w('G28', form_data.get('specific_disease', ''))
 
-    # ⑧ 認定調査 場所
-    w('G32', form_data.get('survey_location', ''))
-    w('S31', form_data.get('survey_location_postal', ''))
+    # ⑧ 認定調査 場所（自宅の場合はG32に反映しない）
+    survey_loc = form_data.get('survey_location', '')
+    if survey_loc == 'other':
+        survey_loc = form_data.get('survey_location_other', '')
+    if survey_loc != '自宅':
+        w('G32', survey_loc)
+    w('S31', f"〒{form_data.get('survey_location_postal', '')}" if form_data.get('survey_location_postal') else '')
     w('O32', form_data.get('survey_location_address', ''))
     w('W33', form_data.get('survey_location_phone', ''))
 
-    # ⑨ 認定調査 連絡先
-    w('I34', form_data.get('survey_contact_furigana', ''))
-    w('I35', form_data.get('survey_contact_name', ''))
-    w('O35', form_data.get('survey_contact_relation', ''))
-    w('T35', form_data.get('survey_contact_phone', ''))
+    # ⑨ 認定調査 連絡先（本人の場合は反映しない）
+    survey_contact_type = form_data.get('survey_contact_type', '')
+    if survey_contact_type != '本人':
+        w('I34', form_data.get('survey_contact_furigana', ''))
+        w('I35', form_data.get('survey_contact_name', ''))
+        w('O35', form_data.get('survey_contact_relation', ''))
+        w('T35', form_data.get('survey_contact_phone', ''))
     w('G36', form_data.get('survey_contact_preferred_time', ''))
     w('G38', form_data.get('survey_contact_notes', ''))
 
     # ⑩ 主治医意見書依頼先
     w('G40', form_data.get('doctor_hospital', ''))
     if form_data.get('doctor_outside_city') == 'yes':
-        w('S41', form_data.get('doctor_postal_code', ''))
+        w('S41', f"〒{form_data.get('doctor_postal_code', '')}" if form_data.get('doctor_postal_code') else '')
         w('Q42', form_data.get('doctor_address', ''))
+        w('U43', form_data.get('doctor_phone', ''))
+    else:
+        w('S41', '')
+        w('Q42', '')
+        w('U43', '')
     w('G42', form_data.get('doctor_name', ''))
-    w('U43', form_data.get('doctor_phone', ''))
     w('G46', form_data.get('doctor_notes', ''))
 
     with tempfile.NamedTemporaryFile(delete=False, suffix='.xlsx') as tmp:
@@ -3168,12 +3221,17 @@ def my_feedback_detail(request, pk):
 @login_required
 def home_care_office_list(request):
     """居宅介護支援事業所一覧"""
-    # 管理者権限チェック
+    import json as _json
     if not request.user.is_staff and not request.user.is_superuser:
         messages.error(request, 'このページにアクセスする権限がありません。')
         return redirect('client_list')
 
     offices = HomeCareSupportOffice.objects.all().order_by('name')
+    for o in offices:
+        staff = [n for n in (o.staff_names or []) if n]
+        o.all_staff_names = staff
+        o.staff_names_json = _json.dumps(staff)
+
     context = {
         'offices': offices,
     }
@@ -3192,6 +3250,7 @@ def home_care_office_create(request):
         return redirect('client_list')
 
     if request.method == 'POST':
+        company_name = request.POST.get('company_name', '').strip()
         name = request.POST.get('name', '').strip()
         furigana = request.POST.get('furigana', '').strip()
         office_number = request.POST.get('office_number', '').strip()
@@ -3199,7 +3258,9 @@ def home_care_office_create(request):
         address = request.POST.get('address', '').strip()
         phone = request.POST.get('phone', '').strip()
         fax = request.POST.get('fax', '').strip()
-        manager_name = request.POST.get('manager_name', '').strip()
+        manager_name = request.POST.get('manager_name', '').strip().replace('　', ' ')
+        raw_staff_c = request.POST.getlist('staff_names[]')
+        staff_names_c = [s.strip().replace('　', ' ') for s in raw_staff_c if s.strip()]
         is_active = request.POST.get('is_active') == 'true'
 
         if not name or not office_number:
@@ -3215,6 +3276,7 @@ def home_care_office_create(request):
             return redirect('home_care_office_create')
 
         office = HomeCareSupportOffice.objects.create(
+            company_name=company_name,
             name=name,
             furigana=furigana,
             office_number=office_number,
@@ -3223,10 +3285,19 @@ def home_care_office_create(request):
             phone=phone,
             fax=fax,
             manager_name=manager_name,
+            staff_names=staff_names_c,
             is_active=is_active,
         )
         if is_ajax:
-            return JsonResponse({'success': True})
+            return JsonResponse({
+                'success': True, 'pk': office.pk,
+                'company_name': office.company_name or '',
+                'name': office.name, 'furigana': office.furigana or '',
+                'office_number': office.office_number or '',
+                'postal_code': office.postal_code or '', 'address': office.address or '',
+                'phone': office.phone or '', 'fax': office.fax or '',
+                'manager_name': office.manager_name or '',
+            })
         messages.success(request, f'{office.name} を登録しました。')
         return redirect('home_care_office_list')
 
@@ -3247,6 +3318,7 @@ def home_care_office_edit(request, pk):
     office = get_object_or_404(HomeCareSupportOffice, pk=pk)
 
     if request.method == 'POST':
+        office.company_name = request.POST.get('company_name', '').strip()
         office.name = request.POST.get('name', '').strip()
         office.furigana = request.POST.get('furigana', '').strip()
         office.office_number = request.POST.get('office_number', '').strip()
@@ -3254,7 +3326,9 @@ def home_care_office_edit(request, pk):
         office.address = request.POST.get('address', '').strip()
         office.phone = request.POST.get('phone', '').strip()
         office.fax = request.POST.get('fax', '').strip()
-        office.manager_name = request.POST.get('manager_name', '').strip()
+        office.manager_name = request.POST.get('manager_name', '').strip().replace('　', ' ')
+        raw_staff = request.POST.getlist('staff_names[]')
+        office.staff_names = [s.strip().replace('　', ' ') for s in raw_staff if s.strip()]
         office.is_active = request.POST.get('is_active') == 'true'
 
         if not office.name or not office.office_number:
@@ -3271,7 +3345,10 @@ def home_care_office_edit(request, pk):
 
         office.save()
         if is_ajax:
-            return JsonResponse({'success': True})
+            return JsonResponse({
+                'success': True,
+                'staff_names': office.staff_names,
+            })
         messages.success(request, f'{office.name} を更新しました。')
         return redirect('home_care_office_list')
 
@@ -3406,9 +3483,327 @@ def client_medical_info_update(request, client_id):
     })
 
 
+def _get_fax_template_body():
+    from .models import FaxMessageTemplate
+    return FaxMessageTemplate.get_body()
+
+
+def _inject_printer_settings_all_sheets(xlsx_bytes, ps_bin):
+    """全シートに printerSettings.bin を注入して片面印刷を強制する"""
+    import zipfile as _zf, re as _re, io as _io
+    _NS_WB = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main'
+    _NS_R  = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships'
+    _NS_PR = 'http://schemas.openxmlformats.org/package/2006/relationships'
+    import xml.etree.ElementTree as _ET
+
+    files = {}
+    with _zf.ZipFile(_io.BytesIO(xlsx_bytes), 'r') as zin:
+        for item in zin.infolist():
+            files[item.filename] = zin.read(item.filename)
+
+    def _norm(t):
+        return t[4:] if t.startswith('/xl/') else t.lstrip('/')
+
+    wb_tree   = _ET.fromstring(files['xl/workbook.xml'])
+    rels_tree = _ET.fromstring(files.get('xl/_rels/workbook.xml.rels', b'<r/>'))
+    rid_to_target = {
+        r.get('Id'): _norm(r.get('Target', ''))
+        for r in rels_tree.findall(f'{{{_NS_PR}}}Relationship')
+    }
+    all_sheets = [
+        rid_to_target[s.get(f'{{{_NS_R}}}id', '')]
+        for s in wb_tree.findall(f'{{{_NS_WB}}}sheets/{{{_NS_WB}}}sheet')
+        if s.get(f'{{{_NS_R}}}id', '') in rid_to_target
+    ]
+
+    ps_counter = max(
+        (int(_re.search(rb'printerSettings(\d+)\.bin', k.encode()).group(1))
+         for k in files if k.endswith('.bin') and 'printerSettings' in k),
+        default=0
+    )
+    for sheet_rel in all_sheets:
+        sheet_file = sheet_rel.split('/')[-1]
+        rels_key   = f'xl/worksheets/_rels/{sheet_file}.rels'
+        rels_data  = files.get(rels_key)
+        ps_matches = _re.findall(rb'Target="../printerSettings/([^"]+)"', rels_data or b'')
+
+        if ps_matches:
+            for ps_name in ps_matches:
+                files[f'xl/printerSettings/{ps_name.decode()}'] = ps_bin
+        else:
+            ps_counter += 1
+            ps_fname  = f'printerSettings{ps_counter}.bin'
+            ps_full   = f'xl/printerSettings/{ps_fname}'
+            rid_label = f'rIdPs{ps_counter}'
+            new_rel   = (
+                f'<Relationship Id="{rid_label}" '
+                f'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/printerSettings" '
+                f'Target="../printerSettings/{ps_fname}"/>'
+            ).encode()
+            files[rels_key] = (
+                rels_data.replace(b'</Relationships>', new_rel + b'</Relationships>')
+                if rels_data else
+                b'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+                b'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+                + new_rel + b'</Relationships>'
+            )
+            files[ps_full] = ps_bin
+            files['[Content_Types].xml'] = files['[Content_Types].xml'].replace(
+                b'</Types>',
+                f'<Override PartName="/{ps_full}" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.printerSettings"/>'.encode()
+                + b'</Types>'
+            )
+            sheet_xml_key = f'xl/{sheet_rel}'
+            if sheet_xml_key in files:
+                sheet_xml = files[sheet_xml_key]
+                if b'r:id=' not in sheet_xml:
+                    if b'xmlns:r=' not in sheet_xml:
+                        sheet_xml = _re.sub(
+                            rb'(<worksheet\b)',
+                            rb'\1 xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"',
+                            sheet_xml, count=1
+                        )
+                    rid_bytes = f' r:id="{rid_label}"'.encode()
+                    sheet_xml = _re.sub(
+                        rb'(<pageSetup\b[^/]*)(/>)',
+                        rb'\1' + rid_bytes + rb'\2',
+                        sheet_xml
+                    )
+                files[sheet_xml_key] = sheet_xml
+
+    out = _io.BytesIO()
+    with _zf.ZipFile(out, 'w', _zf.ZIP_DEFLATED) as zout:
+        for fname, data in files.items():
+            zout.writestr(fname, data)
+    return out.getvalue()
+
+
+def _generate_medical_care_coordination_excel_bytes(client, form_data):
+    """医療・介護連携シートのExcelバイト列を生成して返す"""
+    from openpyxl import load_workbook as _load_wb
+    from openpyxl.cell import MergedCell as _MergedCell
+    import io
+    from datetime import date as _date_cls, datetime as _dt
+
+    template_path = settings.BASE_DIR / 'templates' / 'forms' / 'medical_care_coordination_sheet.xlsx'
+    wb = _load_wb(str(template_path))
+    if hasattr(wb, '_external_links'):
+        wb._external_links = []
+    ws = wb.active
+
+    def w(cell_ref, value):
+        if not cell_ref or value is None:
+            return
+        try:
+            cell = ws[cell_ref]
+            if isinstance(cell, _MergedCell):
+                for mr in ws.merged_cells.ranges:
+                    if cell_ref in mr:
+                        min_col, min_row, _, _ = mr.bounds
+                        ws.cell(row=min_row, column=min_col).value = value
+                        return
+            else:
+                cell.value = value
+        except Exception:
+            pass
+
+    def to_wareki(date_str):
+        if not date_str:
+            return ''
+        try:
+            d = _dt.strptime(str(date_str)[:10], '%Y-%m-%d').date()
+            y, m, day = d.year, d.month, d.day
+            if d >= _date_cls(2019, 5, 1):
+                return f"令和{y-2018}年{m}月{day}日"
+            elif d >= _date_cls(1989, 1, 8):
+                return f"平成{y-1988}年{m}月{day}日"
+            elif d >= _date_cls(1926, 12, 25):
+                return f"昭和{y-1925}年{m}月{day}日"
+            elif d >= _date_cls(1912, 7, 30):
+                return f"大正{y-1911}年{m}月{day}日"
+            else:
+                return f"明治{y-1867}年{m}月{day}日"
+        except Exception:
+            return ''
+
+    def chk(val):
+        return '■' if val else '□'
+
+    # 医療機関情報
+    w('C5', form_data.get('doctor_hospital', ''))
+    w('C6', form_data.get('doctor_phone', ''))
+    w('C7', form_data.get('doctor_fax', ''))
+    w('C8', form_data.get('doctor_name', ''))
+
+    # 作成日・事業所情報
+    w('N3', to_wareki(form_data.get('application_date', '')))
+    w('N4', form_data.get('office_name', ''))
+    try:
+        ws['N5'].value = int(form_data.get('office_number', '') or 0) or None
+    except (ValueError, TypeError):
+        w('N5', form_data.get('office_number', ''))
+    w('L6', form_data.get('office_address', ''))
+    w('L7', form_data.get('office_phone', ''))
+    w('Q7', form_data.get('office_fax', ''))
+    w('M8', form_data.get('user_full_name', ''))
+
+    # 連携の同意
+    consent = form_data.get('consent_type', 'previous')
+    ws['B14'].value = chk(consent == 'today')
+    ws['B16'].value = chk(consent == 'previous')
+    if consent == 'today' and form_data.get('consent_date'):
+        w('C15', f"【同意日　{to_wareki(form_data.get('consent_date', ''))}】")
+
+    # 利用者情報
+    w('C19', form_data.get('client_name', ''))
+    w('C18', form_data.get('client_furigana', ''))
+    w('J19', to_wareki(form_data.get('birth_date', '')))
+    if client.birth_date:
+        from datetime import date as _d
+        today = _d.today()
+        age = today.year - client.birth_date.year - (
+            (today.month, today.day) < (client.birth_date.month, client.birth_date.day)
+        )
+        ws['Q19'].value = age
+    care_level = (form_data.get('care_level', '')
+                  or (client.get_care_level_display() if client.care_level else ''))
+    w('D21', care_level)
+    cert_start_w = (form_data.get('cert_start_wareki', '')
+                    or to_wareki(form_data.get('cert_start', ''))
+                    or to_wareki(client.certification_period_start.strftime('%Y-%m-%d') if client.certification_period_start else ''))
+    cert_end_w   = (form_data.get('cert_end_wareki', '')
+                    or to_wareki(form_data.get('cert_end', ''))
+                    or to_wareki(client.certification_period_end.strftime('%Y-%m-%d') if client.certification_period_end else ''))
+    w('J21', cert_start_w)
+    w('P21', cert_end_w)
+    w('B22', form_data.get('client_address', ''))
+    w('L22', form_data.get('client_phone', ''))
+
+    # 返信希望の有無
+    reply_not_needed = form_data.get('reply_not_needed', '') == 'yes'
+    ws['L25'].value = chk(not reply_not_needed)
+    ws['P25'].value = chk(reply_not_needed)
+
+    # 照会目的
+    ws['A26'].value = chk(form_data.get('purpose_careplan') == 'yes')
+    ws['A27'].value = chk(form_data.get('purpose_medical_service') == 'yes')
+    ws['A28'].value = chk(form_data.get('purpose_facility') == 'yes')
+    ws['A29'].value = chk(form_data.get('purpose_greeting') == 'yes')
+    ws['J26'].value = chk(form_data.get('purpose_service_meeting') == 'yes')
+    ws['J27'].value = chk(form_data.get('purpose_condition_change') == 'yes')
+    ws['J28'].value = chk(form_data.get('purpose_welfare_equipment') == 'yes')
+    ws['J29'].value = chk(form_data.get('purpose_other') == 'yes')
+
+    # 相談内容
+    w('A31', form_data.get('consultation_content', ''))
+
+    # 担当介護支援専門員
+    w('N39', form_data.get('user_full_name', ''))
+
+    # テンプレートから printerSettings.bin を取得
+    import zipfile as _zf2
+    _mcc_ps_bin = None
+    with _zf2.ZipFile(str(template_path), 'r') as _z:
+        for _n in _z.namelist():
+            if _n.startswith('xl/printerSettings/') and _n.endswith('.bin'):
+                _mcc_ps_bin = _z.read(_n)
+                break
+
+    # MCCシートをいったんtempファイルに保存
+    import tempfile, os as _os
+    mcc_tmp = tempfile.mktemp(suffix='.xlsx')
+    wb.save(mcc_tmp)
+
+    has_fax  = form_data.get('fax_attached')  == 'yes'
+    has_mail = form_data.get('mail_attached') == 'yes'
+    if has_fax or has_mail:
+        import xlwings as xw
+        FAX_TEMPLATE_PATH  = str(settings.BASE_DIR / 'templates' / 'forms' / 'fax_cover_sheet.xlsx')
+        MAIL_TEMPLATE_PATH = str(settings.BASE_DIR / 'templates' / 'forms' / 'mail_cover_sheet.xlsx')
+        app = xw.App(visible=False)
+        try:
+            mcc_book = app.books.open(mcc_tmp)
+
+            def _write_cover(cover_ws, title, body_text):
+                """送付状 共通マッピング"""
+                cover_ws.range('I4').value  = title
+                cover_ws.range('T11').value = form_data.get('user_full_name', '')
+                cover_ws.range('T12').value = form_data.get('fax_pages', '')
+                cover_ws.range('J29').value = form_data.get('office_name', '')
+                cover_ws.range('F11').value = form_data.get('doctor_hospital', '')
+                cover_ws.range('F12').value = form_data.get('doctor_name', '')
+                cover_ws.range('V10').value = to_wareki(form_data.get('application_date', ''))
+                cover_ws.range('W11').value = form_data.get('user_full_name', '')
+                cover_ws.range('J30').value = form_data.get('office_company_name', '')
+                cover_ws.range('J31').value = form_data.get('office_name', '')
+                cover_ws.range('K32').value = form_data.get('office_postal_code', '')
+                cover_ws.range('O32').value = form_data.get('office_address', '')
+                cover_ws.range('M33').value = form_data.get('office_phone', '')
+                cover_ws.range('M34').value = form_data.get('office_fax', '')
+                body = (body_text
+                    .replace('{user_name}',   form_data.get('user_full_name', ''))
+                    .replace('{office_name}', form_data.get('office_name', ''))
+                    .replace('{client_name}', (form_data.get('client_name', '') or '').replace(' ', '').replace('　', ''))
+                    .replace('{care_level}',  care_level))
+                lines = []
+                for para in body.splitlines():
+                    if not para.strip():
+                        lines.append('')
+                    else:
+                        while para:
+                            lines.append(para[:43])
+                            para = para[43:]
+                lines = (lines + [''] * 11)[:11]
+                for i, line in enumerate(lines):
+                    cover_ws.range(f'C{17 + i}').value = line
+
+            # FAX送付状
+            if has_fax:
+                fax_book = app.books.open(FAX_TEMPLATE_PATH)
+                fax_book.sheets[0].copy(before=mcc_book.sheets[0])
+                fax_book.close()
+                cover_ws = mcc_book.sheets[0]
+                cover_ws.name = 'FAX送付状'
+                _write_cover(cover_ws, 'FAX送付状', form_data.get('fax_message', ''))
+
+            # 郵送送付状
+            if has_mail:
+                mail_book = app.books.open(MAIL_TEMPLATE_PATH)
+                mail_book.sheets[0].copy(before=mcc_book.sheets[0])
+                mail_book.close()
+                cover_ws = mcc_book.sheets[0]
+                cover_ws.name = '郵送送付状'
+                _write_cover(cover_ws, '送付状', form_data.get('mail_message', ''))
+
+            mcc_book.save()
+            mcc_book.close()
+        finally:
+            app.quit()
+
+    with open(mcc_tmp, 'rb') as f:
+        result = f.read()
+    try:
+        _os.remove(mcc_tmp)
+    except Exception:
+        pass
+
+    # printerSettings.bin を注入して片面印刷を保証
+    if _mcc_ps_bin:
+        result = _inject_printer_settings_all_sheets(result, _mcc_ps_bin)
+
+    return result
+
+
 # ========================================
 # 更新認定申請書 / 区分変更申請書
 # ========================================
+
+def _build_office_staff_options(office):
+    """事業所の担当者名リストを返す（staff_names フィールドのみ）"""
+    if not office:
+        return []
+    return [n for n in (office.staff_names or []) if n]
+
 
 def _document_create_ltc_base(request, client_id, doc_type, doc_name, template_name, extra_context=None):
     """更新認定申請書・区分変更申請書の共通ロジック"""
@@ -3473,6 +3868,7 @@ def _document_create_ltc_base(request, client_id, doc_type, doc_name, template_n
         'medical_insurance_symbol': client.medical_insurance_symbol or '',
         'medical_insurance_number': client.medical_insurance_number or '',
         # 申請書提出者（事業所）
+        'office_company_name': (office.company_name if office else '') or '',
         'office_furigana': (office.furigana if office else '') or '',
         'office_name': (office.name if office else '') or '',
         'office_number': (office.office_number if office else '') or '',
@@ -3509,14 +3905,39 @@ def _document_create_ltc_base(request, client_id, doc_type, doc_name, template_n
         'user_full_name_kana': profile.get_full_name_kana() if profile else '',
         'user_phone': profile.phone if profile else '',
         'doctor_hospital': '',
+        'doctor_furigana': '',
         'doctor_name': '',
         'doctor_phone': '',
+        'doctor_fax': '',
         'doctor_outside_city': '',
         'doctor_postal_code': '',
         'doctor_address': '',
         'doctor_notes': '',
         'change_reason': '',
+        'applicant_furigana': '',
+        'consent_type': 'previous',
+        'consent_date': datetime.today().strftime('%Y-%m-%d'),
+        'purpose_careplan': 'yes',
+        'purpose_medical_service': 'yes',
+        'purpose_facility': '',
+        'purpose_greeting': 'yes',
+        'purpose_service_meeting': 'yes',
+        'purpose_condition_change': 'yes',
+        'purpose_welfare_equipment': 'yes',
+        'purpose_other': 'yes',
+        'consultation_content': '',
+        'reply_not_needed': '',
+        'reply_needed': 'yes',
+        'fax_attached': '',
+        'fax_message': '',
+        'mail_attached': '',
+        'mail_message': '',
     }
+
+    if doc_type == 'hospital_admission_info':
+        initial['admission_date'] = ''
+        initial['doctor_notes']   = ''
+        initial['fax_attached']   = ''
 
     if doc_type == 'ltc_withdrawal':
         initial['submitter_type'] = 'office'
@@ -3577,6 +3998,8 @@ def _document_create_ltc_base(request, client_id, doc_type, doc_name, template_n
         initial['submitter_type'] = 'office'
         initial['relation'] = '介護支援専門員'
         initial['staff_name_cm'] = user_full_name
+        if not initial.get('staff_name_office'):
+            initial['staff_name_office'] = user_full_name
         initial['change_doc_gendo'] = ''
         initial['change_doc_wariai'] = ''
         initial['delivery_destination'] = 'submitter'
@@ -3644,8 +4067,10 @@ def _document_create_ltc_base(request, client_id, doc_type, doc_name, template_n
             initial['user_full_name']      = user_full_name
             initial['user_full_name_kana'] = profile.get_full_name_kana() if profile else ''
             initial['user_phone']          = profile.phone if profile else ''
-            initial['office_phone']        = (office.phone    if office else '') or ''
             initial['office_furigana']     = (office.furigana if office else '') or ''
+            # 代行提出モードのみ事業所の最新電話番号で上書き。その他モードは保存済みの申請者電話番号を保持
+            if initial.get('submitter_type', 'office') == 'office':
+                initial['office_phone'] = (office.phone if office else '') or ''
             # 代行提出モードで事業所名が保存されていない場合のみ現在の事業所から補完
             if initial.get('submitter_type', 'office') == 'office' and not initial.get('office_name') and office:
                 initial['office_name']        = office.name or ''
@@ -3685,8 +4110,10 @@ def _document_create_ltc_base(request, client_id, doc_type, doc_name, template_n
         form_data['user_full_name']      = user_full_name
         form_data['user_full_name_kana'] = profile.get_full_name_kana() if profile else ''
         form_data['user_phone']          = profile.phone if profile else ''
-        form_data['office_phone']        = (office.phone    if office else '') or ''
         form_data['office_furigana']     = (office.furigana if office else '') or ''
+        # 代行提出モードのみ事業所の最新電話番号で上書き。その他モードは申請者の電話番号を保持する
+        if form_data.get('submitter_type', 'office') == 'office':
+            form_data['office_phone'] = (office.phone if office else '') or ''
         action = request.POST.get('action', 'excel')
         history_id = request.GET.get('history_id')
 
@@ -3719,6 +4146,24 @@ def _document_create_ltc_base(request, client_id, doc_type, doc_name, template_n
             from urllib.parse import quote
             if doc_type == 'ltc_withdrawal':
                 content = _generate_ltc_withdrawal_excel_bytes(client, form_data)
+                dl_name = _make_dl_filename(client, doc_name)
+                response = HttpResponse(content, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+                response['Content-Disposition'] = (
+                    f"attachment; filename=\"download.xlsx\"; "
+                    f"filename*=UTF-8''{quote(dl_name, safe='')}"
+                )
+                return response
+            elif doc_type == 'care_service_meeting_notice':
+                content = _generate_care_service_meeting_notice_excel_bytes(client, form_data, request)
+                dl_name = _make_dl_filename(client, doc_name)
+                response = HttpResponse(content, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+                response['Content-Disposition'] = (
+                    f"attachment; filename=\"download.xlsx\"; "
+                    f"filename*=UTF-8''{quote(dl_name, safe='')}"
+                )
+                return response
+            elif doc_type == 'medical_care_coordination':
+                content = _generate_medical_care_coordination_excel_bytes(client, form_data)
                 dl_name = _make_dl_filename(client, doc_name)
                 response = HttpResponse(content, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
                 response['Content-Disposition'] = (
@@ -3809,41 +4254,46 @@ def _document_create_ltc_base(request, client_id, doc_type, doc_name, template_n
         '両側の膝関節または股関節に著しい変形を伴う変形性関節症',
     ]
 
-    # アセスメントから医師・医療機関情報を取得（医師情報が入っている最新を優先）
+    # アセスメントの医療機関FK参照から doctor_options を構築
     from assessments.models import Assessment
-    def _has_doctor(a):
-        hs = a.health_status or {}
-        return any([
-            hs.get('main_doctor_hospital'),
-            hs.get('visiting_doctor_hospital'),
-            *(hs.get(f'family_doctor_hospital_{i}') for i in range(1, 5)),
-        ])
-    latest_assessment = next(
-        (a for a in client.assessments.order_by('-assessment_date', '-created_at') if _has_doctor(a)),
-        client.assessments.order_by('-assessment_date', '-created_at').first()
-    )
+    latest_assessment = (
+        client.assessments
+        .filter(main_doctor__isnull=False)
+        .select_related('main_doctor', 'visiting_doctor',
+                        'family_doctor_1', 'family_doctor_2',
+                        'family_doctor_3', 'family_doctor_4')
+        .order_by('-assessment_date', '-created_at')
+        .first()
+    ) or client.assessments.select_related(
+        'main_doctor', 'visiting_doctor',
+        'family_doctor_1', 'family_doctor_2',
+        'family_doctor_3', 'family_doctor_4'
+    ).order_by('-assessment_date', '-created_at').first()
+
     doctor_options = []
     if latest_assessment:
-        hs = latest_assessment.health_status or {}
-        if hs.get('main_doctor_hospital'):
-            doctor_options.append({
-                'type': '主治医',
-                'hospital': hs.get('main_doctor_hospital', ''),
-                'name': hs.get('main_doctor_name', ''),
-            })
-        if hs.get('visiting_doctor_hospital'):
-            doctor_options.append({
-                'type': '往診医',
-                'hospital': hs.get('visiting_doctor_hospital', ''),
-                'name': hs.get('visiting_doctor_name', ''),
-            })
-        for i in range(1, 5):
-            hospital = hs.get(f'family_doctor_hospital_{i}', '')
-            if hospital:
+        _pairs = [
+            ('主治医',       latest_assessment.main_doctor),
+            ('往診医',       latest_assessment.visiting_doctor),
+            ('かかりつけ医', latest_assessment.family_doctor_1),
+            ('かかりつけ医', latest_assessment.family_doctor_2),
+            ('かかりつけ医', latest_assessment.family_doctor_3),
+            ('かかりつけ医', latest_assessment.family_doctor_4),
+        ]
+        for _type, _inst in _pairs:
+            if _inst:
                 doctor_options.append({
-                    'type': 'かかりつけ医',
-                    'hospital': hospital,
-                    'name': hs.get(f'family_doctor_name_{i}', ''),
+                    'type':       _type,
+                    'corp_name':  _inst.corp_name,
+                    'hospital':   _inst.hospital_name,
+                    'furigana':   _inst.hospital_furigana,
+                    'name':       _inst.doctor_name,
+                    'doctors':    _inst.doctors,
+                    'phone':      _inst.phone,
+                    'fax':        _inst.fax,
+                    'postal':     _inst.postal_code,
+                    'address':    _inst.address,
+                    'pk':         _inst.pk,
                 })
 
     # スタッフ一覧（担当者選択用）
@@ -3873,11 +4323,34 @@ def _document_create_ltc_base(request, client_id, doc_type, doc_name, template_n
         'current_office_postal':   (office.postal_code    if office else '') or '',
         'current_office_address':  (office.address        if office else '') or '',
         'current_office_phone':    (office.phone          if office else '') or '',
+        'current_office_staff_names': (office.staff_names if office else []) or [],
+        'office_staff_options': _build_office_staff_options(office),
+        'office_staff_options_json': __import__('json').dumps(_build_office_staff_options(office)),
         'is_second_insured': is_second_insured,
         'specific_diseases': specific_diseases,
         'doctor_options': doctor_options,
+        'medical_institutions': MedicalInstitution.objects.all(),
         'staff_options': staff_options,
         'history_id': history_id or '',
+        'fax_template_body': _get_fax_template_body(),
+        'fax_default_body': (
+            '平素より大変お世話になっております。\n{office_name}の{user_name}です。\n'
+            'このたび、{client_name}様の医療・介護連携シートを送付させていただきました。\n'
+            '詳細につきましては、別紙「医療・介護連携シート」をご確認のうえ、ご回答いただけますと幸いです。\n'
+            '回答方法につきましては、連携シートへご記入いただき、FAXにてご返送くださいますようお願いいたします。\n'
+            'なお、その他の方法にてご回答いただいても差し支えございません。\n'
+            '今後の支援等に関しまして、ご指示やご助言等がございましたら、併せてご教示いただけますと幸いです。\n'
+            'お手数をおかけいたしますが、何卒よろしくお願い申し上げます。'
+        ),
+        'mail_default_body': (
+            '平素より大変お世話になっております。\n{office_name}の{user_name}です。\n'
+            'このたび、{client_name}様の医療・介護連携シートを送付させていただきました。\n'
+            '詳細につきましては、別紙「医療・介護連携シート」をご確認のうえ、ご回答いただけますと幸いです。\n'
+            '回答方法につきましては、連携シートへご記入いただき、返送用封筒にてご返送くださいますようお願いいたします。\n'
+            'なお、その他の方法にてご回答いただいても差し支えございません。\n'
+            '今後の支援等に関しまして、ご指示やご助言等がございましたら、併せてご教示いただけますと幸いです。\n'
+            'お手数をおかけいたしますが、何卒よろしくお願い申し上げます。'
+        ),
         'application_type_choices': [
             ('新規申請', '新規申請'),
             ('更新申請', '更新申請'),
@@ -3944,6 +4417,37 @@ def document_create_ltc_renewal(request, client_id):
 
 @login_required
 @user_passes_test(staff_required)
+def document_create_hospital_admission_info(request, client_id):
+    """入院時情報提供書 作成画面"""
+    return _document_create_ltc_base(
+        request, client_id,
+        doc_type='hospital_admission_info',
+        doc_name='入院時情報提供書',
+        template_name='clients/document_create_hospital_admission_info.html',
+        extra_context={
+            'fax_default_body': (
+                '平素より大変お世話になっております。\n{office_name}の{user_name}です。\n'
+                'このたび、{client_name}様が入院されましたので、入院時情報提供書を送付させていただきます。\n'
+                'ご確認くださいますよう、よろしくお願い申し上げます。'
+            ),
+        },
+    )
+
+
+@login_required
+@user_passes_test(staff_required)
+def document_create_medical_care_coordination(request, client_id):
+    """医療・介護連携シート 作成画面"""
+    return _document_create_ltc_base(
+        request, client_id,
+        doc_type='medical_care_coordination',
+        doc_name='医療・介護連携シート',
+        template_name='clients/document_create_medical_care_coordination.html',
+    )
+
+
+@login_required
+@user_passes_test(staff_required)
 def document_create_ltc_change(request, client_id):
     """区分変更申請書 作成画面"""
     return _document_create_ltc_base(
@@ -3980,18 +4484,29 @@ def document_create_kyotaku_selection_confirmation(request, client_id):
 
 @login_required
 @user_passes_test(staff_required)
+def fax_cover_sheet_download(request):
+    """FAX送付状テンプレートをそのままダウンロード"""
+    fax_path = settings.BASE_DIR / 'templates' / 'forms' / 'fax_cover_sheet.xlsx'
+    with open(str(fax_path), 'rb') as f:
+        data = f.read()
+    response = HttpResponse(
+        data,
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    )
+    response['Content-Disposition'] = 'attachment; filename="FAX送付状.xlsx"'
+    return response
+
+
 def document_create_care_service_meeting_notice(request, client_id):
     """サービス担当者会議開催のご案内 作成画面"""
-    care_offices = list(CareServiceOffice.objects.all())
-    internal_office_choices = [
-        'ヘルパーステーション　安濃津ろまん',
-        '訪問看護ステーション　安濃津ろまん',
-        'デイサービス　安濃津ろまん',
-        '福祉用具貸与・販売安濃津ろまん',
-        'ローレル薬局',
-        '老人保健施設ロマン訪問リハビリ',
-        '在宅複合型施設花紬',
-    ]
+    from datetime import date as _date
+    care_offices = list(CareServiceOffice.objects.filter(office_type='external'))
+    _internal_svc_order = ['訪問看護', '訪問介護', '通所介護', '福祉用具貸与', '訪問リハビリテーション', 'その他']
+    internal_offices = sorted(
+        CareServiceOffice.objects.filter(office_type='internal'),
+        key=lambda o: _internal_svc_order.index(o.service_type) if o.service_type in _internal_svc_order else 99
+    )
+    from .models import FaxMessageTemplate
     return _document_create_ltc_base(
         request, client_id,
         doc_type='care_service_meeting_notice',
@@ -3999,8 +4514,12 @@ def document_create_care_service_meeting_notice(request, client_id):
         template_name='clients/document_create_care_service_meeting_notice.html',
         extra_context={
             'care_offices': care_offices,
-            'internal_office_choices': internal_office_choices,
+            'today': _date.today(),
+            'place_options': list(MeetingPlaceOption.objects.all()),
+            'agenda_options': list(MeetingAgendaOption.objects.all()),
+            'internal_offices': internal_offices,
             'service_type_choices': CareServiceOffice.SERVICE_TYPE_CHOICES,
+            'fax_template_body': FaxMessageTemplate.get_body(),
         },
     )
 
@@ -4015,6 +4534,309 @@ def document_create_ltc_address_change(request, client_id):
         doc_name='介護保険送付先変更届',
         template_name='clients/document_create_ltc_address_change.html',
     )
+
+
+def _generate_care_service_meeting_notice_excel_bytes(client, form_data, request):
+    """サービス担当者会議開催のご案内（XLSX）のバイト列を生成"""
+    from openpyxl import load_workbook
+    from copy import copy
+    import io, tempfile, zipfile as _zf, re as _re
+    import xml.etree.ElementTree as _ET
+    from datetime import datetime as _dt, date as _date_cls
+
+    TEMPLATE_PATH = settings.BASE_DIR / 'templates' / 'forms' / 'care_service_meeting_notice.xlsx'
+
+    wb = load_workbook(str(TEMPLATE_PATH))
+    base_ws = wb.active
+
+    # ---- 選択事業所リストを構築 ----
+    internal_ids = request.POST.getlist('internal_office')
+    internal_offices = list(CareServiceOffice.objects.filter(pk__in=internal_ids, office_type='internal'))
+    external_ids = request.POST.getlist('selected_office')
+    external_offices = list(CareServiceOffice.objects.filter(pk__in=external_ids, office_type='external'))
+    all_offices = internal_offices + external_offices
+
+    if not all_offices:
+        buf = io.BytesIO()
+        wb.save(buf)
+        return buf.getvalue()
+
+    # テンプレートのprinterSettings.binを取得（openpyxlが保存時に落とすため後で再注入する）
+    _template_ps_bin = None
+    with _zf.ZipFile(str(TEMPLATE_PATH), 'r') as _z:
+        for _n in _z.namelist():
+            if _n.startswith('xl/printerSettings/') and _n.endswith('.bin'):
+                _template_ps_bin = _z.read(_n)
+                break
+
+    # ---- 共通データ ----
+    post = request.POST
+    created_date_str = post.get('created_date', '')
+    try:
+        created_date = _dt.strptime(created_date_str, '%Y-%m-%d').date()
+    except Exception:
+        created_date = _date_cls.today()
+
+    meeting_date = None
+    try:
+        meeting_date = _dt.strptime(post.get('meeting_date', ''), '%Y-%m-%d').date()
+    except Exception:
+        pass
+
+    def _wareki_parts(d):
+        if not d:
+            return ('', '', '', '')
+        WEEKDAYS_JA = ['月', '火', '水', '木', '金', '土', '日']
+        if d >= _date_cls(2019, 5, 1):
+            era = f'令和{d.year - 2018}年'
+        elif d >= _date_cls(1989, 1, 8):
+            era = f'平成{d.year - 1988}年'
+        elif d >= _date_cls(1926, 12, 25):
+            era = f'昭和{d.year - 1925}年'
+        else:
+            era = f'{d.year}年'
+        return (era, d.month, d.day, WEEKDAYS_JA[d.weekday()])
+
+    meeting_era, meeting_month, meeting_day, meeting_weekday = _wareki_parts(meeting_date)
+
+    meeting_time   = post.get('meeting_time', '')
+    meeting_place  = post.get('meeting_place', '') or post.get('meeting_place_preset', '')
+    meeting_agenda = post.get('meeting_agenda', '') or post.get('meeting_agenda_preset', '')
+    office_name    = post.get('office_name', '') or form_data.get('office_name', '')
+
+    creator = post.get('staff_name_office', '') or form_data.get('staff_name_office', '')
+
+    def _set_cell(ws, coord, value):
+        from openpyxl.cell.cell import MergedCell
+        cell = ws[coord]
+        if isinstance(cell, MergedCell):
+            for rng in ws.merged_cells.ranges:
+                if coord in rng:
+                    ws.cell(rng.min_row, rng.min_col).value = value
+                    return
+        else:
+            cell.value = value
+
+    def _write_common(ws, office_name_val):
+        _set_cell(ws, 'A2',  office_name_val)
+        _set_cell(ws, 'AC2', created_date)
+        _set_cell(ws, 'Y4',  office_name)
+        _set_cell(ws, 'AD6', creator)
+        if meeting_era:
+            _set_cell(ws, 'I19',  f'  {meeting_era}')
+        if meeting_month:
+            _set_cell(ws, 'N19',  meeting_month)
+        if meeting_day:
+            _set_cell(ws, 'R19',  meeting_day)
+        if meeting_weekday:
+            _set_cell(ws, 'W19',  meeting_weekday)
+        if meeting_time:
+            _set_cell(ws, 'AE19', meeting_time)
+        if meeting_place:
+            _set_cell(ws, 'I22',  meeting_place)
+        _set_cell(ws, 'I25',  client.name or '')
+        if meeting_agenda:
+            _set_cell(ws, 'I28',  meeting_agenda)
+
+    # ---- シートを事業所ごとに複製 ----
+    sheet_names_used = []
+    new_sheets       = []
+    external_indices = []
+
+    for office in all_offices:
+        raw_name   = (office.name or '事業所')[:31]
+        sheet_name = raw_name
+        suffix = 2
+        while sheet_name in sheet_names_used:
+            sheet_name = f'{raw_name[:28]}_{suffix}'
+            suffix += 1
+        sheet_names_used.append(sheet_name)
+        ws = wb.copy_worksheet(base_ws)
+        ws.title = sheet_name
+        new_sheets.append((ws, office.name or ''))
+        if office.office_type == 'external':
+            external_indices.append((len(new_sheets) - 1, f'FAX_{raw_name[:27]}', office))
+
+    wb.remove(base_ws)
+
+    for ws, office_name_val in new_sheets:
+        _write_common(ws, office_name_val)
+
+    # ---- 一時ファイルに保存 ----
+    with tempfile.NamedTemporaryFile(suffix='.xlsx', delete=False) as tmp:
+        notice_tmp = tmp.name
+    buf = io.BytesIO()
+    wb.save(buf)
+    with open(notice_tmp, 'wb') as f:
+        f.write(buf.getvalue())
+
+    try:
+        # ---- 外部事業所がある場合のみ xlwings で FAXシートを挿入 ----
+        if external_indices:
+            import xlwings as xw
+            FAX_TEMPLATE_PATH = str(settings.BASE_DIR / 'templates' / 'forms' / 'fax_cover_sheet.xlsx')
+            app = xw.App(visible=False)
+            try:
+                notice_book = app.books.open(notice_tmp)
+                fax_book    = app.books.open(FAX_TEMPLATE_PATH)
+                fax_sheet   = fax_book.sheets[0]
+
+                # 作成者の居宅介護支援事業所情報
+                _home_office = getattr(getattr(request.user, 'profile', None), 'home_care_office', None)
+
+                # FAX本文をC17〜C27用に分割（明示的改行を保持・43文字で自動折り返し）
+                _fax_raw = (post.get('fax_message', '')
+                            .replace('{user_name}', creator)
+                            .replace('{office_name}', office_name)
+                            .replace('{client_name}', (client.name or '').replace(' ', '').replace('　', '') + ('様' if client.name else '')))
+                _fax_lines = []
+                for _para in _fax_raw.splitlines():
+                    if not _para.strip():
+                        _fax_lines.append('')
+                    else:
+                        while _para:
+                            _fax_lines.append(_para[:43])
+                            _para = _para[43:]
+                _fax_lines = (_fax_lines + [''] * 11)[:11]
+
+                offset = 0
+                for notice_idx, fax_title, ext_office in external_indices:
+                    target = notice_book.sheets[notice_idx + offset]
+                    fax_sheet.copy(before=target)
+                    fax_ws = notice_book.sheets[notice_idx + offset]
+                    fax_ws.name = fax_title
+
+                    # 宛先：外部事業所
+                    person = post.get(f'selected_office_person_{ext_office.pk}', '')
+                    # タイトル・送付先・送付者・送付元
+                    fax_ws.range('I4').value  = 'FAX送付状'
+                    fax_ws.range('T11').value = creator
+                    fax_ws.range('T12').value = ''
+                    fax_ws.range('J29').value = _home_office.name if _home_office else ''
+                    # 宛先詳細
+                    fax_ws.range('F11').value = ext_office.name or ''
+                    fax_ws.range('F12').value = person
+
+                    # 書類情報
+                    fax_ws.range('V10').value = created_date
+                    fax_ws.range('W11').value = creator
+
+                    # 送信元：作成者の事業所
+                    if _home_office:
+                        fax_ws.range('J30').value = _home_office.company_name or ''
+                        fax_ws.range('J31').value = _home_office.name or ''
+                        fax_ws.range('K32').value = _home_office.postal_code or ''
+                        fax_ws.range('O32').value = _home_office.address or ''
+                        fax_ws.range('M33').value = _home_office.phone or ''
+                        fax_ws.range('M34').value = _home_office.fax or ''
+
+                    # FAX本文 C17〜C27
+                    for _i, _line in enumerate(_fax_lines):
+                        fax_ws.range(f'C{17 + _i}').value = _line
+
+                    offset += 1
+                fax_book.close()
+                notice_book.save()
+                notice_book.close()
+            finally:
+                app.quit()
+
+        # ---- 全会議通知シートにテンプレートのprinterSettings.binを注入（片面印刷を保証） ----
+        # openpyxlはprinterSettings.binを保存しないため、Excelがシステムデフォルト（両面）を使ってしまう
+        if _template_ps_bin:
+            _files = {}
+            with _zf.ZipFile(notice_tmp, 'r') as _zin:
+                for _item in _zin.infolist():
+                    _files[_item.filename] = _zin.read(_item.filename)
+
+            _NS_WB = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main'
+            _NS_R  = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships'
+            _NS_PR = 'http://schemas.openxmlformats.org/package/2006/relationships'
+            _wb_tree   = _ET.fromstring(_files['xl/workbook.xml'])
+            _rels_tree = _ET.fromstring(_files['xl/_rels/workbook.xml.rels'])
+
+            # openpyxlは絶対パス（/xl/worksheets/...）、xlwingsは相対パス（worksheets/...）で出力する
+            def _norm(t):
+                return t[4:] if t.startswith('/xl/') else t.lstrip('/')
+
+            _rid_to_target = {
+                r.get('Id'): _norm(r.get('Target', ''))
+                for r in _rels_tree.findall(f'{{{_NS_PR}}}Relationship')
+            }
+            _non_fax_sheets = {
+                _rid_to_target[_s.get(f'{{{_NS_R}}}id', '')]
+                for _s in _wb_tree.findall(f'{{{_NS_WB}}}sheets/{{{_NS_WB}}}sheet')
+                if not _s.get('name', '').startswith('FAX_')
+                and _s.get(f'{{{_NS_R}}}id', '') in _rid_to_target
+            }
+
+            _ps_counter = max(
+                (int(_re.search(rb'printerSettings(\d+)\.bin', k.encode()).group(1))
+                 for k in _files if k.endswith('.bin') and 'printerSettings' in k),
+                default=0
+            )
+            for _sheet_rel in _non_fax_sheets:
+                _sheet_file = _sheet_rel.split('/')[-1]
+                _rels_key   = f'xl/worksheets/_rels/{_sheet_file}.rels'
+                _rels_data  = _files.get(_rels_key)
+                _ps_matches = _re.findall(rb'Target="../printerSettings/([^"]+)"', _rels_data or b'')
+
+                if _ps_matches:
+                    for _ps_name in _ps_matches:
+                        _files[f'xl/printerSettings/{_ps_name.decode()}'] = _template_ps_bin
+                else:
+                    _ps_counter += 1
+                    _ps_fname  = f'printerSettings{_ps_counter}.bin'
+                    _ps_full   = f'xl/printerSettings/{_ps_fname}'
+                    _rid_label = f'rIdPs{_ps_counter}'
+                    _new_rel   = (
+                        f'<Relationship Id="{_rid_label}" '
+                        f'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/printerSettings" '
+                        f'Target="../printerSettings/{_ps_fname}"/>'
+                    ).encode()
+                    _files[_rels_key] = (
+                        _rels_data.replace(b'</Relationships>', _new_rel + b'</Relationships>')
+                        if _rels_data else
+                        b'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+                        b'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+                        + _new_rel + b'</Relationships>'
+                    )
+                    _files[_ps_full] = _template_ps_bin
+                    _files['[Content_Types].xml'] = _files['[Content_Types].xml'].replace(
+                        b'</Types>',
+                        f'<Override PartName="/{_ps_full}" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.printerSettings"/>'.encode()
+                        + b'</Types>'
+                    )
+                    # pageSetupにr:idを追加（xlsxはこの参照がないとprinterSettings.binを無視する）
+                    _sheet_xml_key = f'xl/{_sheet_rel}'
+                    if _sheet_xml_key in _files:
+                        _sheet_xml = _files[_sheet_xml_key]
+                        if b'r:id=' not in _sheet_xml:
+                            if b'xmlns:r=' not in _sheet_xml:
+                                _sheet_xml = _re.sub(
+                                    rb'(<worksheet\b)',
+                                    rb'\1 xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"',
+                                    _sheet_xml, count=1
+                                )
+                            _rid_bytes = f' r:id="{_rid_label}"'.encode()
+                            _sheet_xml = _re.sub(
+                                rb'(<pageSetup\b[^/]*)(/>)',
+                                rb'\1' + _rid_bytes + rb'\2',
+                                _sheet_xml
+                            )
+                        _files[_sheet_xml_key] = _sheet_xml
+
+            _out_buf = io.BytesIO()
+            with _zf.ZipFile(_out_buf, 'w', _zf.ZIP_DEFLATED) as _zout:
+                for _fname, _data in _files.items():
+                    _zout.writestr(_fname, _data)
+            with open(notice_tmp, 'wb') as _f:
+                _f.write(_out_buf.getvalue())
+
+        with open(notice_tmp, 'rb') as f:
+            return f.read()
+    finally:
+        os.unlink(notice_tmp)
 
 
 def _generate_ltc_withdrawal_excel_bytes(client, form_data):
@@ -4063,8 +4885,13 @@ def _generate_ltc_withdrawal_excel_bytes(client, form_data):
     # ② 取下年月日（本日）
     w('N8', to_wareki(date_cls.today().strftime('%Y-%m-%d')))
 
-    # ③ 被保険者番号
-    w('C8', form_data.get('insurance_number', ''))
+    # ③ 被保険者番号（数値として入力）
+    ins_num = form_data.get('insurance_number', '').replace('-', '').strip()
+    try:
+        ws['C8'].value = int(ins_num)
+        ws['C8'].number_format = '0'
+    except (ValueError, TypeError):
+        w('C8', ins_num)
 
     # ④ フリガナ（ひらがな→カタカナ）
     furigana = form_data.get('client_furigana', '')
@@ -4087,14 +4914,48 @@ def _generate_ltc_withdrawal_excel_bytes(client, form_data):
     # ⑨ 被保険者 電話番号
     w('N14', form_data.get('client_phone', ''))
 
-    # ⑩ 提出代行者
+    # ⑩ 提出代行者（C16：事業所名＋改行＋申請者名、マージセル対応）
+    def wm(ref, value):
+        """マージセルの先頭セルに書き込む"""
+        cell = ws[ref]
+        if isinstance(cell, MergedCell):
+            for mr in ws.merged_cells.ranges:
+                if ref in mr:
+                    r, c, _, _ = mr.bounds
+                    ws.cell(row=r, column=c).value = value
+                    return
+        else:
+            cell.value = value
+
     submitter_type = form_data.get('submitter_type', 'office')
     if submitter_type == 'office':
         office_name = form_data.get('office_name', '').strip()
         staff_name  = form_data.get('staff_name_office', '').strip()
-        w('C16', f"{office_name}\n{staff_name}" if office_name else staff_name)
+        c16_val = f"{office_name}\n{staff_name}" if office_name else staff_name
     else:
-        w('C16', form_data.get('staff_name', '').strip())
+        c16_val = form_data.get('staff_name', '').strip()
+    wm('C16', c16_val)
+    # 改行を表示するため折り返し設定（既存の整列を保持）
+    from openpyxl.styles import Alignment as _Alignment
+    from copy import copy as _copy_style
+    try:
+        c16_cell = ws['C16']
+        if isinstance(c16_cell, MergedCell):
+            for mr in ws.merged_cells.ranges:
+                if 'C16' in mr:
+                    r, c, _, _ = mr.bounds
+                    c16_cell = ws.cell(row=r, column=c)
+                    break
+        orig = c16_cell.alignment
+        c16_cell.alignment = _Alignment(
+            horizontal=orig.horizontal or 'left',
+            vertical=orig.vertical or 'center',
+            wrap_text=True,
+            indent=orig.indent,
+            text_rotation=orig.text_rotation,
+        )
+    except Exception:
+        pass
     w('E18', form_data.get('office_postal_code', ''))
     w('C19', form_data.get('office_address', ''))
     w('N20', form_data.get('office_phone', ''))
@@ -4331,7 +5192,7 @@ def _generate_ltc_doctor_change_excel_bytes(client, form_data):
         if submitter_type == 'office':
             office_name = form_data.get('office_name', '').strip()
             staff_name  = form_data.get('staff_name_office', '').strip()
-            ws['H5'].value = f"{office_name}\n{staff_name}" if office_name else staff_name
+            ws['H5'].value = f"{office_name}\n{staff_name}" if (office_name and staff_name) else (office_name or staff_name)
             ws['H6'].value = form_data.get('relation', '介護支援専門員')
         else:
             ws['H5'].value = form_data.get('staff_name', '').strip()
@@ -4539,8 +5400,11 @@ def _generate_ltc_burden_address_change_excel_bytes(client, form_data):
     if submitter_type == 'office':
         office_name    = form_data.get('office_name', '').strip()
         submitter_name = form_data.get('staff_name_office', '').strip()
-        ws['L12'].value = f'{office_name}\n{submitter_name}'
-        ws['L12'].alignment = Alignment(wrap_text=True, horizontal='center', vertical='center')
+        if office_name and submitter_name:
+            ws['L12'].value = f'{office_name}\n{submitter_name}'
+            ws['L12'].alignment = Alignment(wrap_text=True, horizontal='center', vertical='center')
+        else:
+            w('L12', office_name or submitter_name)
     else:
         w('L12', form_data.get('staff_name', '').strip())
 
@@ -4551,6 +5415,9 @@ def _generate_ltc_burden_address_change_excel_bytes(client, form_data):
 
     # AQ16: 届出提出者電話番号
     w('AQ16', form_data.get('office_phone', ''))
+
+    # L20: 本人との関係
+    w('L20', form_data.get('relation', ''))
 
     # L17: 利用者氏名
     w('L17', client.name or '')
@@ -4941,11 +5808,17 @@ def support_center_api(request):
 @login_required
 @user_passes_test(staff_required)
 def care_service_office_list(request):
-    """介護サービス事業所一覧"""
-    offices = CareServiceOffice.objects.all()
+    """介護サービス事業所一覧（外部事業所のみ）"""
+    offices = CareServiceOffice.objects.filter(office_type='external')
+    from_source = request.GET.get('from', '')
+    client_id = request.GET.get('client_id', '')
+    back_url = None
+    if from_source == 'meeting_notice' and client_id:
+        back_url = reverse('document_care_service_meeting_notice', kwargs={'client_id': client_id})
     return render(request, 'clients/care_service_office_list.html', {
         'offices': offices,
         'service_type_choices': CareServiceOffice.SERVICE_TYPE_CHOICES,
+        'back_url': back_url,
     })
 
 
@@ -4972,6 +5845,7 @@ def care_service_office_create(request):
         return JsonResponse({'success': False, 'error': '電話番号とFAX番号は必須です。'})
     office = CareServiceOffice.objects.create(
         name=name, furigana=furigana, service_type=service_type,
+        office_type='external',
         office_number=office_number, postal_code=postal_code, address=address,
         phone=phone, fax=fax, persons=persons,
     )
@@ -5028,3 +5902,315 @@ def care_service_office_delete(request, pk):
         return JsonResponse({'success': True})
     except CareServiceOffice.DoesNotExist:
         return JsonResponse({'success': False, 'error': '見つかりません。'})
+
+
+# ---- 開催予定場所 選択肢管理 ----
+
+@login_required
+@user_passes_test(staff_required)
+def meeting_place_options_list(request):
+    options = list(MeetingPlaceOption.objects.values('id', 'name', 'is_other', 'sort_order'))
+    return JsonResponse({'success': True, 'options': options})
+
+
+@login_required
+@user_passes_test(staff_required)
+def meeting_place_option_create(request):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'POSTのみ'})
+    name = request.POST.get('name', '').strip()
+    if not name:
+        return JsonResponse({'success': False, 'error': '場所名は必須です。'})
+    max_order = MeetingPlaceOption.objects.filter(is_other=False).aggregate(
+        m=_Max('sort_order'))['m'] or 0
+    opt = MeetingPlaceOption.objects.create(name=name, sort_order=max_order + 1)
+    return JsonResponse({'success': True, 'id': opt.id, 'name': opt.name,
+                         'is_other': opt.is_other, 'sort_order': opt.sort_order})
+
+
+@login_required
+@user_passes_test(staff_required)
+def meeting_place_option_update(request, pk):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'POSTのみ'})
+    try:
+        opt = MeetingPlaceOption.objects.get(pk=pk)
+    except MeetingPlaceOption.DoesNotExist:
+        return JsonResponse({'success': False, 'error': '見つかりません。'})
+    name = request.POST.get('name', '').strip()
+    if not name:
+        return JsonResponse({'success': False, 'error': '場所名は必須です。'})
+    opt.name = name
+    opt.save()
+    return JsonResponse({'success': True, 'id': opt.id, 'name': opt.name})
+
+
+@login_required
+@user_passes_test(staff_required)
+def meeting_place_option_delete(request, pk):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'POSTのみ'})
+    try:
+        MeetingPlaceOption.objects.get(pk=pk).delete()
+        return JsonResponse({'success': True})
+    except MeetingPlaceOption.DoesNotExist:
+        return JsonResponse({'success': False, 'error': '見つかりません。'})
+
+
+# ---- 今回の検討内容 選択肢管理 ----
+
+@login_required
+@user_passes_test(staff_required)
+def meeting_place_options_reorder(request):
+    import json
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'POSTのみ'})
+    ids = json.loads(request.POST.get('order', '[]'))
+    for i, pk in enumerate(ids):
+        MeetingPlaceOption.objects.filter(pk=pk).update(sort_order=i + 1)
+    return JsonResponse({'success': True})
+
+
+@login_required
+@user_passes_test(staff_required)
+def meeting_agenda_options_list(request):
+    options = list(MeetingAgendaOption.objects.values('id', 'name', 'is_other', 'sort_order'))
+    return JsonResponse({'success': True, 'options': options})
+
+
+@login_required
+@user_passes_test(staff_required)
+def meeting_agenda_option_create(request):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'POSTのみ'})
+    name = request.POST.get('name', '').strip()
+    if not name:
+        return JsonResponse({'success': False, 'error': '検討内容は必須です。'})
+    max_order = MeetingAgendaOption.objects.filter(is_other=False).aggregate(
+        m=_Max('sort_order'))['m'] or 0
+    opt = MeetingAgendaOption.objects.create(name=name, sort_order=max_order + 1)
+    return JsonResponse({'success': True, 'id': opt.id, 'name': opt.name,
+                         'is_other': opt.is_other, 'sort_order': opt.sort_order})
+
+
+@login_required
+@user_passes_test(staff_required)
+def meeting_agenda_option_update(request, pk):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'POSTのみ'})
+    try:
+        opt = MeetingAgendaOption.objects.get(pk=pk)
+    except MeetingAgendaOption.DoesNotExist:
+        return JsonResponse({'success': False, 'error': '見つかりません。'})
+    name = request.POST.get('name', '').strip()
+    if not name:
+        return JsonResponse({'success': False, 'error': '検討内容は必須です。'})
+    opt.name = name
+    opt.save()
+    return JsonResponse({'success': True, 'id': opt.id, 'name': opt.name})
+
+
+@login_required
+@user_passes_test(staff_required)
+def meeting_place_options_reset(request):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'POSTのみ'})
+    defaults = [
+        ('ご利用者様の自宅',        False, 1),
+        ('安濃津ろまん相談室',       False, 2),
+        ('ご利用者様のフロアホール', False, 3),
+    ]
+    MeetingPlaceOption.objects.filter(is_other=False).delete()
+    for name, is_other, sort_order in defaults:
+        MeetingPlaceOption.objects.create(name=name, is_other=is_other, sort_order=sort_order)
+    options = list(MeetingPlaceOption.objects.values('id', 'name', 'is_other', 'sort_order'))
+    return JsonResponse({'success': True, 'options': options})
+
+
+@login_required
+@user_passes_test(staff_required)
+def meeting_agenda_options_reset(request):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'POSTのみ'})
+    defaults = [
+        ('安濃津ろまん入居に伴う、介護サービスの検討及び事業所契約', False, 1),
+        ('現在の生活状況やサービス利用状況、今後の生活について',     False, 2),
+    ]
+    MeetingAgendaOption.objects.filter(is_other=False).delete()
+    for name, is_other, sort_order in defaults:
+        MeetingAgendaOption.objects.create(name=name, is_other=is_other, sort_order=sort_order)
+    options = list(MeetingAgendaOption.objects.values('id', 'name', 'is_other', 'sort_order'))
+    return JsonResponse({'success': True, 'options': options})
+
+
+@login_required
+@user_passes_test(staff_required)
+def fax_template_get(request):
+    from .models import FaxMessageTemplate
+    return JsonResponse({'body': FaxMessageTemplate.get_body()})
+
+
+@login_required
+@user_passes_test(staff_required)
+def fax_template_save(request):
+    from .models import FaxMessageTemplate
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'POSTのみ'})
+    body = request.POST.get('body', '')
+    obj, _ = FaxMessageTemplate.objects.get_or_create(pk=1)
+    obj.body = body
+    obj.save()
+    return JsonResponse({'success': True})
+
+
+@login_required
+@user_passes_test(staff_required)
+def meeting_agenda_options_reorder(request):
+    import json
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'POSTのみ'})
+    ids = json.loads(request.POST.get('order', '[]'))
+    for i, pk in enumerate(ids):
+        MeetingAgendaOption.objects.filter(pk=pk).update(sort_order=i + 1)
+    return JsonResponse({'success': True})
+
+
+@login_required
+@user_passes_test(staff_required)
+def meeting_agenda_option_delete(request, pk):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'POSTのみ'})
+    try:
+        MeetingAgendaOption.objects.get(pk=pk).delete()
+        return JsonResponse({'success': True})
+    except MeetingAgendaOption.DoesNotExist:
+        return JsonResponse({'success': False, 'error': '見つかりません。'})
+
+
+# ---- 医療機関マスタ管理 ----
+
+@login_required
+@user_passes_test(staff_required)
+def medical_institution_list(request):
+    institutions = MedicalInstitution.objects.all()
+    from_source = request.GET.get('from', '')
+    client_id   = request.GET.get('client_id', '')
+    back_url = None
+    if from_source == 'assessment' and client_id:
+        back_url = reverse('assessment_create') + f'?client={client_id}&goto=medical-institutions'
+    elif from_source == 'assessment_edit':
+        assessment_id = request.GET.get('assessment_id', '')
+        if assessment_id:
+            back_url = reverse('assessment_edit', kwargs={'pk': assessment_id}) + '?goto=medical-institutions'
+    elif from_source == 'ltc_renewal' and client_id:
+        back_url = reverse('document_ltc_renewal', kwargs={'client_id': client_id})
+    elif from_source == 'ltc_change' and client_id:
+        back_url = reverse('document_ltc_change', kwargs={'client_id': client_id})
+    back_label = {
+        'assessment':      'アセスメント作成へ戻る',
+        'assessment_edit': 'アセスメント編集へ戻る',
+        'ltc_renewal':     '更新認定申請書へ戻る',
+        'ltc_change':      '区分変更申請書へ戻る',
+    }.get(from_source, '戻る')
+    return render(request, 'clients/medical_institution_list.html', {
+        'institutions': institutions,
+        'doctor_type_choices': MedicalInstitution.DOCTOR_TYPE_CHOICES,
+        'back_url': back_url,
+        'back_label': back_label if back_url else '',
+    })
+
+
+@login_required
+@user_passes_test(staff_required)
+def medical_institution_create(request):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'POSTのみ'})
+    import unicodedata as _ud
+    hospital_name = request.POST.get('hospital_name', '').strip()
+    if not hospital_name:
+        return JsonResponse({'success': False, 'error': '医療機関名は必須です。'})
+    doctors = [
+        ' '.join(n.split())
+        for n in request.POST.getlist('doctor_name')
+        if n.strip()
+    ]
+    import re as _re
+    def _norm_corp(s): return _re.sub(r'[ 　]+', ' ', s.strip())
+    inst = MedicalInstitution.objects.create(
+        corp_name         = _norm_corp(request.POST.get('corp_name', '')),
+        hospital_name     = hospital_name,
+        hospital_furigana = _ud.normalize('NFKC', request.POST.get('hospital_furigana', '').strip()),
+        doctors           = doctors,
+        doctor_type       = request.POST.get('doctor_type', ''),
+        phone             = request.POST.get('phone', '').strip(),
+        fax               = request.POST.get('fax', '').strip(),
+        postal_code       = request.POST.get('postal_code', '').strip(),
+        address           = request.POST.get('address', '').strip(),
+        note              = request.POST.get('note', '').strip(),
+    )
+    return JsonResponse({'success': True, 'id': inst.pk, 'label': str(inst),
+                         'corp_name': inst.corp_name,
+                         'hospital_name': inst.hospital_name, 'hospital_furigana': inst.hospital_furigana,
+                         'doctors': inst.doctors, 'doctor_name': inst.doctor_name,
+                         'phone': inst.phone, 'fax': inst.fax,
+                         'postal_code': inst.postal_code, 'address': inst.address})
+
+
+@login_required
+@user_passes_test(staff_required)
+def medical_institution_update(request, pk):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'POSTのみ'})
+    try:
+        inst = MedicalInstitution.objects.get(pk=pk)
+    except MedicalInstitution.DoesNotExist:
+        return JsonResponse({'success': False, 'error': '見つかりません。'})
+    hospital_name = request.POST.get('hospital_name', '').strip()
+    if not hospital_name:
+        return JsonResponse({'success': False, 'error': '医療機関名は必須です。'})
+    import unicodedata as _ud
+    import re as _re2
+    inst.corp_name         = _re2.sub(r'[ 　]+', ' ', request.POST.get('corp_name', '').strip())
+    inst.hospital_name     = hospital_name
+    inst.hospital_furigana = _ud.normalize('NFKC', request.POST.get('hospital_furigana', '').strip())
+    inst.doctors           = [
+        ' '.join(n.split())
+        for n in request.POST.getlist('doctor_name')
+        if n.strip()
+    ]
+    inst.doctor_type       = request.POST.get('doctor_type', '')
+    inst.phone         = request.POST.get('phone', '').strip()
+    inst.fax           = request.POST.get('fax', '').strip()
+    inst.postal_code   = request.POST.get('postal_code', '').strip()
+    inst.address       = request.POST.get('address', '').strip()
+    inst.note          = request.POST.get('note', '').strip()
+    inst.save()
+    return JsonResponse({'success': True, 'id': inst.pk, 'label': str(inst),
+                         'corp_name': inst.corp_name,
+                         'hospital_name': inst.hospital_name, 'hospital_furigana': inst.hospital_furigana,
+                         'doctors': inst.doctors, 'doctor_name': inst.doctor_name,
+                         'phone': inst.phone, 'fax': inst.fax,
+                         'postal_code': inst.postal_code, 'address': inst.address})
+
+
+@login_required
+@user_passes_test(staff_required)
+def medical_institution_delete(request, pk):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'POSTのみ'})
+    try:
+        MedicalInstitution.objects.get(pk=pk).delete()
+        return JsonResponse({'success': True})
+    except MedicalInstitution.DoesNotExist:
+        return JsonResponse({'success': False, 'error': '見つかりません。'})
+
+
+@login_required
+@user_passes_test(staff_required)
+def medical_institution_api(request):
+    """医療機関マスタ一覧JSON（アセスメント選択用）"""
+    institutions = list(MedicalInstitution.objects.values(
+        'id', 'hospital_name', 'doctor_name', 'doctor_type',
+        'phone', 'fax', 'postal_code', 'address', 'note'
+    ))
+    return JsonResponse({'institutions': institutions})

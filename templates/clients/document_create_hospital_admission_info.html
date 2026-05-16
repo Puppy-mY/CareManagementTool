@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load django_bootstrap5 %}
 
-{% block title %}更新認定申請書 - {{ client.name }}様 - {{ block.super }}{% endblock %}
+{% block title %}入院時情報提供書 - {{ client.name }}様 - {{ block.super }}{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
@@ -9,7 +9,7 @@
         <div class="col-12">
             <div class="mb-4 pb-2 border-bottom">
                 <h1 class="h4 mb-1 text-dark fw-bold">
-                    <i class="fas fa-file-alt me-2 text-secondary"></i>更新認定申請書
+                    <i class="fas fa-file-alt me-2 text-secondary"></i>入院時情報提供書
                 </h1>
                 <div class="d-flex justify-content-between align-items-center">
                     <span class="text-muted small">
@@ -99,6 +99,70 @@
                     </div>
                 </div>
 
+                <!-- 家族情報（自動反映）アコーディオン -->
+                <div class="accordion mb-4" id="familyInfoAccordion">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button"
+                                    data-bs-toggle="collapse" data-bs-target="#familyInfoCollapse">
+                                <i class="fas fa-users me-2"></i>
+                                <strong>家族情報（自動反映）</strong>
+                                <small class="text-muted ms-2">※利用者データから自動入力</small>
+                            </button>
+                        </h2>
+                        <div id="familyInfoCollapse" class="accordion-collapse collapse">
+                            <div class="accordion-body">
+                                <div class="row g-3 mb-3">
+                                    <div class="col-md-4">
+                                        <label class="form-label">氏名</label>
+                                        <input type="text" class="form-control" value="{{ client.family_name1 }}" readonly>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">続柄</label>
+                                        <input type="text" class="form-control" value="{{ client.full_family_relationship1 }}" readonly>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">連絡先</label>
+                                        <input type="text" class="form-control" value="{{ client.family_contact1 }}" readonly>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label">同居/別居</label>
+                                        <input type="text" class="form-control" value="{{ client.get_family_living_status1_display }}" readonly>
+                                    </div>
+                                </div>
+                                <div class="row g-3 mb-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">住所</label>
+                                        <input type="text" class="form-control" value="{{ client.family_address1 }}" readonly>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">介護状況</label>
+                                        <input type="text" class="form-control" value="{{ client.get_family_care_status1_display }}" readonly>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">就労状況</label>
+                                        <input type="text" class="form-control" value="{{ client.get_family_employment1_display }}" readonly>
+                                    </div>
+                                </div>
+                                {% if client.family_notes1 %}
+                                <div class="row g-3 mb-3">
+                                    <div class="col-12">
+                                        <label class="form-label">備考</label>
+                                        <textarea class="form-control" rows="2" readonly>{{ client.family_notes1 }}</textarea>
+                                    </div>
+                                </div>
+                                {% endif %}
+                                <div class="mt-3 text-end">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm"
+                                            onclick="openFamilyEditModal()">
+                                        <i class="fas fa-edit me-1"></i>家族情報を編集
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- 介護保険情報（自動反映）アコーディオン -->
                 <div class="accordion mb-4" id="insuranceInfoAccordion">
                     <div class="accordion-item">
@@ -151,68 +215,6 @@
                     </div>
                 </div>
 
-                <!-- 医療保険情報（自動反映）アコーディオン -->
-                <div class="accordion mb-4" id="medicalInsuranceAccordion">
-                    <div class="accordion-item">
-                        <h2 class="accordion-header" id="medicalInsuranceHeading">
-                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#medicalInsuranceCollapse" aria-expanded="false" aria-controls="medicalInsuranceCollapse">
-                                <i class="fas fa-hospital me-2"></i>
-                                <strong>医療保険情報（自動反映）</strong>
-                                <small class="text-muted ms-2">※利用者データから自動入力</small>
-                            </button>
-                        </h2>
-                        <div id="medicalInsuranceCollapse" class="accordion-collapse collapse" aria-labelledby="medicalInsuranceHeading">
-                            <div class="accordion-body">
-                                <!-- 医療保険種別 -->
-                                <div class="row g-3 mb-3">
-                                    <div class="col-md-6">
-                                        <label class="form-label">医療保険種別</label>
-                                        <input type="text" id="med_disp_type" class="form-control" value="{{ initial.medical_insurance_type }}" readonly>
-                                    </div>
-                                </div>
-                                <!-- 被保険者番号（記号・番号・枝番） -->
-                                <div class="row g-3 mb-3">
-                                    <div class="col-12">
-                                        <label class="form-label">被保険者番号</label>
-                                        <div class="d-flex align-items-center gap-2 flex-wrap">
-                                            <span class="text-nowrap">記号</span>
-                                            <input type="text" id="med_disp_symbol" class="form-control" style="width:120px;" value="{{ initial.medical_insurance_symbol }}" readonly>
-                                            <span class="text-nowrap">番号</span>
-                                            <input type="text" id="med_disp_number" class="form-control" style="width:200px;" value="{{ initial.medical_insurance_number }}" readonly>
-                                            <span class="text-nowrap">枝番</span>
-                                            <input type="text" id="med_disp_branch" class="form-control" style="width:80px;" value="{{ client.medical_insurance_branch }}" readonly>
-                                        </div>
-                                        <small class="text-muted">医療保険証に記載されている被保険者番号です（介護保険の被保険者番号とは別の番号）</small>
-                                    </div>
-                                </div>
-                                <!-- 負担割合 -->
-                                <div class="row g-3 mb-3">
-                                    <div class="col-md-4">
-                                        <label class="form-label">負担割合</label>
-                                        <input type="text" id="med_disp_burden" class="form-control" value="{{ client.medical_burden }}" readonly>
-                                    </div>
-                                </div>
-                                <!-- 保険者名称・保険者番号 -->
-                                <div class="row g-3 mb-2">
-                                    <div class="col-md-8">
-                                        <label class="form-label">保険者名称・交付者</label>
-                                        <input type="text" id="med_disp_insurer_name" class="form-control" value="{{ initial.medical_insurer_name }}" readonly>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">保険者番号</label>
-                                        <input type="text" id="med_disp_insurer_number" class="form-control" value="{{ initial.medical_insurer_number }}" readonly>
-                                    </div>
-                                </div>
-                                <div class="text-end mt-2">
-                                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openMedicalInfoModal()">
-                                        <i class="fas fa-edit me-1"></i>医療保険情報を編集
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- 入力項目 -->
                 <div class="card mb-4">
                     <div class="card-header d-flex align-items-center">
@@ -221,15 +223,11 @@
                     </div>
                     <div class="card-body">
 
-                        {% include 'clients/_submitter_section.html' with label_text="申請書提出者" %}
-
-                        <div style="border-top: 1px solid #dee2e6; width: 50%; margin: 1.5rem 0;"></div>
-
-                        <!-- 申請年月日 -->
+                        <!-- 作成日 -->
                         <div class="row g-3 mb-4">
                             <div class="col-12">
                                 <div class="d-flex align-items-center gap-2 mb-1">
-                                    <label class="form-label fw-bold mb-0">申請年月日 <span class="text-danger">*</span></label>
+                                    <label class="form-label fw-bold mb-0">作成日 <span class="text-danger">*</span></label>
                                     <div class="birth-era-toggle" title="和暦 / 西暦を切り替え">
                                         <button type="button" class="era-btn active" id="appDate_era_japanese" onclick="switchAppDateEra('japanese')">和暦</button>
                                         <button type="button" class="era-btn" id="appDate_era_western" onclick="switchAppDateEra('western')">西暦</button>
@@ -238,7 +236,7 @@
                                 <!-- 和暦入力（デフォルト表示） -->
                                 <div id="appDate_japanese">
                                     <input type="text" id="appDate_wareki_text" class="form-control" style="max-width: 220px;"
-                                        placeholder="例: 昭和40年3月15日" autocomplete="off"
+                                        placeholder="例: 令和7年5月16日" autocomplete="off"
                                         oninput="syncAppDateFromWareki()">
                                     <small id="appDate_wareki_preview" style="font-size:0.78em; display:block; margin-top:2px;"></small>
                                 </div>
@@ -246,6 +244,101 @@
                                 <div id="appDate_western" style="display:none;">
                                     <input type="date" id="id_application_date" name="application_date" class="form-control" style="max-width: 200px;" value="{{ initial.application_date }}">
                                 </div>
+                            </div>
+                        </div>
+
+                        <div style="border-top: 1px solid #dee2e6; width: 50%; margin: 1.5rem 0;"></div>
+
+                        {% include 'clients/_submitter_section.html' with label_text="作成事業所（作成者）" show_toggle=False %}
+
+                        <div style="border-top: 1px solid #dee2e6; width: 100%; margin: 1.5rem 0;"></div>
+
+                        <!-- 入院日 -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-12">
+                                <div class="d-flex align-items-center gap-2 mb-1">
+                                    <label class="form-label fw-bold mb-0">入院日</label>
+                                    <div class="birth-era-toggle" title="和暦 / 西暦を切り替え">
+                                        <button type="button" class="era-btn active" id="admDate_era_japanese" onclick="switchAdmDateEra('japanese')">和暦</button>
+                                        <button type="button" class="era-btn" id="admDate_era_western" onclick="switchAdmDateEra('western')">西暦</button>
+                                    </div>
+                                </div>
+                                <div class="d-flex align-items-center gap-3 flex-wrap">
+                                    <div>
+                                        <div id="admDate_japanese">
+                                            <input type="text" id="admDate_wareki_text" class="form-control" style="max-width: 220px;"
+                                                placeholder="例: 令和7年5月16日" autocomplete="off"
+                                                oninput="syncAdmDateFromWareki()">
+                                            <small id="admDate_wareki_preview" style="font-size:0.78em; display:block; margin-top:2px;"></small>
+                                        </div>
+                                        <div id="admDate_western" style="display:none;">
+                                            <input type="date" id="id_admission_date" name="admission_date" class="form-control" style="max-width: 200px;"
+                                                   value="{{ initial.admission_date|default:'' }}"
+                                                   oninput="document.getElementById('id_admission_date').value=this.value; updateAdmissionKasan();">
+                                        </div>
+                                    </div>
+                                    <span id="admission_kasan_label" style="font-size:0.78rem; color:#999; font-weight:normal; align-self:flex-start; margin-top:8px;"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="border-top: 1px solid #dee2e6; width: 50%; margin: 1.5rem 0;"></div>
+
+                        <!-- 入院先 -->
+                        <div class="row g-3 mb-2">
+                            <div class="col-12">
+                                <label class="form-label fw-bold">入院先</label>
+
+                                <!-- hidden inputs（フォーム送信用） -->
+                                <input type="hidden" name="doctor_outside_city" id="doctor_outside_city" value="{{ initial.doctor_outside_city|default:'' }}">
+                                <input type="hidden" name="doctor_hospital"    id="doctor_hospital"    value="{{ initial.doctor_hospital|default:'' }}">
+                                <input type="hidden" name="doctor_furigana"    id="doctor_furigana"    value="{{ initial.doctor_furigana|default:'' }}">
+                                <input type="hidden" name="doctor_name"        id="doctor_name"        value="{{ initial.doctor_name|default:'' }}">
+                                <input type="hidden" name="doctor_phone"       id="doctor_phone"       value="{{ initial.doctor_phone|default:'' }}">
+                                <input type="hidden" name="doctor_fax"         id="doctor_fax"         value="{{ initial.doctor_fax|default:'' }}">
+                                <input type="hidden" name="doctor_postal_code" id="doctor_postal_code" value="{{ initial.doctor_postal_code|default:'' }}">
+                                <input type="hidden" name="doctor_address"     id="doctor_address"     value="{{ initial.doctor_address|default:'' }}">
+                                <input type="hidden" id="adm_inst_corp_name"                           value="{{ initial.doctor_hospital|default:'' }}">
+                                <input type="hidden" name="doctor_notes"       id="doctor_notes"       value="{{ initial.doctor_notes|default:'' }}">
+
+                                <!-- 選択済み医療機関テーブル -->
+                                <div id="adm_inst_table_wrap" class="mb-2" style="display:none;">
+                                    <div class="table-responsive">
+                                        <table class="table table-hover table-bordered mb-0" style="font-size:0.9rem;">
+                                            <thead>
+                                                <tr>
+                                                    <th style="background-color:#f5f5f5; border-left:none; border-right:none;">医療機関名</th>
+                                                    <th style="width:170px; background-color:#f5f5f5; border-left:none; border-right:none;">住所</th>
+                                                    <th style="width:105px; background-color:#f5f5f5; border-left:none; border-right:none;">電話 / FAX</th>
+                                                    <th style="width:160px; background-color:#f5f5f5; border-left:none; border-right:none;">医師/担当者</th>
+                                                    <th style="width:40px; background-color:#f5f5f5; border-left:none; border-right:none;"></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="adm_inst_tbody"></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div id="adm_inst_empty" class="text-muted small mb-2" style="display:none;">未選択</div>
+                                <div class="mt-1 d-flex align-items-center gap-2">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openMedInstSelectModal()">
+                                        <i class="fas fa-list me-1"></i>医療機関を選択
+                                    </button>
+                                    <div id="adm_fax_btn_wrap" style="display:none;">
+                                        <input type="checkbox" name="fax_attached" value="yes" class="btn-check" id="adm_fax_attached"
+                                               {% if initial.fax_attached == 'yes' %}checked{% endif %}
+                                               onchange="toggleAdmFaxAccordion()">
+                                        <label class="btn btn-outline-secondary btn-sm" for="adm_fax_attached">
+                                            <i class="fas fa-fax me-1"></i>FAX送付状
+                                        </label>
+                                    </div>
+                                </div>
+                                {% include 'clients/_fax_accordion.html' with fax_id_prefix="adm_fax" fax_fn_prefix="AdmFax" fax_checkbox_id="adm_fax_attached" fax_storage_key="hai_fax_v1" fax_default_body=fax_default_body %}
+                                <script>
+                                window._faxExtraReplacers = {
+                                    care_level: function () { return (document.getElementById('ins_disp_care_level') || {}).value || ''; }
+                                };
+                                window._faxExtraLabels = { care_level: '介護度' };
+                                </script>
                             </div>
                         </div>
 
@@ -587,73 +680,6 @@
                             </div>
                         </div>
 
-                        <div style="border-top: 1px solid #dee2e6; width: 50%; margin: 1.5rem 0;"></div>
-
-                        <!-- 主治医意見書依頼先 -->
-                        <div class="row g-3 mb-2">
-                            <div class="col-12">
-                                <label class="form-label fw-bold">主治医意見書の記載を依頼する医療機関・医師 <span class="text-danger">*</span></label>
-                                <div class="mb-1">
-                                    <select id="doctor_type_select" class="form-select" style="width:400px;" onchange="toggleDoctorSelection()">
-                                        {% for opt in doctor_options %}
-                                        <option value="{{ forloop.counter0 }}"
-                                                data-pk="{{ opt.pk }}"
-                                                data-corp-name="{{ opt.corp_name|default:'' }}"
-                                                data-hospital="{{ opt.hospital }}"
-                                                data-furigana="{{ opt.furigana|default:'' }}"
-                                                data-name="{{ opt.name }}"
-                                                data-doctors="{{ opt.doctors|join:',' }}"
-                                                data-phone="{{ opt.phone|default:'' }}"
-                                                data-fax="{{ opt.fax|default:'' }}"
-                                                data-postal="{{ opt.postal|default:'' }}"
-                                                data-address="{{ opt.address|default:'' }}">
-                                            {{ opt.type }}：{{ opt.hospital }}
-                                        </option>
-                                        {% endfor %}
-                                        <option value="other">その他（新規登録）</option>
-                                    </select>
-                                </div>
-                                <small class="text-muted">※その他（新規登録）を選択してボタンを押すと新規登録できます</small>
-                            </div>
-
-                            <!-- 津市外フラグ（住所から自動判定） -->
-                            <input type="hidden" name="doctor_outside_city" id="doctor_outside_city" value="{{ initial.doctor_outside_city|default:'' }}">
-
-                            <!-- 医療機関情報テーブル -->
-                            <div class="col-12">
-                                <!-- フォーム送信用hidden -->
-                                <input type="hidden" name="doctor_hospital"   id="doctor_hospital">
-                                <input type="hidden" name="doctor_furigana"   id="doctor_furigana">
-                                <input type="hidden" name="doctor_name"       id="doctor_name">
-                                <input type="hidden" name="doctor_phone"      id="doctor_phone">
-                                <input type="hidden" name="doctor_fax"        id="doctor_fax">
-                                <input type="hidden" name="doctor_postal_code" id="doctor_postal_code">
-                                <input type="hidden" name="doctor_address"    id="doctor_address">
-
-                                <div id="doctor_inst_table_wrap" class="mb-2" style="display:none;">
-                                    <div class="table-responsive">
-                                        <table id="doctor_inst_table" class="table table-hover table-bordered mb-0" style="font-size:0.9rem;">
-                                            <thead>
-                                                <tr>
-                                                    <th style="background-color:#f5f5f5;">医療機関名</th>
-                                                    <th style="width:170px; background-color:#f5f5f5;">住所</th>
-                                                    <th style="width:105px; background-color:#f5f5f5;">電話 / FAX</th>
-                                                    <th style="width:160px; background-color:#f5f5f5;">医師氏名</th>
-                                                    <th style="width:40px; background-color:#f5f5f5;"></th>
-                                                </tr>
-                                            </thead>
-                                            <tbody id="doctor_inst_tbody"></tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                                <div id="doctor_inst_empty"></div>
-                                <div class="mt-1">
-                                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openCurrentInstEdit()">
-                                        <i class="fas fa-edit me-1"></i>医療機関を新規登録・編集
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
 
                     </div>
                 </div>
@@ -682,6 +708,156 @@
                     </div>
                 </div>
 
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 医療機関選択モーダル -->
+<div class="modal fade" id="medInstSelectModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-scrollable" style="max-width:700px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-list me-2"></i>医療機関を選択</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-2">
+                    <input type="text" id="med_inst_modal_search" class="form-control"
+                           placeholder="医療機関名・医師名で検索..." oninput="applyMedInstFilter()">
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover table-bordered mb-0" style="font-size:0.9rem;">
+                        <thead>
+                            <tr>
+                                <th style="width:40px; background-color:#f5f5f5; border-left:none; border-right:none;"></th>
+                                <th style="background-color:#f5f5f5; border-left:none; border-right:none;">医療機関名</th>
+                                <th style="width:160px; background-color:#f5f5f5; border-left:none; border-right:none;">住所</th>
+                                <th style="width:115px; background-color:#f5f5f5; border-left:none; border-right:none;">電話 / FAX</th>
+                                <th style="width:120px; background-color:#f5f5f5; border-left:none; border-right:none;">医師氏名</th>
+                            </tr>
+                        </thead>
+                        <tbody id="med_inst_modal_list">
+                            {% for inst in medical_institutions %}
+                            <tr class="med-inst-modal-item" style="cursor:pointer;"
+                                onclick="toggleMedInstRow(this)">
+                                <td class="text-center align-middle" style="border-left:none; border-right:none;">
+                                    <input class="form-check-input med-inst-modal-check" type="checkbox"
+                                           id="modal_med_inst_{{ inst.pk }}"
+                                           data-pk="{{ inst.pk }}"
+                                           data-hospital="{{ inst.hospital_name }}"
+                                           data-furigana="{{ inst.hospital_furigana|default:'' }}"
+                                           data-corp="{{ inst.corp_name|default:'' }}"
+                                           data-name="{{ inst.doctor_name|default:'' }}"
+                                           data-doctors="{{ inst.doctors|join:',' }}"
+                                           data-phone="{{ inst.phone|default:'' }}"
+                                           data-fax="{{ inst.fax|default:'' }}"
+                                           data-postal="{{ inst.postal_code|default:'' }}"
+                                           data-address="{{ inst.address|default:'' }}"
+                                           onclick="event.stopPropagation()">
+                                </td>
+                                <td class="align-middle" style="border-left:none; border-right:none;">
+                                    <label for="modal_med_inst_{{ inst.pk }}" style="cursor:pointer;margin:0;" onclick="event.stopPropagation()">
+                                        {% if inst.corp_name %}<small class="text-muted d-block" style="font-size:0.75rem;">{{ inst.corp_name }}</small>{% endif %}
+                                        <span class="fw-bold">{{ inst.hospital_name }}</span>
+                                    </label>
+                                </td>
+                                <td class="align-middle" style="font-size:0.85rem; border-left:none; border-right:none;">
+                                    {% if inst.postal_code %}<small class="text-muted d-block" style="font-size:0.75rem;">〒{{ inst.postal_code }}</small>{% endif %}
+                                    {{ inst.address|default:"―" }}
+                                </td>
+                                <td class="align-middle" style="font-size:0.85rem; white-space:nowrap; border-left:none; border-right:none;">
+                                    <i class="fas fa-phone me-1 text-muted" style="font-size:0.75rem;"></i>{{ inst.phone|default:"―" }}<br>
+                                    <i class="fas fa-fax me-1 text-muted" style="font-size:0.75rem;"></i><span class="text-muted">{{ inst.fax|default:"―" }}</span>
+                                </td>
+                                <td class="align-middle" style="font-size:0.85rem; border-left:none; border-right:none;">{{ inst.doctor_name|default:"―" }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="5" class="text-center text-muted py-3">医療機関が登録されていません</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer justify-content-between">
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" style="font-size:0.8rem;" onclick="openAdmInstNewModal()">
+                        <i class="fas fa-plus me-1"></i>新規登録
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" style="font-size:0.8rem;" onclick="openAdmInstEditModal()">
+                        <i class="fas fa-edit me-1"></i>医療機関を編集
+                    </button>
+                    <span id="med_inst_select_count" class="text-muted small"></span>
+                </div>
+                <div>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                    <button type="button" class="btn btn-primary" onclick="confirmMedInstSelection()">
+                        <i class="fas fa-check me-1"></i>確定
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 医療機関 新規登録モーダル（medInstSelectModal の上に重ねる） -->
+<div class="modal fade" id="admInstNewModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" style="z-index:1065;">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:700px; align-self:flex-start; margin-top:max(5vh, 3rem);">
+        <div class="modal-content">
+            <form id="admInstNewForm">
+                {% csrf_token %}
+                <input type="hidden" id="admInst_pk" value="">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-hospital me-2"></i><span id="admInstModalTitle">医療機関を新規登録</span></h5>
+                    <button type="button" class="btn-close" onclick="closeAdmInstNewModal()"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="admInstNewError" class="alert alert-danger d-none"></div>
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label">法人名</label>
+                            <input type="text" id="admInst_corp_name" name="corp_name" class="form-control" placeholder="例: 医療法人社団 〇〇会">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">医療機関名 <span class="text-danger">*</span></label>
+                            <input type="text" id="admInst_hospital_name" name="hospital_name" class="form-control" placeholder="例: 津腎クリニック" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">フリガナ</label>
+                            <input type="text" id="admInst_hospital_furigana" name="hospital_furigana" class="form-control" placeholder="例: ツジンクリニック">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">医師氏名</label>
+                            <div id="admInst_doctors_container" class="row g-2"></div>
+                            <button type="button" class="btn btn-outline-secondary btn-sm mt-1" onclick="addAdmInstDoctorRow()">
+                                <i class="fas fa-plus me-1"></i>医師を追加
+                            </button>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">郵便番号</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted">〒</span>
+                                <input type="text" id="admInst_postal_code" name="postal_code" class="form-control" placeholder="514-0000">
+                            </div>
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label">住所</label>
+                            <input type="text" id="admInst_address" name="address" class="form-control" placeholder="例: 津市○○町1-2-3">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">電話番号</label>
+                            <input type="text" id="admInst_phone" name="phone" class="form-control" placeholder="059-000-0000">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">FAX番号</label>
+                            <input type="text" id="admInst_fax" name="fax" class="form-control" placeholder="059-000-0001">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeAdmInstNewModal()">キャンセル</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i>保存</button>
+                </div>
             </form>
         </div>
     </div>
@@ -780,6 +956,104 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
                 <button type="button" class="btn btn-primary" onclick="saveClientMasterData()">
+                    <i class="fas fa-save me-1"></i>保存して反映
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 家族情報編集モーダル -->
+<div class="modal fade" id="familyEditModal" tabindex="-1" aria-labelledby="familyEditModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 700px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="familyEditModalLabel">
+                    <i class="fas fa-users me-2"></i>家族情報を編集（家族1）
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="familyEditModalError" class="alert alert-danger d-none mb-3"></div>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-5">
+                        <label class="form-label">氏名</label>
+                        <input type="text" id="fam_name1" class="form-control" placeholder="例: 山田 太郎">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">続柄</label>
+                        <select id="fam_relationship1" class="form-select" onchange="updateFamDetailOptions()">
+                            <option value="">---------</option>
+                            <option value="spouse">配偶者</option>
+                            <option value="child">子</option>
+                            <option value="child_in_law">子の配偶者</option>
+                            <option value="parent">父母</option>
+                            <option value="parent_in_law">義父母</option>
+                            <option value="sibling">兄弟姉妹</option>
+                            <option value="grandchild">孫</option>
+                            <option value="other_relative">その他親族</option>
+                            <option value="non_family">家族以外</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">続柄の詳細</label>
+                        <select id="fam_relationship_detail1" class="form-select">
+                            <option value="">---------</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-8">
+                        <label class="form-label">住所</label>
+                        <input type="text" id="fam_address1" class="form-control">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">連絡先</label>
+                        <input type="text" id="fam_contact1" class="form-control" placeholder="例: 090-0000-0000">
+                    </div>
+                </div>
+                <div style="border-top: 1px solid #dee2e6; width: 50%; margin: 0.5rem 0 1rem 0;"></div>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label">同居/別居</label>
+                        <select id="fam_living_status1" class="form-select">
+                            <option value="">---------</option>
+                            <option value="together">同居</option>
+                            <option value="separate">別居</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">介護状況</label>
+                        <select id="fam_care_status1" class="form-select">
+                            <option value="">---------</option>
+                            <option value="primary_caregiver">主たる介護者</option>
+                            <option value="support_caregiver">介護協力者</option>
+                            <option value="no_care">介護なし</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">就労状況</label>
+                        <select id="fam_employment1" class="form-select">
+                            <option value="">---------</option>
+                            <option value="employed">就労中</option>
+                            <option value="unemployed">無職</option>
+                            <option value="retired">退職</option>
+                            <option value="homemaker">専業主婦(夫)</option>
+                            <option value="student">学生</option>
+                            <option value="other">その他</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label">備考</label>
+                        <textarea id="fam_notes1" class="form-control" rows="3"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                <button type="button" class="btn btn-primary" onclick="saveFamilyData()">
                     <i class="fas fa-save me-1"></i>保存して反映
                 </button>
             </div>
@@ -1174,6 +1448,411 @@ function saveClientMasterData() {
 }
 
 
+// ---- 入院先（医療機関）選択 ----
+function _escAI(s) {
+    if (!s) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function openMedInstSelectModal() {
+    // 現在の選択状態をチェックボックスに反映（既選択の機関のみチェック）
+    var currentHospital = document.getElementById('doctor_hospital').value;
+    document.querySelectorAll('.med-inst-modal-check').forEach(function(c) {
+        c.checked = (currentHospital && c.dataset.hospital === currentHospital);
+    });
+    document.getElementById('med_inst_modal_search').value = '';
+    applyMedInstFilter();
+    _updateMedInstCount();
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('medInstSelectModal')).show();
+}
+
+function applyMedInstFilter() {
+    var q = (document.getElementById('med_inst_modal_search').value || '').toLowerCase();
+    document.querySelectorAll('.med-inst-modal-item').forEach(function(row) {
+        var chk = row.querySelector('.med-inst-modal-check');
+        var text = ((chk.dataset.hospital||'') + ' ' + (chk.dataset.furigana||'') + ' ' + (chk.dataset.corp||'') + ' ' + (chk.dataset.name||'')).toLowerCase();
+        row.style.display = (!q || text.includes(q)) ? '' : 'none';
+    });
+}
+
+function toggleMedInstRow(tr) {
+    var chk = tr.querySelector('.med-inst-modal-check');
+    if (!chk) return;
+    var newVal = !chk.checked;
+    // 単一選択：他をすべて解除
+    document.querySelectorAll('.med-inst-modal-check').forEach(function(c) { c.checked = false; });
+    chk.checked = newVal;
+    _updateMedInstCount();
+}
+
+function _updateMedInstCount() {
+    var checked = document.querySelectorAll('.med-inst-modal-check:checked').length;
+    var el = document.getElementById('med_inst_select_count');
+    if (el) el.textContent = checked > 0 ? checked + '件選択中' : '';
+}
+
+function confirmMedInstSelection() {
+    var chk = document.querySelector('.med-inst-modal-check:checked');
+    if (!chk) {
+        clearAdmInst();
+        bootstrap.Modal.getInstance(document.getElementById('medInstSelectModal')).hide();
+        return;
+    }
+    _renderAdmInst(chk.dataset);
+    bootstrap.Modal.getInstance(document.getElementById('medInstSelectModal')).hide();
+}
+
+function _renderAdmInst(d) {
+    var hospital = d.hospital || '';
+    var furigana = d.furigana || '';
+    var corp     = d.corp     || '';
+    var name     = d.name     || '';
+    var doctors  = d.doctors  ? d.doctors.split(',').filter(Boolean) : [];
+    var phone    = d.phone    || '';
+    var fax      = d.fax      || '';
+    var postal   = d.postal   || '';
+    var address  = d.address  || '';
+    var currentNotes = document.getElementById('doctor_notes') ? document.getElementById('doctor_notes').value : '';
+
+    document.getElementById('doctor_hospital').value    = hospital;
+    document.getElementById('doctor_furigana').value    = furigana;
+    document.getElementById('doctor_name').value        = name;
+    document.getElementById('doctor_phone').value       = phone;
+    document.getElementById('doctor_fax').value         = fax;
+    document.getElementById('doctor_postal_code').value = postal;
+    document.getElementById('doctor_address').value     = address;
+
+    // 医師名テキスト表示（1人 or 「〇〇 先生 他」）
+    var doctorText = '';
+    if (doctors.length === 0 && name) {
+        doctorText = _escAI(name) + ' 先生';
+    } else if (doctors.length === 1) {
+        doctorText = _escAI(doctors[0]) + ' 先生';
+    } else if (doctors.length > 1) {
+        doctorText = _escAI(doctors[0]) + ' 先生 <span class="text-muted">他</span>';
+    }
+
+    var B = 'border-left:none; border-right:none;';
+    document.getElementById('adm_inst_tbody').innerHTML =
+        '<tr>'
+        + '<td class="align-middle" style="' + B + '">'
+        + (corp ? '<small class="text-muted d-block" style="font-size:0.75rem;">' + _escAI(corp) + '</small>' : '')
+        + '<span class="fw-bold">' + _escAI(hospital) + '</span></td>'
+        + '<td class="align-middle" style="font-size:0.85rem;' + B + '">'
+        + (postal ? '<small class="text-muted d-block" style="font-size:0.75rem;">〒' + _escAI(postal) + '</small>' : '')
+        + (_escAI(address) || '<span class="text-muted">―</span>') + '</td>'
+        + '<td class="align-middle" style="font-size:0.85rem; white-space:nowrap;' + B + '">'
+        + '<i class="fas fa-phone me-1 text-muted" style="font-size:0.75rem;"></i>' + (_escAI(phone)||'―') + '<br>'
+        + '<i class="fas fa-fax me-1 text-muted" style="font-size:0.75rem;"></i><span class="text-muted">' + (_escAI(fax)||'―') + '</span></td>'
+        + '<td class="align-middle" style="' + B + '">'
+        + (doctorText ? '<div class="mb-1" style="font-size:0.8rem; color:#6c757d;">' + doctorText + '</div>' : '')
+        + '<input type="text" id="adm_person_name_input" class="form-control form-control-sm" placeholder="MSW担当者名"'
+        + ' value="' + _escAI(currentNotes) + '"'
+        + ' oninput="document.getElementById(\'doctor_notes\').value=this.value;">'
+        + '</td>'
+        + '<td class="text-center align-middle" style="' + B + '"><button type="button" class="btn btn-sm btn-outline-secondary" style="padding:2px 7px;font-size:0.75rem;" onclick="clearAdmInst()"><i class="fas fa-times"></i></button></td>'
+        + '</tr>';
+
+    document.getElementById('adm_inst_table_wrap').style.display = '';
+    document.getElementById('adm_inst_empty').style.display = 'none';
+    document.getElementById('adm_fax_btn_wrap').style.display = '';
+}
+
+function clearAdmInst() {
+    ['doctor_hospital','doctor_furigana','doctor_name','doctor_phone',
+     'doctor_fax','doctor_postal_code','doctor_address','doctor_notes'].forEach(function(id) {
+        var el = document.getElementById(id); if (el) el.value = '';
+    });
+    document.getElementById('adm_inst_table_wrap').style.display = 'none';
+    document.getElementById('adm_inst_empty').style.display = '';
+    // FAXボタンを非表示にしてチェックを外す
+    var faxBtn = document.getElementById('adm_fax_btn_wrap');
+    if (faxBtn) faxBtn.style.display = 'none';
+    var faxChk = document.getElementById('adm_fax_attached');
+    if (faxChk) faxChk.checked = false;
+    if (typeof toggleAdmFaxAccordion === 'function') toggleAdmFaxAccordion();
+}
+
+// チェック変更で件数更新
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.med-inst-modal-check').forEach(function(c) {
+        c.addEventListener('change', _updateMedInstCount);
+    });
+    // 履歴再編集時：保存済み入院先を復元
+    var hospital = document.getElementById('doctor_hospital').value;
+    if (hospital) {
+        document.getElementById('adm_fax_btn_wrap').style.display = '';
+        _renderAdmInst({
+            hospital: hospital,
+            furigana: document.getElementById('doctor_furigana').value,
+            corp: '',
+            name:    document.getElementById('doctor_name').value,
+            doctors: document.getElementById('doctor_name').value,
+            phone:   document.getElementById('doctor_phone').value,
+            fax:     document.getElementById('doctor_fax').value,
+            postal:  document.getElementById('doctor_postal_code').value,
+            address: document.getElementById('doctor_address').value,
+        });
+    }
+});
+
+// ---- 医療機関 新規登録モーダル ----
+function addAdmInstDoctorRow(value) {
+    var c = document.getElementById('admInst_doctors_container');
+    var col = document.createElement('div');
+    col.className = 'col-6';
+    col.innerHTML = '<div class="d-flex align-items-center gap-1">'
+        + '<input type="text" name="doctor_name" class="form-control" placeholder="例: 田中 一郎" value="' + (value || '') + '">'
+        + '<button type="button" class="btn-close" style="font-size:0.7rem;" onclick="this.closest(\'.col-6\').remove()"></button>'
+        + '</div>';
+    c.appendChild(col);
+}
+
+function _openAdmInstModal() {
+    var selectModalEl = document.getElementById('medInstSelectModal');
+    if (selectModalEl) selectModalEl.style.zIndex = '1050';
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('admInstNewModal')).show();
+}
+
+function openAdmInstNewModal() {
+    document.getElementById('admInstNewForm').reset();
+    document.getElementById('admInst_pk').value = '';
+    document.getElementById('admInstModalTitle').textContent = '医療機関を新規登録';
+    document.getElementById('admInstNewError').classList.add('d-none');
+    document.getElementById('admInst_doctors_container').innerHTML = '';
+    addAdmInstDoctorRow();
+    _openAdmInstModal();
+}
+
+function openAdmInstEditModal() {
+    var chk = document.querySelector('.med-inst-modal-check:checked');
+    if (!chk) {
+        alert('編集する医療機関を選択してください。');
+        return;
+    }
+    var d = chk.dataset;
+    document.getElementById('admInstNewForm').reset();
+    document.getElementById('admInst_pk').value                = d.pk        || '';
+    document.getElementById('admInstModalTitle').textContent   = '医療機関を編集';
+    document.getElementById('admInstNewError').classList.add('d-none');
+    document.getElementById('admInst_corp_name').value         = d.corp      || '';
+    document.getElementById('admInst_hospital_name').value     = d.hospital  || '';
+    document.getElementById('admInst_hospital_furigana').value = d.furigana  || '';
+    document.getElementById('admInst_phone').value             = d.phone     || '';
+    document.getElementById('admInst_fax').value               = d.fax       || '';
+    document.getElementById('admInst_postal_code').value       = d.postal    || '';
+    document.getElementById('admInst_address').value           = d.address   || '';
+    document.getElementById('admInst_doctors_container').innerHTML = '';
+    var doctors = d.doctors ? d.doctors.split(',').filter(Boolean) : [];
+    if (doctors.length === 0) { addAdmInstDoctorRow(); }
+    else { doctors.forEach(function(dr) { addAdmInstDoctorRow(dr); }); }
+    _openAdmInstModal();
+}
+
+function closeAdmInstNewModal() {
+    bootstrap.Modal.getInstance(document.getElementById('admInstNewModal')).hide();
+    var selectModalEl = document.getElementById('medInstSelectModal');
+    if (selectModalEl) selectModalEl.style.zIndex = '';
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('admInstNewForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        var errEl = document.getElementById('admInstNewError');
+        if (!document.getElementById('admInst_hospital_name').value.trim()) {
+            errEl.textContent = '医療機関名は必須です。';
+            errEl.classList.remove('d-none');
+            return;
+        }
+        errEl.classList.add('d-none');
+        var pk = document.getElementById('admInst_pk').value;
+        var url = pk
+            ? '/clients/medical-institutions/' + pk + '/update/'
+            : '/clients/medical-institutions/create/';
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            body: new FormData(this),
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (!data.success) {
+                errEl.textContent = data.error || 'エラーが発生しました。';
+                errEl.classList.remove('d-none');
+                return;
+            }
+            var tbody = document.getElementById('med_inst_modal_list');
+            var doctors = data.doctors || [];
+            var newPk = String(data.id);
+            // 編集の場合：既存行を更新
+            var existingChk = tbody.querySelector('.med-inst-modal-check[data-pk="' + newPk + '"]');
+            if (existingChk) {
+                existingChk.dataset.corp     = data.corp_name          || '';
+                existingChk.dataset.hospital = data.hospital_name;
+                existingChk.dataset.furigana = data.hospital_furigana  || '';
+                existingChk.dataset.name     = data.doctor_name        || '';
+                existingChk.dataset.doctors  = doctors.join(',');
+                existingChk.dataset.phone    = data.phone              || '';
+                existingChk.dataset.fax      = data.fax                || '';
+                existingChk.dataset.postal   = data.postal_code        || '';
+                existingChk.dataset.address  = data.address            || '';
+                var td = existingChk.closest('tr').querySelectorAll('td');
+                td[1].innerHTML = '<label for="modal_med_inst_' + newPk + '" style="cursor:pointer;margin:0;" onclick="event.stopPropagation()">'
+                    + (data.corp_name ? '<small class="text-muted d-block" style="font-size:0.75rem;">' + _escAI(data.corp_name) + '</small>' : '')
+                    + '<span class="fw-bold">' + _escAI(data.hospital_name) + '</span></label>';
+                td[2].innerHTML = (data.postal_code ? '<small class="text-muted d-block" style="font-size:0.75rem;">〒' + _escAI(data.postal_code) + '</small>' : '')
+                    + (_escAI(data.address) || '―');
+                td[3].innerHTML = '<i class="fas fa-phone me-1 text-muted" style="font-size:0.75rem;"></i>' + (_escAI(data.phone) || '―') + '<br>'
+                    + '<i class="fas fa-fax me-1 text-muted" style="font-size:0.75rem;"></i><span class="text-muted">' + (_escAI(data.fax) || '―') + '</span>';
+                td[4].textContent = data.doctor_name || '―';
+                closeAdmInstNewModal();
+                return;
+            }
+            // 新規の場合：リストに追加
+            // 既存の「登録なし」メッセージを除去
+            var emptyRow = tbody.querySelector('td[colspan]');
+            if (emptyRow) emptyRow.closest('tr').remove();
+            // 新行挿入
+            var tr = document.createElement('tr');
+            tr.className = 'med-inst-modal-item';
+            tr.style.cursor = 'pointer';
+            tr.setAttribute('onclick', 'toggleMedInstRow(this)');
+            tr.innerHTML = '<td class="text-center align-middle" style="border-left:none; border-right:none;">'
+                + '<input class="form-check-input med-inst-modal-check" type="checkbox"'
+                + ' id="modal_med_inst_' + newPk + '"'
+                + ' data-pk="' + _escAI(newPk) + '"'
+                + ' data-hospital="' + _escAI(data.hospital_name) + '"'
+                + ' data-furigana="' + _escAI(data.hospital_furigana || '') + '"'
+                + ' data-corp="' + _escAI(data.corp_name || '') + '"'
+                + ' data-name="' + _escAI(data.doctor_name || '') + '"'
+                + ' data-doctors="' + _escAI(doctors.join(',')) + '"'
+                + ' data-phone="' + _escAI(data.phone || '') + '"'
+                + ' data-fax="' + _escAI(data.fax || '') + '"'
+                + ' data-postal="' + _escAI(data.postal_code || '') + '"'
+                + ' data-address="' + _escAI(data.address || '') + '"'
+                + ' onclick="event.stopPropagation()" checked>'
+                + '</td>'
+                + '<td class="align-middle" style="border-left:none; border-right:none;">'
+                + '<label for="modal_med_inst_' + newPk + '" style="cursor:pointer;margin:0;" onclick="event.stopPropagation()">'
+                + (data.corp_name ? '<small class="text-muted d-block" style="font-size:0.75rem;">' + _escAI(data.corp_name) + '</small>' : '')
+                + '<span class="fw-bold">' + _escAI(data.hospital_name) + '</span>'
+                + '</label></td>'
+                + '<td class="align-middle" style="font-size:0.85rem; border-left:none; border-right:none;">'
+                + (data.postal_code ? '<small class="text-muted d-block" style="font-size:0.75rem;">〒' + _escAI(data.postal_code) + '</small>' : '')
+                + (_escAI(data.address) || '―') + '</td>'
+                + '<td class="align-middle" style="font-size:0.85rem; white-space:nowrap; border-left:none; border-right:none;">'
+                + '<i class="fas fa-phone me-1 text-muted" style="font-size:0.75rem;"></i>' + (_escAI(data.phone) || '―') + '<br>'
+                + '<i class="fas fa-fax me-1 text-muted" style="font-size:0.75rem;"></i><span class="text-muted">' + (_escAI(data.fax) || '―') + '</span></td>'
+                + '<td class="align-middle" style="font-size:0.85rem; border-left:none; border-right:none;">' + (_escAI(data.doctor_name) || '―') + '</td>';
+            // 他のチェックを外してこれをチェック
+            document.querySelectorAll('.med-inst-modal-check').forEach(function(c) { c.checked = false; });
+            tr.querySelector('.med-inst-modal-check').checked = true;
+            tbody.appendChild(tr);
+            // イベントリスナー追加
+            tr.querySelector('.med-inst-modal-check').addEventListener('change', _updateMedInstCount);
+            _updateMedInstCount();
+            closeAdmInstNewModal();
+        });
+    });
+});
+
+// ---- 家族情報編集モーダル ----
+var _FAM_RELATIONSHIP_DETAILS = {
+    'spouse':        ['夫', '妻', '内縁', 'パートナー'],
+    'child':         ['息子', '娘', '長男', '次男', '長女', '次女'],
+    'child_in_law':  ['嫁', '婿', '長男の妻', '長女の夫'],
+    'parent':        ['父', '母', '実父', '実母', '養父', '養母'],
+    'parent_in_law': ['義父', '義母', '舅', '姑'],
+    'sibling':       ['兄', '姉', '弟', '妹', '義兄弟姉妹'],
+    'grandchild':    ['孫', '孫息子', '孫娘'],
+    'other_relative':['祖父母', 'おい', 'めい', 'いとこ', 'おじ', 'おば'],
+    'non_family':    ['後見人', '身元保証人', '友人', '近隣住民', '同居人', '施設職員']
+};
+
+function updateFamDetailOptions() {
+    var main   = document.getElementById('fam_relationship1');
+    var detail = document.getElementById('fam_relationship_detail1');
+    if (!main || !detail) return;
+    var current = detail.value;
+    var opts = _FAM_RELATIONSHIP_DETAILS[main.value] || [];
+    detail.innerHTML = '<option value="">---------</option>';
+    opts.forEach(function(o) {
+        var el = document.createElement('option');
+        el.value = o; el.textContent = o;
+        if (o === current) el.selected = true;
+        detail.appendChild(el);
+    });
+}
+
+function openFamilyEditModal() {
+    document.getElementById('fam_name1').value             = '{{ client.family_name1|escapejs }}';
+    document.getElementById('fam_relationship1').value     = '{{ client.family_relationship1|escapejs }}';
+    document.getElementById('fam_address1').value          = '{{ client.family_address1|escapejs }}';
+    document.getElementById('fam_contact1').value          = '{{ client.family_contact1|escapejs }}';
+    document.getElementById('fam_living_status1').value    = '{{ client.family_living_status1|escapejs }}';
+    document.getElementById('fam_care_status1').value      = '{{ client.family_care_status1|escapejs }}';
+    document.getElementById('fam_employment1').value       = '{{ client.family_employment1|escapejs }}';
+    document.getElementById('fam_notes1').value            = '{{ client.family_notes1|escapejs }}';
+    updateFamDetailOptions();
+    document.getElementById('fam_relationship_detail1').value = '{{ client.family_relationship_detail1|escapejs }}';
+    document.getElementById('familyEditModalError').classList.add('d-none');
+    var modalEl = document.getElementById('familyEditModal');
+    (bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl)).show();
+}
+
+function saveFamilyData() {
+    var payload = {
+        family_name1:               document.getElementById('fam_name1').value,
+        family_relationship1:       document.getElementById('fam_relationship1').value,
+        family_relationship_detail1:document.getElementById('fam_relationship_detail1').value,
+        family_address1:            document.getElementById('fam_address1').value,
+        family_contact1:            document.getElementById('fam_contact1').value,
+        family_living_status1:      document.getElementById('fam_living_status1').value,
+        family_care_status1:        document.getElementById('fam_care_status1').value,
+        family_employment1:         document.getElementById('fam_employment1').value,
+        family_notes1:              document.getElementById('fam_notes1').value,
+    };
+    fetch('/clients/{{ client.id }}/update-family1/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value },
+        body: JSON.stringify(payload)
+    }).then(function(r){ return r.json(); }).then(function(result) {
+        if (result.success) {
+            // アコーディオン表示を即時更新
+            var inputs = document.querySelectorAll('#familyInfoCollapse input[readonly]');
+            var labels = ['氏名', '続柄', '連絡先', '同居/別居', '住所', '介護状況', '就労状況'];
+            inputs.forEach(function(inp) {
+                var lbl = inp.closest('[class*=col-]')?.querySelector('label')?.textContent?.trim() || '';
+                if      (lbl === '氏名')     inp.value = result.family_name1 || '';
+                else if (lbl === '続柄')     inp.value = result.full_relationship1 || '';
+                else if (lbl === '連絡先')   inp.value = result.family_contact1 || '';
+                else if (lbl === '同居/別居')inp.value = result.family_living_status1_display || '';
+                else if (lbl === '住所')     inp.value = result.family_address1 || '';
+                else if (lbl === '介護状況') inp.value = result.family_care_status1_display || '';
+                else if (lbl === '就労状況') inp.value = result.family_employment1_display || '';
+            });
+            // 備考テキストエリア更新
+            var notesEl = document.querySelector('#familyInfoCollapse textarea[readonly]');
+            if (notesEl) {
+                notesEl.value = result.family_notes1 || '';
+                notesEl.closest('.row').style.display = result.family_notes1 ? '' : 'none';
+            }
+            bootstrap.Modal.getInstance(document.getElementById('familyEditModal')).hide();
+        } else {
+            var errEl = document.getElementById('familyEditModalError');
+            errEl.textContent = '保存に失敗しました: ' + (result.error || '不明なエラー');
+            errEl.classList.remove('d-none');
+        }
+    }).catch(function() {
+        var errEl = document.getElementById('familyEditModalError');
+        errEl.textContent = '通信エラーが発生しました。';
+        errEl.classList.remove('d-none');
+    });
+}
+
 {% include 'clients/_submitter_js.html' %}
 
 // 利用者マスタ編集モーダル 生年月日 和暦/西暦切り替え
@@ -1340,7 +2019,7 @@ input[readonly]:focus, textarea[readonly]:focus {
 }
 </style>
 <script>
-// 申請年月日 和暦/西暦
+// 作成日 和暦/西暦
 (function() {
     var APP_ERA = [
         { keys: ['令和','R','r'], start: 2019, label: '令和' },
@@ -1426,6 +2105,112 @@ input[readonly]:focus, textarea[readonly]:focus {
     updateDoctorStatusIcon();
     toggleDoctorOutside();
 });
+})();
+
+// 入院日 和暦/西暦
+(function() {
+    var ERA = [
+        { keys: ['令和','R','r'], start: 2019, label: '令和' },
+        { keys: ['平成','H','h'], start: 1989, label: '平成' },
+        { keys: ['昭和','S','s'], start: 1926, label: '昭和' },
+        { keys: ['大正','T','t'], start: 1912, label: '大正' },
+    ];
+    function parseWareki(text) {
+        if (!text) return null;
+        text = text.replace(/[^\S]/g, '');
+        var era = null, rest = text;
+        for (var i = 0; i < ERA.length; i++) {
+            for (var k = 0; k < ERA[i].keys.length; k++) {
+                if (text.indexOf(ERA[i].keys[k]) === 0) { era = ERA[i]; rest = text.slice(ERA[i].keys[k].length); break; }
+            }
+            if (era) break;
+        }
+        if (!era) return null;
+        var m1 = rest.match(/^([0-9]{1,2})年([0-9]{1,2})月([0-9]{1,2})日?$/);
+        if (m1) return { era: era, year: parseInt(m1[1]), month: parseInt(m1[2]), day: parseInt(m1[3]) };
+        var m2 = rest.match(/^([0-9]{1,2})[.\-\/]([0-9]{1,2})[.\-\/]([0-9]{1,2})$/);
+        if (m2) return { era: era, year: parseInt(m2[1]), month: parseInt(m2[2]), day: parseInt(m2[3]) };
+        return null;
+    }
+    function toWareki(iso) {
+        if (!iso) return '';
+        var p = iso.split('-'); if (p.length < 3) return '';
+        var y = parseInt(p[0]), m = parseInt(p[1]), d = parseInt(p[2]);
+        for (var i = 0; i < ERA.length; i++) {
+            if (y >= ERA[i].start) return ERA[i].label + (y - ERA[i].start + 1) + '年' + m + '月' + d + '日';
+        }
+        return '';
+    }
+    window.switchAdmDateEra = function(mode) {
+        var jDiv = document.getElementById('admDate_japanese');
+        var wDiv = document.getElementById('admDate_western');
+        var hidden = document.getElementById('id_admission_date');
+        if (mode === 'western') {
+            jDiv.style.display = 'none'; wDiv.style.display = '';
+            document.getElementById('admDate_era_western').classList.add('active');
+            document.getElementById('admDate_era_japanese').classList.remove('active');
+            if (hidden && hidden.value) wDiv.querySelector('input[type=date]').value = hidden.value;
+        } else {
+            var warekiInput = document.getElementById('admDate_wareki_text');
+            warekiInput.value = toWareki(hidden ? hidden.value : '');
+            syncAdmDateFromWareki();
+            wDiv.style.display = 'none'; jDiv.style.display = '';
+            document.getElementById('admDate_era_japanese').classList.add('active');
+            document.getElementById('admDate_era_western').classList.remove('active');
+        }
+    };
+    window.syncAdmDateFromWareki = function() {
+        var text = document.getElementById('admDate_wareki_text').value;
+        var preview = document.getElementById('admDate_wareki_preview');
+        var hidden = document.getElementById('id_admission_date');
+        var r = parseWareki(text);
+        if (r) {
+            var wy = r.era.start + r.year - 1;
+            var mo = String(r.month).padStart(2,'0'), d = String(r.day).padStart(2,'0');
+            if (hidden) hidden.value = wy + '-' + mo + '-' + d;
+            preview.textContent = '→ 西暦 ' + wy + '年' + r.month + '月' + r.day + '日';
+            preview.style.color = '#6c757d';
+        } else {
+            if (hidden) hidden.value = '';
+            preview.textContent = text.length > 0 ? '例: 令和7年5月16日' : '';
+            preview.style.color = '#aaa';
+        }
+        updateAdmissionKasan();
+    };
+
+    window.initAdmDate = function() {
+        var hidden = document.getElementById('id_admission_date');
+        if (!hidden) return;
+        if (!hidden.value) {
+            var today = new Date();
+            var y = today.getFullYear(), m = String(today.getMonth()+1).padStart(2,'0'), d = String(today.getDate()).padStart(2,'0');
+            hidden.value = y + '-' + m + '-' + d;
+        }
+        document.getElementById('admDate_wareki_text').value = toWareki(hidden.value);
+        syncAdmDateFromWareki();
+    };
+    document.addEventListener('DOMContentLoaded', function() { initAdmDate(); });
+
+    window.updateAdmissionKasan = function() {
+        var hidden = document.getElementById('id_admission_date');
+        var label  = document.getElementById('admission_kasan_label');
+        if (!hidden || !label) return;
+        var iso = hidden.value;
+        if (!iso) { label.textContent = ''; return; }
+        var admDate  = new Date(iso);
+        var today    = new Date();
+        // 時刻を0時0分0秒に揃えて日数差を計算
+        admDate.setHours(0,0,0,0);
+        today.setHours(0,0,0,0);
+        var diffDays = Math.floor((today - admDate) / 86400000);
+        if (diffDays === 0) {
+            label.textContent = '※入院時情報連携加算Ⅰ　算定';
+        } else if (diffDays >= 1 && diffDays <= 2) {
+            label.textContent = '※入院時情報連携加算Ⅱ　算定';
+        } else {
+            label.textContent = '※入院時情報連携加算　算定なし';
+        }
+    };
 })();
 </script>
 <script>
@@ -1559,7 +2344,7 @@ function toggleDoctorOutside() {
     updateDoctorStatusIcon();
 }
 </script>
-{% with validation_date_fields="id_application_date:申請年月日" %}
+{% with validation_date_fields="id_application_date:作成日" %}
 {% include 'clients/_generic_form_validator.html' %}
 {% endwith %}
 {% endblock %}

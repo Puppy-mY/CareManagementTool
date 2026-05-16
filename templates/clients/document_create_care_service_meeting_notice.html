@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% load django_bootstrap5 %}
+{% load django_bootstrap5 custom_filters %}
 
 {% block title %}サービス担当者会議開催のご案内 - {{ client.name }}様 - {{ block.super }}{% endblock %}
 
@@ -107,71 +107,287 @@
                     </div>
                     <div class="card-body">
 
-                        <!-- 【内部】案内を出す事業所 -->
-                        <div class="row g-3 mb-4">
+                        <!-- 案内を出す事業所 -->
+                        <div class="row g-3 mb-2">
                             <div class="col-12">
-                                <label class="form-label fw-bold mb-2">【内部】案内を出す事業所</label>
+                                <label class="form-label fw-bold mb-2">案内を出す事業所 <span class="text-danger">*</span></label>
+                                <div>
 
-                                <!-- 選択済み表示 -->
-                                <div id="internal_selected_wrap" class="mb-2" style="display:none;">
-                                    <div class="d-flex flex-wrap gap-2" id="internal_selected_tags"></div>
-                                </div>
-                                <div id="internal_selected_empty" class="text-muted small mb-2">未選択</div>
+                                    <!-- 【内部】 -->
+                                    <div class="mb-3">
+                                        <div class="d-flex align-items-center gap-2 mb-2">
+                                            <span class="fw-bold" style="font-size:0.85rem; color:#495057;">【内部】事業所</span>
+                                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="selectUsualInternal()" style="font-size:0.7rem; padding:1px 7px;">
+                                                いつもの
+                                            </button>
+                                        </div>
 
-                                <!-- hidden inputs -->
-                                <div id="internal_selected_inputs"></div>
+                                        <div id="internal_selected_wrap" class="mb-2" style="display:none;">
+                                            <div class="table-responsive">
+                                                <table class="table table-hover table-bordered mb-0" style="font-size:0.9rem;">
+                                                    <thead>
+                                                        <tr>
+                                                            <th style="background-color:#f5f5f5;">サービス事業所</th>
+                                                            <th style="width:90px; background-color:#f5f5f5;">業種</th>
+                                                            <th style="width:115px; background-color:#f5f5f5;">電話 / FAX</th>
+                                                            <th style="width:140px; background-color:#f5f5f5;">担当者</th>
+                                                            <th style="width:40px; background-color:#f5f5f5;"></th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody id="internal_selected_tbody"></tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                        <div id="internal_selected_empty" class="text-muted small mb-2">未選択</div>
+                                        <div id="internal_selected_inputs"></div>
 
-                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openInternalOfficeModal()">
-                                    <i class="fas fa-list me-1"></i>事業所を選択
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- 【外部】案内を出す事業所 -->
-                        <div class="row g-3 mb-4">
-                            <div class="col-12">
-                                <div class="d-flex align-items-center gap-2 mb-2">
-                                    <label class="form-label fw-bold mb-0">【外部】案内を出す事業所</label>
-                                    <button type="button" class="btn btn-outline-secondary btn-sm" style="font-size:0.72rem;" onclick="openCareOfficeManager()">
-                                        <i class="fas fa-cog me-1"></i>外部事業所を編集
-                                    </button>
-                                </div>
-
-                                <!-- 選択済みテーブル表示 -->
-                                <div id="selected_offices_table_wrap" class="mb-2" style="display:none;">
-                                    <div class="table-responsive">
-                                        <table class="table table-hover table-bordered mb-0" style="font-size:0.9rem;">
-                                            <thead>
-                                                <tr>
-                                                    <th style="background-color:#f5f5f5;">サービス事業所</th>
-                                                    <th style="width:90px; background-color:#f5f5f5;">業種</th>
-                                                    <th style="width:115px; background-color:#f5f5f5;">電話 / FAX</th>
-                                                    <th style="width:170px; background-color:#f5f5f5;">担当者（送付状宛先）</th>
-                                                    <th style="width:40px; background-color:#f5f5f5;"></th>
-                                                </tr>
-                                            </thead>
-                                            <tbody id="selected_offices_tbody"></tbody>
-                                        </table>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openInternalOfficeModal()">
+                                            <i class="fas fa-list me-1"></i>事業所を選択
+                                        </button>
                                     </div>
-                                </div>
-                                <div id="selected_offices_empty" class="text-muted small mb-2">未選択</div>
 
-                                <!-- hidden inputs（フォーム送信用） -->
-                                <div id="selected_offices_inputs"></div>
+                                    <!-- 【外部】 -->
+                                    <div class="mb-2">
+                                        <div class="d-flex align-items-center gap-2 mb-2">
+                                            <span class="fw-bold" style="font-size:0.85rem; color:#495057;">【外部】事業所</span>
+                                        </div>
 
-                                {% if care_offices %}
-                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openOfficeSelectModal()">
-                                    <i class="fas fa-list me-1"></i>事業所を選択
-                                </button>
-                                {% else %}
-                                <div class="alert alert-light border text-muted small">
-                                    <i class="fas fa-info-circle me-1"></i>
-                                    <a href="{% url 'care_service_office_list' %}" target="_blank">介護サービス事業所マスタ</a>に事業所を登録すると、ここで選択できます。
-                                </div>
-                                {% endif %}
+                                        <div id="selected_offices_table_wrap" class="mb-2" style="display:none;">
+                                            <div class="table-responsive">
+                                                <table class="table table-hover table-bordered mb-0" style="font-size:0.9rem;">
+                                                    <thead>
+                                                        <tr>
+                                                            <th style="background-color:#f5f5f5;">サービス事業所</th>
+                                                            <th style="width:90px; background-color:#f5f5f5;">業種</th>
+                                                            <th style="width:115px; background-color:#f5f5f5;">電話 / FAX</th>
+                                                            <th style="width:140px; background-color:#f5f5f5;">担当者<small style="font-size:0.7rem; color:#6c757d;">（送付状宛先）</small></th>
+                                                            <th style="width:40px; background-color:#f5f5f5;"></th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody id="selected_offices_tbody"></tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                        <div id="selected_offices_empty" class="text-muted small mb-2">未選択</div>
+                                        <div id="selected_offices_inputs"></div>
 
-                                <div id="fax_notice" class="mt-2 small text-muted" style="display:none;">
-                                    <i class="fas fa-fax me-1"></i>FAX番号が登録された事業所はFAX送付状が自動で作成されます
+                                        {% if care_offices %}
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openOfficeSelectModal()">
+                                            <i class="fas fa-list me-1"></i>事業所を選択
+                                        </button>
+                                        {% else %}
+                                        <div class="alert alert-light border text-muted small mb-2">
+                                            <i class="fas fa-info-circle me-1"></i>
+                                            <a href="{% url 'care_service_office_list' %}" target="_blank">介護サービス事業所マスタ</a>に事業所を登録すると、ここで選択できます。
+                                        </div>
+                                        {% endif %}
+
+                                        <div id="fax_notice" class="mt-2 small text-muted" style="display:none;">
+                                            <i class="fas fa-fax me-1"></i>【外部】で選択された事業所はFAX送付状が自動で作成されます。
+                                        </div>
+                                        <div id="fax_body_accordion" class="mt-2" style="display:none;">
+                                            <div class="accordion">
+                                                <div class="accordion-item" style="border: none; background-color: #f8f9fa; border-radius: 0.5rem;">
+                                                    <h2 class="accordion-header">
+                                                        <button class="accordion-button collapsed"
+                                                                type="button" style="background-color: #f8f9fa; padding: 0.5rem 1rem; color: #333;"
+                                                                data-bs-toggle="collapse" data-bs-target="#faxBodyCollapse">
+                                                            <i class="fas fa-fax me-1"></i> FAX送付状 本文
+                                                        </button>
+                                                    </h2>
+                                                    <div id="faxBodyCollapse" class="accordion-collapse collapse">
+                                                        <div class="accordion-body py-2 px-3">
+                                                            <input type="hidden" id="fax_care_level_val" value="{{ initial.care_level }}">
+                                                            <textarea id="fax_message" name="fax_message"
+                                                                      class="form-control" rows="11"
+                                                                      data-office-name="{{ request.user.profile.home_care_office.name|escapejs }}"
+                                                                      data-client-name="{{ client.name|escapejs }}"
+                                                                      style="font-size:0.9rem; font-family:monospace; overflow:hidden; resize:none; width:calc(43em + 1.5rem); max-width:100%; word-break:break-all;"></textarea>
+                                                            <!-- 通常モード -->
+                                                            <div id="fax_mode_normal" class="d-flex justify-content-between align-items-start mt-2">
+                                                                <button id="fax_reset_normal" type="button" class="btn btn-sm btn-outline-secondary"
+                                                                        onclick="resetFaxMessage()">
+                                                                    <i class="fas fa-undo me-1"></i>リセット
+                                                                </button>
+                                                                <div id="fax_btn_normal">
+                                                                    <button type="button" class="btn btn-sm btn-outline-secondary"
+                                                                            onclick="enterFaxTemplateEdit()">
+                                                                        <i class="fas fa-edit me-1"></i>初期値を編集
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                            <!-- 編集モード（全幅） -->
+                                                            <div id="fax_btn_edit" class="mt-2" style="display:none;">
+                                                                <small class="text-muted d-block mb-1 text-end" style="white-space:nowrap;">{user_name}＝作成者　{office_name}＝事業所名　{client_name}＝利用者名　{care_level}＝介護度</small>
+                                                                <div class="d-flex gap-1 justify-content-end mb-1">
+                                                                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="insertFaxPlaceholder('{user_name}')">作成者</button>
+                                                                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="insertFaxPlaceholder('{office_name}')">事業所名</button>
+                                                                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="insertFaxPlaceholder('{client_name}')">利用者名</button>
+                                                                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="insertFaxPlaceholder('{care_level}')">介護度</button>
+                                                                </div>
+                                                                <div class="d-flex justify-content-between">
+                                                                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="resetFaxMessage()">
+                                                                        <i class="fas fa-undo me-1"></i>デフォルトに戻す
+                                                                    </button>
+                                                                    <div class="d-flex gap-2">
+                                                                        <button type="button" class="btn btn-sm btn-success"
+                                                                                onclick="saveFaxTemplate()">
+                                                                            <i class="fas fa-check"></i>
+                                                                        </button>
+                                                                        <button type="button" class="btn btn-sm btn-outline-secondary"
+                                                                                onclick="cancelFaxTemplateEdit()">
+                                                                            <i class="fas fa-times"></i>
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                                <span id="faxTemplateError" class="text-danger small d-block mt-1" style="display:none;"></span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div style="border-top: 1px solid #dee2e6; width: 50%; margin: 1.5rem 0;"></div>
+
+                                    <!-- 書類作成日 -->
+                                    <div class="row g-3 mb-3">
+                                        <div class="col-12">
+                                            <div class="d-flex align-items-center gap-2 mb-2">
+                                                <label class="form-label fw-bold mb-0">書類作成日 <span class="text-danger">*</span></label>
+                                                <div class="birth-era-toggle" title="和暦 / 西暦を切り替え">
+                                                    <button type="button" class="era-btn active" id="created_date_era_japanese" onclick="switchCreatedDateEra('japanese')">和暦</button>
+                                                    <button type="button" class="era-btn" id="created_date_era_western" onclick="switchCreatedDateEra('western')">西暦</button>
+                                                </div>
+                                            </div>
+                                            <div style="width:220px;">
+                                                <input type="hidden" id="created_date" name="created_date" value="{{ today|date:'Y-m-d' }}">
+                                                <!-- 西暦 -->
+                                                <div id="created_date_western_div" style="display:none;">
+                                                    <input type="date" id="created_date_western_input" class="form-control"
+                                                           value="{{ today|date:'Y-m-d' }}"
+                                                           oninput="document.getElementById('created_date').value = this.value">
+                                                </div>
+                                                <!-- 和暦 -->
+                                                <div id="created_date_japanese_div">
+                                                    <input type="text" id="created_date_wareki" class="form-control"
+                                                           value="{{ today|wareki }}"
+                                                           placeholder="例: 令和7年5月6日" autocomplete="off"
+                                                           oninput="syncCreatedDateFromWareki()">
+                                                    <small id="created_date_preview" style="font-size:0.78em; display:block; margin-top:2px;"></small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {% include 'clients/_submitter_section.html' with label_text="作成事業所" show_toggle=False %}
+
+                                    <div style="border-top: 1px solid #dee2e6; width: 50%; margin: 1.5rem 0;"></div>
+
+                                    <!-- 開催予定日時 -->
+                                    <div class="row g-3 mb-3">
+                                        <div class="col-12">
+                                            <div class="d-flex align-items-center gap-2 mb-2">
+                                                <label class="form-label fw-bold mb-0">開催予定日時 <span class="text-danger">*</span></label>
+                                                <div class="birth-era-toggle" title="和暦 / 西暦を切り替え">
+                                                    <button type="button" class="era-btn active" id="meeting_date_era_japanese" onclick="switchMeetingDateEra('japanese')">和暦</button>
+                                                    <button type="button" class="era-btn" id="meeting_date_era_western" onclick="switchMeetingDateEra('western')">西暦</button>
+                                                </div>
+                                            </div>
+                                            <div class="d-flex align-items-start gap-2 flex-wrap">
+                                                <div style="min-width:220px;">
+                                                    <input type="hidden" id="meeting_date" name="meeting_date">
+                                                    <!-- 西暦 -->
+                                                    <div id="meeting_date_western_div" style="display:none;">
+                                                        <input type="date" id="meeting_date_western_input" class="form-control"
+                                                               oninput="document.getElementById('meeting_date').value = this.value">
+                                                    </div>
+                                                    <!-- 和暦 -->
+                                                    <div id="meeting_date_japanese_div">
+                                                        <input type="text" id="meeting_date_wareki" class="form-control"
+                                                               placeholder="例: 令和7年5月10日" autocomplete="off"
+                                                               oninput="syncMeetingDateFromWareki()" required>
+                                                        <small id="meeting_date_preview" style="font-size:0.78em; display:block; margin-top:2px;"></small>
+                                                    </div>
+                                                </div>
+                                                <select id="meeting_time" name="meeting_time" class="form-select" style="width:110px;" required>
+                                                    <option value="">--:--</option>
+                                                    <option>08:00</option><option>08:15</option><option>08:30</option><option>08:45</option>
+                                                    <option>09:00</option><option>09:15</option><option>09:30</option><option>09:45</option>
+                                                    <option>10:00</option><option>10:15</option><option>10:30</option><option>10:45</option>
+                                                    <option>11:00</option><option>11:15</option><option>11:30</option><option>11:45</option>
+                                                    <option>12:00</option><option>12:15</option><option>12:30</option><option>12:45</option>
+                                                    <option>13:00</option><option>13:15</option><option>13:30</option><option>13:45</option>
+                                                    <option>14:00</option><option>14:15</option><option>14:30</option><option>14:45</option>
+                                                    <option>15:00</option><option>15:15</option><option>15:30</option><option>15:45</option>
+                                                    <option>16:00</option><option>16:15</option><option>16:30</option><option>16:45</option>
+                                                    <option>17:00</option><option>17:15</option><option>17:30</option><option>17:45</option>
+                                                    <option>18:00</option><option>18:15</option><option>18:30</option><option>18:45</option>
+                                                </select>
+                                                <span class="text-muted">～</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div style="border-top: 1px solid #dee2e6; width: 50%; margin: 1.5rem 0;"></div>
+
+                                    <!-- 開催予定場所 -->
+                                    <div class="row g-3 mb-3">
+                                        <div class="col-12">
+                                            <div class="d-flex align-items-center gap-2 mb-2">
+                                                <label class="form-label fw-bold mb-0">開催予定場所 <span class="text-danger">*</span></label>
+                                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openPlaceManager()" style="font-size:0.75rem;">
+                                                    <i class="fas fa-cog me-1"></i>選択肢を編集
+                                                </button>
+                                            </div>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <select id="meeting_place_select" name="meeting_place_preset" class="form-select" style="min-width:220px; width:220px; flex-shrink:0;" onchange="onMeetingPlaceChange()" required>
+                                                    <option value="">----------</option>
+                                                    {% for opt in place_options %}
+                                                    {% if opt.is_other %}
+                                                    <option value="other">{{ opt.name }}（手入力）</option>
+                                                    {% else %}
+                                                    <option value="{{ opt.name }}">{{ opt.name }}</option>
+                                                    {% endif %}
+                                                    {% endfor %}
+                                                </select>
+                                                <input type="text" id="meeting_place_other" name="meeting_place_other" class="form-control flex-grow-1" style="display:none;"
+                                                       placeholder="場所を入力してください">
+                                                <input type="hidden" id="meeting_place" name="meeting_place">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div style="border-top: 1px solid #dee2e6; width: 50%; margin: 1.5rem 0;"></div>
+
+                                    <!-- 今回の検討内容 -->
+                                    <div class="row g-3 mb-3">
+                                        <div class="col-12">
+                                            <div class="d-flex align-items-center gap-2 mb-2">
+                                                <label class="form-label fw-bold mb-0">今回の検討内容 <span class="text-danger">*</span></label>
+                                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openAgendaManager()" style="font-size:0.75rem;">
+                                                    <i class="fas fa-cog me-1"></i>選択肢を編集
+                                                </button>
+                                            </div>
+                                            <div class="d-flex flex-column gap-2">
+                                                <select id="meeting_agenda_select" name="meeting_agenda_preset" class="form-select w-100" onchange="onMeetingAgendaChange()" required style="text-overflow:ellipsis;">
+                                                    <option value="">----------</option>
+                                                    {% for opt in agenda_options %}
+                                                    {% if opt.is_other %}
+                                                    <option value="other">{{ opt.name }}（手入力）</option>
+                                                    {% else %}
+                                                    <option value="{{ opt.name }}">{{ opt.name }}</option>
+                                                    {% endif %}
+                                                    {% endfor %}
+                                                </select>
+                                                <textarea id="meeting_agenda_other" name="meeting_agenda_other" class="form-control w-100" rows="2" style="display:none; resize:vertical;"
+                                                          placeholder="検討内容を入力してください"></textarea>
+                                                <input type="hidden" id="meeting_agenda" name="meeting_agenda">
+                                            </div>
+                                        </div>
+                                    </div>
+
                                 </div>
                             </div>
                         </div>
@@ -190,15 +406,9 @@
                                 </button>
                             </div>
                             <div class="d-flex gap-2">
-                                <button type="submit" name="action" value="excel"
+                                <button type="button" onclick="submitExcel()"
                                         class="btn btn-outline-secondary excel-btn px-4 py-2">
                                     <i class="fas fa-file-excel me-1"></i> Excel出力
-                                </button>
-                                <button type="submit" name="action" value="excel_fax"
-                                        id="btn_excel_fax"
-                                        class="btn btn-outline-secondary excel-btn px-4 py-2"
-                                        style="display:none;">
-                                    <i class="fas fa-fax me-1"></i> Excel＋FAX送付状
                                 </button>
                                 <button type="submit" name="action" value="save"
                                         class="btn btn-outline-secondary save-btn px-4 py-2">
@@ -214,175 +424,90 @@
     </div>
 </div>
 
-<!-- 事業所選択モーダル -->
-<!-- 外部事業所マスタ管理モーダル -->
-<div class="modal fade" id="careOfficeManagerModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
-    <div class="modal-dialog modal-dialog-scrollable" style="max-width:700px;">
+<!-- 汎用確認モーダル -->
+<div class="modal fade" id="confirmModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="fas fa-cog me-2"></i>外部事業所マスタ編集</h5>
+            <div class="modal-header py-2">
+                <h6 class="modal-title"><i class="fas fa-exclamation-triangle text-warning me-2"></i>確認</h6>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <!-- 検索 + 新規 -->
-                <div class="d-flex gap-2 mb-3">
-                    <input type="text" id="cmSearch" class="form-control form-control-sm" placeholder="事業所名・フリガナ・担当者名で検索" oninput="cmFilter()">
-                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="cmOpenCreate()" style="white-space:nowrap;">
-                        <i class="fas fa-plus me-1"></i>新規登録
-                    </button>
-                </div>
-                <!-- 一覧テーブル -->
-                <div class="table-responsive">
-                    <table class="table table-hover table-bordered mb-0" style="font-size:0.9rem;" id="cmTable">
+                <p id="confirmModalMessage" class="mb-0"></p>
+            </div>
+            <div class="modal-footer py-2">
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                <button type="button" class="btn btn-sm btn-danger" id="confirmModalOkBtn">削除</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 開催予定場所 選択肢管理モーダル -->
+<div class="modal fade" id="placeManagerModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width:700px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-map-marker-alt me-2"></i>開催予定場所の選択肢を編集</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="placeManagerError" class="alert alert-danger d-none mb-3"></div>
+
+                <!-- 既存選択肢 -->
+                <div class="table-responsive mb-3">
+                    <table class="table table-hover table-bordered mb-0" style="font-size:0.9rem;">
                         <thead>
                             <tr>
-                                <th style="background-color:#f5f5f5;">サービス事業所</th>
-                                <th style="width:90px; background-color:#f5f5f5;">業種</th>
-                                <th style="width:150px; background-color:#f5f5f5;">電話 / FAX</th>
-                                <th style="width:120px; background-color:#f5f5f5;">担当者</th>
-                                <th style="width:90px; background-color:#f5f5f5;">操作</th>
+                                <th style="width:32px; background-color:#f5f5f5;"></th>
+                                <th style="background-color:#f5f5f5;">場所名</th>
+                                <th style="width:50px; background-color:#f5f5f5;"></th>
                             </tr>
                         </thead>
-                        <tbody id="cmAccordion">
-                            {% for office in care_offices %}
-                            <tr class="cm-office-item"
-                                data-pk="{{ office.pk }}"
-                                data-name="{{ office.name }}"
-                                data-furigana="{{ office.furigana|default:'' }}"
-                                data-office-number="{{ office.office_number|default:'' }}"
-                                data-postal-code="{{ office.postal_code|default:'' }}"
-                                data-address="{{ office.address|default:'' }}"
-                                data-phone="{{ office.phone|default:'' }}"
-                                data-fax="{{ office.fax|default:'' }}"
-                                data-persons="{{ office.persons|join:',' }}"
-                                data-service-type="{{ office.service_type|default:'' }}">
-                                <td class="align-middle">
-                                    {% if office.office_number %}<small class="text-muted d-block" style="font-size:0.72rem;">{{ office.office_number }}</small>{% endif %}
-                                    {% if office.furigana %}<small class="text-muted d-block" style="font-size:0.75rem;">{{ office.furigana }}</small>{% endif %}
-                                    <span class="fw-bold">{{ office.name }}</span>
-                                </td>
-                                <td class="align-middle">
-                                    {% if office.service_type %}
-                                    <span class="svc-type-badge"
-                                        {% if office.service_type == '訪問介護' %}style="background-color:#fff9c4;"
-                                        {% elif office.service_type == '訪問看護' %}style="background-color:#ffd5d5;"
-                                        {% elif office.service_type == '訪問入浴介護' %}style="background-color:#d5eaf9;"
-                                        {% elif office.service_type == '訪問リハビリテーション' %}style="background-color:#ffebee;"
-                                        {% elif office.service_type == '通所介護' or office.service_type == '地域密着型通所介護' %}style="background-color:#e8f5e8;"
-                                        {% elif office.service_type == '通所リハビリテーション' %}style="background-color:#fff3e0;"
-                                        {% elif office.service_type == '福祉用具貸与' or office.service_type == '特定福祉用具販売' %}style="background-color:#f3e5f5;"
-                                        {% elif office.service_type == '短期入所生活介護' or office.service_type == '短期入所療養介護' or office.service_type == '小規模多機能型居宅介護' %}style="background-color:#f5f0e8;"
-                                        {% else %}style="background-color:#f5f5f5;"{% endif %}>{{ office.service_type }}</span>
-                                    {% else %}<span class="text-muted">―</span>{% endif %}
-                                </td>
-                                <td class="align-middle" style="font-size:0.85rem; white-space:nowrap;">
-                                    <i class="fas fa-phone me-1 text-muted" style="font-size:0.75rem;"></i>{{ office.phone|default:"―" }}<br>
-                                    <i class="fas fa-fax me-1 text-muted" style="font-size:0.75rem;"></i><span class="text-muted">{{ office.fax|default:"―" }}</span>
-                                </td>
-                                <td class="align-middle" style="font-size:0.85rem;">
-                                    {% if office.persons %}{% for p in office.persons|slice:":2" %}{% if not forloop.first %}<br>{% endif %}{{ p }} 様{% if forloop.last and office.persons|length > 2 %} <span class="text-muted">他</span>{% endif %}{% endfor %}
-                                    {% else %}<span class="text-muted">―</span>{% endif %}
-                                </td>
-                                <td class="align-middle text-center">
-                                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="cmOpenEdit({{ office.pk }})" title="編集"><i class="fas fa-edit"></i></button>
-                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="cmConfirmDelete({{ office.pk }},'{{ office.name|escapejs }}')" title="削除"><i class="fas fa-trash"></i></button>
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr><td colspan="5" class="text-center text-muted py-3">事業所が登録されていません</td></tr>
-                            {% endfor %}
-                        </tbody>
+                        <tbody id="placeManagerBody"></tbody>
                     </table>
                 </div>
+
+                <!-- 新規追加 -->
             </div>
-            <div class="modal-footer">
+            <div class="modal-footer justify-content-between">
+                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="placeManagerReset()">
+                    <i class="fas fa-undo me-1"></i>初期に戻す
+                </button>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- 外部事業所 編集・新規モーダル -->
-<div class="modal fade" id="cmOfficeFormModal" tabindex="-1" data-bs-backdrop="static">
-    <div class="modal-dialog">
+<!-- 今回の検討内容 選択肢管理モーダル -->
+<div class="modal fade" id="agendaManagerModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width:700px;">
         <div class="modal-content">
-            <form id="cmOfficeForm">
-                <input type="hidden" id="cm_pk" value="">
-                <div class="modal-header">
-                    <h5 class="modal-title"><span id="cmFormTitle">新規登録</span></h5>
-                    <button type="button" class="btn-close" onclick="cmCloseForm()"></button>
-                </div>
-                <div class="modal-body">
-                    <div id="cmFormError" class="alert alert-danger d-none"></div>
-                    <div class="row g-3">
-                        <div class="col-12">
-                            <label class="form-label">事業所種類 <span class="text-danger">*</span></label>
-                            <select id="cm_service_type" name="service_type" class="form-select">
-                                {% for key, label in service_type_choices %}
-                                <option value="{{ key }}">{{ label }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label">事業所名 <span class="text-danger">*</span></label>
-                            <input type="text" id="cm_name" name="name" class="form-control" required>
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label">フリガナ</label>
-                            <input type="text" id="cm_furigana" name="furigana" class="form-control">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">事業所番号</label>
-                            <input type="text" id="cm_office_number" name="office_number" class="form-control">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">郵便番号</label>
-                            <input type="text" id="cm_postal_code" name="postal_code" class="form-control">
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label">住所</label>
-                            <input type="text" id="cm_address" name="address" class="form-control">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">電話番号 <span class="text-danger">*</span></label>
-                            <input type="text" id="cm_phone" name="phone" class="form-control" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">FAX番号 <span class="text-danger">*</span></label>
-                            <input type="text" id="cm_fax" name="fax" class="form-control" required>
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label">担当者名</label>
-                            <div id="cm_persons_container"></div>
-                            <button type="button" class="btn btn-outline-secondary btn-sm mt-1" onclick="cmAddPerson()">
-                                <i class="fas fa-plus me-1"></i>担当者を追加
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" onclick="cmCloseForm()">キャンセル</button>
-                    <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i>保存</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- 外部事業所 削除確認モーダル -->
-<div class="modal fade" id="cmDeleteModal" tabindex="-1">
-    <div class="modal-dialog modal-sm">
-        <div class="modal-content">
-            <div class="modal-header py-2">
-                <h6 class="modal-title"><i class="fas fa-exclamation-triangle text-danger me-1"></i>削除確認</h6>
-                <button type="button" class="btn-close" onclick="cmCloseDelete()"></button>
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-list-alt me-2"></i>今回の検討内容の選択肢を編集</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <p class="mb-0"><strong id="cmDeleteName"></strong>を削除しますか？</p>
+                <div id="agendaManagerError" class="alert alert-danger d-none mb-3"></div>
+                <div class="table-responsive mb-3">
+                    <table class="table table-hover table-bordered mb-0" style="font-size:0.9rem;">
+                        <thead>
+                            <tr>
+                                <th style="width:32px; background-color:#f5f5f5;"></th>
+                                <th style="background-color:#f5f5f5;">検討内容</th>
+                                <th style="width:50px; background-color:#f5f5f5;"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="agendaManagerBody"></tbody>
+                    </table>
+                </div>
             </div>
-            <div class="modal-footer py-2">
-                <button type="button" class="btn btn-sm btn-secondary" onclick="cmCloseDelete()">キャンセル</button>
-                <button type="button" class="btn btn-sm btn-danger" id="cmDeleteConfirmBtn">削除</button>
+            <div class="modal-footer justify-content-between">
+                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="agendaManagerReset()">
+                    <i class="fas fa-undo me-1"></i>初期に戻す
+                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
             </div>
         </div>
     </div>
@@ -408,12 +533,12 @@
                                 <th style="width:40px; background-color:#f5f5f5;"></th>
                                 <th style="background-color:#f5f5f5;">サービス事業所</th>
                                 <th style="width:90px; background-color:#f5f5f5;">業種</th>
-                                <th style="width:150px; background-color:#f5f5f5;">電話 / FAX</th>
+                                <th style="width:140px; background-color:#f5f5f5;">電話 / FAX</th>
                                 <th style="width:120px; background-color:#f5f5f5;">担当者</th>
                             </tr>
                         </thead>
                         <tbody id="internal_modal_list">
-                            {% for o in care_offices %}
+                            {% for o in internal_offices %}
                             <tr class="internal-modal-item" style="cursor:pointer;"
                                 data-name="{{ o.name }}" data-svc="{{ o.service_type }}"
                                 onclick="toggleInternalRow(this)">
@@ -427,6 +552,9 @@
                                            data-phone="{{ o.phone }}"
                                            data-fax="{{ o.fax }}"
                                            data-persons="{{ o.persons|join:',' }}"
+                                           data-office-number="{{ o.office_number|default:'' }}"
+                                           data-postal="{{ o.postal_code|default:'' }}"
+                                           data-address="{{ o.address|default:'' }}"
                                            onclick="event.stopPropagation()">
                                 </td>
                                 <td class="align-middle">
@@ -446,7 +574,7 @@
                                         {% elif o.service_type == '通所リハビリテーション' %}style="background-color:#fff3e0;"
                                         {% elif o.service_type == '福祉用具貸与' or o.service_type == '特定福祉用具販売' %}style="background-color:#f3e5f5;"
                                         {% elif o.service_type == '短期入所生活介護' or o.service_type == '短期入所療養介護' or o.service_type == '小規模多機能型居宅介護' %}style="background-color:#f5f0e8;"
-                                        {% else %}style="background-color:#f5f5f5;"{% endif %}>{{ o.service_type }}</span>
+                                        {% else %}style="background-color:#f5f5f5;"{% endif %}>{{ o.service_type|svc_label }}</span>
                                     {% else %}<span class="text-muted">―</span>{% endif %}
                                 </td>
                                 <td class="align-middle" style="font-size:0.85rem; white-space:nowrap;">
@@ -502,9 +630,6 @@
                         data-color="{% if group.grouper == '訪問介護' %}#fff9c4{% elif group.grouper == '訪問看護' %}#ffd5d5{% elif group.grouper == '訪問入浴介護' %}#d5eaf9{% elif group.grouper == '訪問リハビリテーション' %}#ffebee{% elif group.grouper == '通所介護' or group.grouper == '地域密着型通所介護' %}#e8f5e8{% elif group.grouper == '通所リハビリテーション' %}#fff3e0{% elif group.grouper == '福祉用具貸与' or group.grouper == '特定福祉用具販売' %}#f3e5f5{% elif group.grouper == '短期入所生活介護' or group.grouper == '短期入所療養介護' or group.grouper == '小規模多機能型居宅介護' %}#f5f0e8{% else %}#f5f5f5{% endif %}">{{ group.grouper }}</button>
                     {% endif %}
                     {% endfor %}
-                    <button type="button" class="btn btn-sm btn-outline-secondary ms-auto" onclick="cmOpenCreateFromSelect()">
-                        <i class="fas fa-plus me-1"></i>新規登録
-                    </button>
                 </div>
                 <!-- 事業所テーブル -->
                 <div class="table-responsive">
@@ -513,8 +638,8 @@
                             <tr>
                                 <th style="width:40px; background-color:#f5f5f5;"></th>
                                 <th style="background-color:#f5f5f5;">サービス事業所</th>
-                                <th style="width:130px; background-color:#f5f5f5;">業種</th>
-                                <th style="width:150px; background-color:#f5f5f5;">電話 / FAX</th>
+                                <th style="width:140px; background-color:#f5f5f5;">業種</th>
+                                <th style="width:140px; background-color:#f5f5f5;">電話 / FAX</th>
                                 <th style="width:120px; background-color:#f5f5f5;">担当者</th>
                             </tr>
                         </thead>
@@ -533,6 +658,9 @@
                                            data-phone="{{ o.phone }}"
                                            data-fax="{{ o.fax }}"
                                            data-persons="{{ o.persons|join:',' }}"
+                                           data-office-number="{{ o.office_number|default:'' }}"
+                                           data-postal="{{ o.postal_code|default:'' }}"
+                                           data-address="{{ o.address|default:'' }}"
                                            onclick="event.stopPropagation()">
                                 </td>
                                 <td class="align-middle">
@@ -553,7 +681,7 @@
                                         {% elif o.service_type == '福祉用具貸与' or o.service_type == '特定福祉用具販売' %}style="background-color:#f3e5f5;"
                                         {% elif o.service_type == '短期入所生活介護' or o.service_type == '短期入所療養介護' or o.service_type == '小規模多機能型居宅介護' %}style="background-color:#f5f0e8;"
                                         {% else %}style="background-color:#f5f5f5;"
-                                        {% endif %}>{{ o.service_type }}</span>
+                                        {% endif %}>{{ o.service_type|svc_label }}</span>
                                     {% else %}
                                     <span class="text-muted">―</span>
                                     {% endif %}
@@ -576,7 +704,15 @@
                 </div>
             </div>
             <div class="modal-footer justify-content-between">
-                <span id="office_select_count" class="text-muted small"></span>
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" style="font-size:0.8rem;" onclick="openOfficeCreateModalInline()">
+                        <i class="fas fa-plus me-1"></i>新規登録
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" style="font-size:0.8rem;" onclick="openOfficeEditModalInline()">
+                        <i class="fas fa-edit me-1"></i>介護サービス事業所を編集
+                    </button>
+                    <span id="office_select_count" class="text-muted small"></span>
+                </div>
                 <div>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
                     <button type="button" class="btn btn-primary" onclick="confirmOfficeSelection()">
@@ -584,6 +720,76 @@
                     </button>
                 </div>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- 事業所 新規登録・編集モーダル（選択モーダルの上に重ねる） -->
+<div class="modal fade" id="officeInlineModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" style="z-index:1065;">
+    <div class="modal-dialog modal-lg" style="align-self:flex-start; margin-top:max(5vh,3rem);">
+        <div class="modal-content">
+            <form id="officeInlineForm">
+                {% csrf_token %}
+                <input type="hidden" id="officeInline_pk" value="">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-clinic-medical me-2"></i><span id="officeInlineTitle">新規登録</span></h5>
+                    <button type="button" class="btn-close" onclick="closeOfficeInlineModal()"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="officeInlineError" class="alert alert-danger d-none"></div>
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label">事業所種類 <span class="text-danger">*</span></label>
+                            <select id="officeInline_service_type" name="service_type" class="form-select text-muted"
+                                    onchange="this.classList.toggle('text-muted',!this.value)">
+                                <option value="">--- 選択してください ---</option>
+                                {% for key, label in service_type_choices %}
+                                <option value="{{ key }}">{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">事業所名 <span class="text-danger">*</span></label>
+                            <input type="text" id="officeInline_name" name="name" class="form-control" placeholder="例: 安濃津ろまん訪問介護" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">フリガナ</label>
+                            <input type="text" id="officeInline_furigana" name="furigana" class="form-control" placeholder="例: アノツロマンホウモンカイゴ">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">事業所番号</label>
+                            <input type="text" id="officeInline_office_number" name="office_number" class="form-control" placeholder="例: 2470600210">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">郵便番号</label>
+                            <input type="text" id="officeInline_postal_code" name="postal_code" class="form-control" placeholder="例: 514-0009">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">住所</label>
+                            <input type="text" id="officeInline_address" name="address" class="form-control" placeholder="例: 三重県津市羽所町○○">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">電話番号 <span class="text-danger">*</span></label>
+                            <input type="text" id="officeInline_phone" name="phone" class="form-control" placeholder="例: 059-123-4567" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">FAX番号 <span class="text-danger">*</span></label>
+                            <input type="text" id="officeInline_fax" name="fax" class="form-control" placeholder="例: 059-123-4568" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">担当者名</label>
+                            <div id="officeInline_persons_container"></div>
+                            <button type="button" class="btn btn-outline-secondary btn-sm mt-1" onclick="addOfficeInlinePersonRow()">
+                                <i class="fas fa-plus me-1"></i>担当者を追加
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeOfficeInlineModal()">キャンセル</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i>保存</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -613,6 +819,7 @@
         </div>
     </div>
 </div>
+
 
 <!-- 利用者マスタ編集モーダル -->
 <div class="modal fade" id="clientMasterModal" tabindex="-1" aria-labelledby="clientMasterModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
@@ -714,61 +921,6 @@
     </div>
 </div>
 
-<!-- 事業所マスタ編集モーダル -->
-<div class="modal fade" id="renewalOfficeModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
-    <div class="modal-dialog modal-xl modal-dialog-centered">
-        <div class="modal-content">
-            <input type="hidden" id="renewal_modal_pk" value="{% if user.profile.home_care_office %}{{ user.profile.home_care_office.pk }}{% endif %}">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="fas fa-hospital me-2"></i>居宅介護支援事業所編集</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div id="renewalOfficeModalError" class="alert alert-danger d-none"></div>
-                <div class="row g-3">
-                    <div class="col-12">
-                        <label class="form-label">事業所名 <span class="text-danger">*</span></label>
-                        <input type="text" id="renewal_modal_name" class="form-control" value="{{ initial.office_name }}" placeholder="例: 居宅介護支援事業所 安濃津ろまん" required>
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label">フリガナ</label>
-                        <input type="text" id="renewal_modal_furigana" class="form-control" value="{{ initial.office_furigana }}" placeholder="例: キョタクカイゴシエンジギョウショ アノツロマン">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">事業所番号 <span class="text-danger">*</span></label>
-                        <input type="text" id="renewal_modal_office_number" class="form-control" value="{{ initial.office_number }}" placeholder="例: 2470100419" required>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">管理者名</label>
-                        <input type="text" id="renewal_modal_manager_name" class="form-control" value="{{ initial.office_manager_name }}" placeholder="例: 山田 太郎">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">郵便番号</label>
-                        <input type="text" id="renewal_modal_postal_code" class="form-control" value="{{ initial.office_postal_code }}" placeholder="例: 514-0009">
-                    </div>
-                    <div class="col-md-8">
-                        <label class="form-label">住所</label>
-                        <input type="text" id="renewal_modal_address" class="form-control" value="{{ initial.office_address }}" placeholder="例: 三重県津市羽所町○○">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">電話番号</label>
-                        <input type="text" id="renewal_modal_phone" class="form-control" value="{{ initial.office_phone }}" placeholder="例: 059-123-4567">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">FAX</label>
-                        <input type="text" id="renewal_modal_fax" class="form-control" value="{{ initial.office_fax }}" placeholder="例: 059-123-4568">
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
-                <button type="button" class="btn btn-primary" id="renewalOfficeSaveBtn">
-                    <i class="fas fa-save me-1"></i>保存して反映
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
 
 <!-- マスタデータ編集ドロワー -->
 <div id="masterDataDrawer" class="master-drawer">
@@ -791,6 +943,7 @@
     </div>
 </div>
 <div id="drawerOverlay" class="drawer-overlay" onclick="closeMasterDrawer()"></div>
+<div id="faxEditOverlay"></div>
 
 <!-- 認定情報編集モーダル -->
 <div class="modal fade" id="certInfoModal" tabindex="-1" aria-labelledby="certInfoModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
@@ -1020,145 +1173,606 @@ document.addEventListener('show.bs.modal', function(e) {
     }, 10);
 });
 
-// ---- 外部事業所マスタ管理 ----
-var _cmDeletePk = null;
+// ---- Excel出力 ----
+function submitExcel() {
+    var errors = [];
 
-var _cmFormSource = 'manager'; // 'manager' or 'select'
+    // 案内を出す事業所
+    if (Object.keys(_selectedInternal).length === 0 && Object.keys(_selectedOffices).length === 0)
+        errors.push('案内を出す事業所');
 
-function cmOpenCreateFromSelect() {
-    _cmFormSource = 'select';
-    _cmDoOpenCreate();
+    // 書類作成日
+    if (!document.getElementById('created_date').value)
+        errors.push('書類作成日');
+
+    // 開催予定日時
+    if (!document.getElementById('meeting_date').value)
+        errors.push('開催予定日時（日付）');
+    if (!document.getElementById('meeting_time').value)
+        errors.push('開催予定日時（時間）');
+
+    // 開催予定場所
+    var placeVal = document.getElementById('meeting_place_select').value;
+    var placeOther = document.getElementById('meeting_place_other').value.trim();
+    if (!placeVal || (placeVal === 'other' && !placeOther))
+        errors.push('開催予定場所');
+
+    // 今回の検討内容
+    var agendaVal = document.getElementById('meeting_agenda_select').value;
+    var agendaOther = document.getElementById('meeting_agenda_other').value.trim();
+    if (!agendaVal || (agendaVal === 'other' && !agendaOther))
+        errors.push('今回の検討内容');
+
+    if (errors.length > 0) {
+        alert('以下の必須項目を入力してください。\n\n・' + errors.join('\n・'));
+        return;
+    }
+
+    var form = document.getElementById('documentForm');
+    var btn  = document.createElement('input');
+    btn.type  = 'hidden';
+    btn.name  = 'action';
+    btn.value = 'excel';
+    form.appendChild(btn);
+    form.submit();
+    form.removeChild(btn);
 }
 
-function openCareOfficeManager() {
-    document.getElementById('cmSearch').value = '';
-    cmFilter();
-    new bootstrap.Modal(document.getElementById('careOfficeManagerModal')).show();
+
+// ---- 書類作成事業所 ----
+var _OFFICE_NAME     = '{{ current_office_name }}';
+var _OFFICE_FURIGANA = '{{ current_office_furigana }}';
+var _OFFICE_NUMBER   = '{{ current_office_number }}';
+var _OFFICE_POSTAL   = '{{ current_office_postal }}';
+var _OFFICE_ADDRESS  = '{{ current_office_address }}';
+var _OFFICE_PHONE    = '{{ current_office_phone }}';
+var _OFFICE_FAX      = '{{ initial.office_fax|escapejs }}';
+var _OFFICE_MANAGER  = '{{ initial.office_manager_name|escapejs }}';
+var _CURRENT_STAFF_NAMES = {{ office_staff_options_json|safe }};
+{% include 'clients/_submitter_js.html' %}
+
+// ---- 和暦変換ユーティリティ（開催日用） ----
+(function() {
+    var ERAS = [
+        { name: '令和', start: 2019, month: 5,  day: 1  },
+        { name: '平成', start: 1989, month: 1,  day: 8  },
+        { name: '昭和', start: 1926, month: 12, day: 25 },
+        { name: '大正', start: 1912, month: 7,  day: 30 },
+        { name: '明治', start: 1868, month: 1,  day: 25 },
+    ];
+    var ERA_KEYS = ['令和','平成','昭和','大正','明治','令','平','昭','大','明','R','H','S','T','M'];
+    var ERA_MAP  = {'令和':'令和','平成':'平成','昭和':'昭和','大正':'大正','明治':'明治',
+                    '令':'令和','平':'平成','昭':'昭和','大':'大正','明':'明治',
+                    'R':'令和','H':'平成','S':'昭和','T':'大正','M':'明治'};
+
+    window.parseWarekiLocal = window.parseWarekiLocal || function(text) {
+        if (!text) return null;
+        text = text.replace(/\s/g, '');
+        var eraName = null, rest = null;
+        for (var i = 0; i < ERA_KEYS.length; i++) {
+            var k = ERA_KEYS[i];
+            if (text.indexOf(k) === 0) { eraName = ERA_MAP[k]; rest = text.slice(k.length); break; }
+        }
+        if (!eraName) return null;
+        var era = ERAS.find(function(e) { return e.name === eraName; });
+        if (!era) return null;
+        var m = rest.match(/^(\d+)[年.\-\/](\d+)[月.\-\/](\d+)日?$/);
+        if (!m) return null;
+        var y = parseInt(m[1]), mo = parseInt(m[2]), d = parseInt(m[3]);
+        var wy = era.start + y - 1;
+        if (isNaN(wy) || isNaN(mo) || isNaN(d)) return null;
+        return { year: wy, month: mo, day: d };
+    };
+
+    window.toWarekiTextLocal = window.toWarekiTextLocal || function(dateStr) {
+        if (!dateStr) return '';
+        var p = dateStr.split('-');
+        var wy = parseInt(p[0]), mo = parseInt(p[1]), d = parseInt(p[2]);
+        for (var i = 0; i < ERAS.length; i++) {
+            var e = ERAS[i];
+            if (new Date(wy, mo - 1, d) >= new Date(e.start, e.month - 1, e.day)) {
+                return e.name + (wy - e.start + 1) + '年' + mo + '月' + d + '日';
+            }
+        }
+        return '';
+    };
+})();
+
+// ---- 開催予定場所 選択肢管理 ----
+var _placeOptions = [];
+
+function openPlaceManager() {
+    var errEl = document.getElementById('placeManagerError');
+    errEl.classList.add('d-none');
+    fetch('/clients/meeting-place-options/', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(r => r.json())
+        .then(function(data) {
+            if (data.success) {
+                _placeOptions = data.options;
+                _renderPlaceManagerTable();
+                new bootstrap.Modal(document.getElementById('placeManagerModal')).show();
+            }
+        });
 }
 
-function cmFilter() {
-    var q = document.getElementById('cmSearch').value.toLowerCase();
-    document.querySelectorAll('.cm-office-item').forEach(function(item) {
-        var name     = (item.dataset.name        || '').toLowerCase();
-        var furigana = (item.dataset.furigana    || '').toLowerCase();
-        var persons  = (item.dataset.persons     || '').toLowerCase();
-        var num      = (item.dataset.officeNumber|| '').toLowerCase();
-        item.style.display = (!q || name.includes(q) || furigana.includes(q) || persons.includes(q) || num.includes(q)) ? '' : 'none';
+function _renderPlaceManagerTable() {
+    var tbody = document.getElementById('placeManagerBody');
+    tbody.innerHTML = '';
+    _placeOptions.forEach(function(opt) {
+        var tr = document.createElement('tr');
+        if (opt.is_other) {
+            // 追加ボタン行
+            var addTr = document.createElement('tr');
+            addTr.id = 'placeAddBtnRow';
+            addTr.innerHTML = '<td class="align-middle"></td>'
+                + '<td colspan="2" class="align-middle py-1">'
+                + '<button type="button" class="btn btn-outline-secondary btn-sm w-100" style="font-size:0.82rem; border-style:dashed;" onclick="placeManagerShowInput()">'
+                + '<i class="fas fa-plus me-1"></i>追加</button></td>';
+            tbody.appendChild(addTr);
+
+            // その他行
+            tr.innerHTML = '<td class="align-middle text-center text-muted" style="font-size:0.8rem;"></td>'
+                         + '<td class="align-middle text-muted">' + _escHtml(opt.name) + '（手入力）<small class="ms-1 text-muted" style="font-size:0.75rem;">※固定</small></td>'
+                         + '<td></td>';
+        } else {
+            tr.setAttribute('draggable', 'true');
+            tr.dataset.dragId = opt.id;
+            tr.innerHTML = '<td class="align-middle text-center" style="cursor:grab; color:#adb5bd;"><i class="fas fa-grip-vertical"></i></td>'
+                         + '<td class="align-middle"><input type="text" class="form-control form-control-sm" value="' + _escHtml(opt.name) + '" data-id="' + opt.id + '" onblur="placeManagerUpdate(this)"></td>'
+                         + '<td class="text-center align-middle"><button type="button" class="btn btn-sm btn-outline-secondary" style="padding:2px 7px;font-size:0.75rem;" onclick="placeManagerDelete(' + opt.id + ',\'' + _escHtml(opt.name) + '\')" title="削除"><i class="fas fa-times"></i></button></td>';
+        }
+        tbody.appendChild(tr);
+    });
+    _makeDraggable(tbody, '/clients/meeting-place-options/reorder/');
+}
+
+function placeManagerShowInput() {
+    var addRow = document.getElementById('placeAddBtnRow');
+    addRow.innerHTML = '<td class="align-middle text-center"></td>'
+        + '<td class="align-middle py-1"><input type="text" id="placeManagerNewName" class="form-control form-control-sm" placeholder="場所名を入力"'
+        + ' onblur="setTimeout(function(){ placeManagerAdd(); }, 150)"></td>'
+        + '<td class="align-middle text-center">'
+        + '<button type="button" class="btn btn-sm btn-outline-secondary" style="padding:2px 7px;font-size:0.75rem;" onmousedown="event.preventDefault();" onclick="_renderPlaceManagerTable()"><i class="fas fa-times"></i></button>'
+        + '</td>';
+    document.getElementById('placeManagerNewName').focus();
+}
+
+function placeManagerUpdate(input) {
+    var id = input.dataset.id;
+    var name = input.value.trim();
+    if (!name) { input.value = _placeOptions.find(function(o){ return o.id == id; }).name; return; }
+    var fd = new FormData(); fd.append('name', name);
+    fetch('/clients/meeting-place-options/' + id + '/update/', {
+        method: 'POST', headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value },
+        body: fd,
+    }).then(r => r.json()).then(function(data) {
+        if (data.success) {
+            var opt = _placeOptions.find(function(o){ return o.id == id; });
+            if (opt) opt.name = data.name;
+            _syncPlaceSelect();
+        } else {
+            document.getElementById('placeManagerError').textContent = data.error;
+            document.getElementById('placeManagerError').classList.remove('d-none');
+        }
     });
 }
 
-function cmAddPerson(val) {
-    var div = document.createElement('div');
-    div.className = 'd-flex gap-2 mb-2';
-    div.innerHTML = '<input type="text" name="person_name" class="form-control" placeholder="例: 山田　太郎" value="' + (val || '') + '">'
-                  + '<button type="button" class="btn btn-outline-danger btn-sm px-2" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>';
-    document.getElementById('cm_persons_container').appendChild(div);
-}
-
-function cmOpenCreate() {
-    _cmFormSource = _cmFormSource || 'manager';
-    _cmDoOpenCreate();
-}
-
-function _cmDoOpenCreate() {
-    document.getElementById('cm_pk').value = '';
-    document.getElementById('cmFormTitle').textContent = '新規登録';
-    document.getElementById('cmOfficeForm').reset();
-    document.getElementById('cmFormError').classList.add('d-none');
-    document.getElementById('cm_persons_container').innerHTML = '';
-    cmAddPerson();
-    new bootstrap.Modal(document.getElementById('cmOfficeFormModal')).show();
-}
-
-function cmOpenEdit(pk) {
-    var item = document.querySelector('.cm-office-item[data-pk="' + pk + '"]');
-    _cmFormSource = 'manager';
-    document.getElementById('cm_pk').value = pk;
-    document.getElementById('cmFormTitle').textContent = '事業所編集';
-    document.getElementById('cm_name').value = item.dataset.name || '';
-    document.getElementById('cm_furigana').value = item.dataset.furigana || '';
-    document.getElementById('cm_office_number').value = item.dataset.officeNumber || '';
-    document.getElementById('cm_postal_code').value = item.dataset.postalCode || '';
-    document.getElementById('cm_address').value = item.dataset.address || '';
-    document.getElementById('cm_phone').value = item.dataset.phone || '';
-    document.getElementById('cm_fax').value = item.dataset.fax || '';
-    document.getElementById('cm_service_type').value = item.dataset.serviceType || '';
-    document.getElementById('cmFormError').classList.add('d-none');
-    document.getElementById('cm_persons_container').innerHTML = '';
-    var persons = item.dataset.persons ? item.dataset.persons.split(',').filter(Boolean) : [];
-    if (!persons.length) cmAddPerson(); else persons.forEach(function(p) { cmAddPerson(p); });
-    new bootstrap.Modal(document.getElementById('cmOfficeFormModal')).show();
-}
-
-function cmCloseForm() {
-    _cmFormSource = 'manager';
-    bootstrap.Modal.getInstance(document.getElementById('cmOfficeFormModal')).hide();
-}
-
-function cmConfirmDelete(pk, name) {
-    _cmDeletePk = pk;
-    document.getElementById('cmDeleteName').textContent = name;
-    new bootstrap.Modal(document.getElementById('cmDeleteModal')).show();
-}
-
-function cmCloseDelete() {
-    bootstrap.Modal.getInstance(document.getElementById('cmDeleteModal')).hide();
-}
-
-document.addEventListener('DOMContentLoaded', function() {
-    var csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-
-    document.getElementById('cmOfficeForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        var errEl = document.getElementById('cmFormError');
-        if (!document.getElementById('cm_service_type').value) {
-            errEl.textContent = '事業所種類を選択してください。'; errEl.classList.remove('d-none'); return;
+function placeManagerAdd() {
+    var el = document.getElementById('placeManagerNewName');
+    if (!el) return;
+    var name = el.value.trim();
+    if (!name) return;
+    var fd = new FormData(); fd.append('name', name);
+    fetch('/clients/meeting-place-options/create/', {
+        method: 'POST', headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value },
+        body: fd,
+    }).then(r => r.json()).then(function(data) {
+        if (data.success) {
+            var otherIdx = _placeOptions.findIndex(function(o){ return o.is_other; });
+            if (otherIdx === -1) { _placeOptions.push(data); }
+            else { _placeOptions.splice(otherIdx, 0, data); }
+            _renderPlaceManagerTable();
+            _syncPlaceSelect();
+        } else {
+            document.getElementById('placeManagerError').textContent = data.error;
+            document.getElementById('placeManagerError').classList.remove('d-none');
         }
-        if (!document.getElementById('cm_phone').value.trim() || !document.getElementById('cm_fax').value.trim()) {
-            errEl.textContent = '電話番号とFAX番号は必須です。'; errEl.classList.remove('d-none'); return;
-        }
-        var pk  = document.getElementById('cm_pk').value;
-        var url = pk ? '/clients/care-service-offices/' + pk + '/update/' : '/clients/care-service-offices/create/';
-        var src = _cmFormSource;
-        fetch(url, {
-            method: 'POST',
-            headers: { 'X-CSRFToken': csrfToken },
-            body: new FormData(this),
+    });
+}
+
+function placeManagerDelete(id, name) {
+    showConfirm('「' + name + '」を削除しますか？', function() {
+        fetch('/clients/meeting-place-options/' + id + '/delete/', {
+            method: 'POST', headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value },
         }).then(r => r.json()).then(function(data) {
             if (data.success) {
-                if (!pk) {
-                    // 新規登録：UIに追加してフォームを閉じる（親モーダルはそのまま見える）
-                    _cmAddRowToSelectModal(data);
-                    _cmAddItemToManagerAccordion(data);
-                } else {
-                    // 編集：テーブル行を更新
-                    _cmUpdateRowInManager(data);
-                }
-                _cmFormSource = 'manager';
-                bootstrap.Modal.getInstance(document.getElementById('cmOfficeFormModal')).hide();
+                _placeOptions = _placeOptions.filter(function(o){ return o.id !== id; });
+                _renderPlaceManagerTable();
+                _syncPlaceSelect();
             } else {
-                errEl.textContent = data.error || 'エラーが発生しました。'; errEl.classList.remove('d-none');
+                document.getElementById('placeManagerError').textContent = data.error;
+                document.getElementById('placeManagerError').classList.remove('d-none');
             }
         });
     });
+}
 
-    document.getElementById('cmDeleteConfirmBtn').addEventListener('click', function() {
-        if (!_cmDeletePk) return;
-        var pk = _cmDeletePk;
-        fetch('/clients/care-service-offices/' + pk + '/delete/', {
-            method: 'POST', headers: { 'X-CSRFToken': csrfToken },
+function _syncPlaceSelect() {
+    var sel = document.getElementById('meeting_place_select');
+    var current = sel.value;
+    while (sel.options.length > 1) sel.remove(1);
+    _placeOptions.forEach(function(opt) {
+        var o = document.createElement('option');
+        o.value = opt.is_other ? 'other' : opt.name;
+        o.textContent = opt.is_other ? opt.name + '（手入力）' : opt.name;
+        sel.appendChild(o);
+    });
+    sel.value = current;
+}
+
+// ---- 汎用確認モーダル ----
+var _confirmCallback = null;
+(function() {
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('confirmModalOkBtn').addEventListener('click', function() {
+            bootstrap.Modal.getInstance(document.getElementById('confirmModal')).hide();
+            if (_confirmCallback) { _confirmCallback(); _confirmCallback = null; }
+        });
+    });
+})();
+
+function showConfirm(message, onConfirm) {
+    document.getElementById('confirmModalMessage').textContent = message;
+    _confirmCallback = onConfirm;
+    new bootstrap.Modal(document.getElementById('confirmModal')).show();
+}
+
+// ---- 選択肢管理モーダル共通：ドラッグ＆ドロップ ----
+var _dragSrc = null;
+
+function _makeDraggable(tbody, reorderUrl) {
+    tbody.querySelectorAll('tr[data-drag-id]').forEach(function(tr) {
+        tr.addEventListener('dragstart', function(e) {
+            _dragSrc = tr;
+            e.dataTransfer.effectAllowed = 'move';
+            tr.style.opacity = '0.4';
+        });
+        tr.addEventListener('dragend', function() {
+            tr.style.opacity = '';
+            tbody.querySelectorAll('tr').forEach(function(r){ r.classList.remove('drag-over'); });
+            _saveDragOrder(tbody, reorderUrl);
+        });
+        tr.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            tbody.querySelectorAll('tr').forEach(function(r){ r.classList.remove('drag-over'); });
+            tr.classList.add('drag-over');
+        });
+        tr.addEventListener('drop', function(e) {
+            e.preventDefault();
+            if (_dragSrc && _dragSrc !== tr) {
+                var rows = Array.from(tbody.querySelectorAll('tr'));
+                var srcIdx = rows.indexOf(_dragSrc);
+                var tgtIdx = rows.indexOf(tr);
+                if (srcIdx < tgtIdx) { tbody.insertBefore(_dragSrc, tr.nextSibling); }
+                else { tbody.insertBefore(_dragSrc, tr); }
+            }
+        });
+    });
+}
+
+function _saveDragOrder(tbody, reorderUrl) {
+    var ids = Array.from(tbody.querySelectorAll('tr[data-drag-id]')).map(function(r){ return parseInt(r.dataset.dragId); });
+    if (!ids.length) return;
+    var fd = new FormData();
+    fd.append('order', JSON.stringify(ids));
+    fetch(reorderUrl, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value },
+        body: fd,
+    });
+}
+
+function placeManagerReset() {
+    showConfirm('開催予定場所の選択肢を初期状態に戻しますか？', function() {
+        fetch('/clients/meeting-place-options/reset/', {
+            method: 'POST', headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value },
         }).then(r => r.json()).then(function(data) {
             if (data.success) {
-                // 行を削除して削除モーダルを閉じる（管理モーダルはそのまま見える）
-                var row = document.querySelector('.cm-office-item[data-pk="' + pk + '"]');
-                if (row) row.remove();
-                bootstrap.Modal.getInstance(document.getElementById('cmDeleteModal')).hide();
-            } else { alert(data.error); }
+                _placeOptions = data.options;
+                _renderPlaceManagerTable();
+                _syncPlaceSelect();
+            }
         });
+    });
+}
+
+// ---- 今回の検討内容 選択肢管理 ----
+var _agendaOptions = [];
+
+function openAgendaManager() {
+    document.getElementById('agendaManagerError').classList.add('d-none');
+    fetch('/clients/meeting-agenda-options/', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(r => r.json())
+        .then(function(data) {
+            if (data.success) {
+                _agendaOptions = data.options;
+                _renderAgendaManagerTable();
+                new bootstrap.Modal(document.getElementById('agendaManagerModal')).show();
+            }
+        });
+}
+
+function _renderAgendaManagerTable() {
+    var tbody = document.getElementById('agendaManagerBody');
+    tbody.innerHTML = '';
+    _agendaOptions.forEach(function(opt) {
+        var tr = document.createElement('tr');
+        if (opt.is_other) {
+            // 追加ボタン行
+            var addTr = document.createElement('tr');
+            addTr.id = 'agendaAddBtnRow';
+            addTr.innerHTML = '<td class="align-middle"></td>'
+                + '<td colspan="2" class="align-middle py-1">'
+                + '<button type="button" class="btn btn-outline-secondary btn-sm w-100" style="font-size:0.82rem; border-style:dashed;" onclick="agendaManagerShowInput()">'
+                + '<i class="fas fa-plus me-1"></i>追加</button></td>';
+            tbody.appendChild(addTr);
+
+            // その他行
+            tr.innerHTML = '<td class="align-middle text-center text-muted" style="font-size:0.8rem;"></td>'
+                         + '<td class="align-middle text-muted">' + _escHtml(opt.name) + '（手入力）<small class="ms-1 text-muted" style="font-size:0.75rem;">※固定</small></td>'
+                         + '<td></td>';
+        } else {
+            tr.setAttribute('draggable', 'true');
+            tr.dataset.dragId = opt.id;
+            tr.innerHTML = '<td class="align-middle text-center" style="cursor:grab; color:#adb5bd;"><i class="fas fa-grip-vertical"></i></td>'
+                         + '<td class="align-middle"><textarea class="form-control form-control-sm" rows="' + _rowsForText(opt.name) + '" style="resize:vertical;" data-id="' + opt.id + '" onblur="agendaManagerUpdate(this)" oninput="_autoResizeTA(this)">' + _escHtml(opt.name) + '</textarea></td>'
+                         + '<td class="text-center align-middle"><button type="button" class="btn btn-sm btn-outline-secondary" style="padding:2px 7px;font-size:0.75rem;" onclick="agendaManagerDelete(' + opt.id + ',\'' + _escHtml(opt.name) + '\')" title="削除"><i class="fas fa-times"></i></button></td>';
+        }
+        tbody.appendChild(tr);
+    });
+    _makeDraggable(tbody, '/clients/meeting-agenda-options/reorder/');
+}
+
+function _autoResizeTA(el) {
+    el.style.height = 'auto';
+    el.style.height = el.scrollHeight + 'px';
+}
+
+function _rowsForText(text) {
+    var len = (text || '').length;
+    if (len >= 96) return 3;
+    if (len >= 48) return 2;
+    return 1;
+}
+
+function agendaManagerShowInput() {
+    var addRow = document.getElementById('agendaAddBtnRow');
+    addRow.innerHTML = '<td class="align-middle text-center"></td>'
+        + '<td class="align-middle py-1"><textarea id="agendaManagerNewName" class="form-control form-control-sm" rows="1" style="resize:vertical; overflow:hidden;" placeholder="検討内容を入力"'
+        + ' oninput="_autoResizeTA(this)" onblur="setTimeout(function(){ agendaManagerAdd(); }, 150)"></textarea></td>'
+        + '<td class="align-middle text-center">'
+        + '<button type="button" class="btn btn-sm btn-outline-secondary" style="padding:2px 7px;font-size:0.75rem;" onmousedown="event.preventDefault();" onclick="_renderAgendaManagerTable()"><i class="fas fa-times"></i></button>'
+        + '</td>';
+    document.getElementById('agendaManagerNewName').focus();
+}
+
+function agendaManagerUpdate(input) {
+    var id = input.dataset.id;
+    var name = input.value.trim();
+    if (!name) { input.value = _agendaOptions.find(function(o){ return o.id == id; }).name; return; }
+    var fd = new FormData(); fd.append('name', name);
+    fetch('/clients/meeting-agenda-options/' + id + '/update/', {
+        method: 'POST', headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value },
+        body: fd,
+    }).then(r => r.json()).then(function(data) {
+        if (data.success) {
+            var opt = _agendaOptions.find(function(o){ return o.id == id; });
+            if (opt) opt.name = data.name;
+            _syncAgendaSelect();
+        } else {
+            document.getElementById('agendaManagerError').textContent = data.error;
+            document.getElementById('agendaManagerError').classList.remove('d-none');
+        }
+    });
+}
+
+function agendaManagerAdd() {
+    var el = document.getElementById('agendaManagerNewName');
+    if (!el) return;
+    var name = el.value.trim();
+    if (!name) return;
+    var fd = new FormData(); fd.append('name', name);
+    fetch('/clients/meeting-agenda-options/create/', {
+        method: 'POST', headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value },
+        body: fd,
+    }).then(r => r.json()).then(function(data) {
+        if (data.success) {
+            var otherIdx = _agendaOptions.findIndex(function(o){ return o.is_other; });
+            if (otherIdx === -1) { _agendaOptions.push(data); }
+            else { _agendaOptions.splice(otherIdx, 0, data); }
+            _renderAgendaManagerTable();
+            _syncAgendaSelect();
+        } else {
+            document.getElementById('agendaManagerError').textContent = data.error;
+            document.getElementById('agendaManagerError').classList.remove('d-none');
+        }
+    });
+}
+
+function agendaManagerDelete(id, name) {
+    showConfirm('「' + name + '」を削除しますか？', function() {
+        fetch('/clients/meeting-agenda-options/' + id + '/delete/', {
+            method: 'POST', headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value },
+        }).then(r => r.json()).then(function(data) {
+            if (data.success) {
+                _agendaOptions = _agendaOptions.filter(function(o){ return o.id !== id; });
+                _renderAgendaManagerTable();
+                _syncAgendaSelect();
+            } else {
+                document.getElementById('agendaManagerError').textContent = data.error;
+                document.getElementById('agendaManagerError').classList.remove('d-none');
+            }
+        });
+    });
+}
+
+function _syncAgendaSelect() {
+    var sel = document.getElementById('meeting_agenda_select');
+    var current = sel.value;
+    while (sel.options.length > 1) sel.remove(1);
+    _agendaOptions.forEach(function(opt) {
+        var o = document.createElement('option');
+        o.value = opt.is_other ? 'other' : opt.name;
+        o.textContent = opt.is_other ? opt.name + '（手入力）' : opt.name;
+        sel.appendChild(o);
+    });
+    sel.value = current;
+    onMeetingAgendaChange();
+}
+
+function agendaManagerReset() {
+    showConfirm('今回の検討内容の選択肢を初期状態に戻しますか？', function() {
+        fetch('/clients/meeting-agenda-options/reset/', {
+            method: 'POST', headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value },
+        }).then(r => r.json()).then(function(data) {
+            if (data.success) {
+                _agendaOptions = data.options;
+                _renderAgendaManagerTable();
+                _syncAgendaSelect();
+            }
+        });
+    });
+}
+
+// ---- 書類作成日 ----
+function switchCreatedDateEra(era) {
+    var isJp = era === 'japanese';
+    document.getElementById('created_date_japanese_div').style.display = isJp ? '' : 'none';
+    document.getElementById('created_date_western_div').style.display  = isJp ? 'none' : '';
+    document.getElementById('created_date_era_japanese').classList.toggle('active', isJp);
+    document.getElementById('created_date_era_western').classList.toggle('active', !isJp);
+    if (!isJp) {
+        var hidden = document.getElementById('created_date').value;
+        if (hidden) document.getElementById('created_date_western_input').value = hidden;
+    }
+}
+
+function syncCreatedDateFromWareki() {
+    var text    = document.getElementById('created_date_wareki').value;
+    var result  = parseWarekiLocal(text);
+    var preview = document.getElementById('created_date_preview');
+    if (result) {
+        var iso = result.year + '-' + String(result.month).padStart(2,'0') + '-' + String(result.day).padStart(2,'0');
+        document.getElementById('created_date').value = iso;
+        preview.textContent = '→ 西暦 ' + result.year + '年' + result.month + '月' + result.day + '日';
+        preview.style.color = '#6c757d';
+    } else {
+        document.getElementById('created_date').value = '';
+        if (text.length > 0) {
+            preview.textContent = '例: 令和7年5月6日　または　R7.5.6';
+            preview.style.color = '#aaa';
+        } else {
+            preview.textContent = '';
+        }
+    }
+}
+
+// ---- 開催予定日時 ----
+function switchMeetingDateEra(era) {
+    var isJp = era === 'japanese';
+    document.getElementById('meeting_date_japanese_div').style.display = isJp ? '' : 'none';
+    document.getElementById('meeting_date_western_div').style.display  = isJp ? 'none' : '';
+    document.getElementById('meeting_date_era_japanese').classList.toggle('active', isJp);
+    document.getElementById('meeting_date_era_western').classList.toggle('active', !isJp);
+    if (!isJp) {
+        var hidden = document.getElementById('meeting_date').value;
+        if (hidden) document.getElementById('meeting_date_western_input').value = hidden;
+    }
+}
+
+function syncMeetingDateFromWareki() {
+    var text    = document.getElementById('meeting_date_wareki').value;
+    var result  = parseWarekiLocal(text);
+    var preview = document.getElementById('meeting_date_preview');
+    if (result) {
+        var iso = result.year + '-' + String(result.month).padStart(2,'0') + '-' + String(result.day).padStart(2,'0');
+        document.getElementById('meeting_date').value = iso;
+        preview.textContent = '→ 西暦 ' + result.year + '年' + result.month + '月' + result.day + '日';
+        preview.style.color = '#6c757d';
+    } else {
+        document.getElementById('meeting_date').value = '';
+        if (text.length > 0) {
+            preview.textContent = '例: 令和7年5月10日　または　R7.5.10';
+            preview.style.color = '#aaa';
+        } else {
+            preview.textContent = '';
+        }
+    }
+}
+
+// ---- 開催予定場所 ----
+function onMeetingPlaceChange() {
+    var sel = document.getElementById('meeting_place_select').value;
+    var otherEl = document.getElementById('meeting_place_other');
+    var hidden  = document.getElementById('meeting_place');
+    if (sel === 'other') {
+        otherEl.style.display = '';
+        otherEl.focus();
+        hidden.value = otherEl.value;
+    } else {
+        otherEl.style.display = 'none';
+        hidden.value = sel;
+    }
+}
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('meeting_place_other').addEventListener('input', function() {
+        document.getElementById('meeting_place').value = this.value;
+    });
+    document.getElementById('meeting_agenda_other').addEventListener('input', function() {
+        document.getElementById('meeting_agenda').value = this.value.trim();
     });
 });
 
+// ---- 今回の検討内容 ----
+function onMeetingAgendaChange() {
+    var sel = document.getElementById('meeting_agenda_select').value;
+    var otherEl = document.getElementById('meeting_agenda_other');
+    var hidden  = document.getElementById('meeting_agenda');
+    if (sel === 'other') {
+        otherEl.style.display = '';
+        otherEl.focus();
+        hidden.value = otherEl.value;
+    } else {
+        otherEl.style.display = 'none';
+        hidden.value = sel;
+    }
+}
+
 // ---- 内部事業所モーダル ----
+var _USUAL_INTERNAL = [
+    '訪問看護ステーション安濃津ろまん',
+    'ヘルパーステーション安濃津ろまん',
+    'デイサービス安濃津ろまん',
+    '福祉用具貸与・販売　安濃津ろまん',
+    'ローレル薬局',
+];
+
+function selectUsualInternal() {
+    _selectedInternal = {};
+    document.querySelectorAll('.internal-modal-chk').forEach(function(c) {
+        if (_USUAL_INTERNAL.indexOf(c.dataset.name) !== -1) {
+            var d = c.dataset;
+            _selectedInternal[d.id] = {
+                id: d.id, name: d.name, furigana: d.furigana || '',
+                svc: d.svc || '', phone: d.phone || '', fax: d.fax || '',
+                persons: d.persons ? d.persons.split(',').filter(Boolean) : [],
+            };
+        }
+    });
+    _renderInternalTags();
+}
+
 var _selectedInternal = {}; // { id: {id, name, furigana, svc, phone, fax, persons} }
 
 function openInternalOfficeModal() {
@@ -1216,28 +1830,38 @@ function _renderInternalTags() {
     var items   = Object.values(_selectedInternal);
     var wrap    = document.getElementById('internal_selected_wrap');
     var empty   = document.getElementById('internal_selected_empty');
-    var tagsEl  = document.getElementById('internal_selected_tags');
+    var tbody   = document.getElementById('internal_selected_tbody');
     var inputEl = document.getElementById('internal_selected_inputs');
 
     if (!items.length) {
         wrap.style.display  = 'none';
         empty.style.display = '';
+        tbody.innerHTML     = '';
         inputEl.innerHTML   = '';
         return;
     }
     wrap.style.display  = '';
     empty.style.display = 'none';
 
-    var tagsHtml = '', inputHtml = '';
+    var rowsHtml = '', inputHtml = '';
     items.forEach(function(o) {
-        tagsHtml += '<span class="badge rounded-pill border d-flex align-items-center gap-1 px-2 py-1" '
-                  + 'style="font-size:0.85rem;font-weight:normal;color:#333;background:#f8f9fa;">'
-                  + '<span>' + _escHtml(o.name) + '</span>'
-                  + '<button type="button" class="btn-close btn-close-sm ms-1" style="font-size:0.6rem;" '
-                  + 'onclick="removeInternal(\'' + o.id + '\')" title="削除"></button></span>';
+        var nameCell = (o.furigana ? '<small class="text-muted d-block" style="font-size:0.75rem;">' + _escHtml(o.furigana) + '</small>' : '')
+                    + '<span class="fw-bold">' + _escHtml(o.name) + '</span>';
+        var telCell  = '<i class="fas fa-phone me-1 text-muted" style="font-size:0.75rem;"></i>' + _escHtml(o.phone || '―')
+                    + '<br><i class="fas fa-fax me-1 text-muted" style="font-size:0.75rem;"></i><span class="text-muted">' + _escHtml(o.fax || '―') + '</span>';
+        rowsHtml += '<tr>'
+            + '<td class="align-middle">' + nameCell + '</td>'
+            + '<td class="align-middle">' + _svcBadge(o.svc) + '</td>'
+            + '<td class="align-middle" style="font-size:0.8rem;white-space:nowrap;">' + telCell + '</td>'
+            + '<td class="align-middle"><span class="text-muted">　－　</span></td>'
+            + '<td class="text-center align-middle">'
+            +   '<button type="button" class="btn btn-sm btn-outline-secondary" style="padding:2px 7px;font-size:0.75rem;" onclick="removeInternal(\'' + o.id + '\')" title="削除">'
+            +   '<i class="fas fa-times"></i></button>'
+            + '</td>'
+            + '</tr>';
         inputHtml += '<input type="hidden" name="internal_office" value="' + _escHtml(o.id) + '">';
     });
-    tagsEl.innerHTML  = tagsHtml;
+    tbody.innerHTML   = rowsHtml;
     inputEl.innerHTML = inputHtml;
 }
 
@@ -1254,19 +1878,326 @@ function goBack() {
     else { window.location.href = '/clients/'; }
 }
 
-// ---- 利用者マスタドロワー（基本情報アコーディオン用） ----
+// ---- 利用者マスタ編集モーダル ----
+var _LOGIN_USER_ID      = '{{ request.user.id }}';
+var _LOGIN_USER_NAME    = '{% with p=request.user.profile %}{% if p.last_name %}{{ p.last_name }} {{ p.first_name }}{% else %}{{ request.user.username }}{% endif %}{% endwith %}';
+var _CURRENT_MGR_ID    = '{{ client.charge_manager_id|default:"" }}';
+var _CURRENT_MGR_NAME  = '{{ client.charge_manager_display|escapejs }}';
+
+function handleModalManagerChange(sel) {
+    var val = sel.value;
+    var hiddenId  = document.getElementById('edit_charge_manager_id');
+    var otherWrap = document.getElementById('edit_charge_manager_other_wrap');
+    if (val === 'other') {
+        hiddenId.value = '';
+        otherWrap.style.display = 'block';
+    } else {
+        hiddenId.value = val;
+        otherWrap.style.display = 'none';
+        document.getElementById('edit_charge_manager_other').value = '';
+    }
+}
+
+function _populateManagerSelect(currentId, currentOther) {
+    var sel = document.getElementById('edit_charge_manager_select');
+    if (!sel.dataset.loaded) {
+        sel.innerHTML = '<option value="">--- 選択してください ---</option>';
+        // 現在の担当ケアマネが別ユーザーの場合、先に追加
+        if (_CURRENT_MGR_ID && _CURRENT_MGR_ID !== _LOGIN_USER_ID) {
+            var curOpt = document.createElement('option');
+            curOpt.value = _CURRENT_MGR_ID;
+            curOpt.textContent = _CURRENT_MGR_NAME;
+            sel.appendChild(curOpt);
+        }
+        var myOpt = document.createElement('option');
+        myOpt.value = _LOGIN_USER_ID;
+        myOpt.textContent = _LOGIN_USER_NAME;
+        sel.appendChild(myOpt);
+        var otherOpt = document.createElement('option');
+        otherOpt.value = 'other';
+        otherOpt.textContent = 'その他（手入力）';
+        sel.appendChild(otherOpt);
+        sel.dataset.loaded = '1';
+    }
+    var otherWrap = document.getElementById('edit_charge_manager_other_wrap');
+    if (currentId) {
+        sel.value = String(currentId);
+        document.getElementById('edit_charge_manager_id').value = currentId;
+        otherWrap.style.display = 'none';
+    } else if (currentOther) {
+        sel.value = 'other';
+        document.getElementById('edit_charge_manager_id').value = '';
+        document.getElementById('edit_charge_manager_other').value = currentOther;
+        otherWrap.style.display = 'block';
+    } else {
+        sel.value = '';
+        document.getElementById('edit_charge_manager_id').value = '';
+        otherWrap.style.display = 'none';
+    }
+}
+
+function _toWarekiText(dateStr) {
+    if (!toWarekiTextLocal) return dateStr;
+    return toWarekiTextLocal(dateStr);
+}
+
+function initModalBirthDate(dateStr) {
+    var hidden = document.getElementById('edit_client_birth_date');
+    var warekiInput = document.getElementById('modal_birth_wareki_text');
+    var wDiv = document.getElementById('modal_birth_western_div');
+    var jDiv = document.getElementById('modal_birth_japanese_div');
+    var btnW = document.getElementById('modal_birth_era_western');
+    var btnJ = document.getElementById('modal_birth_era_japanese');
+    if (hidden) hidden.value = dateStr || '';
+    if (wDiv) wDiv.style.display = 'none';
+    if (jDiv) jDiv.style.display = '';
+    if (btnJ) btnJ.classList.add('active');
+    if (btnW) btnW.classList.remove('active');
+    if (warekiInput) {
+        warekiInput.value = _toWarekiText(dateStr || '');
+        syncModalBirthFromWareki();
+    }
+}
+
+function syncModalBirthFromWareki() {
+    var text    = (document.getElementById('modal_birth_wareki_text') || {}).value || '';
+    var hidden  = document.getElementById('edit_client_birth_date');
+    var preview = document.getElementById('modal_birth_preview');
+    if (!hidden || !preview) return;
+    var result  = parseWarekiLocal(text);
+    if (result) {
+        var iso = result.year + '-' + String(result.month).padStart(2,'0') + '-' + String(result.day).padStart(2,'0');
+        hidden.value = iso;
+        preview.textContent = '→ 西暦 ' + result.year + '年' + result.month + '月' + result.day + '日';
+        preview.style.color = '#6c757d';
+    } else {
+        hidden.value = '';
+        preview.textContent = text.length > 0 ? '例: 昭和40年3月15日　または　S40.3.15' : '';
+        preview.style.color = '#aaa';
+    }
+}
+
+function switchModalBirthEra(mode) {
+    var wDiv  = document.getElementById('modal_birth_western_div');
+    var jDiv  = document.getElementById('modal_birth_japanese_div');
+    var btnW  = document.getElementById('modal_birth_era_western');
+    var btnJ  = document.getElementById('modal_birth_era_japanese');
+    var hidden= document.getElementById('edit_client_birth_date');
+    var warekiInput  = document.getElementById('modal_birth_wareki_text');
+    var westernInput = document.getElementById('modal_birth_western_input');
+    if (mode === 'western') {
+        if (westernInput) westernInput.value = hidden ? hidden.value : '';
+        wDiv.style.display = ''; jDiv.style.display = 'none';
+        if (btnW) btnW.classList.add('active');
+        if (btnJ) btnJ.classList.remove('active');
+    } else {
+        if (warekiInput) warekiInput.value = _toWarekiText(hidden ? hidden.value : '');
+        syncModalBirthFromWareki();
+        wDiv.style.display = 'none'; jDiv.style.display = '';
+        if (btnJ) btnJ.classList.add('active');
+        if (btnW) btnW.classList.remove('active');
+        if (warekiInput) warekiInput.focus();
+    }
+}
+
 function openClientMasterDrawer() {
-    var overlay = document.getElementById('drawer-overlay');
-    var drawer  = document.getElementById('clientMasterDrawer');
-    if (overlay) { overlay.style.display = 'block'; setTimeout(function(){ overlay.style.opacity = '1'; }, 10); }
-    if (drawer)  drawer.classList.add('open');
+    document.getElementById('edit_client_name').value     = document.querySelector('[name=client_name]').value;
+    document.getElementById('edit_client_furigana').value = document.querySelector('[name=client_furigana]').value;
+    document.getElementById('edit_client_postal_code').value = document.querySelector('[name=postal_code]')?.value || '';
+    document.getElementById('edit_client_address').value  = document.querySelector('[name=client_address]').value;
+    document.getElementById('edit_client_phone').value    = document.querySelector('[name=client_phone]')?.value || '';
+    var genderDisplay = document.querySelector('[name=client_gender]')?.value || '';
+    document.getElementById('edit_client_gender').value   = genderDisplay === '男' ? 'male' : (genderDisplay === '女' ? 'female' : '');
+    initModalBirthDate(document.querySelector('[name=birth_date]').value);
+    _populateManagerSelect('{{ client.charge_manager_id|default:"" }}', '{{ client.charge_manager_other|default:"" }}');
+    var modalEl = document.getElementById('clientMasterModal');
+    (bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl)).show();
 }
-function closeClientMasterDrawer() {
-    var overlay = document.getElementById('drawer-overlay');
-    var drawer  = document.getElementById('clientMasterDrawer');
-    if (overlay) { overlay.style.opacity = '0'; setTimeout(function(){ overlay.style.display = 'none'; }, 300); }
-    if (drawer)  drawer.classList.remove('open');
+
+function saveClientMasterData() {
+    var name      = document.getElementById('edit_client_name').value;
+    var furigana  = document.getElementById('edit_client_furigana').value;
+    var birthDate = document.getElementById('edit_client_birth_date').value;
+    var postalCode= document.getElementById('edit_client_postal_code').value;
+    var address   = document.getElementById('edit_client_address').value;
+    var phone     = document.getElementById('edit_client_phone').value;
+    var gender    = document.getElementById('edit_client_gender').value;
+    var mgrSelVal = document.getElementById('edit_charge_manager_select').value;
+    var mgrId     = mgrSelVal === 'other' ? '' : (document.getElementById('edit_charge_manager_id').value || '');
+    var mgrOther  = mgrSelVal === 'other' ? (document.getElementById('edit_charge_manager_other').value || '') : '';
+
+    document.querySelector('[name=client_furigana]').value = furigana;
+    document.querySelector('[name=client_name]').value     = name;
+    document.querySelector('[name=birth_date]').value      = birthDate;
+    document.querySelector('[name=postal_code]').value     = postalCode;
+    document.querySelector('[name=client_address]').value  = address;
+    document.querySelector('[name=client_phone]').value    = phone;
+    var genderEl = document.querySelector('[name=client_gender]');
+    if (genderEl) genderEl.value = gender === 'male' ? '男' : (gender === 'female' ? '女' : '');
+
+    fetch('/clients/{{ client.id }}/update-master/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value },
+        body: JSON.stringify({ name, furigana, birth_date: birthDate,
+            postal_code: postalCode, address, phone, gender,
+            charge_manager_id: mgrId, charge_manager_other: mgrOther })
+    }).then(function(r){ return r.json(); }).then(function(result) {
+        if (result.success) {
+            var dispEl = document.getElementById('disp_charge_manager');
+            if (dispEl) dispEl.value = result.charge_manager_display || mgrOther || '';
+            bootstrap.Modal.getInstance(document.getElementById('clientMasterModal')).hide();
+        } else {
+            alert('保存に失敗しました: ' + (result.error || '不明なエラー'));
+        }
+    }).catch(function() { alert('通信エラーが発生しました。'); });
 }
+
+// ---- 事業所 インライン新規登録・編集モーダル ----
+function _escOI(s) { if(!s)return''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function addOfficeInlinePersonRow(value) {
+    var c = document.getElementById('officeInline_persons_container');
+    var div = document.createElement('div');
+    div.className = 'd-flex gap-2 mb-2';
+    div.innerHTML = '<input type="text" name="person_name" class="form-control" placeholder="例: 山田 太郎" value="' + (value||'') + '">'
+        + '<button type="button" class="btn btn-outline-danger btn-sm px-2" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>';
+    c.appendChild(div);
+}
+
+function _openOfficeInlineModal() {
+    document.getElementById('officeSelectModal').style.zIndex = '1050';
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('officeInlineModal')).show();
+}
+
+function closeOfficeInlineModal() {
+    bootstrap.Modal.getInstance(document.getElementById('officeInlineModal')).hide();
+    document.getElementById('officeSelectModal').style.zIndex = '';
+}
+
+function openOfficeCreateModalInline() {
+    document.getElementById('officeInlineForm').reset();
+    document.getElementById('officeInline_pk').value = '';
+    document.getElementById('officeInlineTitle').textContent = '新規登録';
+    document.getElementById('officeInlineError').classList.add('d-none');
+    document.getElementById('officeInline_persons_container').innerHTML = '';
+    document.getElementById('officeInline_service_type').classList.add('text-muted');
+    addOfficeInlinePersonRow();
+    _openOfficeInlineModal();
+}
+
+function openOfficeEditModalInline() {
+    var chk = document.querySelector('.office-modal-check:checked');
+    if (!chk) { alert('編集する事業所を選択してください。'); return; }
+    var d = chk.dataset;
+    document.getElementById('officeInlineForm').reset();
+    document.getElementById('officeInline_pk').value             = d.id       || '';
+    document.getElementById('officeInlineTitle').textContent     = '事業所編集';
+    document.getElementById('officeInlineError').classList.add('d-none');
+    document.getElementById('officeInline_name').value           = d.name     || '';
+    document.getElementById('officeInline_furigana').value       = d.furigana || '';
+    document.getElementById('officeInline_phone').value          = d.phone    || '';
+    document.getElementById('officeInline_fax').value            = d.fax      || '';
+    document.getElementById('officeInline_service_type').value   = d.svc      || '';
+    document.getElementById('officeInline_service_type').classList.toggle('text-muted', !d.svc);
+    document.getElementById('officeInline_office_number').value  = d.officeNumber || '';
+    document.getElementById('officeInline_postal_code').value    = d.postal       || '';
+    document.getElementById('officeInline_address').value        = d.address      || '';
+    document.getElementById('officeInline_persons_container').innerHTML = '';
+    var persons = d.persons ? d.persons.split(',').filter(Boolean) : [];
+    if (persons.length === 0) { addOfficeInlinePersonRow(); }
+    else { persons.forEach(function(p) { addOfficeInlinePersonRow(p); }); }
+    _openOfficeInlineModal();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('officeInlineForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        var errEl = document.getElementById('officeInlineError');
+        var svc   = document.getElementById('officeInline_service_type').value;
+        var phone = document.getElementById('officeInline_phone').value.trim();
+        var fax   = document.getElementById('officeInline_fax').value.trim();
+        if (!svc)         { errEl.textContent = '事業所種類を選択してください。'; errEl.classList.remove('d-none'); return; }
+        if (!phone||!fax) { errEl.textContent = '電話番号とFAX番号は必須です。'; errEl.classList.remove('d-none'); return; }
+        errEl.classList.add('d-none');
+        var pk  = document.getElementById('officeInline_pk').value;
+        var url = pk ? '/clients/care-service-offices/' + pk + '/update/' : '/clients/care-service-offices/create/';
+        fetch(url, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value, 'X-Requested-With': 'XMLHttpRequest' },
+            body: new FormData(this),
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (!data.success) {
+                errEl.textContent = data.error || 'エラーが発生しました。';
+                errEl.classList.remove('d-none');
+                return;
+            }
+            var newId   = String(data.id);
+            var newName = data.name || '';
+            var newFuri = data.furigana || '';
+            var newSvc  = data.service_type || '';
+            var newPhone= data.phone || '';
+            var newFax  = data.fax || '';
+            var newPersons = data.persons || [];
+
+            // 既存チェックボックスを更新
+            var existChk = document.querySelector('.office-modal-check[data-id="' + newId + '"]');
+            if (existChk) {
+                existChk.dataset.name     = newName;
+                existChk.dataset.furigana = newFuri;
+                existChk.dataset.svc      = newSvc;
+                existChk.dataset.phone    = newPhone;
+                existChk.dataset.fax      = newFax;
+                existChk.dataset.persons  = newPersons.join(',');
+                var tr = existChk.closest('tr');
+                var tds = tr.querySelectorAll('td');
+                tds[1].innerHTML = '<label for="modal_office_' + newId + '" style="cursor:pointer;margin:0;" onclick="event.stopPropagation()">'
+                    + (newFuri ? '<small class="text-muted d-block" style="font-size:0.75rem;">' + _escOI(newFuri) + '</small>' : '')
+                    + '<span class="fw-bold">' + _escOI(newName) + '</span></label>';
+                closeOfficeInlineModal();
+                return;
+            }
+            // 新規：リストに追加してチェック
+            var tbody = document.getElementById('office_modal_list');
+            var emptyRow = tbody.querySelector('td[colspan]');
+            if (emptyRow) emptyRow.closest('tr').remove();
+            var tr = document.createElement('tr');
+            tr.className = 'office-modal-item';
+            tr.style.cursor = 'pointer';
+            tr.setAttribute('data-name', newName);
+            tr.setAttribute('data-svc', newSvc);
+            tr.setAttribute('onclick', 'toggleOfficeRow(this)');
+            tr.innerHTML = '<td class="text-center align-middle">'
+                + '<input class="form-check-input office-modal-check" type="checkbox"'
+                + ' id="modal_office_' + newId + '" value="' + _escOI(newId) + '"'
+                + ' data-id="' + _escOI(newId) + '"'
+                + ' data-name="' + _escOI(newName) + '"'
+                + ' data-furigana="' + _escOI(newFuri) + '"'
+                + ' data-svc="' + _escOI(newSvc) + '"'
+                + ' data-phone="' + _escOI(newPhone) + '"'
+                + ' data-fax="' + _escOI(newFax) + '"'
+                + ' data-persons="' + _escOI(newPersons.join(',')) + '"'
+                + ' onclick="event.stopPropagation()" checked>'
+                + '</td>'
+                + '<td class="align-middle"><label for="modal_office_' + newId + '" style="cursor:pointer;margin:0;" onclick="event.stopPropagation()">'
+                + (newFuri ? '<small class="text-muted d-block" style="font-size:0.75rem;">' + _escOI(newFuri) + '</small>' : '')
+                + '<span class="fw-bold">' + _escOI(newName) + '</span></label></td>'
+                + '<td class="align-middle"><span class="svc-type-badge" style="background-color:#f5f5f5;">' + _escOI(newSvc) + '</span></td>'
+                + '<td class="align-middle" style="font-size:0.85rem; white-space:nowrap;">'
+                + '<i class="fas fa-phone me-1 text-muted" style="font-size:0.75rem;"></i>' + _escOI(newPhone) + '<br>'
+                + '<i class="fas fa-fax me-1 text-muted" style="font-size:0.75rem;"></i><span class="text-muted">' + _escOI(newFax) + '</span></td>'
+                + '<td class="align-middle" style="font-size:0.85rem;">'
+                + (newPersons.length ? newPersons.slice(0,2).map(function(p){return _escOI(p)+' 様';}).join('<br>') : '<span class="text-muted">―</span>')
+                + '</td>';
+            document.querySelectorAll('.office-modal-check').forEach(function(c){c.checked=false;});
+            tbody.appendChild(tr);
+            tr.querySelector('.office-modal-check').addEventListener('change', _updateModalCount);
+            _updateModalCount();
+            closeOfficeInlineModal();
+        });
+    });
+});
 
 // ---- 案内を出す事業所（選択モーダル） ----
 var _selectedOffices = {};  // {id: {id, name, fax}}
@@ -1362,108 +2293,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-function _cmUpdateRowInManager(data) {
-    var row = document.querySelector('.cm-office-item[data-pk="' + data.id + '"]');
-    if (!row) return;
-    // data属性を更新
-    row.dataset.name = data.name || '';
-    row.dataset.furigana = data.furigana || '';
-    row.dataset.officeNumber = data.office_number || '';
-    row.dataset.phone = data.phone || '';
-    row.dataset.fax = data.fax || '';
-    row.dataset.persons = (data.persons || []).join(',');
-    row.dataset.serviceType = data.service_type || '';
-    // セルを再描画
-    var svc = data.service_type || '';
-    var bg  = _SVC_COLORS[svc] || '#f5f5f5';
-    var badge = svc ? '<span class="svc-type-badge" style="background-color:' + bg + ';">' + _escHtml(svc) + '</span>' : '<span class="text-muted">―</span>';
-    var persons = (data.persons || []).slice(0, 2).map(function(p){ return _escHtml(p) + ' 様'; }).join('<br>')
-                + ((data.persons || []).length > 2 ? ' <span class="text-muted">他</span>' : '');
-    var cells = row.querySelectorAll('td');
-    if (cells[0]) cells[0].innerHTML =
-        (data.office_number ? '<small class="text-muted d-block" style="font-size:0.72rem;">' + _escHtml(data.office_number) + '</small>' : '')
-        + (data.furigana ? '<small class="text-muted d-block" style="font-size:0.75rem;">' + _escHtml(data.furigana) + '</small>' : '')
-        + '<span class="fw-bold">' + _escHtml(data.name || '') + '</span>';
-    if (cells[1]) cells[1].innerHTML = badge;
-    if (cells[2]) cells[2].innerHTML =
-        '<i class="fas fa-phone me-1 text-muted" style="font-size:0.75rem;"></i>' + _escHtml(data.phone || '―') + '<br>'
-        + '<i class="fas fa-fax me-1 text-muted" style="font-size:0.75rem;"></i><span class="text-muted">' + _escHtml(data.fax || '―') + '</span>';
-    if (cells[3]) cells[3].innerHTML = persons || '<span class="text-muted">―</span>';
-}
-
-function _cmAddItemToManagerAccordion(data) {
-    var tbody = document.getElementById('cmAccordion');
-    if (!tbody) return;
-    var id  = data.id;
-    var svc = data.service_type || '';
-    var bg  = _SVC_COLORS[svc] || '#f5f5f5';
-    var badge = svc ? '<span class="svc-type-badge" style="background-color:' + bg + ';">' + _escHtml(svc) + '</span>' : '<span class="text-muted">―</span>';
-    var persons = (data.persons || []).slice(0, 2).map(function(p){ return _escHtml(p) + ' 様'; }).join('<br>')
-                + ((data.persons || []).length > 2 ? ' <span class="text-muted">他</span>' : '');
-    var tr = document.createElement('tr');
-    tr.className = 'cm-office-item';
-    tr.dataset.pk = id; tr.dataset.name = data.name || '';
-    tr.dataset.furigana = data.furigana || ''; tr.dataset.officeNumber = '';
-    tr.dataset.phone = data.phone || ''; tr.dataset.fax = data.fax || '';
-    tr.dataset.persons = (data.persons || []).join(','); tr.dataset.serviceType = svc;
-    tr.innerHTML = '<td class="align-middle">'
-        + (data.furigana ? '<small class="text-muted d-block" style="font-size:0.75rem;">' + _escHtml(data.furigana) + '</small>' : '')
-        + '<span class="fw-bold">' + _escHtml(data.name || '') + '</span></td>'
-        + '<td class="align-middle">' + badge + '</td>'
-        + '<td class="align-middle" style="font-size:0.85rem;white-space:nowrap;">'
-        + '<i class="fas fa-phone me-1 text-muted" style="font-size:0.75rem;"></i>' + _escHtml(data.phone || '―') + '<br>'
-        + '<i class="fas fa-fax me-1 text-muted" style="font-size:0.75rem;"></i><span class="text-muted">' + _escHtml(data.fax || '―') + '</span></td>'
-        + '<td class="align-middle" style="font-size:0.85rem;">' + (persons || '<span class="text-muted">―</span>') + '</td>'
-        + '<td class="align-middle text-center">'
-        + '<button type="button" class="btn btn-sm btn-outline-secondary" onclick="cmOpenEdit(' + id + ')" title="編集"><i class="fas fa-edit"></i></button> '
-        + '<button type="button" class="btn btn-sm btn-outline-danger" onclick="cmConfirmDelete(' + id + ',\'' + _escHtml(data.name || '') + '\')" title="削除"><i class="fas fa-trash"></i></button></td>';
-    tbody.appendChild(tr);
-}
-
-function _cmAddRowToSelectModal(data) {
-    var tbody = document.getElementById('office_modal_list');
-    if (!tbody) return;
-    var id      = data.id;
-    var name    = data.name || '';
-    var furigana= data.furigana || '';
-    var svc     = data.service_type || '';
-    var phone   = data.phone || '';
-    var fax     = data.fax || '';
-    var persons = data.persons || [];
-
-    var bg = _SVC_COLORS[svc] || '#f5f5f5';
-    var badge = svc ? '<span class="svc-type-badge" style="background-color:' + bg + ';">' + _escHtml(svc) + '</span>' : '<span class="text-muted">―</span>';
-    var personHtml = persons.slice(0, 2).map(function(p){ return _escHtml(p) + ' 様'; }).join('<br>')
-                   + (persons.length > 2 ? ' <span class="text-muted">他</span>' : '');
-
-    var tr = document.createElement('tr');
-    tr.className = 'office-modal-item';
-    tr.style.cursor = 'pointer';
-    tr.dataset.name = name;
-    tr.dataset.svc  = svc;
-    tr.setAttribute('onclick', 'toggleOfficeRow(this)');
-    tr.innerHTML = '<td class="text-center align-middle">'
-        + '<input class="form-check-input office-modal-check" type="checkbox" id="modal_office_' + id + '" value="' + id + '"'
-        + ' data-id="' + id + '" data-name="' + _escHtml(name) + '" data-furigana="' + _escHtml(furigana) + '"'
-        + ' data-svc="' + _escHtml(svc) + '" data-phone="' + _escHtml(phone) + '" data-fax="' + _escHtml(fax) + '"'
-        + ' data-persons="' + persons.map(_escHtml).join(',') + '" onclick="event.stopPropagation()">'
-        + '</td>'
-        + '<td class="align-middle"><label for="modal_office_' + id + '" style="cursor:pointer;margin:0;" onclick="event.stopPropagation()">'
-        + (furigana ? '<small class="text-muted d-block" style="font-size:0.75rem;">' + _escHtml(furigana) + '</small>' : '')
-        + '<span class="fw-bold">' + _escHtml(name) + '</span></label></td>'
-        + '<td class="align-middle">' + badge + '</td>'
-        + '<td class="align-middle" style="font-size:0.85rem;white-space:nowrap;">'
-        + '<i class="fas fa-phone me-1 text-muted" style="font-size:0.75rem;"></i>' + _escHtml(phone || '―') + '<br>'
-        + '<i class="fas fa-fax me-1 text-muted" style="font-size:0.75rem;"></i><span class="text-muted">' + _escHtml(fax || '―') + '</span>'
-        + '</td>'
-        + '<td class="align-middle" style="font-size:0.85rem;">' + (personHtml || '<span class="text-muted">―</span>') + '</td>';
-    tbody.appendChild(tr);
-
-    // チェックイベント登録
-    var chk = tr.querySelector('.office-modal-check');
-    if (chk) chk.addEventListener('change', _updateModalCount);
-}
-
 var _SVC_COLORS = {
     '訪問介護':           '#fff9c4',
     '訪問看護':           '#ffd5d5',
@@ -1479,10 +2308,12 @@ var _SVC_COLORS = {
     '小規模多機能型居宅介護': '#f5f0e8',
 };
 
+var _SVC_LABELS = { '訪問リハビリテーション': '訪問リハ', '福祉用具貸与': '福祉用具' };
 function _svcBadge(svc) {
     if (!svc) return '<span class="text-muted">―</span>';
     var bg = _SVC_COLORS[svc] || '#f5f5f5';
-    return '<span class="svc-type-badge" style="background-color:' + bg + ';">' + _escHtml(svc) + '</span>';
+    var label = _SVC_LABELS[svc] || svc;
+    return '<span class="svc-type-badge" style="background-color:' + bg + ';">' + _escHtml(label) + '</span>';
 }
 
 function confirmOfficeSelection() {
@@ -1541,7 +2372,7 @@ function _renderSelectedTable() {
         var telCell = '<i class="fas fa-phone me-1 text-muted" style="font-size:0.75rem;"></i>' + _escHtml(o.phone || '―')
                     + '<br><i class="fas fa-fax me-1 text-muted" style="font-size:0.75rem;"></i><span class="text-muted">' + _escHtml(o.fax || '―') + '</span>';
         // 担当者プルダウン（常にselect表示）
-        var personOpts = '<option value="">―</option>';
+        var personOpts = '<option value="">ご担当者 様</option>';
         o.persons.forEach(function(p) {
             var display = _escHtml(p) + ' 様';
             var sel = (o.person === p) ? ' selected' : '';
@@ -1575,11 +2406,157 @@ function _updateHiddenInputs() {
 }
 
 function _updateFaxUI() {
-    var hasFax = Object.values(_selectedOffices).some(function(o){ return o.fax; });
-    var notice = document.getElementById('fax_notice');
-    var faxBtn = document.getElementById('btn_excel_fax');
-    if (notice) notice.style.display = hasFax ? '' : 'none';
-    if (faxBtn) faxBtn.style.display = hasFax ? '' : 'none';
+    var hasExternal = Object.keys(_selectedOffices).length > 0;
+    var notice  = document.getElementById('fax_notice');
+    var faxBody = document.getElementById('fax_body_accordion');
+    if (notice)  notice.style.display  = hasExternal ? '' : 'none';
+    if (faxBody) faxBody.style.display = hasExternal ? '' : 'none';
+    if (hasExternal) _initFaxMessage();
+}
+
+function _faxEffectiveLines(text) {
+    var count = 0;
+    text.split('\n').forEach(function(para) {
+        count += para.trim() ? Math.ceil(para.length / 43) || 1 : 1;
+    });
+    return count;
+}
+
+function _faxTruncateTo11(text) {
+    var lines = 0;
+    var result = [];
+    text.split('\n').forEach(function(para) {
+        if (lines >= 11) return;
+        if (!para.trim()) {
+            result.push('');
+            lines += 1;
+        } else {
+            var p = para;
+            while (p.length > 0 && lines < 11) {
+                result.push(p.slice(0, 43));
+                p = p.slice(43);
+                lines += 1;
+            }
+        }
+    });
+    return result.join('\n');
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    var faxTa = document.getElementById('fax_message');
+    if (faxTa) {
+        faxTa.addEventListener('input', function() {
+            if (_faxEffectiveLines(this.value) > 11) {
+                var pos = this.selectionStart;
+                this.value = _faxTruncateTo11(this.value);
+                this.setSelectionRange(Math.min(pos, this.value.length), Math.min(pos, this.value.length));
+            }
+        });
+    }
+});
+
+var _faxTemplateBody = "{{ fax_template_body|escapejs }}";
+var _faxTemplateDefault = _faxTemplateBody;  // 本当の初期値（変更不可）
+
+var _faxMessageInitialized = false;
+function _initFaxMessage() {
+    if (_faxMessageInitialized) return;
+    _faxMessageInitialized = true;
+    var ta = document.getElementById('fax_message');
+    if (!ta || ta.value.trim()) return;
+    ta.value = _resolveFaxTemplate(_faxTemplateBody);
+}
+
+function _resolveFaxTemplate(template) {
+    var ta         = document.getElementById('fax_message');
+    var staffSel   = document.getElementById('renewal_staff_name_accordion');
+    var name       = staffSel ? (staffSel.value || '').replace(/\s+/g, '') : '';
+    var officeName = ta ? (ta.getAttribute('data-office-name') || '') : '';
+    var rawClient  = ta ? (ta.getAttribute('data-client-name') || '') : '';
+    var clientName = rawClient ? rawClient.replace(/　/g, ' ').trim() : '';
+    var careLevel  = (document.getElementById('fax_care_level_val') || {}).value || '';
+    return template
+        .replace(/\{user_name\}/g,   name)
+        .replace(/\{office_name\}/g, officeName)
+        .replace(/\{client_name\}/g, clientName)
+        .replace(/\{care_level\}/g,  careLevel);
+}
+
+function resetFaxMessage() {
+    var ta = document.getElementById('fax_message');
+    if (!ta) return;
+    var editBtn = document.getElementById('fax_btn_edit');
+    var inEdit  = editBtn && editBtn.style.display !== 'none';
+    // 通常モード: 保存済み初期値を置換して表示
+    // 編集モード: 本当の初期値（_faxTemplateDefault）をプレースホルダーのまま表示
+    ta.value = inEdit ? _faxTemplateDefault : _resolveFaxTemplate(_faxTemplateBody);
+    _faxMessageInitialized = true;
+}
+
+function insertFaxPlaceholder(placeholder) {
+    var ta = document.getElementById('fax_message');
+    if (!ta) return;
+    var start = ta.selectionStart, end = ta.selectionEnd;
+    ta.value = ta.value.slice(0, start) + placeholder + ta.value.slice(end);
+    ta.selectionStart = ta.selectionEnd = start + placeholder.length;
+    ta.focus();
+}
+
+function _setFaxEditMode(on) {
+    var modeNormal = document.getElementById('fax_mode_normal');
+    if (modeNormal) modeNormal.style.display = on ? 'none' : '';
+    document.getElementById('fax_btn_normal').style.display    = on ? 'none' : '';
+    document.getElementById('fax_btn_edit').style.display      = on ? '' : 'none';
+    document.getElementById('fax_reset_normal').style.display  = on ? 'none' : '';
+    document.getElementById('faxEditOverlay').classList.toggle('show', on);
+    // 編集中はアコーディオントグルを無効化
+    var toggleBtn = document.querySelector('[data-bs-target="#faxBodyCollapse"]');
+    if (toggleBtn) {
+        toggleBtn.style.pointerEvents = on ? 'none' : '';
+        toggleBtn.setAttribute('data-bs-toggle', on ? '' : 'collapse');
+    }
+}
+
+function enterFaxTemplateEdit() {
+    document.getElementById('fax_message').value = _faxTemplateBody;
+    document.getElementById('faxTemplateError').style.display = 'none';
+    // アコーディオンを開く
+    var collapse = bootstrap.Collapse.getOrCreateInstance(document.getElementById('faxBodyCollapse'), {toggle: false});
+    collapse.show();
+    _setFaxEditMode(true);
+    document.getElementById('fax_message').focus();
+}
+
+function cancelFaxTemplateEdit() {
+    _setFaxEditMode(false);
+    _faxMessageInitialized = false;
+    resetFaxMessage();
+}
+
+function saveFaxTemplate() {
+    var body  = document.getElementById('fax_message').value;
+    var errEl = document.getElementById('faxTemplateError');
+    fetch('{% url "fax_template_save" %}', {
+        method: 'POST',
+        headers: {'X-CSRFToken': '{{ csrf_token }}'},
+        body: new URLSearchParams({body: body}),
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.success) {
+            _faxTemplateBody = body;
+            _setFaxEditMode(false);
+            _faxMessageInitialized = false;
+            resetFaxMessage();
+        } else {
+            errEl.textContent = data.error || 'エラーが発生しました。';
+            errEl.style.display = '';
+        }
+    })
+    .catch(function() {
+        errEl.textContent = '通信エラーが発生しました。';
+        errEl.style.display = '';
+    });
 }
 
 function _escHtml(s) {
@@ -1600,14 +2577,30 @@ document.addEventListener('DOMContentLoaded', function() { _renderSelectedTable(
 #officeSelectModal .table-bordered td,
 #selected_offices_table_wrap .table-bordered th,
 #selected_offices_table_wrap .table-bordered td,
+#internal_selected_wrap .table-bordered th,
+#internal_selected_wrap .table-bordered td,
+#renewal_office_inst_table th, #renewal_office_inst_table td { border-left: none !important; border-right: none !important; }
+#renewal_office_inst_table td, #renewal_office_inst_table th { vertical-align: middle; }
 #internalOfficeModal .table-bordered th,
-#internalOfficeModal .table-bordered td { border-left: none; border-right: none; }
+#internalOfficeModal .table-bordered td,
+#placeManagerModal .table-bordered th,
+#placeManagerModal .table-bordered td,
+#agendaManagerModal .table-bordered th,
+#agendaManagerModal .table-bordered td { border-left: none; border-right: none; }
 #officeSelectModal .table td,
 #officeSelectModal .table th,
 #selected_offices_table_wrap .table td,
 #selected_offices_table_wrap .table th,
+#internal_selected_wrap .table td,
+#internal_selected_wrap .table th,
 #internalOfficeModal .table td,
-#internalOfficeModal .table th { vertical-align: middle; }
+#internalOfficeModal .table th,
+#placeManagerModal .table td,
+#placeManagerModal .table th,
+#agendaManagerModal .table td,
+#agendaManagerModal .table th { vertical-align: middle; }
+#placeManagerBody tr.drag-over,
+#agendaManagerBody tr.drag-over { background-color: #e8f4fd !important; }
 #officeSelectModal tbody tr.office-modal-item:hover { background-color: rgba(0,0,0,0.04); }
 #internalOfficeModal tbody tr:hover { background-color: rgba(0,0,0,0.04); }
 #careOfficeManagerModal .table-bordered th,
@@ -1623,7 +2616,8 @@ document.addEventListener('DOMContentLoaded', function() { _renderSelectedTable(
     color: #000000;
     white-space: nowrap;
 }
-#selected_offices_table_wrap .svc-type-badge {
+#selected_offices_table_wrap .svc-type-badge,
+#internal_selected_wrap .svc-type-badge {
     padding: 2px 5px;
     font-size: 11px;
 }
@@ -1634,6 +2628,8 @@ document.addEventListener('DOMContentLoaded', function() { _renderSelectedTable(
 #serviceTabContent .svc-tab-pane { border-color: #999 !important; }
 #serviceTabContent .table-responsive { overflow-x: auto; }
 #serviceTabContent table { white-space: nowrap; }
+#meeting_agenda_select,
+#meeting_agenda_select option { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .birth-era-toggle { display: inline-flex; border: 1px solid #ced4da; border-radius: 0.375rem; overflow: hidden; font-size: 0.72rem; flex-shrink: 0; }
 .birth-era-toggle .era-btn { background: #fff; border: none; padding: 2px 7px; cursor: pointer; color: #6c757d; font-size: 0.72rem; line-height: 1.5; transition: background 0.15s, color 0.15s; }
 .birth-era-toggle .era-btn:not(:last-child) { border-right: 1px solid #ced4da; }
@@ -1687,6 +2683,9 @@ input[readonly]:focus, textarea[readonly]:focus {
     transition: opacity 0.3s ease-in-out;
 }
 .drawer-overlay.show { display: block; opacity: 1; }
+#faxEditOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: rgba(0,0,0,0.35); z-index: 1030; display: none; }
+#faxEditOverlay.show { display: block; }
+#fax_body_accordion { position: relative; z-index: 1031; }
 #renewal_detail_section .accordion-button,
 #renewal_detail_section .accordion-button:not(.collapsed),
 #certInfoAccordion .accordion-button,

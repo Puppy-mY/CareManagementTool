@@ -10,7 +10,9 @@
 <input type="hidden" id="original_office_postal_code" value="{% if initial_data.kyotaku_postal_code %}{{ initial_data.kyotaku_postal_code }}{% else %}{{ user.profile.home_care_office.postal_code }}{% endif %}">
 <input type="hidden" id="original_office_address" value="{% if initial_data.kyotaku_address %}{{ initial_data.kyotaku_address }}{% else %}{{ user.profile.home_care_office.address }}{% endif %}">
 <input type="hidden" id="original_office_phone" value="{% if initial_data.kyotaku_phone %}{{ initial_data.kyotaku_phone }}{% else %}{{ user.profile.home_care_office.phone }}{% endif %}">
-<input type="hidden" id="original_office_fax" value="{% if initial_data.kyotaku_fax %}{{ initial_data.kyotaku_fax }}{% else %}{{ user.profile.home_care_office.fax }}{% endif %}">
+<input type="hidden" id="original_office_fax"      value="{% if initial_data.kyotaku_fax %}{{ initial_data.kyotaku_fax }}{% else %}{{ user.profile.home_care_office.fax }}{% endif %}">
+<input type="hidden" id="original_office_furigana"     value="{% if initial_data.kyotaku_office_furigana %}{{ initial_data.kyotaku_office_furigana }}{% else %}{{ user.profile.home_care_office.furigana }}{% endif %}">
+<input type="hidden" id="original_office_company_name" value="{{ user.profile.home_care_office.company_name|default:'' }}">
 <input type="hidden" id="original_office_manager_name" value="{% if initial_data.kyotaku_manager_name %}{{ initial_data.kyotaku_manager_name }}{% else %}{{ user.profile.home_care_office.manager_name }}{% endif %}">
 {% endif %}
 
@@ -34,116 +36,161 @@
     </div>
 </div>
 
-<!-- 地域包括支援センター詳細情報（地域包括支援センター選択時のみ表示） -->
-<div id="houkatsu_detail_section" class="accordion" style="display: none; margin: 0.5rem 0 1rem 0;">
-    <div class="accordion-item" style="border: none; background-color: #f8f9fa; border-radius: 0.5rem;">
-        <h2 class="accordion-header">
-            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#houkatsuDetailCollapse" aria-expanded="false" aria-controls="houkatsuDetailCollapse" style="background-color: #f8f9fa; padding: 0.5rem 1rem; color: #333;">
-                <span id="houkatsu_status_icon" class="me-2"></span>事業所情報
-            </button>
-        </h2>
-        <div id="houkatsuDetailCollapse" class="accordion-collapse collapse">
-            <div class="accordion-body row g-3" style="padding: 0.5rem 1rem 1rem 1rem;">
-                <!-- 1行目：事業所名（県外のみ）と事業所番号 -->
-                <div class="col-md-6" id="kengai_provider_name_section" style="display: none;">
-                    <label class="form-label">事業所名 <span class="text-danger">*</span></label>
-                    <input type="text" name="preventive_support_provider_manual" id="preventive_support_provider_manual" class="form-control" value="{{ initial_data.preventive_support_provider|default:'' }}" placeholder="事業所名を入力" readonly>
-                </div>
-                <div class="col-md-4" id="office_number_section">
-                    <label class="form-label">事業所番号 <span class="text-danger">*</span></label>
-                    <input type="text" name="houkatsu_office_number" id="houkatsu_office_number" class="form-control" value="{{ initial_data.houkatsu_office_number|default:'' }}" placeholder="事業所番号を入力" readonly>
-                </div>
-                <!-- 2行目：所在地 -->
-                <div class="col-12">
-                    <label class="form-label">所在地 <span class="text-danger">*</span></label>
-                    <div class="d-flex gap-2">
-                        <div class="input-group" style="width: 140px; flex-shrink: 0;">
-                            <span class="input-group-text">〒</span>
-                            <input type="text" name="houkatsu_postal_code" id="houkatsu_postal_code" class="form-control" value="{{ initial_data.houkatsu_postal_code|default:'' }}" placeholder="000-0000" maxlength="8" style="width: 90px;" readonly>
-                        </div>
-                        <div class="flex-grow-1">
-                            <input type="text" name="houkatsu_address" id="houkatsu_address" class="form-control" value="{{ initial_data.houkatsu_address|default:'' }}" placeholder="住所を入力" readonly>
-                        </div>
-                    </div>
-                </div>
-                <!-- 3行目：電話番号と担当者氏名 -->
-                <div class="col-md-4">
-                    <label class="form-label">電話番号 <span class="text-danger">*</span></label>
-                    <input type="text" name="houkatsu_phone" id="houkatsu_phone" class="form-control" value="{{ initial_data.houkatsu_phone|default:'' }}" placeholder="電話番号を入力" readonly>
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label" id="houkatsu_staff_name_label">担当者氏名 <small class="text-muted" id="staff_name_optional">（空白でも可）</small><span class="text-danger" id="staff_name_required" style="display: none;">*</span></label>
-                    <input type="text" name="houkatsu_staff_name" id="houkatsu_staff_name" class="form-control" value="{{ initial_data.houkatsu_staff_name|default:'' }}" placeholder="担当者氏名を入力">
-                </div>
+<!-- 送信用 hidden フィールド（常時レンダリング） -->
+<input type="hidden" name="houkatsu_office_number" id="houkatsu_office_number" value="{{ initial_data.houkatsu_office_number|default:'' }}">
+<input type="hidden" name="houkatsu_postal_code"  id="houkatsu_postal_code"  value="{{ initial_data.houkatsu_postal_code|default:'' }}">
+<input type="hidden" name="houkatsu_address"      id="houkatsu_address"      value="{{ initial_data.houkatsu_address|default:'' }}">
+<input type="hidden" name="houkatsu_phone"        id="houkatsu_phone"        value="{{ initial_data.houkatsu_phone|default:'' }}">
+<input type="hidden" name="houkatsu_staff_name"   id="houkatsu_staff_name"   value="{{ initial_data.houkatsu_staff_name|default:'' }}">
+<input type="hidden" name="preventive_support_provider_manual" id="preventive_support_provider_manual" value="{{ initial_data.preventive_support_provider|default:'' }}">
 
-                <!-- 編集ボタン -->
-                <div class="col-12 text-end mt-2">
-                    <button type="button" class="btn btn-outline-secondary btn-sm" id="houkatsu_edit_btn" onclick="openHoukatsuMasterDrawer();">
-                        <i class="fas fa-edit me-1"></i><span id="houkatsu_edit_btn_text">地域包括支援センターマスタデータを編集</span>
-                    </button>
-                </div>
-            </div>
-        </div>
+<!-- 安濃津ろまん選択時：事業所情報テーブル（更新認定申請書と同一構造） -->
+<div id="anoutsu_table_section" class="mb-3">
+    <div class="table-responsive mb-1">
+        <table id="anoutsu_office_table" class="table table-hover table-bordered mb-0" style="font-size:0.9rem; table-layout:fixed;">
+            <thead>
+                <tr>
+                    <th style="background-color:#f5f5f5;">事業所名</th>
+                    <th style="width:180px; background-color:#f5f5f5;">住所</th>
+                    <th style="width:110px; background-color:#f5f5f5;">電話 / FAX</th>
+                    <th style="width:120px; background-color:#f5f5f5; font-size:0.78rem; white-space:nowrap;">管理者 / 担当者 <span class="text-danger">*</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="align-middle">
+                        <small id="disp_office_furigana" class="text-muted d-block" style="font-size:0.75rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"></small>
+                        <span id="disp_office_name" class="fw-bold d-block" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:clamp(0.7rem,1.5vw,0.9rem);"></span>
+                    </td>
+                    <td class="align-middle" style="font-size:0.85rem;">
+                        <small id="disp_office_postal" class="text-muted d-block" style="font-size:0.75rem;"></small>
+                        <span id="disp_office_address" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block;"></span>
+                    </td>
+                    <td class="align-middle" style="font-size:0.85rem; white-space:nowrap;">
+                        <i class="fas fa-phone me-1 text-muted" style="font-size:0.75rem;"></i><span id="disp_office_phone">―</span><br>
+                        <i class="fas fa-fax me-1 text-muted" style="font-size:0.75rem;"></i><span id="disp_office_fax" class="text-muted">―</span>
+                    </td>
+                    <td class="align-middle">
+                        <div id="disp_office_manager" class="text-muted mb-1" style="font-size:0.75rem;"></div>
+                        <select id="anoutsu_staff_input" class="form-select"
+                                style="font-size:0.75rem; padding:2px 6px; height:auto; appearance:none; -webkit-appearance:none; background-image:none;"
+                                onchange="document.getElementById('houkatsu_staff_name').value=this.value">
+                            <option value="">----------</option>
+                        </select>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="mt-1 mb-2">
+        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openAnoutsuOfficeModal()">
+            <i class="fas fa-edit me-1"></i>事業所情報を新規登録・編集
+        </button>
     </div>
 </div>
 
-<!-- 介護予防支援を受託する居宅介護支援事業者（安濃津ろまん以外選択時のみ表示） -->
-<div id="jutaku_section" class="row g-3 mb-3" style="display: none; margin-top: 1.5rem;">
-    <div class="col-12">
-        <label class="form-label">介護予防支援を受託する居宅介護支援事業者</label>
-        <div class="d-flex flex-column gap-2" style="width: fit-content;">
-            <select name="jutaku_provider" id="jutaku_provider" class="form-select" style="width: 400px;">
-                <option value="anoutsu_roman" {% if initial_data.jutaku_provider != 'other' %}selected{% endif %}>{% if user.profile.home_care_office %}{{ user.profile.home_care_office.name }}{% else %}居宅介護支援事業所　安濃津ろまん{% endif %}</option>
-                <option value="other" {% if initial_data.jutaku_provider == 'other' %}selected{% endif %}>その他（手入力）</option>
-            </select>
-            <input type="text" name="jutaku_provider_name" id="jutaku_provider_manual" class="form-control {% if initial_data.jutaku_provider != 'other' %}d-none{% endif %}" style="width: 400px;" placeholder="事業所名をご入力ください" value="{{ initial_data.jutaku_provider_name|default:'' }}">
-        </div>
-        <small class="text-muted mt-1">※その他を選択すると、事業所名を手入力できます</small>
+<!-- 地域包括支援センター選択時：センター情報テーブル（更新認定申請書と同一構造） -->
+<div id="houkatsu_table_section" class="mb-3" style="display:none;">
+    <div class="table-responsive mb-1">
+        <table id="houkatsu_center_table" class="table table-hover table-bordered mb-0" style="font-size:0.9rem; table-layout:fixed;">
+            <thead>
+                <tr>
+                    <th style="background-color:#f5f5f5;">事業所名</th>
+                    <th style="width:180px; background-color:#f5f5f5;">住所</th>
+                    <th style="width:110px; background-color:#f5f5f5;">電話 / FAX</th>
+                    <th style="width:120px; background-color:#f5f5f5; font-size:0.78rem; white-space:nowrap;">担当者</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="align-middle">
+                        <span id="houkatsu_disp_name" class="fw-bold d-block" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:clamp(0.7rem,1.5vw,0.9rem);"></span>
+                    </td>
+                    <td class="align-middle" style="font-size:0.85rem;">
+                        <small id="houkatsu_disp_postal" class="text-muted d-block" style="font-size:0.75rem;"></small>
+                        <span id="houkatsu_disp_address" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block;"></span>
+                    </td>
+                    <td class="align-middle" style="font-size:0.85rem; white-space:nowrap;">
+                        <i class="fas fa-phone me-1 text-muted" style="font-size:0.75rem;"></i><span id="houkatsu_disp_phone">―</span><br>
+                        <i class="fas fa-fax me-1 text-muted" style="font-size:0.75rem;"></i><span id="houkatsu_disp_fax" class="text-muted">―</span>
+                    </td>
+                    <td class="align-middle">
+                        <input type="text" id="houkatsu_staff_input" class="form-control"
+                               style="font-size:0.75rem; padding:2px 6px; height:auto;"
+                               placeholder="担当者名を入力"
+                               oninput="document.getElementById('houkatsu_staff_name').value=this.value">
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="mt-1 mb-2">
+        <button type="button" class="btn btn-outline-secondary btn-sm" id="houkatsu_edit_btn" onclick="openHoukatsuMasterDrawer()">
+            <i class="fas fa-edit me-1"></i><span id="houkatsu_edit_btn_text">地域包括支援センター情報を編集</span>
+        </button>
     </div>
 </div>
 
-<!-- 受託事業者詳細情報（安濃津ろまん選択時に表示） -->
-<div id="jutaku_detail_section" class="accordion" style="display: none; margin: 0.5rem 0 1rem 0;">
-    <div class="accordion-item" style="border: none; background-color: #f8f9fa; border-radius: 0.5rem;">
-        <h2 class="accordion-header">
-            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#jutakuDetailCollapse" aria-expanded="false" aria-controls="jutakuDetailCollapse" style="background-color: #f8f9fa; padding: 0.5rem 1rem; color: #333;">
-                <span id="jutaku_status_icon" class="me-2"></span>事業所情報
-            </button>
-        </h2>
-        <div id="jutakuDetailCollapse" class="accordion-collapse collapse">
-            <div class="accordion-body row g-3" style="padding: 0.5rem 1rem 1rem 1rem;">
-                <div class="col-md-4">
-                    <label class="form-label">事業所番号 <span class="text-danger">*</span></label>
-                    <input type="text" name="jutaku_office_number" id="jutaku_office_number" class="form-control" value="{{ initial_data.jutaku_office_number|default:'' }}" readonly>
-                </div>
-                <div class="col-12">
-                    <label class="form-label">所在地 <span class="text-danger">*</span></label>
-                    <div class="d-flex gap-2">
-                        <div class="input-group" style="width: 140px; flex-shrink: 0;">
-                            <span class="input-group-text">〒</span>
-                            <input type="text" name="jutaku_postal_code" id="jutaku_postal_code" class="form-control" value="{{ initial_data.jutaku_postal_code|default:'' }}" placeholder="000-0000" maxlength="8" style="width: 90px;" readonly>
-                        </div>
-                        <div class="flex-grow-1">
-                            <input type="text" name="jutaku_address" id="jutaku_address" class="form-control" value="{{ initial_data.jutaku_address|default:'' }}" placeholder="住所を入力" readonly>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label">電話番号 <span class="text-danger">*</span></label>
-                    <input type="text" name="jutaku_phone" id="jutaku_phone" class="form-control" value="{{ initial_data.jutaku_phone|default:'' }}" placeholder="電話番号を入力" readonly>
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label">担当者氏名 <span class="text-danger">*</span></label>
-                    <input type="text" name="jutaku_staff_name" id="jutaku_staff_name" class="form-control" value="{{ initial_data.jutaku_staff_name|default:'' }}" placeholder="担当者氏名を入力">
-                </div>
+<!-- 介護予防支援を受託する居宅介護支援事業者（地域包括選択時のみ表示） -->
+<div id="jutaku_section" class="mb-3" style="display: none; margin-top: 1.5rem;">
+    <label class="form-label">介護予防支援を受託する居宅介護支援事業者</label>
+    <div class="mb-2">
+        <select name="jutaku_provider" id="jutaku_provider" class="form-select" style="width: 400px;">
+            <option value="anoutsu_roman" {% if initial_data.jutaku_provider != 'other' %}selected{% endif %}>{% if user.profile.home_care_office %}{{ user.profile.home_care_office.name }}{% else %}居宅介護支援事業所　安濃津ろまん{% endif %}</option>
+            <option value="other" {% if initial_data.jutaku_provider == 'other' %}selected{% endif %}>その他（新規登録）</option>
+        </select>
+    </div>
 
-                <!-- 編集ボタン -->
-                <div id="jutaku_edit_button_wrapper" class="col-12 text-end mt-2">
-                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openOfficeMasterDrawer();">
-                        <i class="fas fa-edit me-1"></i>事業所マスタデータを編集
-                    </button>
-                </div>
-            </div>
+    <!-- 送信用 hidden fields -->
+    <input type="hidden" name="jutaku_provider_name" id="jutaku_provider_name_hidden" value="{{ initial_data.jutaku_provider_name|default:'' }}">
+    <input type="hidden" name="jutaku_office_number" id="jutaku_office_number" value="{{ initial_data.jutaku_office_number|default:'' }}">
+    <input type="hidden" name="jutaku_postal_code"   id="jutaku_postal_code"   value="{{ initial_data.jutaku_postal_code|default:'' }}">
+    <input type="hidden" name="jutaku_address"       id="jutaku_address"       value="{{ initial_data.jutaku_address|default:'' }}">
+    <input type="hidden" name="jutaku_phone"         id="jutaku_phone"         value="{{ initial_data.jutaku_phone|default:'' }}">
+    <input type="hidden" name="jutaku_staff_name"    id="jutaku_staff_name"    value="{{ initial_data.jutaku_staff_name|default:'' }}">
+
+    <!-- 事業所情報テーブル -->
+    <div id="jutaku_table_section" class="mb-2">
+        <div class="table-responsive mb-1">
+            <table id="jutaku_office_table" class="table table-hover table-bordered mb-0" style="font-size:0.9rem; table-layout:fixed;">
+                <thead>
+                    <tr>
+                        <th style="background-color:#f5f5f5;">事業所名</th>
+                        <th style="width:180px; background-color:#f5f5f5;">住所</th>
+                        <th style="width:110px; background-color:#f5f5f5;">電話 / FAX</th>
+                        <th style="width:120px; background-color:#f5f5f5; font-size:0.78rem; white-space:nowrap;">担当者 <span class="text-danger">*</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="align-middle">
+                            <small id="jutaku_disp_furigana" class="text-muted d-block" style="font-size:0.75rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"></small>
+                            <span id="jutaku_disp_name" class="fw-bold d-block" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:clamp(0.7rem,1.5vw,0.9rem);"></span>
+                        </td>
+                        <td class="align-middle" style="font-size:0.85rem;">
+                            <small id="jutaku_disp_postal" class="text-muted d-block" style="font-size:0.75rem;"></small>
+                            <span id="jutaku_disp_address" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block;"></span>
+                        </td>
+                        <td class="align-middle" style="font-size:0.85rem; white-space:nowrap;">
+                            <i class="fas fa-phone me-1 text-muted" style="font-size:0.75rem;"></i><span id="jutaku_disp_phone">―</span><br>
+                            <i class="fas fa-fax me-1 text-muted" style="font-size:0.75rem;"></i><span id="jutaku_disp_fax" class="text-muted">―</span>
+                        </td>
+                        <td class="align-middle">
+                            <div id="jutaku_disp_manager" class="text-muted mb-1" style="font-size:0.75rem;"></div>
+                            <select id="jutaku_staff_input" class="form-select"
+                                    style="font-size:0.75rem; padding:2px 6px; height:auto; appearance:none; -webkit-appearance:none; background-image:none;"
+                                    onchange="document.getElementById('jutaku_staff_name').value=this.value">
+                                <option value="">----------</option>
+                            </select>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="mt-1 mb-2">
+            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openJutakuOfficeModal()">
+                <i class="fas fa-edit me-1"></i>事業所情報を新規登録・編集
+            </button>
         </div>
     </div>
 </div>
@@ -201,6 +248,9 @@
 {% endblock %}
 
 {% block extra_content %}
+<!-- 安濃津ろまん用：更新認定申請書と同一モーダル -->
+{% include 'clients/_renewal_office_modal.html' %}
+
 <!-- 地域包括支援センターマスタ編集モーダル -->
 <div class="modal fade" id="preventiveCenterModal" tabindex="-1" aria-labelledby="preventiveCenterModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-lg">
@@ -246,17 +296,15 @@
     </div>
 </div>
 
-<!-- 事業所マスタ編集モーダル（居宅介護支援事業所用） -->
-<div class="modal fade" id="preventiveOfficeModal" tabindex="-1" aria-labelledby="preventiveOfficeModalLabel" aria-hidden="true"
+<!-- jutaku用モーダル（受託居宅介護支援事業者専用） -->
+<div class="modal fade" id="preventiveOfficeModal" tabindex="-1" aria-hidden="true"
      data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <input type="hidden" id="preventive_modal_pk" value="{{ initial_data.kyotaku_office_id|default:'' }}">
-            <input type="hidden" id="preventive_modal_context" value="">
+            <input type="hidden" id="preventive_modal_context" value="jutaku">
             <div class="modal-header">
-                <h5 class="modal-title" id="preventiveOfficeModalLabel">
-                    <i class="fas fa-hospital me-2"></i>居宅介護支援事業所編集
-                </h5>
+                <h5 class="modal-title"><i class="fas fa-hospital me-2"></i>居宅介護支援事業所編集</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
@@ -264,51 +312,36 @@
                 <div class="row g-3">
                     <div class="col-12">
                         <label class="form-label">事業所名 <span class="text-danger">*</span></label>
-                        <input type="text" id="preventive_modal_name" class="form-control"
-                               value="{{ initial_data.kyotaku_office_name|default:'' }}">
+                        <input type="text" id="preventive_modal_name" class="form-control" value="{{ initial_data.kyotaku_office_name|default:'' }}">
                     </div>
                     <div class="col-12">
                         <label class="form-label">フリガナ</label>
-                        <input type="text" id="preventive_modal_furigana" class="form-control"
-                               value="{{ initial_data.kyotaku_office_furigana|default:'' }}"
-                               placeholder="例: キョタクカイゴシエンジギョウショ アノツロマン">
+                        <input type="text" id="preventive_modal_furigana" class="form-control" value="{{ initial_data.kyotaku_office_furigana|default:'' }}" placeholder="例: キョタクカイゴシエンジギョウショ アノツロマン">
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">事業所番号 <span class="text-danger">*</span></label>
-                        <input type="text" id="preventive_modal_office_number" class="form-control"
-                               value="{{ initial_data.kyotaku_office_number|default:'' }}">
+                        <input type="text" id="preventive_modal_office_number" class="form-control" value="{{ initial_data.kyotaku_office_number|default:'' }}">
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">管理者名</label>
-                        <input type="text" id="preventive_modal_manager" class="form-control"
-                               value="{{ initial_data.kyotaku_office_manager|default:'' }}"
-                               placeholder="例: 山田 太郎">
+                        <input type="text" id="preventive_modal_manager" class="form-control" value="{{ initial_data.kyotaku_office_manager|default:'' }}" placeholder="例: 山田 太郎">
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">郵便番号</label>
-                        <input type="text" id="preventive_modal_postal_code" class="form-control"
-                               value="{{ initial_data.kyotaku_postal_code|default:'' }}" placeholder="例: 514-0009">
+                        <div class="input-group"><span class="input-group-text">〒</span>
+                        <input type="text" id="preventive_modal_postal_code" class="form-control" value="{{ initial_data.kyotaku_postal_code|default:'' }}" placeholder="514-0009"></div>
                     </div>
                     <div class="col-md-8">
                         <label class="form-label">住所</label>
-                        <input type="text" id="preventive_modal_address" class="form-control"
-                               value="{{ initial_data.kyotaku_address|default:'' }}">
+                        <input type="text" id="preventive_modal_address" class="form-control" value="{{ initial_data.kyotaku_address|default:'' }}">
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">電話番号</label>
-                        <input type="text" id="preventive_modal_phone" class="form-control"
-                               value="{{ initial_data.kyotaku_phone|default:'' }}" placeholder="例: 059-123-4567">
+                        <input type="text" id="preventive_modal_phone" class="form-control" value="{{ initial_data.kyotaku_phone|default:'' }}" placeholder="059-123-4567">
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">FAX</label>
-                        <input type="text" id="preventive_modal_fax" class="form-control"
-                               value="{{ initial_data.kyotaku_office_fax|default:'' }}" placeholder="例: 059-123-4568">
-                    </div>
-                    <div class="col-12">
-                        <div class="form-check">
-                            <input type="checkbox" id="preventive_modal_is_active" class="form-check-input" checked>
-                            <label class="form-check-label" for="preventive_modal_is_active">有効</label>
-                        </div>
+                        <input type="text" id="preventive_modal_fax" class="form-control" value="{{ initial_data.kyotaku_office_fax|default:'' }}" placeholder="059-123-4568">
                     </div>
                 </div>
             </div>
@@ -329,18 +362,34 @@ h1.h4 {
     font-size: 1.25rem;
 }
 /* アコーディオンボタンの色を固定 */
-#houkatsu_detail_section .accordion-button,
 #jutaku_detail_section .accordion-button,
-#houkatsu_detail_section .accordion-button:not(.collapsed),
 #jutaku_detail_section .accordion-button:not(.collapsed) {
     color: #333 !important;
     background-color: #f8f9fa !important;
     box-shadow: none !important;
 }
 
-#houkatsu_detail_section .accordion-button:focus,
 #jutaku_detail_section .accordion-button:focus {
     box-shadow: none !important;
+}
+
+/* 事業所情報テーブル（主治医変更届と同一スタイル） */
+#anoutsu_office_table, #houkatsu_center_table, #jutaku_office_table {
+    table-layout: fixed;
+    width: 100%;
+}
+#anoutsu_office_table th, #anoutsu_office_table td,
+#houkatsu_center_table th, #houkatsu_center_table td,
+#jutaku_office_table th, #jutaku_office_table td {
+    border-left: none !important;
+    border-right: none !important;
+    vertical-align: middle;
+    padding-top: 0.4rem;
+    padding-bottom: 0.4rem;
+    overflow: hidden;
+}
+#anoutsu_office_table tbody tr, #houkatsu_center_table tbody tr, #jutaku_office_table tbody tr {
+    height: 58px;
 }
 
 /* ドロワースタイル */
@@ -412,6 +461,8 @@ let currentProviderCategory = '';  // openHoukatsuMasterDrawer() からも参照
 
 // 地域包括支援センターのマスタデータ（グローバル変数）
 let supportCentersFromDB = {% if support_centers_json %}{{ support_centers_json|safe }}{% else %}[]{% endif %};
+// 安濃津ろまん担当者リスト（renewalOfficeModal 用）
+var _PREVENTIVE_STAFF_NAMES = {{ office_staff_options_json|safe }};
 console.log('[DEBUG] supportCentersFromDB initialized:', supportCentersFromDB.length, 'items');
 if (supportCentersFromDB.length > 0) {
     console.log('[DEBUG] First item:', supportCentersFromDB[0]);
@@ -454,15 +505,7 @@ function validateForm() {
             const manualInput = document.getElementById('preventive_support_provider_manual');
             if (!manualInput || !manualInput.value.trim()) {
                 alert('事業所名を入力してください。');
-                const houkatsuCollapse = document.getElementById('houkatsuDetailCollapse');
-                if (houkatsuCollapse && !houkatsuCollapse.classList.contains('show')) {
-                    new bootstrap.Collapse(houkatsuCollapse, { show: true });
-                    setTimeout(function() {
-                        focusAndScroll(manualInput);
-                    }, 400);
-                } else {
-                    focusAndScroll(manualInput);
-                }
+                focusAndScroll(document.getElementById('houkatsu_table_section'));
                 return false;
             }
             providerSelect.innerHTML = '<option value="' + manualInput.value.trim() + '" selected>' + manualInput.value.trim() + '</option>';
@@ -472,45 +515,36 @@ function validateForm() {
             providerSelect.innerHTML = '<option value="居宅介護支援事業所　安濃津ろまん" selected>居宅介護支援事業所　安濃津ろまん</option>';
         }
 
-        // 詳細情報の必須チェック
+        // 詳細情報の必須チェック（hidden fields を参照）
         const houkatsuOfficeNumberEl = document.getElementById('houkatsu_office_number');
-        const houkatsuPostalCodeEl = document.getElementById('houkatsu_postal_code');
-        const houkatsuAddressEl = document.getElementById('houkatsu_address');
-        const houkatsuPhoneEl = document.getElementById('houkatsu_phone');
-        const houkatsuStaffNameEl = document.getElementById('houkatsu_staff_name');
+        const houkatsuPostalCodeEl   = document.getElementById('houkatsu_postal_code');
+        const houkatsuAddressEl      = document.getElementById('houkatsu_address');
+        const houkatsuPhoneEl        = document.getElementById('houkatsu_phone');
+        const houkatsuStaffNameEl    = document.getElementById('houkatsu_staff_name');
 
-        const openHoukatsuAccordionAndFocus = function(element) {
-            const houkatsuCollapse = document.getElementById('houkatsuDetailCollapse');
-            if (houkatsuCollapse && !houkatsuCollapse.classList.contains('show')) {
-                new bootstrap.Collapse(houkatsuCollapse, { show: true });
-                setTimeout(function() {
-                    element.focus();
-                    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }, 400);
-            } else {
-                element.focus();
-                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
+        const scrollToTable = function() {
+            const sec = document.getElementById(category === 'anoutsu' ? 'anoutsu_table_section' : 'houkatsu_table_section');
+            if (sec) sec.scrollIntoView({ behavior: 'smooth', block: 'center' });
         };
 
         if (!houkatsuOfficeNumberEl.value.trim()) {
             alert('事業所番号を入力してください。');
-            openHoukatsuAccordionAndFocus(houkatsuOfficeNumberEl);
+            scrollToTable();
             return false;
         }
         if (!houkatsuPostalCodeEl.value.trim()) {
             alert('郵便番号を入力してください。');
-            openHoukatsuAccordionAndFocus(houkatsuPostalCodeEl);
+            scrollToTable();
             return false;
         }
         if (!houkatsuAddressEl.value.trim()) {
             alert('住所を入力してください。');
-            openHoukatsuAccordionAndFocus(houkatsuAddressEl);
+            scrollToTable();
             return false;
         }
         if (!houkatsuPhoneEl.value.trim()) {
             alert('電話番号を入力してください。');
-            openHoukatsuAccordionAndFocus(houkatsuPhoneEl);
+            scrollToTable();
             return false;
         }
 
@@ -518,7 +552,8 @@ function validateForm() {
         if (category === 'anoutsu') {
             if (!houkatsuStaffNameEl.value.trim()) {
                 alert('担当者氏名を入力してください。');
-                openHoukatsuAccordionAndFocus(houkatsuStaffNameEl);
+                const staffInput = document.getElementById('anoutsu_staff_input');
+                if (staffInput) { staffInput.focus(); staffInput.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
                 return false;
             }
         }
@@ -526,60 +561,31 @@ function validateForm() {
         // 受託事業者（安濃津ろまん以外選択時）のチェック
         if (category !== 'anoutsu') {
             const jutakuProviderSelect = document.getElementById('jutaku_provider');
-            // その他モードの場合、手入力事業所名を確認
-            if (jutakuProviderSelect && jutakuProviderSelect.value === 'other') {
-                const jutakuManualEl = document.getElementById('jutaku_provider_manual');
-                if (!jutakuManualEl || !jutakuManualEl.value.trim()) {
-                    alert('受託事業者の事業所名を入力してください。');
-                    focusAndScroll(jutakuManualEl);
-                    return false;
-                }
-            }
+            const scrollToJutaku = function() {
+                const sec = document.getElementById('jutaku_table_section');
+                if (sec) sec.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            };
             if (jutakuProviderSelect && (jutakuProviderSelect.value === 'anoutsu_roman' || jutakuProviderSelect.value === 'other')) {
                 const jutakuOfficeNumber = document.getElementById('jutaku_office_number');
-                const jutakuPostalCode = document.getElementById('jutaku_postal_code');
-                const jutakuAddress = document.getElementById('jutaku_address');
-                const jutakuPhone = document.getElementById('jutaku_phone');
-                const jutakuStaffName = document.getElementById('jutaku_staff_name');
-
-                const openJutakuAccordionAndFocus = function(element) {
-                    const jutakuCollapse = document.getElementById('jutakuDetailCollapse');
-                    if (jutakuCollapse && !jutakuCollapse.classList.contains('show')) {
-                        new bootstrap.Collapse(jutakuCollapse, { show: true });
-                        setTimeout(function() {
-                            element.focus();
-                            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        }, 400);
-                    } else {
-                        element.focus();
-                        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    }
-                };
+                const jutakuPostalCode   = document.getElementById('jutaku_postal_code');
+                const jutakuAddress      = document.getElementById('jutaku_address');
+                const jutakuPhone        = document.getElementById('jutaku_phone');
+                const jutakuStaffName    = document.getElementById('jutaku_staff_name');
 
                 if (!jutakuOfficeNumber || !jutakuOfficeNumber.value.trim()) {
-                    alert('受託事業者の事業所番号を入力してください。');
-                    openJutakuAccordionAndFocus(jutakuOfficeNumber);
-                    return false;
+                    alert('受託事業者の事業所番号を入力してください。'); scrollToJutaku(); return false;
                 }
                 if (!jutakuPostalCode || !jutakuPostalCode.value.trim()) {
-                    alert('受託事業者の郵便番号を入力してください。');
-                    openJutakuAccordionAndFocus(jutakuPostalCode);
-                    return false;
+                    alert('受託事業者の郵便番号を入力してください。'); scrollToJutaku(); return false;
                 }
                 if (!jutakuAddress || !jutakuAddress.value.trim()) {
-                    alert('受託事業者の住所を入力してください。');
-                    openJutakuAccordionAndFocus(jutakuAddress);
-                    return false;
+                    alert('受託事業者の住所を入力してください。'); scrollToJutaku(); return false;
                 }
                 if (!jutakuPhone || !jutakuPhone.value.trim()) {
-                    alert('受託事業者の電話番号を入力してください。');
-                    openJutakuAccordionAndFocus(jutakuPhone);
-                    return false;
+                    alert('受託事業者の電話番号を入力してください。'); scrollToJutaku(); return false;
                 }
                 if (!jutakuStaffName || !jutakuStaffName.value.trim()) {
-                    alert('受託事業者の担当者氏名を入力してください。');
-                    openJutakuAccordionAndFocus(jutakuStaffName);
-                    return false;
+                    alert('受託事業者の担当者氏名を入力してください。'); scrollToJutaku(); return false;
                 }
             }
         }
@@ -605,7 +611,6 @@ function initDocumentSpecific() {
     // 介護予防支援事業者選択の2段階プルダウン制御
     const providerCategory = document.getElementById('provider_category');
     const providerSelect = document.getElementById('preventive_support_provider');
-    const houkatsuDetailSection = document.getElementById('houkatsu_detail_section');
 
     // supportCentersFromDBはグローバル変数として既に定義済み
 
@@ -737,151 +742,146 @@ function initDocumentSpecific() {
             statusIcon.innerHTML = '<i class="fas fa-circle-exclamation" style="color: rgba(220, 53, 69, 0.5);"></i>';
         }
         // 未完了時は展開・完了時は閉じる
-        const houkatsuCollapseEl = document.getElementById('houkatsuDetailCollapse');
-        if (houkatsuCollapseEl) {
-            if (!isComplete && !houkatsuCollapseEl.classList.contains('show')) {
-                new bootstrap.Collapse(houkatsuCollapseEl, { toggle: false }).show();
-            } else if (isComplete && houkatsuCollapseEl.classList.contains('show') && !houkatsuCollapseEl.contains(document.activeElement)) {
-                new bootstrap.Collapse(houkatsuCollapseEl, { toggle: false }).hide();
-            }
-        }
     };
 
-    // 入力フィールドにイベントリスナーを追加
-    const houkatsuFields = [
-        'houkatsu_office_number', 'houkatsu_postal_code', 'houkatsu_address',
-        'houkatsu_phone', 'houkatsu_staff_name', 'preventive_support_provider_manual'
-    ];
-    houkatsuFields.forEach(function(fieldId) {
-        const field = document.getElementById(fieldId);
-        if (field) {
-            field.addEventListener('input', updateHoukatsuStatusIcon);
-        }
-    });
+    // 担当者 SELECT に事業所スタッフを動的追加／クリア
+    function addStaffOptions(selId) {
+        const sel = document.getElementById(selId);
+        if (!sel) return;
+        while (sel.options.length > 1) sel.remove(1);
+        const names = typeof _PREVENTIVE_STAFF_NAMES !== 'undefined' ? _PREVENTIVE_STAFF_NAMES : [];
+        names.forEach(function(name) {
+            const opt = document.createElement('option');
+            opt.value = name; opt.textContent = name;
+            sel.appendChild(opt);
+        });
+    }
+    function clearStaffOptions(selId) {
+        const sel = document.getElementById(selId);
+        if (!sel) return;
+        while (sel.options.length > 1) sel.remove(1);
+        sel.value = '';
+    }
 
-    // アコーディオンを閉じる関数
-    function closeHoukatsuAccordion() {
-        const houkatsuCollapse = document.getElementById('houkatsuDetailCollapse');
-        const houkatsuCollapseBtn = houkatsuCollapse ? houkatsuCollapse.previousElementSibling.querySelector('.accordion-button') : null;
-        if (houkatsuCollapse) {
-            houkatsuCollapse.classList.remove('show');
-            if (houkatsuCollapseBtn) {
-                houkatsuCollapseBtn.classList.add('collapsed');
-                houkatsuCollapseBtn.setAttribute('aria-expanded', 'false');
-            }
-        }
+    // テーブルセルにテキストをセットするヘルパー
+    function setDispText(id, val) {
+        const el = document.getElementById(id);
+        if (el) el.textContent = val || '';
     }
 
     // 詳細セクションを表示・設定する関数
     function showDetailSection(category, providerName, isInitialLoad) {
-        console.log('showDetailSection called:', {category, providerName, isInitialLoad});
-        if (!houkatsuDetailSection) {
-            console.log('houkatsuDetailSection not found');
-            return;
-        }
-
         currentProviderCategory = category;
 
-        const staffNameOptional = document.getElementById('staff_name_optional');
-        const staffNameRequired = document.getElementById('staff_name_required');
-
-        function updateStaffNameRequired(isRequired) {
-            if (staffNameOptional) staffNameOptional.style.display = isRequired ? 'none' : 'inline';
-            if (staffNameRequired) staffNameRequired.style.display = isRequired ? 'inline' : 'none';
-        }
+        const anoutsuTableSection  = document.getElementById('anoutsu_table_section');
+        const houkatsuTableSection = document.getElementById('houkatsu_table_section');
 
         if (category === 'anoutsu') {
-            houkatsuDetailSection.style.display = 'block';
-            if (kengaiProviderNameSection) kengaiProviderNameSection.style.display = 'none';
+            if (anoutsuTableSection)  anoutsuTableSection.style.display  = 'block';
+            if (houkatsuTableSection) houkatsuTableSection.style.display = 'none';
+
+            // hidden フィールドにマスタ値をセット
             document.getElementById('houkatsu_office_number').value = anoutsuData.office_number;
-            document.getElementById('houkatsu_postal_code').value = anoutsuData.postal_code;
-            document.getElementById('houkatsu_address').value = anoutsuData.address;
-            document.getElementById('houkatsu_phone').value = anoutsuData.phone;
-            updateStaffNameRequired(true);
+            document.getElementById('houkatsu_postal_code').value   = anoutsuData.postal_code;
+            document.getElementById('houkatsu_address').value       = anoutsuData.address;
+            document.getElementById('houkatsu_phone').value         = anoutsuData.phone;
 
-            const staffNameField = document.getElementById('houkatsu_staff_name');
-            if (!isInitialLoad) {
-                staffNameField.value = loggedInUserName;
-            }
+            // テーブル表示セルを更新（更新認定申請書と同一ID）
+            const faxEl  = document.getElementById('original_office_fax');
+            const mgrEl  = document.getElementById('original_office_manager_name');
+            const furiEl = document.getElementById('original_office_furigana');
+            setDispText('disp_office_furigana', furiEl ? furiEl.value : '');
+            setDispText('disp_office_name',    anoutsuData.name);
+            setDispText('disp_office_postal',  anoutsuData.postal_code ? '〒' + anoutsuData.postal_code : '');
+            setDispText('disp_office_address', anoutsuData.address);
+            setDispText('disp_office_phone',   anoutsuData.phone || '―');
+            setDispText('disp_office_fax',     faxEl ? (faxEl.value || '―') : '―');
+            setDispText('disp_office_manager', mgrEl ? mgrEl.value : '');
 
-            // 元データを保存（変更検出用） - 居宅介護支援事業所なので空にする
+            // 担当者プルダウン：事業所スタッフを動的追加、値は「----------」
+            addStaffOptions('anoutsu_staff_input');
+            const staffInput  = document.getElementById('anoutsu_staff_input');
+            const staffHidden = document.getElementById('houkatsu_staff_name');
+            if (staffInput)  staffInput.value  = '';
+            if (staffHidden) staffHidden.value = '';
+
             originalCenterData = { name: '', office_number: '', postal_code: '', address: '', phone: '' };
 
-            // 編集ボタンを事業所マスタ編集に切り替え
-            const editBtnText = document.getElementById('houkatsu_edit_btn_text');
-            if (editBtnText) editBtnText.textContent = '事業所マスタデータを編集';
-
-            closeHoukatsuAccordion();
         } else if (category === 'kengai') {
-            houkatsuDetailSection.style.display = 'block';
-            if (kengaiProviderNameSection) kengaiProviderNameSection.style.display = 'block';
-            updateStaffNameRequired(false);
+            if (anoutsuTableSection)  anoutsuTableSection.style.display  = 'none';
+            if (houkatsuTableSection) houkatsuTableSection.style.display = 'block';
+
+            const staffInput  = document.getElementById('houkatsu_staff_input');
+            const staffHidden = document.getElementById('houkatsu_staff_name');
+
             if (!isInitialLoad) {
-                if (providerManualInput) providerManualInput.value = '';
+                const providerManualHidden = document.getElementById('preventive_support_provider_manual');
+                if (providerManualHidden) providerManualHidden.value = '';
                 document.getElementById('houkatsu_office_number').value = '';
-                document.getElementById('houkatsu_postal_code').value = '';
-                document.getElementById('houkatsu_address').value = '';
-                document.getElementById('houkatsu_phone').value = '';
-                document.getElementById('houkatsu_staff_name').value = '';
-
-                // 元データを保存（変更検出用） - 県外は新規入力なので空にする
+                document.getElementById('houkatsu_postal_code').value   = '';
+                document.getElementById('houkatsu_address').value       = '';
+                document.getElementById('houkatsu_phone').value         = '';
+                if (staffInput)  staffInput.value  = '';
+                if (staffHidden) staffHidden.value = '';
+                setDispText('houkatsu_disp_name',    '');
+                setDispText('houkatsu_disp_postal',  '');
+                setDispText('houkatsu_disp_address', '');
+                setDispText('houkatsu_disp_phone',   '―');
                 originalCenterData = { name: '', office_number: '', postal_code: '', address: '', phone: '' };
+            } else {
+                const savedName = document.getElementById('preventive_support_provider_manual') ? document.getElementById('preventive_support_provider_manual').value : '';
+                setDispText('houkatsu_disp_name',    savedName);
+                const pc = document.getElementById('houkatsu_postal_code').value;
+                setDispText('houkatsu_disp_postal',  pc ? '〒' + pc : '');
+                setDispText('houkatsu_disp_address', document.getElementById('houkatsu_address').value);
+                setDispText('houkatsu_disp_phone',   document.getElementById('houkatsu_phone').value || '―');
+                if (staffInput && staffHidden) staffInput.value = staffHidden.value;
             }
-            closeHoukatsuAccordion();
+
         } else if (providerName) {
-            console.log('事業所が選択されました:', providerName);
-            houkatsuDetailSection.style.display = 'block';
-            console.log('houkatsuDetailSection.style.display set to block');
-            if (kengaiProviderNameSection) kengaiProviderNameSection.style.display = 'none';
-            updateStaffNameRequired(false);
+            if (anoutsuTableSection)  anoutsuTableSection.style.display  = 'none';
+            if (houkatsuTableSection) houkatsuTableSection.style.display = 'block';
 
-            // 編集ボタンを地域包括支援センター編集に切り替え
             const editBtnText = document.getElementById('houkatsu_edit_btn_text');
-            if (editBtnText) editBtnText.textContent = '地域包括支援センターマスタデータを編集';
+            if (editBtnText) editBtnText.textContent = '地域包括支援センター情報を編集';
 
-            // 初回ロード時は保存されたデータを優先、それ以外はプリセットデータを使用
             const preset = supportCentersFromDB.find(p => p.name === providerName);
-            if (!isInitialLoad) {
-                if (preset) {
-                    document.getElementById('houkatsu_office_number').value = preset.office_number;
-                    document.getElementById('houkatsu_postal_code').value = preset.postal_code;
-                    document.getElementById('houkatsu_address').value = preset.address;
-                    document.getElementById('houkatsu_phone').value = preset.phone;
-                    document.getElementById('houkatsu_staff_name').value = '';
+            const staffInput  = document.getElementById('houkatsu_staff_input');
+            const staffHidden = document.getElementById('houkatsu_staff_name');
 
-                    // 元データを保存（変更検出用）
-                    originalCenterData = {
-                        name: preset.name,
-                        office_number: preset.office_number,
-                        postal_code: preset.postal_code,
-                        address: preset.address,
-                        phone: preset.phone
-                    };
+            if (!isInitialLoad && preset) {
+                document.getElementById('houkatsu_office_number').value = preset.office_number;
+                document.getElementById('houkatsu_postal_code').value   = preset.postal_code;
+                document.getElementById('houkatsu_address').value       = preset.address;
+                document.getElementById('houkatsu_phone').value         = preset.phone;
+                setDispText('houkatsu_disp_name',    preset.name);
+                setDispText('houkatsu_disp_postal',  preset.postal_code ? '〒' + preset.postal_code : '');
+                setDispText('houkatsu_disp_address', preset.address);
+                setDispText('houkatsu_disp_phone',   preset.phone || '―');
+                if (staffInput)  staffInput.value  = '';
+                if (staffHidden) staffHidden.value = '';
+                originalCenterData = { name: preset.name, office_number: preset.office_number, postal_code: preset.postal_code, address: preset.address, phone: preset.phone };
+            } else {
+                setDispText('houkatsu_disp_name',    providerName);
+                const pc = document.getElementById('houkatsu_postal_code').value;
+                setDispText('houkatsu_disp_postal',  pc ? '〒' + pc : '');
+                setDispText('houkatsu_disp_address', document.getElementById('houkatsu_address').value);
+                setDispText('houkatsu_disp_phone',   document.getElementById('houkatsu_phone').value || '―');
+                if (staffInput && staffHidden) staffInput.value = staffHidden.value;
+                if (preset) {
+                    originalCenterData = { name: preset.name, office_number: preset.office_number, postal_code: preset.postal_code, address: preset.address, phone: preset.phone };
                 }
-            } else if (preset) {
-                // 初回ロード時も元データを保存
-                originalCenterData = {
-                    name: preset.name,
-                    office_number: preset.office_number,
-                    postal_code: preset.postal_code,
-                    address: preset.address,
-                    phone: preset.phone
-                };
             }
-            closeHoukatsuAccordion();
+
         } else {
-            console.log('事業所が選択されていません');
-            houkatsuDetailSection.style.display = 'none';
-            if (kengaiProviderNameSection) kengaiProviderNameSection.style.display = 'none';
-            updateStaffNameRequired(false);
-            // センターが選択されていない場合は元データをクリア
+            // カテゴリ未選択 or tsu/other でセンター未選択 → anoutsu表をデフォルト表示
+            if (anoutsuTableSection)  anoutsuTableSection.style.display  = 'block';
+            if (houkatsuTableSection) houkatsuTableSection.style.display = 'none';
             originalCenterData = { name: '', office_number: '', postal_code: '', address: '', phone: '' };
         }
-        console.log('houkatsuDetailSection final display:', houkatsuDetailSection.style.display);
-        updateHoukatsuStatusIcon();
     }
 
-    // ページロード時に保存された値を復元
+    // ページロード時に保存された値を復元（なければ anoutsu 表をデフォルト表示）
     if (savedProviderCategory && providerCategory) {
         populateProviderSelect(savedProviderCategory, savedProvider);
         if (savedProviderCategory === 'anoutsu') {
@@ -891,6 +891,13 @@ function initDocumentSpecific() {
         } else {
             showDetailSection(savedProviderCategory, savedProvider, true);
         }
+    } else {
+        // 未選択：anoutsu テーブルを空で表示、担当者選択肢もクリア
+        const sec = document.getElementById('anoutsu_table_section');
+        if (sec) sec.style.display = 'block';
+        clearStaffOptions('anoutsu_staff_input');
+        const staffHid = document.getElementById('houkatsu_staff_name');
+        if (staffHid) staffHid.value = '';
     }
 
     // カテゴリ変更時（統合版）
@@ -910,17 +917,27 @@ function initDocumentSpecific() {
                 showDetailSection('anoutsu', null, false);
             } else if (category === 'kengai') {
                 showDetailSection('kengai', null, false);
-            } else {
+            } else if (category) {
+                // tsu / other：センター未選択でも houkatsu 表を表示（クリアしない）
                 currentProviderCategory = category;
-                if (houkatsuDetailSection) {
-                    houkatsuDetailSection.style.display = 'none';
-                }
-                if (kengaiProviderNameSection) {
-                    kengaiProviderNameSection.style.display = 'none';
-                }
-                closeHoukatsuAccordion();
-                const statusIcon = document.getElementById('houkatsu_status_icon');
-                if (statusIcon) statusIcon.innerHTML = '';
+                const anoutsuSec  = document.getElementById('anoutsu_table_section');
+                const houkatsuSec = document.getElementById('houkatsu_table_section');
+                if (anoutsuSec)  anoutsuSec.style.display  = 'none';
+                if (houkatsuSec) houkatsuSec.style.display = 'block';
+            } else {
+                // カテゴリが空（選択解除）→ anoutsu 表をクリアして表示
+                currentProviderCategory = '';
+                const anoutsuSec  = document.getElementById('anoutsu_table_section');
+                const houkatsuSec = document.getElementById('houkatsu_table_section');
+                if (anoutsuSec)  anoutsuSec.style.display  = 'block';
+                if (houkatsuSec) houkatsuSec.style.display = 'none';
+                ['disp_office_furigana','disp_office_name','disp_office_postal',
+                 'disp_office_address','disp_office_manager'].forEach(function(id){ setDispText(id,''); });
+                setDispText('disp_office_phone', '―');
+                setDispText('disp_office_fax',   '―');
+                clearStaffOptions('anoutsu_staff_input');
+                const staffHidden = document.getElementById('houkatsu_staff_name');
+                if (staffHidden) staffHidden.value = '';
             }
             console.log('[DEBUG] Final providerSelect.style.display:', providerSelect.style.display);
         });
@@ -961,89 +978,68 @@ function initDocumentSpecific() {
                          jutakuPhone && jutakuPhone.value.trim() !== '' &&
                          jutakuStaffName && jutakuStaffName.value.trim() !== '';
 
-        // その他モードでは手入力の事業所名も必須チェック
-        if (jutakuProviderSelect && jutakuProviderSelect.value === 'other') {
-            const manualEl = document.getElementById('jutaku_provider_manual');
-            isComplete = isComplete && manualEl && manualEl.value.trim() !== '';
-        }
 
         if (isComplete) {
             statusIcon.innerHTML = '<i class="fas fa-check-circle" style="color: rgba(25, 135, 84, 0.5);"></i>';
         } else {
             statusIcon.innerHTML = '<i class="fas fa-circle-exclamation" style="color: rgba(220, 53, 69, 0.5);"></i>';
         }
-        // 未完了時は展開・完了時は閉じる
-        const jutakuCollapseEl = document.getElementById('jutakuDetailCollapse');
-        if (jutakuCollapseEl) {
-            if (!isComplete && !jutakuCollapseEl.classList.contains('show')) {
-                new bootstrap.Collapse(jutakuCollapseEl, { toggle: false }).show();
-            } else if (isComplete && jutakuCollapseEl.classList.contains('show') && !jutakuCollapseEl.contains(document.activeElement)) {
-                new bootstrap.Collapse(jutakuCollapseEl, { toggle: false }).hide();
-            }
-        }
     };
 
-    // 受託事業者の全フィールド入力時にアイコン更新
-    const jutakuFields = ['jutaku_office_number', 'jutaku_postal_code', 'jutaku_address', 'jutaku_phone', 'jutaku_staff_name', 'jutaku_provider_manual'];
-    jutakuFields.forEach(function(fieldId) {
-        const field = document.getElementById(fieldId);
-        if (field) {
-            field.addEventListener('input', updateJutakuStatusIcon);
-        }
-    });
+    // jutaku テーブルセルをクリアするヘルパー
+    function clearJutakuTable() {
+        const sd = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val || ''; };
+        ['jutaku_disp_furigana','jutaku_disp_name','jutaku_disp_postal','jutaku_disp_address','jutaku_disp_manager'].forEach(id => sd(id, ''));
+        sd('jutaku_disp_phone', '―');
+        sd('jutaku_disp_fax',   '―');
+        clearStaffOptions('jutaku_staff_input');
+        const sh = document.getElementById('jutaku_staff_name');
+        if (sh) sh.value = '';
+    }
 
-    // 受託事業者の詳細を表示・入力する関数
+    // 受託事業者の詳細をテーブルに表示する関数
     function showJutakuDetail(isInitialLoad) {
-        if (!jutakuDetailSection) return;
-        jutakuDetailSection.style.display = 'block';
+        const sd = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val || ''; };
+        const faxEl  = document.getElementById('original_office_fax');
+        const mgrEl  = document.getElementById('original_office_manager_name');
+        const furiEl = document.getElementById('original_office_furigana');
 
-        // 常に最新のマスタデータを表示（ユーザー要件: 古い書類を開いても最新データを表示）
         document.getElementById('jutaku_office_number').value = anoutsuData.office_number;
-        document.getElementById('jutaku_postal_code').value = anoutsuData.postal_code;
-        document.getElementById('jutaku_address').value = anoutsuData.address;
-        document.getElementById('jutaku_phone').value = anoutsuData.phone;
+        document.getElementById('jutaku_postal_code').value   = anoutsuData.postal_code;
+        document.getElementById('jutaku_address').value       = anoutsuData.address;
+        document.getElementById('jutaku_phone').value         = anoutsuData.phone;
 
-        // 担当者氏名のみ、初回ロードで保存データがあれば保持、それ以外はログインユーザー名
-        const jutakuStaffName = document.getElementById('jutaku_staff_name');
-        if (jutakuStaffName) {
-            const hasSavedStaffName = isInitialLoad && savedJutakuOfficeNumber !== '';
-            if (!hasSavedStaffName) {
-                jutakuStaffName.value = loggedInUserName;
-            }
-        }
+        sd('jutaku_disp_furigana', furiEl ? furiEl.value : '');
+        sd('jutaku_disp_name',     anoutsuData.name);
+        sd('jutaku_disp_postal',   anoutsuData.postal_code ? '〒' + anoutsuData.postal_code : '');
+        sd('jutaku_disp_address',  anoutsuData.address);
+        sd('jutaku_disp_phone',    anoutsuData.phone || '―');
+        sd('jutaku_disp_fax',      faxEl ? (faxEl.value || '―') : '―');
+        sd('jutaku_disp_manager',  mgrEl ? mgrEl.value : '');
 
-        // アコーディオンは閉じたままにする
-        const jutakuCollapse = document.getElementById('jutakuDetailCollapse');
-        const jutakuCollapseBtn = jutakuCollapse ? jutakuCollapse.previousElementSibling.querySelector('.accordion-button') : null;
-        if (jutakuCollapse) {
-            jutakuCollapse.classList.remove('show');
-            if (jutakuCollapseBtn) {
-                jutakuCollapseBtn.classList.add('collapsed');
-                jutakuCollapseBtn.setAttribute('aria-expanded', 'false');
-            }
-        }
-        updateJutakuStatusIcon();
+        // 担当者プルダウン：事業所スタッフを動的追加、値は「----------」
+        addStaffOptions('jutaku_staff_input');
+        const staffInput  = document.getElementById('jutaku_staff_input');
+        const staffHidden = document.getElementById('jutaku_staff_name');
+        if (staffInput)  staffInput.value  = '';
+        if (staffHidden) staffHidden.value = '';
     }
 
     // 受託事業者セクションの表示/非表示を制御する関数
     function updateJutakuSection(category, isInitialLoad) {
         if (!jutakuSection) return;
-
         if (category && category !== 'anoutsu') {
             jutakuSection.style.display = 'block';
             if (jutakuProvider && jutakuProvider.value === 'anoutsu_roman') {
                 showJutakuDetail(isInitialLoad);
+            } else if (jutakuProvider && jutakuProvider.value === 'other') {
+                // その他（新規登録）：テーブルは空のまま（保存済みの場合はクリアしない）
             }
         } else {
             jutakuSection.style.display = 'none';
-            if (jutakuDetailSection) jutakuDetailSection.style.display = 'none';
             if (jutakuProvider) jutakuProvider.value = 'anoutsu_roman';
-
-            // 介護予防支援を受託する居宅介護支援事業者のフィールドをクリア
-            const jutakuFields = ['jutaku_office_number', 'jutaku_postal_code', 'jutaku_address', 'jutaku_phone', 'jutaku_staff_name'];
-            jutakuFields.forEach(fieldId => {
-                const field = document.getElementById(fieldId);
-                if (field) field.value = '';
+            ['jutaku_office_number','jutaku_postal_code','jutaku_address','jutaku_phone','jutaku_staff_name'].forEach(function(id) {
+                const el = document.getElementById(id); if (el) el.value = '';
             });
         }
     }
@@ -1051,34 +1047,15 @@ function initDocumentSpecific() {
     // 受託事業者プルダウン変更時
     if (jutakuProvider) {
         jutakuProvider.addEventListener('change', function() {
-            const manualEl = document.getElementById('jutaku_provider_manual');
-            const editBtnWrapper = document.getElementById('jutaku_edit_button_wrapper');
-
             if (this.value === 'anoutsu_roman') {
-                // 手入力非表示・編集ボタン表示・フィールドをreadonly＋マスタ値に戻す
-                if (manualEl) { manualEl.classList.add('d-none'); manualEl.value = ''; }
-                if (editBtnWrapper) editBtnWrapper.classList.remove('d-none');
-                ['jutaku_office_number', 'jutaku_postal_code', 'jutaku_address', 'jutaku_phone'].forEach(function(id) {
-                    const el = document.getElementById(id);
-                    if (el) el.setAttribute('readonly', 'readonly');
-                });
                 showJutakuDetail(false);
             } else if (this.value === 'other') {
-                // 手入力表示・編集ボタン非表示・フィールドをクリア＆編集可能に
-                if (manualEl) manualEl.classList.remove('d-none');
-                if (editBtnWrapper) editBtnWrapper.classList.add('d-none');
-                ['jutaku_office_number', 'jutaku_postal_code', 'jutaku_address', 'jutaku_phone'].forEach(function(id) {
-                    const el = document.getElementById(id);
-                    if (el) { el.removeAttribute('readonly'); el.value = ''; }
+                clearJutakuTable();
+                ['jutaku_office_number','jutaku_postal_code','jutaku_address','jutaku_phone'].forEach(function(id) {
+                    const el = document.getElementById(id); if (el) el.value = '';
                 });
-                const staffName = document.getElementById('jutaku_staff_name');
-                if (staffName) staffName.value = '';
-                if (jutakuDetailSection) jutakuDetailSection.style.display = 'block';
-                updateJutakuStatusIcon();
-            } else {
-                if (jutakuDetailSection) {
-                    jutakuDetailSection.style.display = 'none';
-                }
+                const pn = document.getElementById('jutaku_provider_name_hidden');
+                if (pn) pn.value = '';
             }
         });
     }
@@ -1086,21 +1063,6 @@ function initDocumentSpecific() {
     // ページロード時に受託事業者セクションの状態を復元
     if (savedProviderCategory) {
         updateJutakuSection(savedProviderCategory, true);
-    }
-
-    // ページロード時に「その他」モードなら手入力・編集ボタン状態を反映
-    const savedJutakuProviderValue = '{{ initial_data.jutaku_provider|default:"" }}';
-    if (savedJutakuProviderValue === 'other') {
-        const manualEl = document.getElementById('jutaku_provider_manual');
-        const editBtnWrapper = document.getElementById('jutaku_edit_button_wrapper');
-        if (manualEl) manualEl.classList.remove('d-none');
-        if (editBtnWrapper) editBtnWrapper.classList.add('d-none');
-        // フィールドを編集可能に
-        ['jutaku_office_number', 'jutaku_postal_code', 'jutaku_address', 'jutaku_phone'].forEach(function(id) {
-            const el = document.getElementById(id);
-            if (el) el.removeAttribute('readonly');
-        });
-        updateJutakuStatusIcon();
     }
 
     // カテゴリ変更時の処理は上の統合イベントリスナーで実施済み
@@ -1116,10 +1078,118 @@ function closePreventiveMasterDrawer() {
 // houkatsu セクションの編集ボタン：カテゴリに応じて振り分け
 function openHoukatsuMasterDrawer() {
     if (currentProviderCategory === 'anoutsu') {
-        openOfficeMasterDrawer('houkatsu');
+        openAnoutsuOfficeModal();
     } else {
         openCenterMasterDrawer();
     }
+}
+
+// 担当者行を追加（_submitter_js.html の addRenewalModalStaffRow と同一）
+function addRenewalModalStaffRow(value) {
+    var c = document.getElementById('renewal_modal_staff_container');
+    if (!c) return;
+    var col = document.createElement('div');
+    col.className = 'col-6 renewal-staff-row';
+    col.innerHTML = '<div class="d-flex align-items-center gap-1">'
+        + '<input type="text" name="staff_names[]" class="form-control form-control-sm" placeholder="例: 山田 太郎" value="' + (value ? value.replace(/"/g,'&quot;') : '') + '">'
+        + '<button type="button" class="btn-close" style="font-size:0.7rem;" onclick="this.closest(\'.renewal-staff-row\').remove()"></button>'
+        + '</div>';
+    c.appendChild(col);
+}
+
+// renewalOfficeModal の呼び出し元コンテキスト
+// 'anoutsu' | 'jutaku_edit' | 'jutaku_new'
+var currentRenewalModalContext = 'anoutsu';
+
+// jutaku 用：renewalOfficeModal を開く（安濃津ろまん＝編集、その他＝新規登録）
+function openJutakuOfficeModal() {
+    const errEl = document.getElementById('renewalOfficeModalError');
+    if (errEl) errEl.classList.add('d-none');
+
+    const g = (id) => document.getElementById(id);
+    const jutakuProv = g('jutaku_provider');
+    const isEdit = jutakuProv && jutakuProv.value === 'anoutsu_roman';
+    currentRenewalModalContext = isEdit ? 'jutaku_edit' : 'jutaku_new';
+
+    const modalFields = [
+        'renewal_modal_company_name','renewal_modal_name','renewal_modal_furigana',
+        'renewal_modal_office_number','renewal_modal_manager_name',
+        'renewal_modal_postal_code','renewal_modal_address',
+        'renewal_modal_phone','renewal_modal_fax'
+    ];
+
+    if (isEdit) {
+        // 安濃津ろまん選択：既存データをセット（PKはテンプレートのまま保持）
+        const sv = (mId, sId) => { if (g(mId) && g(sId)) g(mId).value = g(sId).value; };
+        sv('renewal_modal_company_name', 'original_office_company_name');
+        sv('renewal_modal_name',         'original_office_name');
+        sv('renewal_modal_furigana',     'original_office_furigana');
+        sv('renewal_modal_manager_name', 'original_office_manager_name');
+        sv('renewal_modal_fax',          'original_office_fax');
+        if (g('renewal_modal_office_number')) g('renewal_modal_office_number').value = (g('jutaku_office_number') || {}).value || '';
+        if (g('renewal_modal_postal_code'))   g('renewal_modal_postal_code').value   = (g('jutaku_postal_code')   || {}).value || '';
+        if (g('renewal_modal_address'))       g('renewal_modal_address').value       = (g('jutaku_address')       || {}).value || '';
+        if (g('renewal_modal_phone'))         g('renewal_modal_phone').value         = (g('jutaku_phone')         || {}).value || '';
+    } else {
+        // その他（新規登録）：全フィールドをクリア＋PK もクリア
+        modalFields.forEach(id => { const el = g(id); if (el) el.value = ''; });
+        const pkEl = g('renewal_modal_pk');
+        if (pkEl) pkEl.value = '';
+    }
+
+    const container = g('renewal_modal_staff_container');
+    if (container) {
+        container.innerHTML = '';
+        if (isEdit) {
+            (typeof _PREVENTIVE_STAFF_NAMES !== 'undefined' ? _PREVENTIVE_STAFF_NAMES : []).forEach(addRenewalModalStaffRow);
+        }
+    }
+
+    new bootstrap.Modal(document.getElementById('renewalOfficeModal')).show();
+}
+
+// 安濃津ろまん用：renewalOfficeModal（更新認定申請書と同一モーダル）を開く
+function openAnoutsuOfficeModal() {
+    currentRenewalModalContext = 'anoutsu';
+    const errEl = document.getElementById('renewalOfficeModalError');
+    if (errEl) errEl.classList.add('d-none');
+
+    const g = (id) => document.getElementById(id);
+    const modalFields = [
+        'renewal_modal_company_name', 'renewal_modal_name', 'renewal_modal_furigana',
+        'renewal_modal_office_number', 'renewal_modal_manager_name',
+        'renewal_modal_postal_code', 'renewal_modal_address',
+        'renewal_modal_phone', 'renewal_modal_fax'
+    ];
+
+    if (currentProviderCategory === 'anoutsu') {
+        // 安濃津ろまん選択中：現在のデータをセット
+        const sv = (modalId, srcId) => { if (g(modalId) && g(srcId)) g(modalId).value = g(srcId).value; };
+        sv('renewal_modal_company_name',  'original_office_company_name');
+        sv('renewal_modal_name',          'original_office_name');
+        sv('renewal_modal_furigana',      'original_office_furigana');
+        sv('renewal_modal_manager_name',  'original_office_manager_name');
+        sv('renewal_modal_fax',           'original_office_fax');
+        if (g('renewal_modal_office_number')) g('renewal_modal_office_number').value = (g('houkatsu_office_number') || {}).value || '';
+        if (g('renewal_modal_postal_code'))   g('renewal_modal_postal_code').value   = (g('houkatsu_postal_code')   || {}).value || '';
+        if (g('renewal_modal_address'))       g('renewal_modal_address').value       = (g('houkatsu_address')       || {}).value || '';
+        if (g('renewal_modal_phone'))         g('renewal_modal_phone').value         = (g('houkatsu_phone')         || {}).value || '';
+    } else {
+        // 未選択時：フィールドをクリア
+        modalFields.forEach(function(id) { const el = g(id); if (el) el.value = ''; });
+    }
+
+    // 担当者一覧をクリアして再描画
+    var container = g('renewal_modal_staff_container');
+    if (container) {
+        container.innerHTML = '';
+        if (currentProviderCategory === 'anoutsu') {
+            var staffNames = typeof _PREVENTIVE_STAFF_NAMES !== 'undefined' ? _PREVENTIVE_STAFF_NAMES : [];
+            staffNames.forEach(function(n) { addRenewalModalStaffRow(n); });
+        }
+    }
+
+    new bootstrap.Modal(document.getElementById('renewalOfficeModal')).show();
 }
 
 // 地域包括支援センター編集ドロワーを開く
@@ -1286,6 +1356,12 @@ function saveCenterData() {
             document.getElementById('houkatsu_address').value = address;
             document.getElementById('houkatsu_phone').value = phone;
 
+            // houkatsuテーブル表示セルを更新
+            const sd = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val || ''; };
+            sd('houkatsu_disp_postal',  postalCode ? '〒' + postalCode : '');
+            sd('houkatsu_disp_address', address);
+            sd('houkatsu_disp_phone',   phone || '―');
+
             // currentEditDataを更新（次回編集時に最新データを表示するため）
             currentEditData.office_number = officeNumber;
             currentEditData.postal_code = postalCode;
@@ -1380,13 +1456,41 @@ function saveOfficeData() {
             if (addrEl) addrEl.value = address;
             if (phEl)   phEl.value   = phone;
 
-            bootstrap.Modal.getInstance(document.getElementById('preventiveOfficeModal')).hide();
-
-            if (context === 'houkatsu' && typeof updateHoukatsuStatusIcon === 'function') {
-                updateHoukatsuStatusIcon();
-            } else if (context === 'jutaku' && typeof updateJutakuStatusIcon === 'function') {
-                updateJutakuStatusIcon();
+            // anoutsuテーブル表示セルを更新（更新認定申請書と同一ID）
+            if (context === 'houkatsu') {
+                const sd = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val || ''; };
+                sd('disp_office_name',    name);
+                sd('disp_office_furigana', furigana);
+                sd('disp_office_postal',  postalCode ? '〒' + postalCode : '');
+                sd('disp_office_address', address);
+                sd('disp_office_phone',   phone || '―');
+                sd('disp_office_fax',     fax   || '―');
+                sd('disp_office_manager', manager);
+                const origFuri = document.getElementById('original_office_furigana');
+                const origFax  = document.getElementById('original_office_fax');
+                const origMgr  = document.getElementById('original_office_manager_name');
+                const origName = document.getElementById('original_office_name');
+                if (origFuri) origFuri.value = furigana;
+                if (origFax)  origFax.value  = fax;
+                if (origMgr)  origMgr.value  = manager;
+                if (origName) origName.value  = name;
             }
+
+            // jutaku テーブルセルも更新
+            if (context === 'jutaku') {
+                const sd2 = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val || ''; };
+                sd2('jutaku_disp_name',     name);
+                sd2('jutaku_disp_furigana', furigana);
+                sd2('jutaku_disp_postal',   postalCode ? '〒' + postalCode : '');
+                sd2('jutaku_disp_address',  address);
+                sd2('jutaku_disp_phone',    phone || '―');
+                sd2('jutaku_disp_fax',      fax   || '―');
+                sd2('jutaku_disp_manager',  manager);
+                const pn = document.getElementById('jutaku_provider_name_hidden');
+                if (pn) pn.value = name;
+            }
+
+            bootstrap.Modal.getInstance(document.getElementById('preventiveOfficeModal')).hide();
         } else {
             const errEl = document.getElementById('preventiveOfficeModalError');
             errEl.textContent = data.error || 'エラーが発生しました。';
@@ -1407,10 +1511,104 @@ document.addEventListener('DOMContentLoaded', function() {
         overlay.addEventListener('click', closePreventiveMasterDrawer);
     }
 
-    // 事業所モーダル保存ボタン
+    // jutaku用モーダル保存ボタン
     const saveBtn = document.getElementById('preventiveOfficeSaveBtn');
     if (saveBtn) {
         saveBtn.addEventListener('click', saveOfficeData);
+    }
+
+    // renewalOfficeSaveBtn：anoutsu 編集・jutaku 編集・jutaku 新規登録 共通
+    const renewalSaveBtn = document.getElementById('renewalOfficeSaveBtn');
+    if (renewalSaveBtn) {
+        renewalSaveBtn.addEventListener('click', function() {
+            const pk         = (document.getElementById('renewal_modal_pk')            || {}).value?.trim() || '';
+            const name       = (document.getElementById('renewal_modal_name')          || {}).value?.trim() || '';
+            const furigana   = (document.getElementById('renewal_modal_furigana')      || {}).value?.trim() || '';
+            const officeNum  = (document.getElementById('renewal_modal_office_number') || {}).value?.trim() || '';
+            const manager    = (document.getElementById('renewal_modal_manager_name')  || {}).value?.trim() || '';
+            const postalCode = (document.getElementById('renewal_modal_postal_code')   || {}).value?.trim() || '';
+            const address    = (document.getElementById('renewal_modal_address')       || {}).value?.trim() || '';
+            const phone      = (document.getElementById('renewal_modal_phone')         || {}).value?.trim() || '';
+            const fax        = (document.getElementById('renewal_modal_fax')           || {}).value?.trim() || '';
+            const companyName= (document.getElementById('renewal_modal_company_name')  || {}).value?.trim() || '';
+
+            if (!name || !officeNum) {
+                const errEl = document.getElementById('renewalOfficeModalError');
+                if (errEl) { errEl.textContent = '事業所名と事業所番号は必須です。'; errEl.classList.remove('d-none'); }
+                return;
+            }
+
+            const fd = new FormData();
+            fd.append('company_name', companyName); fd.append('name', name); fd.append('furigana', furigana);
+            fd.append('office_number', officeNum); fd.append('manager_name', manager);
+            fd.append('postal_code', postalCode); fd.append('address', address);
+            fd.append('phone', phone); fd.append('fax', fax); fd.append('is_active', 'true');
+            document.querySelectorAll('#renewal_modal_staff_container input[name="staff_names[]"]').forEach(function(inp) {
+                if (inp.value.trim()) fd.append('staff_names[]', inp.value.trim());
+            });
+
+            // PK あり → 編集、なし → 新規登録
+            const url = pk
+                ? '/clients/home-care-offices/' + pk + '/edit/'
+                : '/clients/home-care-offices/create/';
+
+            fetch(url, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': getCookie('csrftoken'), 'X-Requested-With': 'XMLHttpRequest' },
+                body: fd,
+            }).then(r => r.json()).then(function(data) {
+                if (data.success) {
+                    const savedPk = pk || data.pk || '';
+                    const sv = (id, v) => { const e = document.getElementById(id); if (e) e.value = v; };
+                    const sd = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v || ''; };
+
+                    if (currentRenewalModalContext === 'anoutsu') {
+                        // anoutsu テーブルセルを更新
+                        sv('houkatsu_office_number', officeNum);
+                        sv('houkatsu_postal_code',   postalCode);
+                        sv('houkatsu_address',        address);
+                        sv('houkatsu_phone',          phone);
+                        sv('original_office_name',         name);
+                        sv('original_office_furigana',     furigana);
+                        sv('original_office_fax',          fax);
+                        sv('original_office_manager_name', manager);
+                        sd('disp_office_name',     name);
+                        sd('disp_office_furigana', furigana);
+                        sd('disp_office_postal',   postalCode ? '〒' + postalCode : '');
+                        sd('disp_office_address',  address);
+                        sd('disp_office_phone',    phone || '―');
+                        sd('disp_office_fax',      fax   || '―');
+                        sd('disp_office_manager',  manager);
+
+                    } else {
+                        // jutaku テーブルセルを更新（編集・新規登録共通）
+                        sv('jutaku_office_number', officeNum);
+                        sv('jutaku_postal_code',   postalCode);
+                        sv('jutaku_address',        address);
+                        sv('jutaku_phone',          phone);
+                        sv('jutaku_provider_name_hidden', name);
+                        // 新規登録時は PK を保存
+                        if (!pk && savedPk) sv('renewal_modal_pk', savedPk);
+                        sd('jutaku_disp_name',     name);
+                        sd('jutaku_disp_furigana', furigana);
+                        sd('jutaku_disp_postal',   postalCode ? '〒' + postalCode : '');
+                        sd('jutaku_disp_address',  address);
+                        sd('jutaku_disp_phone',    phone || '―');
+                        sd('jutaku_disp_fax',      fax   || '―');
+                        sd('jutaku_disp_manager',  manager);
+                    }
+
+                    if (data.staff_names) _PREVENTIVE_STAFF_NAMES = data.staff_names;
+                    bootstrap.Modal.getInstance(document.getElementById('renewalOfficeModal')).hide();
+                } else {
+                    const errEl = document.getElementById('renewalOfficeModalError');
+                    if (errEl) { errEl.textContent = data.error || 'エラーが発生しました。'; errEl.classList.remove('d-none'); }
+                }
+            }).catch(function() {
+                const errEl = document.getElementById('renewalOfficeModalError');
+                if (errEl) { errEl.textContent = '通信エラーが発生しました。'; errEl.classList.remove('d-none'); }
+            });
+        });
     }
 });
 </script>

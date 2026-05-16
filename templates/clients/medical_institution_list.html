@@ -1,0 +1,287 @@
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+
+{% block title %}主治医・医療機関 - {{ block.super }}{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+
+<style>
+.btn-edit-pastel    { background-color:#ffffff; border:1px solid #6c757d; color:#6c757d; }
+.btn-edit-pastel:hover,.btn-edit-pastel:focus    { background-color:#ffe5cc; border:1px solid #fd7e14; color:#fd7e14; }
+.btn-delete-pastel  { background-color:#ffffff; border:1px solid #6c757d; color:#6c757d; }
+.btn-delete-pastel:hover,.btn-delete-pastel:focus { background-color:#f8d7da; border:1px solid #dc3545; color:#dc3545; }
+#instTable.table-bordered th,
+#instTable.table-bordered td { border-left: none; border-right: none; }
+#instTable td,
+#instTable th { vertical-align: middle; }
+#instTable tbody tr:hover { background-color: rgba(0,0,0,0.04); }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-1">
+    <h1 class="h4 mb-0"><i class="fas fa-hospital me-2"></i>主治医・医療機関</h1>
+    <button type="button" class="btn btn-outline-secondary" onclick="openCreateModal()">
+        <i class="fas fa-plus me-1"></i>新規登録
+    </button>
+</div>
+{% if back_url %}
+<div class="text-end mb-3">
+    <a href="{{ back_url }}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-arrow-left me-1"></i>{{ back_label }}
+    </a>
+</div>
+{% else %}
+<div class="mb-3"></div>
+{% endif %}
+
+<!-- 検索 -->
+<div class="mb-3">
+    <input type="text" id="search" class="form-control"
+           placeholder="医療機関名・医師氏名・住所で検索..." oninput="applyFilter()">
+</div>
+
+<!-- 一覧テーブル -->
+<div class="table-responsive">
+    <table id="instTable" class="table table-hover table-bordered mb-0" style="font-size:0.9rem;">
+        <thead>
+            <tr>
+                <th style="background-color:#f5f5f5;">医療機関名</th>
+                <th style="width:120px; background-color:#f5f5f5;">医師氏名</th>
+                <th style="width:180px; background-color:#f5f5f5;">住所</th>
+                <th style="width:120px; background-color:#f5f5f5;">電話 / FAX</th>
+                <th style="width:60px; background-color:#f5f5f5;"></th>
+            </tr>
+        </thead>
+        <tbody id="instTableBody">
+            {% for inst in institutions %}
+            <tr class="inst-row"
+                data-pk="{{ inst.pk }}"
+                data-corp-name="{{ inst.corp_name|default:'' }}"
+                data-hospital-name="{{ inst.hospital_name }}"
+                data-hospital-furigana="{{ inst.hospital_furigana|default:'' }}"
+                data-doctor-name="{{ inst.doctor_name|default:'' }}"
+                data-phone="{{ inst.phone|default:'' }}"
+                data-fax="{{ inst.fax|default:'' }}"
+                data-postal-code="{{ inst.postal_code|default:'' }}"
+                data-address="{{ inst.address|default:'' }}"
+                data-note="{{ inst.note|default:'' }}"
+                data-doctors="{{ inst.doctors|join:',' }}"
+                data-hospital="{{ inst.hospital_name }}"
+                data-doctor="{{ inst.doctor_name|default:'' }}">
+                <td class="align-middle">
+                    {% if inst.corp_name %}<small class="text-muted d-block" style="font-size:0.75rem;">{{ inst.corp_name }}</small>{% endif %}
+                    <span class="fw-bold">{{ inst.hospital_name }}</span>
+                </td>
+                <td class="align-middle" style="font-size:0.85rem;">
+                    {% if inst.doctors %}
+                        {% for d in inst.doctors|slice:":2" %}{{ d }} 先生{% if not forloop.last %}<br>{% endif %}{% endfor %}{% if inst.doctors|length > 2 %} <span class="text-muted">他</span>{% endif %}
+                    {% else %}―{% endif %}
+                </td>
+                <td class="align-middle" style="font-size:0.85rem;">
+                    {% if inst.postal_code %}<small class="text-muted d-block" style="font-size:0.75rem;">〒{{ inst.postal_code }}</small>{% endif %}
+                    {{ inst.address|default:"―" }}
+                </td>
+                <td class="align-middle" style="font-size:0.85rem; white-space:nowrap;">
+                    <i class="fas fa-phone me-1 text-muted" style="font-size:0.75rem;"></i>{{ inst.phone|default:"―" }}<br>
+                    <i class="fas fa-fax me-1 text-muted" style="font-size:0.75rem;"></i><span class="text-muted">{{ inst.fax|default:"―" }}</span>
+                </td>
+                <td class="align-middle text-end" style="white-space:nowrap;">
+                    <button class="btn btn-sm btn-edit-pastel me-1 px-1"
+                            onclick="openEditModal({{ inst.pk }})">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-sm btn-delete-pastel px-1"
+                            onclick="confirmDelete({{ inst.pk }},'{{ inst.hospital_name|escapejs }}')">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="text-center text-muted py-4">医療機関が登録されていません</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- 登録モーダル -->
+<div class="modal fade" id="instModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:700px; align-self:flex-start; margin-top:max(5vh, 3rem);">
+        <div class="modal-content">
+            <form id="instForm">
+                {% csrf_token %}
+                <input type="hidden" id="modal_pk" value="">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-hospital me-2"></i><span id="modalTitleText">新規登録</span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="modalError" class="alert alert-danger d-none"></div>
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label">法人名</label>
+                            <input type="text" id="modal_corp_name" name="corp_name" class="form-control" placeholder="例: 医療法人社団 〇〇会　社会医療法人 〇〇会">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">医療機関名 <span class="text-danger">*</span></label>
+                            <input type="text" id="modal_hospital_name" name="hospital_name" class="form-control" placeholder="例: 津腎クリニック" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">フリガナ</label>
+                            <input type="text" id="modal_hospital_furigana" name="hospital_furigana" class="form-control" placeholder="例: ツジンクリニック">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">医師氏名</label>
+                            <div id="doctors_container" class="row g-2"></div>
+                            <button type="button" class="btn btn-outline-secondary btn-sm mt-1" onclick="addDoctorRow()">
+                                <i class="fas fa-plus me-1"></i>医師を追加
+                            </button>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">郵便番号</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted">〒</span>
+                                <input type="text" id="modal_postal_code" name="postal_code" class="form-control" placeholder="514-0000">
+                            </div>
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label">住所</label>
+                            <input type="text" id="modal_address" name="address" class="form-control" placeholder="例: 津市○○町1-2-3">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">電話番号</label>
+                            <input type="text" id="modal_phone" name="phone" class="form-control" placeholder="059-000-0000">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">FAX番号</label>
+                            <input type="text" id="modal_fax" name="fax" class="form-control" placeholder="059-000-0001">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i>保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 削除確認モーダル -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h6 class="modal-title"><i class="fas fa-exclamation-triangle text-danger"></i> 削除確認</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0"><strong id="deleteInstName"></strong>を削除しますか？</p>
+            </div>
+            <div class="modal-footer py-2">
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                <button type="button" class="btn btn-sm btn-danger" id="deleteConfirmBtn">削除</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+function applyFilter() {
+    const q = document.getElementById('search').value.toLowerCase();
+    document.querySelectorAll('.inst-row').forEach(function(row) {
+        const h = (row.dataset.hospital || '').toLowerCase();
+        const d = (row.dataset.doctor   || '').toLowerCase();
+        const a = (row.dataset.address  || '').toLowerCase();
+        row.style.display = (!q || h.includes(q) || d.includes(q) || a.includes(q)) ? '' : 'none';
+    });
+}
+
+function addDoctorRow(value) {
+    var container = document.getElementById('doctors_container');
+    var col = document.createElement('div');
+    col.className = 'col-6';
+    col.innerHTML = '<div class="d-flex align-items-center gap-1">'
+                  + '<input type="text" name="doctor_name" class="form-control" placeholder="例: 田中 一郎" value="' + (value || '') + '">'
+                  + '<button type="button" class="btn-close" style="font-size:0.7rem;" onclick="this.closest(\'.col-6\').remove()"></button>'
+                  + '</div>';
+    container.appendChild(col);
+}
+
+function openCreateModal() {
+    document.getElementById('modal_pk').value = '';
+    document.getElementById('modalTitleText').textContent = '新規登録';
+    document.getElementById('instForm').reset();
+    document.getElementById('modalError').classList.add('d-none');
+    document.getElementById('doctors_container').innerHTML = '';
+    addDoctorRow();
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('instModal')).show();
+}
+
+function openEditModal(pk) {
+    const row = document.querySelector(`.inst-row[data-pk="${pk}"]`);
+    document.getElementById('modal_pk').value = pk;
+    document.getElementById('modalTitleText').textContent = '編集';
+    document.getElementById('modal_corp_name').value         = row.dataset.corpName          || '';
+    document.getElementById('modal_hospital_name').value     = row.dataset.hospitalName     || '';
+    document.getElementById('modal_hospital_furigana').value = row.dataset.hospitalFurigana || '';
+    document.getElementById('modal_phone').value             = row.dataset.phone            || '';
+    document.getElementById('modal_fax').value               = row.dataset.fax              || '';
+    document.getElementById('modal_postal_code').value       = row.dataset.postalCode       || '';
+    document.getElementById('modal_address').value           = row.dataset.address          || '';
+    document.getElementById('modalError').classList.add('d-none');
+    document.getElementById('doctors_container').innerHTML = '';
+    const doctors = row.dataset.doctors ? row.dataset.doctors.split(',').filter(Boolean) : [];
+    if (doctors.length === 0) { addDoctorRow(); }
+    else { doctors.forEach(function(d) { addDoctorRow(d); }); }
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('instModal')).show();
+}
+
+let _deletePk = null;
+function confirmDelete(pk, name) {
+    _deletePk = pk;
+    document.getElementById('deleteInstName').textContent = name;
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('deleteModal')).show();
+}
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('deleteConfirmBtn').addEventListener('click', function() {
+        if (!_deletePk) return;
+        fetch(`/clients/medical-institutions/${_deletePk}/delete/`, {
+            method: 'POST', headers: { 'X-CSRFToken': csrfToken },
+        })
+        .then(r => r.json())
+        .then(function(data) {
+            if (data.success) { location.reload(); }
+            else { alert(data.error); }
+        });
+    });
+});
+
+document.getElementById('instForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const errEl = document.getElementById('modalError');
+    if (!document.getElementById('modal_hospital_name').value.trim()) {
+        errEl.textContent = '医療機関名は必須です。';
+        errEl.classList.remove('d-none');
+        return;
+    }
+    errEl.classList.add('d-none');
+    const pk  = document.getElementById('modal_pk').value;
+    const url = pk ? `/clients/medical-institutions/${pk}/update/` : '/clients/medical-institutions/create/';
+    fetch(url, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
+        body: new FormData(this),
+    })
+    .then(r => r.json())
+    .then(function(data) {
+        if (data.success) { location.reload(); }
+        else { errEl.textContent = data.error || 'エラーが発生しました。'; errEl.classList.remove('d-none'); }
+    });
+});
+</script>
+{% endblock %}

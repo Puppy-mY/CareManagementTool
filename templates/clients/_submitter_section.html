@@ -1,0 +1,156 @@
+{% comment %}
+申請書提出者セクション 共通パーシャル
+使用側で必要なコンテキスト:
+  initial              - フォーム初期値（submitter_type, office_name, office_furigana, etc.）
+  office_staff_options - 担当者一覧（list of str）
+  label_text           - ラベル文字列（省略時「申請書提出者」）
+{% endcomment %}
+
+<!-- 申請書提出者 -->
+<input type="hidden" id="id_submitter_type" name="submitter_type" value="{{ initial.submitter_type|default:'office' }}">
+<div class="row g-3 mb-2">
+    <div class="col-12">
+        <div class="d-flex align-items-center gap-2 mb-2">
+            <label class="form-label fw-bold mb-0">{{ label_text|default:"申請書提出者" }} <span class="text-danger">*</span></label>
+            {% if show_toggle != False %}
+            <div class="birth-era-toggle">
+                <button type="button" class="era-btn {% if initial.submitter_type == 'office' or not initial.submitter_type %}active{% endif %}" id="submitter_btn_office" onclick="switchSubmitterType('office')">{{ btn_office_label|default:"代行提出" }}</button>
+                {% if show_self_btn %}
+                <button type="button" class="era-btn {% if initial.submitter_type == 'self' %}active{% endif %}" id="submitter_btn_self" onclick="switchSubmitterType('self')">本人</button>
+                {% endif %}
+                <button type="button" class="era-btn {% if initial.submitter_type == 'person' %}active{% endif %}" id="submitter_btn_person" onclick="switchSubmitterType('person')">{{ btn_person_label|default:"その他" }}</button>
+            </div>
+            {% endif %}
+        </div>
+        <!-- 代行提出モード -->
+        <div id="submitter_office_section" {% if initial.submitter_type == 'person' or initial.submitter_type == 'self' %}style="display:none;"{% endif %}>
+            <div class="mb-1">
+                <select id="renewal_provider_select" class="form-select" style="width: 400px;" onchange="toggleRenewalProvider()">
+                    <option value="auto" selected>{{ initial.office_name|default:"（事業所未設定）" }}</option>
+                    <option value="other">その他（新規登録）</option>
+                </select>
+            </div>
+            <small class="text-muted">※その他（新規登録）を選択して新規登録ボタンを押すと新たに事業所を登録できます</small>
+        </div>
+        {% if show_self_btn %}
+        <!-- 本人モード -->
+        <div id="submitter_self_section" {% if initial.submitter_type != 'self' %}style="display:none;"{% endif %}>
+            <div class="mb-1">
+                <input type="text" class="form-control" style="width:400px;" value="{{ initial.client_name }}" readonly>
+            </div>
+        </div>
+        {% endif %}
+        <!-- その他モード -->
+        <div id="submitter_person_section" {% if initial.submitter_type != 'person' %}style="display:none;"{% endif %}>
+            <div class="mb-1">
+                <input type="text" name="staff_name" id="renewal_staff_name" class="form-control" style="width:400px;" placeholder="例：山田 太郎" value="{% if initial.submitter_type == 'person' %}{{ initial.staff_name }}{% endif %}">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 提出者情報（hidden inputs） -->
+<input type="hidden" name="office_furigana"    id="renewal_office_furigana"  value="{{ initial.office_furigana }}">
+<input type="hidden" name="office_name"        id="renewal_office_name"      value="{{ initial.office_name }}">
+<input type="hidden" name="office_number"      id="renewal_office_number"    value="{{ initial.office_number }}">
+<input type="hidden" name="office_postal_code" id="renewal_postal_code"      value="{{ initial.office_postal_code }}">
+<input type="hidden" name="office_address"     id="renewal_office_address"   value="{{ initial.office_address }}">
+<input type="hidden" name="office_phone"       id="renewal_office_phone"     value="{{ initial.office_phone }}">
+<input type="hidden" name="office_fax"         id="renewal_office_fax"       value="{{ initial.office_fax }}">
+<input type="hidden" name="office_manager_name" id="renewal_office_manager"  value="{{ initial.office_manager_name }}">
+
+<!-- 代行提出モード：事業所情報テーブル -->
+<div id="renewal_office_table_section" class="mb-3" {% if initial.submitter_type == 'person' or initial.submitter_type == 'self' %}style="display:none;"{% endif %}>
+    <div class="table-responsive mb-1">
+        <table id="renewal_office_inst_table" class="table table-hover table-bordered mb-0" style="font-size:0.9rem; table-layout:fixed;">
+            <thead>
+                <tr>
+                    <th style="background-color:#f5f5f5;">事業所名</th>
+                    <th style="width:180px; background-color:#f5f5f5;">住所</th>
+                    <th style="width:110px; background-color:#f5f5f5;">電話 / FAX</th>
+                    <th style="width:120px; background-color:#f5f5f5; font-size:0.78rem; white-space:nowrap;">管理者 / 担当者 <span class="text-danger">*</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="align-middle">
+                        <small id="disp_office_number" style="display:none;">{{ initial.office_number }}</small>
+                        <small id="disp_office_furigana" class="text-muted d-block" style="font-size:0.75rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ initial.office_furigana }}</small>
+                        <span  id="disp_office_name" class="fw-bold d-block" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:clamp(0.7rem,1.5vw,0.9rem);">{{ initial.office_name }}</span>
+                    </td>
+                    <td class="align-middle" style="font-size:0.85rem;">
+                        <small id="disp_office_postal" class="text-muted d-block" style="font-size:0.75rem;">{% if initial.office_postal_code %}〒{{ initial.office_postal_code }}{% endif %}</small>
+                        <span id="disp_office_address" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block;">{{ initial.office_address }}</span>
+                    </td>
+                    <td class="align-middle" style="font-size:0.85rem; white-space:nowrap;">
+                        <i class="fas fa-phone me-1 text-muted" style="font-size:0.75rem;"></i><span id="disp_office_phone">{{ initial.office_phone|default:"―" }}</span><br>
+                        <i class="fas fa-fax me-1 text-muted"   style="font-size:0.75rem;"></i><span id="disp_office_fax" class="text-muted">{{ initial.office_fax|default:"―" }}</span>
+                    </td>
+                    <td class="align-middle">
+                        <div id="disp_office_manager" class="text-muted mb-1" style="font-size:0.75rem;">{{ initial.office_manager_name|default:"―" }}</div>
+                        <span id="disp_staff_dash" class="text-muted" style="display:none; font-size:0.75rem;">―</span>
+                        <select name="staff_name_office" id="renewal_staff_name_accordion" class="form-select" style="font-size:0.75rem; padding:2px 6px; height:auto; appearance:none; -webkit-appearance:none; background-image:none;" required>
+                            <option value="">----------</option>
+                            {% for name in office_staff_options %}
+                            <option value="{{ name }}" data-from-staff="1" {% if initial.staff_name_office == name %}selected{% endif %}>{{ name }}</option>
+                            {% endfor %}
+                        </select>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="mt-1 mb-2">
+        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openRenewalOfficeMasterModal()">
+            <i class="fas fa-edit me-1"></i>事業所情報を新規登録・編集
+        </button>
+    </div>
+    {% if show_relation %}
+    <div id="office_relation_wrapper" class="mt-2 mb-1" {% if initial.submitter_type == 'person' %}style="display:none;"{% endif %}>
+        <label class="form-label mb-1">本人との関係 <span class="text-danger">*</span></label>
+        <input type="text" name="relation" id="office_relation" class="form-control" style="max-width:300px;" value="{{ initial.relation|default:'介護支援専門員' }}" placeholder="介護支援専門員" {% if initial.submitter_type == 'person' %}disabled{% endif %} required>
+    </div>
+    {% endif %}
+</div>
+
+<!-- その他モード：アコーディオン -->
+<div id="renewal_detail_section" class="accordion" style="margin: 0.5rem 0 1.5rem 0; {% if initial.submitter_type != 'person' %}display:none;{% endif %}">
+    <div class="accordion-item" style="border: none; background-color: #f8f9fa; border-radius: 0.5rem;">
+        <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#renewalDetailCollapse" aria-expanded="false" aria-controls="renewalDetailCollapse" style="background-color: #f8f9fa; padding: 0.5rem 1rem; color: #333;">
+                <span id="renewal_status_icon" class="me-2"><i class="fas fa-check-circle" style="color: rgba(25, 135, 84, 0.5);"></i></span>{{ label_text|default:"申請書提出者" }}情報
+            </button>
+        </h2>
+        <div id="renewalDetailCollapse" class="accordion-collapse collapse">
+            <div class="accordion-body row g-3" style="padding: 0.5rem 1rem 1rem 1rem;">
+                <div class="col-md-5">
+                    <label class="form-label">申請者フリガナ</label>
+                    <input type="text" name="applicant_furigana" id="renewal_applicant_furigana_input" class="form-control" placeholder="例：ヤマダ タロウ" value="{% if initial.submitter_type == 'person' %}{{ initial.office_furigana }}{% endif %}" {% if initial.submitter_type != 'person' %}disabled{% endif %}>
+                </div>
+                <div class="col-12">
+                    <label class="form-label">所在地 <span class="text-danger">*</span></label>
+                    <div class="d-flex gap-2">
+                        <div class="input-group" style="width: 160px; flex-shrink: 0;">
+                            <span class="input-group-text">〒</span>
+                            <input type="text" name="office_postal_code" id="person_postal_code" class="form-control" value="{% if initial.submitter_type == 'person' %}{{ initial.office_postal_code }}{% endif %}" placeholder="000-0000" maxlength="8" {% if initial.submitter_type != 'person' %}disabled{% endif %} required>
+                        </div>
+                        <div class="flex-grow-1">
+                            <input type="text" name="office_address" id="person_office_address" class="form-control" value="{% if initial.submitter_type == 'person' %}{{ initial.office_address }}{% endif %}" placeholder="住所を入力" {% if initial.submitter_type != 'person' %}disabled{% endif %} required>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">電話番号 <span class="text-danger">*</span></label>
+                    <input type="text" name="office_phone" id="person_office_phone" class="form-control" value="{% if initial.submitter_type == 'person' %}{{ initial.office_phone }}{% endif %}" placeholder="電話番号を入力" {% if initial.submitter_type != 'person' %}disabled{% endif %} required>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">本人との関係 <span class="text-danger">*</span></label>
+                    <input type="text" name="relation" id="renewal_relation" class="form-control" value="{% if initial.submitter_type == 'person' %}{{ initial.relation }}{% endif %}" placeholder="例：長男、次女など" oninput="updateRenewalStatusIcon()" {% if initial.submitter_type != 'person' %}disabled{% endif %} required>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 事業所マスタ編集モーダル -->
+{% include 'clients/_renewal_office_modal.html' %}

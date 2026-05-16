@@ -151,28 +151,28 @@ class ClientForm(forms.ModelForm):
         return insurance_number
 
     def clean_name(self):
-        """氏名のバリデーション（全角・半角スペース必須、保存時は全角スペースに統一）"""
+        """氏名のバリデーション（全角・半角スペース必須、保存時は半角スペースに統一）"""
         name = self.cleaned_data.get('name', '')
         if name:
             # 前後の空白を削除
             name = name.strip()
-            # 半角スペースを全角スペースに変換
-            name = name.replace(' ', '　')
-            # 全角スペースが含まれているか確認
-            if '　' not in name:
+            # 全角スペースを半角スペースに変換
+            name = name.replace('　', ' ')
+            # 半角スペースが含まれているか確認
+            if ' ' not in name:
                 raise forms.ValidationError('姓と名の間にはスペース（空白）を入れてください。')
         return name
 
     def clean_furigana(self):
-        """ふりがなのバリデーション（全角・半角スペース必須、保存時は全角スペースに統一）"""
+        """ふりがなのバリデーション（全角・半角スペース必須、保存時は半角スペースに統一）"""
         furigana = self.cleaned_data.get('furigana', '')
         if furigana:
             # 前後の空白を削除
             furigana = furigana.strip()
-            # 半角スペースを全角スペースに変換
-            furigana = furigana.replace(' ', '　')
-            # 全角スペースが含まれているか確認
-            if '　' not in furigana:
+            # 全角スペースを半角スペースに変換
+            furigana = furigana.replace('　', ' ')
+            # 半角スペースが含まれているか確認
+            if ' ' not in furigana:
                 raise forms.ValidationError('姓と名の間にはスペース（空白）を入れてください。')
         return furigana
 

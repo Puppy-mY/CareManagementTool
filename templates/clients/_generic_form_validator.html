@@ -1,0 +1,76 @@
+{# ============================================================ #}
+{# 汎用フォーム送信バリデーション（書類作成ページ共通）       #}
+{# ------------------------------------------------------------ #}
+{# テキスト系は required 属性でブラウザが自動バリデーション    #}
+{# hidden 日付フィールドは validation_date_fields で指定:      #}
+{#   "id:ラベル,id:ラベル,..."  コロン区切り                   #}
+{# ============================================================ #}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var form = document.getElementById('documentForm');
+    if (!form) return;
+
+    // hidden 日付フィールドに setCustomValidity を設定するヘルパー
+    var dateFieldIds = '{{ validation_date_fields|default:"" }}'.split(',').filter(Boolean);
+
+    // 送信前に hidden 日付フィールドのカスタムバリデーションをリセット
+    function resetDateValidation() {
+        dateFieldIds.forEach(function(entry) {
+            var parts = entry.split(':');
+            var el = document.getElementById(parts[0].trim());
+            if (el) el.setCustomValidity('');
+        });
+    }
+
+    // hidden 日付フィールドが空なら対応する visible input にエラーをセット
+    function checkDateFields() {
+        var firstInvalid = null;
+        dateFieldIds.forEach(function(entry) {
+            var parts = entry.split(':');
+            var id = parts[0].trim();
+            var label = parts[1] ? parts[1].trim() : id;
+            var hidden = document.getElementById(id);
+            if (!hidden) return;
+            if (!hidden.value.trim()) {
+                // 対応する visible input を探す（wareki テキスト入力）
+                var visibleId = id.replace('id_', '') + '_wareki_text';
+                // 候補を試す
+                var visible = document.getElementById(visibleId)
+                           || document.querySelector('[data-date-for="' + id + '"]')
+                           || document.querySelector('input[type="text"][id*="' + id.replace('id_','') + '"]');
+                if (visible && !visible.disabled && visible.offsetParent !== null) {
+                    visible.setCustomValidity(label + 'を入力してください');
+                    if (!firstInvalid) firstInvalid = visible;
+                } else {
+                    // visible な対応フィールドがない場合は alert
+                    alert(label + 'を入力してください。');
+                    if (!firstInvalid) firstInvalid = hidden;
+                }
+            }
+        });
+        return firstInvalid;
+    }
+
+    form.addEventListener('submit', function(e) {
+        resetDateValidation();
+        var firstInvalid = checkDateFields();
+        if (firstInvalid) {
+            e.preventDefault();
+            if (firstInvalid.reportValidity) firstInvalid.reportValidity();
+        }
+    });
+
+    // wareki 入力が変更されたらバリデーションをリセット
+    dateFieldIds.forEach(function(entry) {
+        var parts = entry.split(':');
+        var id = parts[0].trim();
+        var visibleId = id.replace('id_', '') + '_wareki_text';
+        var visible = document.getElementById(visibleId);
+        if (visible) {
+            visible.addEventListener('input', function() {
+                this.setCustomValidity('');
+            });
+        }
+    });
+});
+</script>

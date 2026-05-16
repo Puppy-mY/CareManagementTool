@@ -107,6 +107,71 @@
                     </div>
                     <div class="card-body">
 
+                        <!-- 居宅サービス計画の作成を依頼する居宅介護支援事業者 -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-12">
+                                <label class="form-label fw-bold">居宅サービス計画の作成を依頼（変更）する居宅介護支援事業者 <span class="text-danger">*</span></label>
+                                <div class="mb-2 mt-1">
+                                    <select id="renewal_provider_select" class="form-select" style="width: 400px;" onchange="toggleRenewalProvider()">
+                                        <option value="auto" selected>{{ initial.office_name|default:"（事業所未設定）" }}</option>
+                                        <option value="other">その他（新規登録）</option>
+                                    </select>
+                                    <small class="text-muted">※その他（新規登録）を選択して新規登録ボタンを押すと新たに事業所を登録できます</small>
+                                </div>
+
+                                <!-- 事業者情報（hidden inputs） -->
+                                <input type="hidden" name="office_furigana"    id="renewal_office_furigana"  value="{{ initial.office_furigana }}">
+                                <input type="hidden" name="office_name"        id="renewal_office_name"      value="{{ initial.office_name }}">
+                                <input type="hidden" name="office_number"      id="renewal_office_number"    value="{{ initial.office_number }}">
+                                <input type="hidden" name="office_postal_code" id="renewal_postal_code"      value="{{ initial.office_postal_code }}">
+                                <input type="hidden" name="office_address"     id="renewal_office_address"   value="{{ initial.office_address }}">
+                                <input type="hidden" name="office_phone"       id="renewal_office_phone"     value="{{ initial.office_phone }}">
+                                <input type="hidden" name="office_fax"         id="renewal_office_fax"       value="{{ initial.office_fax }}">
+                                <input type="hidden" name="office_manager_name" id="renewal_office_manager"  value="{{ initial.office_manager_name }}">
+
+                                <!-- 事業者情報テーブル -->
+                                <div id="renewal_office_table_section" class="mb-2">
+                                    <div class="table-responsive mb-1">
+                                        <table class="table table-hover table-bordered mb-0" style="font-size:0.9rem; table-layout:fixed;">
+                                            <thead>
+                                                <tr>
+                                                    <th style="background-color:#f5f5f5;">事業所名</th>
+                                                    <th style="width:180px; background-color:#f5f5f5;">住所</th>
+                                                    <th style="width:110px; background-color:#f5f5f5;">電話 / FAX</th>
+                                                    <th style="width:120px; background-color:#f5f5f5;">管理者名</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td class="align-middle">
+                                                        <small id="disp_office_number" style="display:none;">{{ initial.office_number }}</small>
+                                                        <small id="disp_office_furigana" class="text-muted d-block" style="font-size:0.75rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ initial.office_furigana }}</small>
+                                                        <span  id="disp_office_name" class="fw-bold d-block" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:clamp(0.7rem,1.5vw,0.9rem);">{{ initial.office_name }}</span>
+                                                    </td>
+                                                    <td class="align-middle" style="font-size:0.85rem;">
+                                                        <small id="disp_office_postal" class="text-muted d-block" style="font-size:0.75rem;">{% if initial.office_postal_code %}〒{{ initial.office_postal_code }}{% endif %}</small>
+                                                        <span  id="disp_office_address">{{ initial.office_address }}</span>
+                                                    </td>
+                                                    <td class="align-middle" style="font-size:0.85rem; white-space:nowrap;">
+                                                        <i class="fas fa-phone me-1 text-muted" style="font-size:0.75rem;"></i><span id="disp_office_phone">{{ initial.office_phone|default:"―" }}</span><br>
+                                                        <i class="fas fa-fax me-1 text-muted"   style="font-size:0.75rem;"></i><span id="disp_office_fax" class="text-muted">{{ initial.office_fax|default:"―" }}</span>
+                                                    </td>
+                                                    <td class="align-middle" id="disp_office_manager">{{ initial.office_manager_name|default:"―" }}</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div class="mt-1">
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openRenewalOfficeMasterModal()">
+                                            <i class="fas fa-edit me-1"></i>事業所情報を新規登録・編集
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="border-top: 1px solid #dee2e6; width: 50%; margin: 1rem 0;"></div>
+
                         <!-- 該当サービス -->
                         <div class="row g-3 mb-3">
                             <div class="col-12">
@@ -514,60 +579,7 @@
 </div>
 
 <!-- 事業所マスタ編集モーダル -->
-<div class="modal fade" id="renewalOfficeModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
-    <div class="modal-dialog modal-xl modal-dialog-centered">
-        <div class="modal-content">
-            <input type="hidden" id="renewal_modal_pk" value="{% if user.profile.home_care_office %}{{ user.profile.home_care_office.pk }}{% endif %}">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="fas fa-hospital me-2"></i>居宅介護支援事業所編集</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div id="renewalOfficeModalError" class="alert alert-danger d-none"></div>
-                <div class="row g-3">
-                    <div class="col-12">
-                        <label class="form-label">事業所名 <span class="text-danger">*</span></label>
-                        <input type="text" id="renewal_modal_name" class="form-control" value="{{ initial.office_name }}" placeholder="例: 居宅介護支援事業所 安濃津ろまん" required>
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label">フリガナ</label>
-                        <input type="text" id="renewal_modal_furigana" class="form-control" value="{{ initial.office_furigana }}" placeholder="例: キョタクカイゴシエンジギョウショ アノツロマン">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">事業所番号 <span class="text-danger">*</span></label>
-                        <input type="text" id="renewal_modal_office_number" class="form-control" value="{{ initial.office_number }}" placeholder="例: 2470100419" required>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">管理者名</label>
-                        <input type="text" id="renewal_modal_manager_name" class="form-control" value="{{ initial.office_manager_name }}" placeholder="例: 山田 太郎">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">郵便番号</label>
-                        <input type="text" id="renewal_modal_postal_code" class="form-control" value="{{ initial.office_postal_code }}" placeholder="例: 514-0009">
-                    </div>
-                    <div class="col-md-8">
-                        <label class="form-label">住所</label>
-                        <input type="text" id="renewal_modal_address" class="form-control" value="{{ initial.office_address }}" placeholder="例: 三重県津市羽所町○○">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">電話番号</label>
-                        <input type="text" id="renewal_modal_phone" class="form-control" value="{{ initial.office_phone }}" placeholder="例: 059-123-4567">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">FAX</label>
-                        <input type="text" id="renewal_modal_fax" class="form-control" value="{{ initial.office_fax }}" placeholder="例: 059-123-4568">
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
-                <button type="button" class="btn btn-primary" id="renewalOfficeSaveBtn">
-                    <i class="fas fa-save me-1"></i>保存して反映
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
+{% include 'clients/_renewal_office_modal.html' %}
 
 <!-- マスタデータ編集ドロワー -->
 <div id="masterDataDrawer" class="master-drawer">
@@ -964,6 +976,8 @@ var _OFFICE_NUMBER   = '{{ current_office_number }}';
 var _OFFICE_POSTAL   = '{{ current_office_postal }}';
 var _OFFICE_ADDRESS  = '{{ current_office_address }}';
 var _OFFICE_PHONE    = '{{ current_office_phone }}';
+var _OFFICE_FAX      = '{{ initial.office_fax|escapejs }}';
+var _OFFICE_MANAGER  = '{{ initial.office_manager_name|escapejs }}';
 
 function handleModalManagerChange(sel) {
     var val = sel.value;
@@ -1067,117 +1081,66 @@ function saveClientMasterData() {
     });
 }
 
-// 申請書提出者：代行提出 / その他 トグル
-function switchSubmitterType(type) {
-    document.getElementById('id_submitter_type').value = type;
-    document.getElementById('submitter_office_section').style.display = type === 'office' ? '' : 'none';
-    document.getElementById('submitter_person_section').style.display = type === 'person' ? '' : 'none';
-    document.getElementById('submitter_btn_office').classList.toggle('active', type === 'office');
-    document.getElementById('submitter_btn_person').classList.toggle('active', type === 'person');
-
-    var officeNameRow  = document.getElementById('renewal_office_name_row');
-    var staffNameRow   = document.getElementById('renewal_staff_name_row');
-    var editBtnWrapper = document.getElementById('renewal_edit_button_wrapper');
-
-    if (type === 'person') {
-        if (officeNameRow)  officeNameRow.style.display  = 'none';
-        if (staffNameRow)   staffNameRow.style.display   = 'none';
-        if (editBtnWrapper) editBtnWrapper.style.display = 'none';
-        ['renewal_office_name', 'renewal_postal_code', 'renewal_office_address', 'renewal_office_phone'].forEach(function(id) {
-            var el = document.getElementById(id);
-            if (el) { el.removeAttribute('readonly'); el.value = ''; }
-        });
-        var accStaff = document.getElementById('renewal_staff_name_accordion');
-        if (accStaff) accStaff.value = '';
-        var staffTop = document.getElementById('renewal_staff_name');
-        if (staffTop) staffTop.value = '';
-    } else {
-        if (officeNameRow)  officeNameRow.style.display  = '';
-        if (staffNameRow)   staffNameRow.style.display   = '';
-        if (editBtnWrapper) editBtnWrapper.style.display = '';
-        var restoreMap = {
-            'renewal_office_name':    _OFFICE_NAME,
-            'renewal_postal_code':    _OFFICE_POSTAL,
-            'renewal_office_address': _OFFICE_ADDRESS,
-            'renewal_office_phone':   _OFFICE_PHONE,
-        };
-        Object.keys(restoreMap).forEach(function(id) {
-            var el = document.getElementById(id);
-            if (el) { el.setAttribute('readonly', 'readonly'); el.value = restoreMap[id]; }
-        });
-        var sel = document.getElementById('renewal_provider_select');
-        if (sel && sel.options[0]) sel.options[0].text = _OFFICE_NAME || '（事業所未設定）';
-        var accStaff = document.getElementById('renewal_staff_name_accordion');
-        if (accStaff) accStaff.value = _LOGIN_USER_NAME;
-        var staffTop = document.getElementById('renewal_staff_name');
-        if (staffTop) staffTop.value = '';
-    }
-    updateRenewalStatusIcon();
-}
-
-// 申請書提出者：その他（手入力）トグル
+// 代行提出：auto / その他（新規登録）切替
 function toggleRenewalProvider() {
-    const selectEl    = document.getElementById('renewal_provider_select');
-    const otherFields = document.getElementById('office_other_fields');
-    const readonlyIds = ['renewal_office_name', 'renewal_postal_code', 'renewal_office_address', 'renewal_office_phone'];
+    var selectEl = document.getElementById('renewal_provider_select');
+    if (!selectEl) return;
+    var g = function(id) { return document.getElementById(id); };
 
     if (selectEl.value === 'other') {
-        if (otherFields) otherFields.style.display = '';
-        readonlyIds.forEach(function(id) {
-            const el = document.getElementById(id);
-            if (el) { el.removeAttribute('readonly'); el.value = ''; }
+        ['renewal_office_furigana','renewal_office_name','renewal_office_number',
+         'renewal_postal_code','renewal_office_address','renewal_office_phone',
+         'renewal_office_fax','renewal_office_manager'].forEach(function(id){
+            if(g(id)) g(id).value='';
         });
-        var collapseEl = document.getElementById('renewalDetailCollapse');
-        if (collapseEl && !collapseEl.classList.contains('show')) {
-            bootstrap.Collapse.getOrCreateInstance(collapseEl).show();
-        }
+        var clr={'disp_office_furigana':'','disp_office_number':'','disp_office_name':'',
+                 'disp_office_postal':'','disp_office_address':'',
+                 'disp_office_phone':'―','disp_office_fax':'―','disp_office_manager':'―'};
+        Object.keys(clr).forEach(function(id){if(g(id))g(id).textContent=clr[id];});
     } else {
-        if (otherFields) otherFields.style.display = 'none';
-        readonlyIds.forEach(function(id) {
-            const el = document.getElementById(id);
-            if (el) { el.setAttribute('readonly', 'readonly'); el.value = el.defaultValue; }
-        });
-    }
-    updateRenewalStatusIcon();
-}
-
-// ステータスアイコン更新
-function updateRenewalStatusIcon() {
-    const statusIcon = document.getElementById('renewal_status_icon');
-    if (!statusIcon) return;
-    const submitterType = (document.getElementById('id_submitter_type') || {}).value || 'office';
-    let isComplete;
-    if (submitterType === 'person') {
-        const staffName = document.getElementById('renewal_staff_name');
-        const address   = document.getElementById('renewal_office_address');
-        const phone     = document.getElementById('renewal_office_phone');
-        isComplete = !!(staffName && staffName.value.trim())
-                  && !!(address   && address.value.trim())
-                  && !!(phone     && phone.value.trim());
-    } else {
-        const staffName = document.getElementById('renewal_staff_name_accordion');
-        const phone     = document.getElementById('renewal_office_phone');
-        isComplete = !!(staffName && staffName.value.trim())
-                  && !!(phone     && phone.value.trim());
-    }
-    statusIcon.innerHTML = isComplete
-        ? '<i class="fas fa-check-circle" style="color: rgba(25, 135, 84, 0.5);"></i>'
-        : '<i class="fas fa-circle-exclamation" style="color: rgba(220, 53, 69, 0.5);"></i>';
-    const renewalCollapse = document.getElementById('renewalDetailCollapse');
-    if (renewalCollapse) {
-        if (!isComplete && !renewalCollapse.classList.contains('show')) {
-            new bootstrap.Collapse(renewalCollapse, { toggle: false }).show();
-        } else if (isComplete && submitterType !== 'person' && renewalCollapse.classList.contains('show') && !renewalCollapse.contains(document.activeElement)) {
-            new bootstrap.Collapse(renewalCollapse, { toggle: false }).hide();
-        }
+        var d={
+            'renewal_office_furigana': typeof _OFFICE_FURIGANA!=='undefined'?_OFFICE_FURIGANA:'',
+            'renewal_office_name':     typeof _OFFICE_NAME!=='undefined'?_OFFICE_NAME:'',
+            'renewal_office_number':   typeof _OFFICE_NUMBER!=='undefined'?_OFFICE_NUMBER:'',
+            'renewal_postal_code':     typeof _OFFICE_POSTAL!=='undefined'?_OFFICE_POSTAL:'',
+            'renewal_office_address':  typeof _OFFICE_ADDRESS!=='undefined'?_OFFICE_ADDRESS:'',
+            'renewal_office_phone':    typeof _OFFICE_PHONE!=='undefined'?_OFFICE_PHONE:'',
+            'renewal_office_fax':      typeof _OFFICE_FAX!=='undefined'?_OFFICE_FAX:'',
+            'renewal_office_manager':  typeof _OFFICE_MANAGER!=='undefined'?_OFFICE_MANAGER:'',
+        };
+        Object.keys(d).forEach(function(id){if(g(id)) g(id).value=d[id];});
+        if(g('disp_office_furigana')) g('disp_office_furigana').textContent=d['renewal_office_furigana'];
+        if(g('disp_office_name'))     g('disp_office_name').textContent=d['renewal_office_name'];
+        if(g('disp_office_number'))   g('disp_office_number').textContent=d['renewal_office_number'];
+        if(g('disp_office_postal'))   g('disp_office_postal').textContent=d['renewal_postal_code']?'〒'+d['renewal_postal_code']:'';
+        if(g('disp_office_address'))  g('disp_office_address').textContent=d['renewal_office_address'];
+        if(g('disp_office_phone'))    g('disp_office_phone').textContent=d['renewal_office_phone']||'―';
+        if(g('disp_office_fax'))      g('disp_office_fax').textContent=d['renewal_office_fax']||'―';
+        if(g('disp_office_manager'))  g('disp_office_manager').textContent=d['renewal_office_manager']||'―';
+        if(selectEl.options[0] && d['renewal_office_name']) selectEl.options[0].text=d['renewal_office_name'];
     }
 }
 
 // 事業所マスタ編集モーダルを開く
 function openRenewalOfficeMasterModal() {
-    document.getElementById('renewalOfficeModalError').classList.add('d-none');
+    var isNew = (document.getElementById('renewal_provider_select') || {}).value === 'other';
+    var errEl = document.getElementById('renewalOfficeModalError');
+    if (errEl) errEl.classList.add('d-none');
+    if (isNew) {
+        ['renewal_modal_company_name','renewal_modal_name','renewal_modal_furigana',
+         'renewal_modal_office_number','renewal_modal_manager_name',
+         'renewal_modal_postal_code','renewal_modal_address',
+         'renewal_modal_phone','renewal_modal_fax'].forEach(function(id) {
+            var el = document.getElementById(id); if (el) el.value = '';
+        });
+        var pkEl = document.getElementById('renewal_modal_pk');
+        if (pkEl) pkEl.value = '';
+    }
     new bootstrap.Modal(document.getElementById('renewalOfficeModal')).show();
 }
+
+// （代行提出のみのため updateRenewalStatusIcon は使用しない）
+function updateRenewalStatusIcon() {}
 
 // ========================================
 // 認定情報 ステータスアイコン・モーダル
@@ -1951,48 +1914,76 @@ document.addEventListener('DOMContentLoaded', function() {
         if (first) switchSvcTab(first.id);
     })();
 
-    // 入力イベントリスナー
-    ['renewal_staff_name_accordion', 'renewal_staff_name', 'renewal_office_address', 'renewal_office_phone'].forEach(function(id) {
-        const el = document.getElementById(id);
-        if (el) el.addEventListener('input', updateRenewalStatusIcon);
-    });
-
-    // 履歴読み込み時の初期UI状態
-    (function() {
-        var type = (document.getElementById('id_submitter_type').value || 'office');
-        if (type === 'person') {
-            var officeNameRow  = document.getElementById('renewal_office_name_row');
-            var staffNameRow   = document.getElementById('renewal_staff_name_row');
-            var editBtnWrapper = document.getElementById('renewal_edit_button_wrapper');
-            if (officeNameRow)  officeNameRow.style.display  = 'none';
-            if (staffNameRow)   staffNameRow.style.display   = 'none';
-            if (editBtnWrapper) editBtnWrapper.style.display = 'none';
-            ['renewal_office_name', 'renewal_postal_code', 'renewal_office_address', 'renewal_office_phone'].forEach(function(id) {
-                var el = document.getElementById(id);
-                if (el) el.removeAttribute('readonly');
-            });
-            var accStaff = document.getElementById('renewal_staff_name_accordion');
-            if (accStaff) accStaff.value = '';
-        }
-        updateRenewalStatusIcon();
-    })();
-    updateRenewalStatusIcon();
-
     // モーダル保存ボタン
     const saveBtn = document.getElementById('renewalOfficeSaveBtn');
     if (!saveBtn) return;
     saveBtn.addEventListener('click', function() {
         const pk = document.getElementById('renewal_modal_pk').value;
-        if (!pk) { alert('事業所が設定されていません。'); return; }
 
-        const name        = document.getElementById('renewal_modal_name').value.trim();
-        const furigana    = document.getElementById('renewal_modal_furigana').value.trim();
+        // 新規登録モード（pk なし）
+        if (!pk) {
+            const companyNameN  = document.getElementById('renewal_modal_company_name').value.trim();
+            const nameN         = document.getElementById('renewal_modal_name').value.trim();
+            const furiganaN     = document.getElementById('renewal_modal_furigana').value.trim();
+            const officeNumberN = document.getElementById('renewal_modal_office_number').value.trim();
+            const managerNameN  = document.getElementById('renewal_modal_manager_name').value.trim().replace(/　/g,' ');
+            const postalCodeN   = document.getElementById('renewal_modal_postal_code').value.trim();
+            const addressN      = document.getElementById('renewal_modal_address').value.trim();
+            const phoneN        = document.getElementById('renewal_modal_phone').value.trim();
+            const faxN          = document.getElementById('renewal_modal_fax').value.trim();
+            if (!nameN || !officeNumberN) {
+                document.getElementById('renewalOfficeModalError').textContent = '事業所名と事業所番号は必須です。';
+                document.getElementById('renewalOfficeModalError').classList.remove('d-none');
+                return;
+            }
+            const fd2 = new FormData();
+            fd2.append('company_name', companyNameN); fd2.append('name', nameN); fd2.append('furigana', furiganaN);
+            fd2.append('office_number', officeNumberN); fd2.append('manager_name', managerNameN);
+            fd2.append('postal_code', postalCodeN); fd2.append('address', addressN);
+            fd2.append('phone', phoneN); fd2.append('fax', faxN); fd2.append('is_active', 'true');
+            fetch('/clients/home-care-offices/create/', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value, 'X-Requested-With': 'XMLHttpRequest' },
+                body: fd2,
+            }).then(r => r.json()).then(function(data) {
+                if (data.success) {
+                    document.getElementById('renewal_modal_pk').value = data.pk;
+                    var setVal = function(id, v) { var e=document.getElementById(id); if(e) e.value=v; };
+                    setVal('renewal_office_name', data.name); setVal('renewal_office_furigana', data.furigana||'');
+                    setVal('renewal_office_number', data.office_number||''); setVal('renewal_postal_code', data.postal_code||'');
+                    setVal('renewal_office_address', data.address||''); setVal('renewal_office_phone', data.phone||'');
+                    setVal('renewal_office_fax', data.fax||''); setVal('renewal_office_manager', data.manager_name||'');
+                    var setText = function(id, v) { var e=document.getElementById(id); if(e) e.textContent=v||''; };
+                    setText('disp_office_name', data.name); setText('disp_office_furigana', data.furigana||'');
+                    setText('disp_office_number', data.office_number||'');
+                    setText('disp_office_postal', data.postal_code ? '〒'+data.postal_code : '');
+                    setText('disp_office_address', data.address||'');
+                    setText('disp_office_phone', data.phone||'―'); setText('disp_office_fax', data.fax||'―');
+                    setText('disp_office_manager', data.manager_name||'―');
+                    var sel = document.getElementById('renewal_provider_select');
+                    if (sel) {
+                        var newOpt = sel.querySelector('option[data-new="1"]');
+                        if (!newOpt) { newOpt = document.createElement('option'); newOpt.dataset.new='1'; sel.insertBefore(newOpt, sel.querySelector('option[value="other"]')); }
+                        newOpt.value = 'new_'+data.pk; newOpt.textContent = data.name; sel.value = newOpt.value;
+                    }
+                    bootstrap.Modal.getInstance(document.getElementById('renewalOfficeModal')).hide();
+                } else {
+                    document.getElementById('renewalOfficeModalError').textContent = data.error || 'エラーが発生しました。';
+                    document.getElementById('renewalOfficeModalError').classList.remove('d-none');
+                }
+            });
+            return;
+        }
+
+        const companyName  = document.getElementById('renewal_modal_company_name').value.trim();
+        const name         = document.getElementById('renewal_modal_name').value.trim();
+        const furigana     = document.getElementById('renewal_modal_furigana').value.trim();
         const officeNumber = document.getElementById('renewal_modal_office_number').value.trim();
-        const managerName = document.getElementById('renewal_modal_manager_name').value.trim();
-        const postalCode  = document.getElementById('renewal_modal_postal_code').value.trim();
-        const address     = document.getElementById('renewal_modal_address').value.trim();
-        const phone       = document.getElementById('renewal_modal_phone').value.trim();
-        const fax         = document.getElementById('renewal_modal_fax').value.trim();
+        const managerName  = document.getElementById('renewal_modal_manager_name').value.trim();
+        const postalCode   = document.getElementById('renewal_modal_postal_code').value.trim();
+        const address      = document.getElementById('renewal_modal_address').value.trim();
+        const phone        = document.getElementById('renewal_modal_phone').value.trim();
+        const fax          = document.getElementById('renewal_modal_fax').value.trim();
 
         if (!name || !officeNumber) {
             const errEl = document.getElementById('renewalOfficeModalError');
@@ -2002,15 +1993,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         const formData = new FormData();
-        formData.append('name', name);
-        formData.append('furigana', furigana);
-        formData.append('office_number', officeNumber);
-        formData.append('manager_name', managerName);
-        formData.append('postal_code', postalCode);
-        formData.append('address', address);
-        formData.append('phone', phone);
-        formData.append('fax', fax);
-        formData.append('is_active', 'true');
+        formData.append('company_name', companyName); formData.append('name', name);
+        formData.append('furigana', furigana); formData.append('office_number', officeNumber);
+        formData.append('manager_name', managerName); formData.append('postal_code', postalCode);
+        formData.append('address', address); formData.append('phone', phone);
+        formData.append('fax', fax); formData.append('is_active', 'true');
 
         const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
         fetch(`/clients/home-care-offices/${pk}/edit/`, {
@@ -2031,6 +2018,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 setField('renewal_postal_code',      postalCode);
                 setField('renewal_office_address',   address);
                 setField('renewal_office_phone',     phone);
+                setField('renewal_office_fax',       fax);
+                setField('renewal_office_manager',   managerName);
+
+                const setText = function(id, val) { const el = document.getElementById(id); if (el) el.textContent = val || ''; };
+                setText('disp_office_name',     name);
+                setText('disp_office_furigana', furigana);
+                setText('disp_office_number',   officeNumber);
+                setText('disp_office_postal',   postalCode ? '〒' + postalCode : '');
+                setText('disp_office_address',  address);
+                setText('disp_office_phone',    phone || '―');
+                setText('disp_office_fax',      fax   || '―');
+                setText('disp_office_manager',  managerName || '―');
 
                 // セレクトのオプションテキストも更新
                 const sel = document.getElementById('renewal_provider_select');
@@ -2387,10 +2386,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ---- 説明に使用した資料：編集ロック制御 ----
 function _applyMatLock(locked) {
-    document.querySelectorAll('#mat_options input[name="explanation_material"]').forEach(function(r) {
-        r.style.pointerEvents = locked ? 'none' : '';
-    });
     document.querySelectorAll('#mat_options .form-check').forEach(function(c) {
+        c.style.pointerEvents = locked ? 'none' : '';
         c.style.opacity = (locked && !c.querySelector('.form-check-input').checked) ? '0.3' : '1';
     });
     var sonotaInput = document.getElementById('mat_sonota_text');

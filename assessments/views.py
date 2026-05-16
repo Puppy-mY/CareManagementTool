@@ -516,6 +516,35 @@ def assessment_edit(request, pk):
             assessment.adl = detailed_data["adl"]
             assessment.iadl = detailed_data["iadl"]
 
+            # 医療機関FK保存
+            from clients.models import MedicalInstitution as _MI
+            def _get_mi(key):
+                v = request.POST.get(key, '').strip()
+                try:
+                    return _MI.objects.get(pk=int(v)) if v else None
+                except (ValueError, _MI.DoesNotExist):
+                    return None
+            assessment.main_doctor     = _get_mi('main_doctor_id')
+            assessment.visiting_doctor = _get_mi('visiting_doctor_id')
+            assessment.family_doctor_1 = _get_mi('family_doctor_1_id')
+            assessment.family_doctor_2 = _get_mi('family_doctor_2_id')
+            assessment.family_doctor_3 = _get_mi('family_doctor_3_id')
+            assessment.family_doctor_4 = _get_mi('family_doctor_4_id')
+            for _key, _inst in [
+                ('main_doctor',     assessment.main_doctor),
+                ('visiting_doctor', assessment.visiting_doctor),
+            ]:
+                if _inst:
+                    assessment.health_status[f'{_key}_hospital'] = _inst.hospital_name
+                    assessment.health_status[f'{_key}_name']     = _inst.doctor_name
+            for _i, _inst in enumerate([
+                assessment.family_doctor_1, assessment.family_doctor_2,
+                assessment.family_doctor_3, assessment.family_doctor_4,
+            ], 1):
+                if _inst:
+                    assessment.health_status[f'family_doctor_hospital_{_i}'] = _inst.hospital_name
+                    assessment.health_status[f'family_doctor_name_{_i}']     = _inst.doctor_name
+
             assessment.save()
 
             # actionによる分岐処理
@@ -698,12 +727,22 @@ def assessment_edit(request, pk):
             Assessment.INTERVIEW_LOCATION_CHOICES
         )
 
+    from clients.models import MedicalInstitution
     context = {
         "form": form,
         "assessment": assessment,
         "assessment_types": Assessment.ASSESSMENT_TYPE_CHOICES,
         "interview_locations": Assessment.INTERVIEW_LOCATION_CHOICES,
         "is_edit": True,
+        "medical_institutions": list(MedicalInstitution.objects.all()),
+        "doctor_init_slots": [
+            ("main_doctor",     "主治医",       assessment.main_doctor),
+            ("visiting_doctor", "往診医",       assessment.visiting_doctor),
+            ("family_doctor_1", "かかりつけ医①", assessment.family_doctor_1),
+            ("family_doctor_2", "かかりつけ医②", assessment.family_doctor_2),
+            ("family_doctor_3", "かかりつけ医③", assessment.family_doctor_3),
+            ("family_doctor_4", "かかりつけ医④", assessment.family_doctor_4),
+        ],
     }
 
     return render(request, "assessments/detailed_assessment_form.html", context)
@@ -1162,6 +1201,35 @@ def detailed_assessment_create(request):
             assessment.adl = detailed_data["adl"]
             assessment.iadl = detailed_data["iadl"]
 
+            # 医療機関FK保存
+            from clients.models import MedicalInstitution as _MI
+            def _get_mi(key):
+                v = request.POST.get(key, '').strip()
+                try:
+                    return _MI.objects.get(pk=int(v)) if v else None
+                except (ValueError, _MI.DoesNotExist):
+                    return None
+            assessment.main_doctor     = _get_mi('main_doctor_id')
+            assessment.visiting_doctor = _get_mi('visiting_doctor_id')
+            assessment.family_doctor_1 = _get_mi('family_doctor_1_id')
+            assessment.family_doctor_2 = _get_mi('family_doctor_2_id')
+            assessment.family_doctor_3 = _get_mi('family_doctor_3_id')
+            assessment.family_doctor_4 = _get_mi('family_doctor_4_id')
+            for _key, _inst in [
+                ('main_doctor',     assessment.main_doctor),
+                ('visiting_doctor', assessment.visiting_doctor),
+            ]:
+                if _inst:
+                    assessment.health_status[f'{_key}_hospital'] = _inst.hospital_name
+                    assessment.health_status[f'{_key}_name']     = _inst.doctor_name
+            for _i, _inst in enumerate([
+                assessment.family_doctor_1, assessment.family_doctor_2,
+                assessment.family_doctor_3, assessment.family_doctor_4,
+            ], 1):
+                if _inst:
+                    assessment.health_status[f'family_doctor_hospital_{_i}'] = _inst.hospital_name
+                    assessment.health_status[f'family_doctor_name_{_i}']     = _inst.doctor_name
+
             assessment.save()
 
             # actionによる分岐処理
@@ -1219,6 +1287,15 @@ def detailed_assessment_create(request):
         "interview_locations": Assessment.INTERVIEW_LOCATION_CHOICES,
         "today": date.today().strftime("%Y-%m-%d"),
         "is_edit": False,
+        "medical_institutions": list(__import__('clients.models', fromlist=['MedicalInstitution']).MedicalInstitution.objects.all()),
+        "doctor_init_slots": [
+            ("main_doctor",     "主治医",       None),
+            ("visiting_doctor", "往診医",       None),
+            ("family_doctor_1", "かかりつけ医①", None),
+            ("family_doctor_2", "かかりつけ医②", None),
+            ("family_doctor_3", "かかりつけ医③", None),
+            ("family_doctor_4", "かかりつけ医④", None),
+        ],
     }
 
     # 前回アセスメントデータの取得

@@ -11,6 +11,39 @@ logger = logging.getLogger(__name__)
 
 
 @login_required
+def update_client_family1(request, pk):
+    """利用者 家族1情報 更新API"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'POSTメソッドのみ対応しています。'})
+    try:
+        client = get_object_or_404(Client, pk=pk)
+        data = json.loads(request.body)
+        fields = [
+            'family_name1', 'family_relationship1', 'family_relationship_detail1',
+            'family_address1', 'family_contact1', 'family_living_status1',
+            'family_care_status1', 'family_employment1', 'family_notes1',
+        ]
+        for f in fields:
+            if f in data:
+                setattr(client, f, data[f])
+        client.save()
+        return JsonResponse({
+            'success': True,
+            'family_name1':               client.family_name1 or '',
+            'full_relationship1':         client.full_family_relationship1 or '',
+            'family_contact1':            client.family_contact1 or '',
+            'family_living_status1_display': client.get_family_living_status1_display() or '',
+            'family_address1':            client.family_address1 or '',
+            'family_care_status1_display':  client.get_family_care_status1_display() or '',
+            'family_employment1_display':   client.get_family_employment1_display() or '',
+            'family_notes1':              client.family_notes1 or '',
+        })
+    except Exception as e:
+        logger.error(f'Error updating client family1: {e}')
+        return JsonResponse({'success': False, 'error': str(e)})
+
+
+@login_required
 def update_client_master(request, pk):
     """利用者マスタデータ更新API"""
     if request.method != 'POST':

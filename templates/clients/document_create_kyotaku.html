@@ -1,180 +1,78 @@
 {% extends 'clients/document_create_base.html' %}
 
 {% block provider_section %}
-<!-- 居宅サービス計画の作成を依頼（変更）する事業者 -->
-<div class="row g-3 mb-4">
-    <div class="col-12">
-        <label class="form-label">居宅サービス計画の作成を依頼（変更）する居宅介護支援事業者 <span class="text-danger">*</span></label>
-        <div class="d-flex flex-column gap-2" style="width: fit-content;">
-            <select id="kyotaku_provider_select" class="form-select" style="width: 400px;" onchange="toggleKyotakuProvider()">
+<!-- 居宅サービス計画の作成を依頼する居宅介護支援事業者 -->
+<div class="mb-3">
+    <label class="form-label fw-bold">居宅サービス計画の作成を依頼（変更）する居宅介護支援事業者 <span class="text-danger">*</span></label>
+    <div class="mb-2 mt-1">
+            <select id="renewal_provider_select" class="form-select" style="width: 400px;" onchange="toggleRenewalProvider()">
                 <option value="auto" selected>{{ initial_data.kyotaku_office_name|default:"（事業所未設定）" }}</option>
-                <option value="other">その他（手入力）</option>
+                <option value="other">その他（新規登録）</option>
             </select>
-            <input type="text" id="kyotaku_provider_manual" class="form-control d-none" style="width: 400px;" placeholder="事業所名をご入力ください">
-            <input type="hidden" name="kyotaku_provider" id="kyotaku_provider" value="">
+            <small class="text-muted">※その他（新規登録）を選択して新規登録ボタンを押すと新たに事業所を登録できます</small>
         </div>
-        <small class="text-muted mt-1">※その他を選択すると、事業所名を手入力できます</small>
-    </div>
-</div>
 
-<script>
-function toggleKyotakuProvider() {
-    const selectEl = document.getElementById('kyotaku_provider_select');
-    const manualEl = document.getElementById('kyotaku_provider_manual');
-    const hiddenEl = document.getElementById('kyotaku_provider');
-    const editBtnWrapper = document.getElementById('kyotaku_edit_button_wrapper');
-    const officeNum = document.getElementById('kyotaku_office_number');
-    const postalCode = document.getElementById('kyotaku_postal_code');
-    const address = document.getElementById('kyotaku_address');
-    const phone = document.getElementById('kyotaku_phone');
+        <!-- 事業者情報（hidden inputs） name=kyotaku_* でビューに渡す / id=renewal_* でJSが参照 -->
+        <input type="hidden" name="kyotaku_office_furigana" id="renewal_office_furigana" value="{{ initial_data.kyotaku_office_furigana }}">
+        <input type="hidden" name="kyotaku_provider"        id="renewal_office_name"     value="{{ initial_data.kyotaku_office_name }}">
+        <input type="hidden" name="kyotaku_office_number"   id="renewal_office_number"   value="{{ initial_data.kyotaku_office_number }}">
+        <input type="hidden" name="kyotaku_postal_code"     id="renewal_postal_code"     value="{{ initial_data.kyotaku_postal_code }}">
+        <input type="hidden" name="kyotaku_address"         id="renewal_office_address"  value="{{ initial_data.kyotaku_address }}">
+        <input type="hidden" name="kyotaku_phone"           id="renewal_office_phone"    value="{{ initial_data.kyotaku_phone }}">
+        <input type="hidden" name="kyotaku_office_fax"      id="renewal_office_fax"      value="{{ initial_data.kyotaku_office_fax }}">
+        <input type="hidden" name="kyotaku_office_manager"  id="renewal_office_manager"  value="{{ initial_data.kyotaku_office_manager }}">
 
-    if (!selectEl || !manualEl || !hiddenEl) return;
-    
-    if (selectEl.value === 'other') {
-        manualEl.classList.remove('d-none');
-        manualEl.setAttribute('name', 'kyotaku_provider');
-        hiddenEl.removeAttribute('name');
-
-        if (editBtnWrapper) editBtnWrapper.classList.add('d-none');
-        if (officeNum) { officeNum.removeAttribute('readonly'); officeNum.value = ''; }
-        if (postalCode) { postalCode.removeAttribute('readonly'); postalCode.value = ''; }
-        if (address) { address.removeAttribute('readonly'); address.value = ''; }
-        if (phone) { phone.removeAttribute('readonly'); phone.value = ''; }
-    } else {
-        manualEl.classList.add('d-none');
-        manualEl.removeAttribute('name');
-        hiddenEl.setAttribute('name', 'kyotaku_provider');
-
-        if (editBtnWrapper) editBtnWrapper.classList.remove('d-none');
-        if (officeNum) { officeNum.setAttribute('readonly', 'readonly'); officeNum.value = officeNum.defaultValue; }
-        if (postalCode) { postalCode.setAttribute('readonly', 'readonly'); postalCode.value = postalCode.defaultValue; }
-        if (address) { address.setAttribute('readonly', 'readonly'); address.value = address.defaultValue; }
-        if (phone) { phone.setAttribute('readonly', 'readonly'); phone.value = phone.defaultValue; }
-    }
-
-    if (typeof updateKyotakuStatusIcon === 'function') updateKyotakuStatusIcon();
-}
-</script>
-
-<!-- 事業所情報 -->
-<div id="kyotaku_detail_section" class="accordion" style="margin: 0.5rem 0 1rem 0;">
-    <div class="accordion-item" style="border: none; background-color: #f8f9fa; border-radius: 0.5rem;">
-        <h2 class="accordion-header">
-            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#kyotakuDetailCollapse" aria-expanded="false" aria-controls="kyotakuDetailCollapse" style="background-color: #f8f9fa; padding: 0.5rem 1rem; color: #333;">
-                <span id="kyotaku_status_icon" class="me-2"><i class="fas fa-check-circle" style="color: rgba(25, 135, 84, 0.5);"></i></span>事業所情報
-            </button>
-        </h2>
-        <div id="kyotakuDetailCollapse" class="accordion-collapse collapse">
-            <div class="accordion-body row g-3" style="padding: 0.5rem 1rem 1rem 1rem;">
-                <div class="col-md-4">
-                    <label class="form-label">事業所番号 <span class="text-danger">*</span></label>
-                    <input type="text" name="kyotaku_office_number" id="kyotaku_office_number" class="form-control" value="{{ initial_data.kyotaku_office_number|default:'' }}" readonly>
-                </div>
-                <div class="col-12">
-                    <label class="form-label">所在地 <span class="text-danger">*</span></label>
-                    <div class="d-flex gap-2">
-                        <div class="input-group" style="width: 140px; flex-shrink: 0;">
-                            <span class="input-group-text">〒</span>
-                            <input type="text" name="kyotaku_postal_code" id="kyotaku_postal_code" class="form-control" value="{{ initial_data.kyotaku_postal_code|default:'' }}" placeholder="000-0000" maxlength="8" style="width: 90px;" readonly>
-                        </div>
-                        <div class="flex-grow-1">
-                            <input type="text" name="kyotaku_address" id="kyotaku_address" class="form-control" value="{{ initial_data.kyotaku_address|default:'' }}" placeholder="住所を入力" readonly>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label">電話番号 <span class="text-danger">*</span></label>
-                    <input type="text" name="kyotaku_phone" id="kyotaku_phone" class="form-control" value="{{ initial_data.kyotaku_phone|default:'' }}" placeholder="電話番号を入力" readonly>
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label">担当者氏名 <span class="text-danger">*</span></label>
-                    <input type="text" name="kyotaku_staff_name" id="kyotaku_staff_name" class="form-control" value="{% if initial_data.kyotaku_staff_name %}{{ initial_data.kyotaku_staff_name }}{% elif user.is_authenticated %}{{ user.profile.get_full_name }}{% endif %}" placeholder="担当者氏名を入力">
-                </div>
-
-                <!-- 編集ボタン -->
-                <div id="kyotaku_edit_button_wrapper" class="col-12 text-end mt-2">
-                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openOfficeMasterDrawer();">
-                        <i class="fas fa-edit me-1"></i>事業所マスタデータを編集
-                    </button>
-                </div>
+        <!-- 事業者情報テーブル -->
+        <div id="renewal_office_table_section" class="mb-2">
+            <div class="table-responsive mb-1">
+                <table id="renewal_office_inst_table" class="table table-hover table-bordered mb-0" style="font-size:0.9rem; table-layout:fixed;">
+                    <thead>
+                        <tr>
+                            <th style="background-color:#f5f5f5;">事業所名</th>
+                            <th style="width:180px; background-color:#f5f5f5;">住所</th>
+                            <th style="width:110px; background-color:#f5f5f5;">電話 / FAX</th>
+                            <th style="width:120px; background-color:#f5f5f5; font-size:0.78rem; white-space:nowrap;">管理者 / 担当者 <span class="text-danger">*</span></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="align-middle">
+                                <small id="disp_office_number" style="display:none;">{{ initial_data.kyotaku_office_number }}</small>
+                                <small id="disp_office_furigana" class="text-muted d-block" style="font-size:0.75rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ initial_data.kyotaku_office_furigana }}</small>
+                                <span  id="disp_office_name" class="fw-bold d-block" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:clamp(0.7rem,1.5vw,0.9rem);">{{ initial_data.kyotaku_office_name }}</span>
+                            </td>
+                            <td class="align-middle" style="font-size:0.85rem;">
+                                <small id="disp_office_postal" class="text-muted d-block" style="font-size:0.75rem;">{% if initial_data.kyotaku_postal_code %}〒{{ initial_data.kyotaku_postal_code }}{% endif %}</small>
+                                <span  id="disp_office_address">{{ initial_data.kyotaku_address }}</span>
+                            </td>
+                            <td class="align-middle" style="font-size:0.85rem; white-space:nowrap;">
+                                <i class="fas fa-phone me-1 text-muted" style="font-size:0.75rem;"></i><span id="disp_office_phone">{{ initial_data.kyotaku_phone|default:"―" }}</span><br>
+                                <i class="fas fa-fax me-1 text-muted"   style="font-size:0.75rem;"></i><span id="disp_office_fax" class="text-muted">{{ initial_data.kyotaku_office_fax|default:"―" }}</span>
+                            </td>
+                            <td class="align-middle">
+                                <div id="disp_office_manager" class="text-muted mb-1" style="font-size:0.75rem;">{{ initial_data.kyotaku_office_manager|default:"―" }}</div>
+                                <span id="disp_staff_dash" class="text-muted" style="display:none; font-size:0.75rem;">―</span>
+                                <select name="kyotaku_staff_name" id="kyotaku_staff_name" class="form-select" style="font-size:0.75rem; padding:2px 6px; height:auto; appearance:none; -webkit-appearance:none; background-image:none;" required>
+                                    <option value="">----------</option>
+                                    {% for name in office_staff_options %}
+                                    <option value="{{ name }}" {% if initial_data.kyotaku_staff_name == name %}selected{% endif %}>{{ name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
-        </div>
-    </div>
-</div>
-<!-- 事業所マスタ編集モーダル（form タグなし：documentForm のネスト回避） -->
-<div class="modal fade" id="kyotakuOfficeModal" tabindex="-1" aria-labelledby="kyotakuOfficeModalLabel" aria-hidden="true"
-     data-bs-backdrop="static" data-bs-keyboard="false">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <input type="hidden" id="kyotaku_modal_pk" value="{{ initial_data.kyotaku_office_id|default:'' }}">
-            <div class="modal-header">
-                <h5 class="modal-title" id="kyotakuOfficeModalLabel">
-                    <i class="fas fa-hospital me-2"></i>居宅介護支援事業所編集
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div id="kyotakuModalError" class="alert alert-danger d-none"></div>
-                <div class="row g-3">
-                    <div class="col-12">
-                        <label class="form-label">事業所名 <span class="text-danger">*</span></label>
-                        <input type="text" id="kyotaku_modal_name" class="form-control"
-                               value="{{ initial_data.kyotaku_office_name|default:'' }}">
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label">フリガナ</label>
-                        <input type="text" id="kyotaku_modal_furigana" class="form-control"
-                               value="{{ initial_data.kyotaku_office_furigana|default:'' }}"
-                               placeholder="例: キョタクカイゴシエンジギョウショ アノツロマン">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">事業所番号 <span class="text-danger">*</span></label>
-                        <input type="text" id="kyotaku_modal_office_number" class="form-control"
-                               value="{{ initial_data.kyotaku_office_number|default:'' }}">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">管理者名</label>
-                        <input type="text" id="kyotaku_modal_manager" class="form-control"
-                               value="{{ initial_data.kyotaku_office_manager|default:'' }}"
-                               placeholder="例: 山田 太郎">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">郵便番号</label>
-                        <input type="text" id="kyotaku_modal_postal_code" class="form-control"
-                               value="{{ initial_data.kyotaku_postal_code|default:'' }}" placeholder="例: 514-0009">
-                    </div>
-                    <div class="col-md-8">
-                        <label class="form-label">住所</label>
-                        <input type="text" id="kyotaku_modal_address" class="form-control"
-                               value="{{ initial_data.kyotaku_address|default:'' }}">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">電話番号</label>
-                        <input type="text" id="kyotaku_modal_phone" class="form-control"
-                               value="{{ initial_data.kyotaku_phone|default:'' }}" placeholder="例: 059-123-4567">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">FAX</label>
-                        <input type="text" id="kyotaku_modal_fax" class="form-control"
-                               value="{{ initial_data.kyotaku_office_fax|default:'' }}" placeholder="例: 059-123-4568">
-                    </div>
-                    <div class="col-12">
-                        <div class="form-check">
-                            <input type="checkbox" id="kyotaku_modal_is_active" class="form-check-input" checked>
-                            <label class="form-check-label" for="kyotaku_modal_is_active">有効</label>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
-                <button type="button" class="btn btn-primary" id="kyotakuOfficeSaveBtn">
-                    <i class="fas fa-save me-1"></i>保存して反映
+            <div class="mt-1 mb-1">
+                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openRenewalOfficeMasterModal()">
+                    <i class="fas fa-edit me-1"></i>事業所情報を新規登録・編集
                 </button>
             </div>
         </div>
-    </div>
 </div>
+
+<!-- 事業所マスタ編集モーダル -->
+{% include 'clients/_renewal_office_modal.html' %}
 {% endblock %}
 
 {% block request_reason_section %}
@@ -219,160 +117,284 @@ function toggleKyotakuProvider() {
 </div>
 {% endblock %}
 
-{% block extra_styles %}{% endblock %}
+{% block extra_styles %}
+#renewal_office_inst_table th, #renewal_office_inst_table td { border-left: none !important; border-right: none !important; }
+#renewal_office_inst_table td, #renewal_office_inst_table th { vertical-align: middle; }
+{% endblock %}
 
 {% block extra_scripts %}
 <script>
-const kyotakuCsrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+var _OFFICE_NAME     = '{{ initial_data.kyotaku_office_name|escapejs }}';
+var _CURRENT_STAFF_NAMES = {{ office_staff_options_json|safe }};
+var _OFFICE_FURIGANA = '{{ initial_data.kyotaku_office_furigana|escapejs }}';
+var _OFFICE_NUMBER   = '{{ initial_data.kyotaku_office_number|escapejs }}';
+var _OFFICE_POSTAL   = '{{ initial_data.kyotaku_postal_code|escapejs }}';
+var _OFFICE_ADDRESS  = '{{ initial_data.kyotaku_address|escapejs }}';
+var _OFFICE_PHONE    = '{{ initial_data.kyotaku_phone|escapejs }}';
+var _OFFICE_FAX      = '{{ initial_data.kyotaku_office_fax|escapejs }}';
+var _OFFICE_MANAGER  = '{{ initial_data.kyotaku_office_manager|escapejs }}';
 
-// 事業所情報のステータスアイコンを更新
-window.updateKyotakuStatusIcon = function() {
-    const statusIcon = document.getElementById('kyotaku_status_icon');
-    if (!statusIcon) return;
+// 代行提出：auto / その他（新規登録）切替
+function toggleRenewalProvider() {
+    var selectEl = document.getElementById('renewal_provider_select');
+    if (!selectEl) return;
+    var g = function(id) { return document.getElementById(id); };
 
-    const selectEl  = document.getElementById('kyotaku_provider_select');
-    const staffName = document.getElementById('kyotaku_staff_name');
-    let isComplete  = staffName && staffName.value.trim() !== '';
-
-    // その他モードでは手入力フィールド・事業所番号・住所・電話も必須チェック
-    if (selectEl && selectEl.value === 'other') {
-        const manualEl  = document.getElementById('kyotaku_provider_manual');
-        const officeNum = document.getElementById('kyotaku_office_number');
-        const address   = document.getElementById('kyotaku_address');
-        const phone     = document.getElementById('kyotaku_phone');
-        isComplete = isComplete
-            && manualEl  && manualEl.value.trim()  !== ''
-            && officeNum && officeNum.value.trim() !== ''
-            && address   && address.value.trim()   !== ''
-            && phone     && phone.value.trim()     !== '';
+    if (selectEl.value === 'other') {
+        ['renewal_office_furigana','renewal_office_name','renewal_office_number',
+         'renewal_postal_code','renewal_office_address','renewal_office_phone',
+         'renewal_office_fax','renewal_office_manager'].forEach(function(id){
+            if(g(id)) g(id).value='';
+        });
+        var clr={'disp_office_furigana':'','disp_office_number':'','disp_office_name':'',
+                 'disp_office_postal':'','disp_office_address':'',
+                 'disp_office_phone':'―','disp_office_fax':'―','disp_office_manager':'―'};
+        Object.keys(clr).forEach(function(id){if(g(id))g(id).textContent=clr[id];});
+        var kSel  = document.getElementById('kyotaku_staff_name');
+        var kDash = document.getElementById('disp_staff_dash');
+        if (kSel)  { kSel.style.display = 'none'; kSel.value = ''; }
+        if (kDash) kDash.style.display = '';
+    } else {
+        var d={
+            'renewal_office_furigana': _OFFICE_FURIGANA,
+            'renewal_office_name':     _OFFICE_NAME,
+            'renewal_office_number':   _OFFICE_NUMBER,
+            'renewal_postal_code':     _OFFICE_POSTAL,
+            'renewal_office_address':  _OFFICE_ADDRESS,
+            'renewal_office_phone':    _OFFICE_PHONE,
+            'renewal_office_fax':      _OFFICE_FAX,
+            'renewal_office_manager':  _OFFICE_MANAGER,
+        };
+        Object.keys(d).forEach(function(id){if(g(id)) g(id).value=d[id];});
+        if(g('disp_office_furigana')) g('disp_office_furigana').textContent=d['renewal_office_furigana'];
+        if(g('disp_office_name'))     g('disp_office_name').textContent=d['renewal_office_name'];
+        if(g('disp_office_number'))   g('disp_office_number').textContent=d['renewal_office_number'];
+        if(g('disp_office_postal'))   g('disp_office_postal').textContent=d['renewal_postal_code']?'〒'+d['renewal_postal_code']:'';
+        if(g('disp_office_address'))  g('disp_office_address').textContent=d['renewal_office_address'];
+        if(g('disp_office_phone'))    g('disp_office_phone').textContent=d['renewal_office_phone']||'―';
+        if(g('disp_office_fax'))      g('disp_office_fax').textContent=d['renewal_office_fax']||'―';
+        if(g('disp_office_manager'))  g('disp_office_manager').textContent=d['renewal_office_manager']||'―';
+        if(selectEl.options[0] && d['renewal_office_name']) selectEl.options[0].text=d['renewal_office_name'];
+        var kSel2  = document.getElementById('kyotaku_staff_name');
+        var kDash2 = document.getElementById('disp_staff_dash');
+        if (kSel2)  kSel2.style.display = '';
+        if (kDash2) kDash2.style.display = 'none';
     }
+}
 
-    statusIcon.innerHTML = isComplete
-        ? '<i class="fas fa-check-circle" style="color: rgba(25, 135, 84, 0.5);"></i>'
-        : '<i class="fas fa-circle-exclamation" style="color: rgba(220, 53, 69, 0.5);"></i>';
-    // 未完了時は展開・完了時は閉じる
-    const kyotakuCollapse = document.getElementById('kyotakuDetailCollapse');
-    if (kyotakuCollapse) {
-        if (!isComplete && !kyotakuCollapse.classList.contains('show')) {
-            new bootstrap.Collapse(kyotakuCollapse, { toggle: false }).show();
-        } else if (isComplete && kyotakuCollapse.classList.contains('show') && !kyotakuCollapse.contains(document.activeElement)) {
-            new bootstrap.Collapse(kyotakuCollapse, { toggle: false }).hide();
+// 担当者行を追加（モーダル内）
+function addRenewalModalStaffRow(value) {
+    var c = document.getElementById('renewal_modal_staff_container');
+    if (!c) return;
+    var col = document.createElement('div');
+    col.className = 'col-6 renewal-staff-row';
+    col.innerHTML = '<div class="d-flex align-items-center gap-1">'
+        + '<input type="text" name="staff_names[]" class="form-control form-control-sm" placeholder="例: 山田 太郎" value="' + (value ? value.replace(/"/g,'&quot;') : '') + '">'
+        + '<button type="button" class="btn-close" style="font-size:0.7rem;" onclick="this.closest(\'.renewal-staff-row\').remove()"></button>'
+        + '</div>';
+    c.appendChild(col);
+}
+
+// 担当者ドロップダウンを更新
+function _updateStaffDropdown(names) {
+    var sel = document.getElementById('kyotaku_staff_name');
+    if (!sel) return;
+    var current = sel.value;
+    Array.from(sel.options).forEach(function(o) { if (o.dataset.fromStaff) o.remove(); });
+    names.forEach(function(n) {
+        if (!n) return;
+        var found = Array.from(sel.options).some(function(o) { return o.value === n; });
+        if (!found) {
+            var opt = document.createElement('option');
+            opt.value = n; opt.textContent = n; opt.dataset.fromStaff = '1';
+            sel.appendChild(opt);
         }
+    });
+    if (current) sel.value = current;
+}
+
+// 事業所マスタ編集モーダルを開く（ltc_change と同一パターン）
+function openRenewalOfficeMasterModal() {
+    var isNew = (document.getElementById('renewal_provider_select') || {}).value === 'other';
+    var errEl = document.getElementById('renewalOfficeModalError');
+    if (errEl) errEl.classList.add('d-none');
+    var container = document.getElementById('renewal_modal_staff_container');
+    if (container) container.innerHTML = '';
+    if (isNew) {
+        ['renewal_modal_company_name','renewal_modal_name','renewal_modal_furigana',
+         'renewal_modal_office_number','renewal_modal_manager_name',
+         'renewal_modal_postal_code','renewal_modal_address',
+         'renewal_modal_phone','renewal_modal_fax'].forEach(function(id) {
+            var el = document.getElementById(id); if (el) el.value = '';
+        });
+        var pkEl = document.getElementById('renewal_modal_pk');
+        if (pkEl) pkEl.value = '';
+    } else {
+        // 現在の事業所データでモーダルを事前入力
+        var g = function(id) { return document.getElementById(id); };
+        var sm = function(mid, hid) { var m=g(mid), h=g(hid); if(m && h) m.value=h.value; };
+        sm('renewal_modal_name',          'renewal_office_name');
+        sm('renewal_modal_furigana',      'renewal_office_furigana');
+        sm('renewal_modal_office_number', 'renewal_office_number');
+        sm('renewal_modal_postal_code',   'renewal_postal_code');
+        sm('renewal_modal_address',       'renewal_office_address');
+        sm('renewal_modal_phone',         'renewal_office_phone');
+        sm('renewal_modal_fax',           'renewal_office_fax');
+        sm('renewal_modal_manager_name',  'renewal_office_manager');
+        var _staffNames = typeof _CURRENT_STAFF_NAMES !== 'undefined' ? _CURRENT_STAFF_NAMES : [];
+        _staffNames.forEach(function(n) { addRenewalModalStaffRow(n); });
     }
-};
+    new bootstrap.Modal(document.getElementById('renewalOfficeModal')).show();
+}
+// 後方互換エイリアス
+function openOfficeMasterDrawer() { openRenewalOfficeMasterModal(); }
 
-// 居宅版のバリデーション
-function validateKyotakuProvider() {
-    const staffName = document.getElementById('kyotaku_staff_name');
-    const openAccordionAndFocus = function(element) {
-        const collapse = document.getElementById('kyotakuDetailCollapse');
-        if (collapse && !collapse.classList.contains('show')) {
-            new bootstrap.Collapse(collapse, { show: true });
-            setTimeout(function() { element.focus(); element.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 400);
-        } else {
-            element.focus();
-            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-    };
-    if (!staffName || !staffName.value.trim()) {
-        alert('担当者氏名を入力してください。');
-        openAccordionAndFocus(staffName);
+// バリデーション（ベーステンプレートから呼び出される）
+function validateDocumentSpecific() {
+    const staffSel = document.getElementById('kyotaku_staff_name');
+    if (!staffSel || !staffSel.value || !staffSel.value.trim()) {
+        alert('担当者を選択してください。');
+        if (staffSel) staffSel.scrollIntoView({ behavior: 'smooth', block: 'center' });
         return false;
     }
     return true;
 }
 
-// 居宅版専用の初期化
+// 初期化（ベーステンプレートから呼び出される）
 function initDocumentSpecific() {
     const otherReasonDetail = document.getElementById('other_reason_detail');
-    const otherReasonCount = document.getElementById('other_reason_count');
+    const otherReasonCount  = document.getElementById('other_reason_count');
     if (otherReasonDetail && otherReasonCount) {
         otherReasonCount.textContent = otherReasonDetail.value.length;
         otherReasonDetail.addEventListener('input', function() { otherReasonCount.textContent = this.value.length; });
     }
-    updateKyotakuStatusIcon();
-    const staffNameField = document.getElementById('kyotaku_staff_name');
-    if (staffNameField) { staffNameField.addEventListener('input', updateKyotakuStatusIcon); }
-
-    // その他モードで手入力するフィールドにもイベントリスナーを追加
-    ['kyotaku_provider_manual', 'kyotaku_office_number', 'kyotaku_address', 'kyotaku_phone'].forEach(function(id) {
-        const el = document.getElementById(id);
-        if (el) { el.addEventListener('input', updateKyotakuStatusIcon); }
-    });
 }
 
-// 居宅版のバリデーション（ベーステンプレートから呼び出される）
-function validateDocumentSpecific() {
-    return validateKyotakuProvider();
-}
-
-// 事業所編集モーダルを開く
-function openOfficeMasterDrawer() {
-    document.getElementById('kyotakuModalError').classList.add('d-none');
-    new bootstrap.Modal(document.getElementById('kyotakuOfficeModal')).show();
-}
-
-// 事業所保存ボタン
+// モーダル保存ボタン
 document.addEventListener('DOMContentLoaded', function() {
-    const saveBtn = document.getElementById('kyotakuOfficeSaveBtn');
+    const saveBtn = document.getElementById('renewalOfficeSaveBtn');
     if (!saveBtn) return;
-
     saveBtn.addEventListener('click', function() {
-        const pk = document.getElementById('kyotaku_modal_pk').value;
+        const pk = document.getElementById('renewal_modal_pk').value;
+
+        // 新規登録モード（pk なし）
         if (!pk) {
-            alert('事業所が設定されていません。');
+            const _ns = function(s){ return s.trim().replace(/[ 　]+/g,' '); };
+            const companyNameN  = _ns(document.getElementById('renewal_modal_company_name').value);
+            const nameN         = _ns(document.getElementById('renewal_modal_name').value);
+            const furiganaN     = _ns(document.getElementById('renewal_modal_furigana').value);
+            const officeNumberN = document.getElementById('renewal_modal_office_number').value.trim();
+            const managerNameN  = document.getElementById('renewal_modal_manager_name').value.trim().replace(/[ 　]+/g, ' ');
+            const postalCodeN   = document.getElementById('renewal_modal_postal_code').value.trim();
+            const addressN      = document.getElementById('renewal_modal_address').value.trim();
+            const phoneN        = document.getElementById('renewal_modal_phone').value.trim();
+            const faxN          = document.getElementById('renewal_modal_fax').value.trim();
+            if (!nameN || !officeNumberN) {
+                document.getElementById('renewalOfficeModalError').textContent = '事業所名と事業所番号は必須です。';
+                document.getElementById('renewalOfficeModalError').classList.remove('d-none');
+                return;
+            }
+            const fd2 = new FormData();
+            fd2.append('company_name', companyNameN); fd2.append('name', nameN); fd2.append('furigana', furiganaN);
+            fd2.append('office_number', officeNumberN); fd2.append('manager_name', managerNameN);
+            fd2.append('postal_code', postalCodeN); fd2.append('address', addressN);
+            fd2.append('phone', phoneN); fd2.append('fax', faxN); fd2.append('is_active', 'true');
+            fetch('/clients/home-care-offices/create/', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value, 'X-Requested-With': 'XMLHttpRequest' },
+                body: fd2,
+            }).then(r => r.json()).then(function(data) {
+                if (data.success) {
+                    document.getElementById('renewal_modal_pk').value = data.pk;
+                    var setVal = function(id, v) { var e=document.getElementById(id); if(e) e.value=v; };
+                    setVal('renewal_office_name', data.name); setVal('renewal_office_furigana', data.furigana||'');
+                    setVal('renewal_office_number', data.office_number||''); setVal('renewal_postal_code', data.postal_code||'');
+                    setVal('renewal_office_address', data.address||''); setVal('renewal_office_phone', data.phone||'');
+                    setVal('renewal_office_fax', data.fax||''); setVal('renewal_office_manager', data.manager_name||'');
+                    var setText = function(id, v) { var e=document.getElementById(id); if(e) e.textContent=v||''; };
+                    setText('disp_office_name', data.name); setText('disp_office_furigana', data.furigana||'');
+                    setText('disp_office_number', data.office_number||'');
+                    setText('disp_office_postal', data.postal_code ? '〒'+data.postal_code : '');
+                    setText('disp_office_address', data.address||'');
+                    setText('disp_office_phone', data.phone||'―'); setText('disp_office_fax', data.fax||'―');
+                    setText('disp_office_manager', managerNameN||'―');
+                    if (typeof _OFFICE_MANAGER !== 'undefined') _OFFICE_MANAGER = managerNameN;
+                    var _mgrIn=document.getElementById('renewal_modal_manager_name'); if(_mgrIn) _mgrIn.value=managerNameN;
+                    var sel = document.getElementById('renewal_provider_select');
+                    if (sel) {
+                        var newOpt = sel.querySelector('option[data-new="1"]');
+                        if (!newOpt) { newOpt = document.createElement('option'); newOpt.dataset.new='1'; sel.insertBefore(newOpt, sel.querySelector('option[value="other"]')); }
+                        newOpt.value = 'new_'+data.pk; newOpt.textContent = data.name; sel.value = newOpt.value;
+                    }
+                    bootstrap.Modal.getInstance(document.getElementById('renewalOfficeModal')).hide();
+                } else {
+                    document.getElementById('renewalOfficeModalError').textContent = data.error || 'エラーが発生しました。';
+                    document.getElementById('renewalOfficeModalError').classList.remove('d-none');
+                }
+            });
             return;
         }
-        const url = `/clients/home-care-offices/${pk}/edit/`;
-        const formData = new FormData();
-        formData.append('name',           document.getElementById('kyotaku_modal_name').value);
-        formData.append('furigana',       document.getElementById('kyotaku_modal_furigana').value);
-        formData.append('office_number',  document.getElementById('kyotaku_modal_office_number').value);
-        formData.append('manager_name',   document.getElementById('kyotaku_modal_manager').value);
-        formData.append('postal_code',    document.getElementById('kyotaku_modal_postal_code').value);
-        formData.append('address',        document.getElementById('kyotaku_modal_address').value);
-        formData.append('phone',          document.getElementById('kyotaku_modal_phone').value);
-        formData.append('fax',            document.getElementById('kyotaku_modal_fax').value);
-        if (document.getElementById('kyotaku_modal_is_active').checked) {
-            formData.append('is_active', 'true');
+
+        const _ns2 = function(s){ return s.trim().replace(/[ 　]+/g,' '); };
+        const companyName  = _ns2(document.getElementById('renewal_modal_company_name').value);
+        const name         = _ns2(document.getElementById('renewal_modal_name').value);
+        const furigana     = _ns2(document.getElementById('renewal_modal_furigana').value);
+        const officeNumber = document.getElementById('renewal_modal_office_number').value.trim();
+        const managerName  = document.getElementById('renewal_modal_manager_name').value.trim().replace(/[ 　]+/g, ' ');
+        const postalCode   = document.getElementById('renewal_modal_postal_code').value.trim();
+        const address      = document.getElementById('renewal_modal_address').value.trim();
+        const phone        = document.getElementById('renewal_modal_phone').value.trim();
+        const fax          = document.getElementById('renewal_modal_fax').value.trim();
+        if (!name || !officeNumber) {
+            const errEl = document.getElementById('renewalOfficeModalError');
+            errEl.textContent = '事業所名と事業所番号は必須です。';
+            errEl.classList.remove('d-none');
+            return;
         }
-
-        fetch(url, {
+        const formData = new FormData();
+        formData.append('company_name', companyName); formData.append('name', name);
+        formData.append('furigana', furigana); formData.append('office_number', officeNumber);
+        formData.append('manager_name', managerName); formData.append('postal_code', postalCode);
+        formData.append('address', address); formData.append('phone', phone);
+        formData.append('fax', fax); formData.append('is_active', 'true');
+        document.querySelectorAll('#renewal_modal_staff_container input[name="staff_names[]"]').forEach(function(inp) {
+            const v = inp.value.trim().replace(/[ 　]+/g, ' '); if (v) formData.append('staff_names[]', v);
+        });
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        fetch(`/clients/home-care-offices/${pk}/edit/`, {
             method: 'POST',
-            headers: { 'X-CSRFToken': kyotakuCsrfToken, 'X-Requested-With': 'XMLHttpRequest' },
+            headers: { 'X-CSRFToken': csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
             body: formData,
-        })
-        .then(r => r.json())
-        .then(data => {
+        }).then(r => r.json()).then(data => {
             if (data.success) {
-                // 書類フォームのフィールドを更新
-                const name        = document.getElementById('kyotaku_modal_name').value;
-                const officeNum   = document.getElementById('kyotaku_modal_office_number').value;
-                const postalCode  = document.getElementById('kyotaku_modal_postal_code').value;
-                const address     = document.getElementById('kyotaku_modal_address').value;
-                const phone       = document.getElementById('kyotaku_modal_phone').value;
-
-                const providerSelect = document.getElementById('kyotaku_provider_select');
-                if (providerSelect && providerSelect.options[0]) providerSelect.options[0].text = name;
-                const numEl = document.getElementById('kyotaku_office_number');
-                if (numEl) { numEl.value = officeNum; numEl.defaultValue = officeNum; }
-                const pcEl = document.getElementById('kyotaku_postal_code');
-                if (pcEl) { pcEl.value = postalCode; pcEl.defaultValue = postalCode; }
-                const addrEl = document.getElementById('kyotaku_address');
-                if (addrEl) { addrEl.value = address; addrEl.defaultValue = address; }
-                const phoneEl = document.getElementById('kyotaku_phone');
-                if (phoneEl) { phoneEl.value = phone; phoneEl.defaultValue = phone; }
-
-                bootstrap.Modal.getInstance(document.getElementById('kyotakuOfficeModal')).hide();
-                if (typeof updateKyotakuStatusIcon === 'function') updateKyotakuStatusIcon();
+                const setField = function(id, val) { const el = document.getElementById(id); if (el) { el.value = val; el.defaultValue = val; } };
+                setField('renewal_office_name', name); setField('renewal_office_furigana', furigana);
+                setField('renewal_office_number', officeNumber); setField('renewal_postal_code', postalCode);
+                setField('renewal_office_address', address); setField('renewal_office_phone', phone);
+                setField('renewal_office_fax', fax); setField('renewal_office_manager', managerName);
+                const setText = function(id, val) { const el = document.getElementById(id); if (el) el.textContent = val || ''; };
+                setText('disp_office_name', name); setText('disp_office_furigana', furigana);
+                setText('disp_office_number', officeNumber);
+                setText('disp_office_postal', postalCode ? '〒' + postalCode : '');
+                setText('disp_office_address', address);
+                setText('disp_office_phone', phone || '―'); setText('disp_office_fax', fax || '―');
+                setText('disp_office_manager', managerName || '―');
+                if (typeof _OFFICE_MANAGER !== 'undefined') _OFFICE_MANAGER = managerName;
+                const _mgrIn2=document.getElementById('renewal_modal_manager_name'); if(_mgrIn2) _mgrIn2.value=managerName;
+                const sel = document.getElementById('renewal_provider_select');
+                if (sel && sel.options[0]) sel.options[0].text = name;
+                if (data.staff_names) {
+                    _CURRENT_STAFF_NAMES = data.staff_names;
+                    _updateStaffDropdown(data.staff_names);
+                }
+                bootstrap.Modal.getInstance(document.getElementById('renewalOfficeModal')).hide();
             } else {
-                const errEl = document.getElementById('kyotakuModalError');
+                const errEl = document.getElementById('renewalOfficeModalError');
                 errEl.textContent = data.error || 'エラーが発生しました。';
                 errEl.classList.remove('d-none');
             }
-        })
-        .catch(() => {
-            const errEl = document.getElementById('kyotakuModalError');
+        }).catch(function() {
+            const errEl = document.getElementById('renewalOfficeModalError');
             errEl.textContent = '通信エラーが発生しました。';
             errEl.classList.remove('d-none');
         });

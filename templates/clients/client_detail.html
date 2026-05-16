@@ -1085,7 +1085,8 @@ function downloadDocumentHistoryExcel(historyId) {
 // 書類を再編集
 function reopenDocument(documentType, historyId, clientId) {
     const typeToUrl = {
-        'ltc_renewal':           `/clients/${clientId}/document/ltc-renewal/?history_id=${historyId}`,
+        'ltc_renewal':               `/clients/${clientId}/document/ltc-renewal/?history_id=${historyId}`,
+        'hospital_admission_info':   `/clients/${clientId}/document/hospital-admission-info/?history_id=${historyId}`,
         'ltc_change':            `/clients/${clientId}/document/ltc-change/?history_id=${historyId}`,
         'ltc_withdrawal':        `/clients/${clientId}/document/ltc-withdrawal/?history_id=${historyId}`,
         'ltc_doctor_change':     `/clients/${clientId}/document/ltc-doctor-change/?history_id=${historyId}`,

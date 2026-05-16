@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% load django_bootstrap5 %}
+{% load django_bootstrap5 custom_filters %}
 
 {% block title %}介護サービス事業所一覧 - {{ block.super }}{% endblock %}
 
@@ -20,12 +20,21 @@ select.text-muted option:not([value=""]) { color: #212529; }
 
 <div class="row">
   <div class="col-12">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-1">
       <h1><i class="fas fa-clinic-medical"></i> 介護サービス事業所一覧</h1>
       <button type="button" class="btn btn-new-pastel" onclick="openCreateModal()">
         <i class="fas fa-plus"></i> 新規登録
       </button>
     </div>
+    {% if back_url %}
+    <div class="text-end mb-3">
+      <a href="{{ back_url }}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-arrow-left me-1"></i>サービス担当者会議開催のご案内へ戻る
+      </a>
+    </div>
+    {% else %}
+    <div class="mb-3"></div>
+    {% endif %}
   </div>
 </div>
 
@@ -89,7 +98,7 @@ select.text-muted option:not([value=""]) { color: #212529; }
                       {{ office.name }}
                     </td>
                   </tr>
-                  <tr><th class="table-light">事業所種類</th><td>{{ office.service_type|default:"-" }}</td></tr>
+                  <tr><th class="table-light">事業所種類</th><td>{{ office.service_type|svc_label|default:"-" }}</td></tr>
                   <tr><th class="table-light">事業所番号</th><td>{{ office.office_number|default:"-" }}</td></tr>
                   <tr><th class="table-light">郵便番号</th><td>{{ office.postal_code|default:"-" }}</td></tr>
                   <tr><th class="table-light">住所</th><td>{{ office.address|default:"-" }}</td></tr>

@@ -548,6 +548,7 @@ class DocumentCreationHistory(models.Model):
         ('kyotaku_service_plan_request', '居宅サービス計画作成依頼書'),
         ('kyotaku_preventive_service_plan_request', '介護予防サービス計画作成依頼書'),
         ('ltc_renewal', '更新認定申請書'),
+        ('hospital_admission_info', '入院時情報提供書'),
         ('ltc_change', '区分変更申請書'),
         ('ltc_withdrawal', '認定申請取下書'),
         ('ltc_doctor_change', '認定申請主治医変更届出書'),
@@ -774,6 +775,7 @@ class FeedbackReply(models.Model):
 class HomeCareSupportOffice(models.Model):
     """居宅介護支援事業所"""
 
+    company_name = models.CharField('会社名', max_length=100, blank=True)
     name = models.CharField('事業所名', max_length=100)
     furigana = models.CharField('フリガナ', max_length=100, blank=True)
     office_number = models.CharField('事業所番号', max_length=20, unique=True)
@@ -782,6 +784,7 @@ class HomeCareSupportOffice(models.Model):
     phone = models.CharField('電話番号', max_length=20, blank=True)
     fax = models.CharField('FAX', max_length=20, blank=True)
     manager_name = models.CharField('管理者名', max_length=100, blank=True)
+    staff_names = models.JSONField('担当者リスト', default=list, blank=True)
     is_active = models.BooleanField('有効', default=True)
     created_at = models.DateTimeField('作成日時', auto_now_add=True)
     updated_at = models.DateTimeField('更新日時', auto_now=True)
@@ -834,6 +837,45 @@ class RegionalSupportCenter(models.Model):
         return f"{self.name} ({self.office_number})"
 
 
+class MedicalInstitution(models.Model):
+    """医療機関マスタ"""
+
+    DOCTOR_TYPE_CHOICES = [
+        ('主治医',       '主治医'),
+        ('往診医',       '往診医'),
+        ('かかりつけ医', 'かかりつけ医'),
+        ('専門医',       '専門医'),
+        ('その他',       'その他'),
+    ]
+
+    corp_name         = models.CharField('法人名',     max_length=200, blank=True)
+    hospital_name     = models.CharField('医療機関名', max_length=200)
+    hospital_furigana = models.CharField('フリガナ',  max_length=200, blank=True)
+    doctors           = models.JSONField('医師氏名リスト', default=list, blank=True)
+    doctor_type       = models.CharField('種別', max_length=20, choices=DOCTOR_TYPE_CHOICES, blank=True)
+    phone         = models.CharField('電話番号', max_length=20, blank=True)
+    fax           = models.CharField('FAX番号',  max_length=20, blank=True)
+    postal_code   = models.CharField('郵便番号', max_length=10, blank=True)
+    address       = models.CharField('住所',     max_length=200, blank=True)
+    note          = models.TextField('備考', blank=True)
+    created_at    = models.DateTimeField('作成日時', auto_now_add=True)
+    updated_at    = models.DateTimeField('更新日時', auto_now=True)
+
+    class Meta:
+        verbose_name = '医療機関'
+        verbose_name_plural = '医療機関'
+        ordering = ['hospital_name']
+
+    @property
+    def doctor_name(self):
+        """後方互換用：最初の医師名を返す"""
+        return self.doctors[0] if self.doctors else ''
+
+    def __str__(self):
+        first = self.doctors[0] if self.doctors else ''
+        return f'{self.hospital_name}（{first}）' if first else self.hospital_name
+
+
 class CareServiceOffice(models.Model):
     """介護サービス事業所（サービス担当者会議案内用マスタ）"""
 
@@ -853,10 +895,17 @@ class CareServiceOffice(models.Model):
         ('小規模多機能型居宅介護', '小規模多機能型居宅介護'),
     ]
 
+    OFFICE_TYPE_CHOICES = [
+        ('external', '外部'),
+        ('internal', '内部'),
+    ]
+
     name         = models.CharField('事業所名', max_length=100)
     furigana     = models.CharField('フリガナ', max_length=100, blank=True)
     service_type = models.CharField('事業所種類', max_length=50, blank=True,
                                     choices=SERVICE_TYPE_CHOICES)
+    office_type  = models.CharField('事業所区分', max_length=10,
+                                    choices=OFFICE_TYPE_CHOICES, default='external')
     office_number = models.CharField('事業所番号', max_length=20, blank=True)
     postal_code   = models.CharField('郵便番号', max_length=10, blank=True)
     address       = models.CharField('住所', max_length=200, blank=True)
@@ -876,6 +925,63 @@ class CareServiceOffice(models.Model):
 
     def persons_display(self):
         return '、'.join(self.persons) if self.persons else ''
+
+
+class MeetingPlaceOption(models.Model):
+    """サービス担当者会議 開催予定場所の選択肢"""
+    name       = models.CharField('場所名', max_length=100)
+    is_other   = models.BooleanField('その他（手入力）', default=False)
+    sort_order = models.PositiveIntegerField('表示順', default=0)
+
+    class Meta:
+        verbose_name = '開催予定場所'
+        verbose_name_plural = '開催予定場所'
+        ordering = ['sort_order', 'id']
+
+    def __str__(self):
+        return self.name
+
+
+class MeetingAgendaOption(models.Model):
+    """サービス担当者会議 今回の検討内容の選択肢"""
+    name       = models.CharField('検討内容', max_length=200)
+    is_other   = models.BooleanField('その他（手入力）', default=False)
+    sort_order = models.PositiveIntegerField('表示順', default=0)
+
+    class Meta:
+        verbose_name = '今回の検討内容'
+        verbose_name_plural = '今回の検討内容'
+        ordering = ['sort_order', 'id']
+
+    def __str__(self):
+        return self.name
+
+
+_FAX_DEFAULT_BODY = (
+    'いつもお世話になっております。\n'
+    '{office_name}の{user_name}です。\n'
+    '\n'
+    'サービス担当者会議開催のご案内をお送りします。ご多忙のところ誠に恐れ入りますが、\n'
+    'ご確認いただけますようよろしくお願いいたします。'
+)
+
+
+class FaxMessageTemplate(models.Model):
+    """FAX送付状 本文テンプレート（シングルトン）"""
+    body       = models.TextField('本文テンプレート', default=_FAX_DEFAULT_BODY)
+    updated_at = models.DateTimeField('更新日時', auto_now=True)
+
+    class Meta:
+        verbose_name = 'FAX本文テンプレート'
+        verbose_name_plural = 'FAX本文テンプレート'
+
+    @classmethod
+    def get_body(cls):
+        obj, _ = cls.objects.get_or_create(pk=1, defaults={'body': _FAX_DEFAULT_BODY})
+        return obj.body
+
+    def __str__(self):
+        return 'FAX本文テンプレート'
 
 
 # シグナルハンドラー: ログイン時に1ヶ月以上ログインがないユーザーを自動無効化

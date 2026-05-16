@@ -1044,48 +1044,92 @@ button[name="action"][value="save"]:hover {
                     <!-- 医師情報 -->
                     <div class="mb-4">
                         <h6 class="text-muted mb-3 pb-1" style="border-bottom: 1px solid #dee2e6; width: 50%;">医師情報</h6>
-                        <div class="row g-3">
-                            <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 mb-3">
-                                <label class="form-label">主治医</label>
-                                <div class="row">
-                        <div class="col-6">
-                            <input type="text" name="main_doctor_hospital" class="form-control" placeholder="病院・クリニック名" value="{{ form.main_doctor_hospital.value|default:'' }}">
-                        </div>
-                        <div class="col-6">
-                            <input type="text" name="main_doctor_name" class="form-control" placeholder="先生の名前" value="{{ form.main_doctor_name.value|default:'' }}">
-                        </div>
+                        <!-- スロットごとの hidden input -->
+                        {% for slot_key, slot_label, init_inst in doctor_init_slots %}
+                        <input type="hidden" name="{{ slot_key }}_id" id="{{ slot_key }}_id"
+                               value="{% if init_inst %}{{ init_inst.pk }}{% endif %}">
+                        {% endfor %}
+
+                        {% with slot_list="main_doctor,visiting_doctor" %}
+                        {% for slot_def in doctor_init_slots %}{% if slot_def.0 == 'main_doctor' or slot_def.0 == 'visiting_doctor' %}
+                        <!-- {{ slot_def.1 }} -->
+                        <div class="mb-3">
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <span class="fw-bold" style="font-size:0.85rem; color:#495057;">{{ slot_def.1 }}</span>
+                                {% for inst in medical_institutions %}
+                                {% if slot_def.0 == 'main_doctor' and inst.doctor_type %}
+                                <button type="button" class="btn btn-outline-secondary btn-sm"
+                                        style="font-size:0.7rem; padding:1px 7px;"
+                                        onclick="quickSelectDoctorSlot('{{ slot_def.0 }}','{{ inst.pk }}','{{ inst.hospital_name|escapejs }}','{{ inst.doctor_name|escapejs }}','{{ inst.hospital_furigana|default:''|escapejs }}','{{ inst.phone|default:''|escapejs }}','{{ inst.fax|default:''|escapejs }}','{{ inst.postal_code|default:''|escapejs }}','{{ inst.address|default:''|escapejs }}','{{ inst.doctors|join:","  |escapejs }}')">
+                                    {{ inst.hospital_name }}
+                                </button>
+                                {% elif slot_def.0 == 'visiting_doctor' and inst.doctor_type == '往診医' %}
+                                <button type="button" class="btn btn-outline-secondary btn-sm"
+                                        style="font-size:0.7rem; padding:1px 7px;"
+                                        onclick="quickSelectDoctorSlot('{{ slot_def.0 }}','{{ inst.pk }}','{{ inst.hospital_name|escapejs }}','{{ inst.doctor_name|escapejs }}','{{ inst.hospital_furigana|default:''|escapejs }}','{{ inst.phone|default:''|escapejs }}','{{ inst.fax|default:''|escapejs }}','{{ inst.postal_code|default:''|escapejs }}','{{ inst.address|default:''|escapejs }}','{{ inst.doctors|join:","  |escapejs }}')">
+                                    {{ inst.hospital_name }}
+                                </button>
+                                {% endif %}
+                                {% endfor %}
+                            </div>
+                            <div id="{{ slot_def.0 }}_table_wrap" class="mb-2" style="display:none;">
+                                <div class="table-responsive">
+                                    <table class="table table-hover table-bordered mb-0 doctor-display-table" style="font-size:0.9rem;">
+                                        <thead>
+                                            <tr>
+                                                <th style="background-color:#f5f5f5;">医療機関名</th>
+                                                <th style="width:170px; background-color:#f5f5f5;">住所</th>
+                                                <th style="width:105px; background-color:#f5f5f5;">電話 / FAX</th>
+                                                <th style="width:160px; background-color:#f5f5f5;">医師氏名</th>
+                                                <th style="width:40px; background-color:#f5f5f5;"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="{{ slot_def.0 }}_selected_tbody"></tbody>
+                                    </table>
                                 </div>
                             </div>
-                            <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 mb-3">
-                                <label class="form-label">往診医</label>
-                                <div class="row">
-                        <div class="col-6">
-                            <input type="text" name="visiting_doctor_hospital" class="form-control" placeholder="病院・クリニック名" value="{{ form.visiting_doctor_hospital.value|default:'' }}">
+                            <div id="{{ slot_def.0 }}_selected_empty" class="text-muted small mb-2">未選択</div>
+                            <button type="button" class="btn btn-outline-secondary btn-sm"
+                                    onclick="openDoctorSelectModal('{{ slot_def.0 }}')">
+                                <i class="fas fa-hospital me-1"></i>医療機関を選択
+                            </button>
                         </div>
-                        <div class="col-6">
-                            <input type="text" name="visiting_doctor_name" class="form-control" placeholder="先生の名前" value="{{ form.visiting_doctor_name.value|default:'' }}">
-                        </div>
+                        {% endif %}{% endfor %}
+                        {% endwith %}
+
+                        <!-- かかりつけ医 -->
+                        <div class="mb-3">
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <span class="fw-bold" style="font-size:0.85rem; color:#495057;">かかりつけ医</span>
+                                {% for inst in medical_institutions %}{% if inst.doctor_type == 'かかりつけ医' %}
+                                <button type="button" class="btn btn-outline-secondary btn-sm"
+                                        style="font-size:0.7rem; padding:1px 7px;"
+                                        onclick="quickSelectFamilyDoctor('{{ inst.pk }}','{{ inst.hospital_name|escapejs }}','{{ inst.doctor_name|escapejs }}','{{ inst.hospital_furigana|default:''|escapejs }}','{{ inst.phone|default:''|escapejs }}','{{ inst.fax|default:''|escapejs }}','{{ inst.postal_code|default:''|escapejs }}','{{ inst.address|default:''|escapejs }}','{{ inst.doctors|join:","  |escapejs }}')">
+                                    {{ inst.hospital_name }}
+                                </button>
+                                {% endif %}{% endfor %}
+                            </div>
+                            <div id="family_doctors_table_wrap" class="mb-2" style="display:none;">
+                                <div class="table-responsive">
+                                    <table class="table table-hover table-bordered mb-0 doctor-display-table" style="font-size:0.9rem;">
+                                        <thead>
+                                            <tr>
+                                                <th style="background-color:#f5f5f5;">医療機関名</th>
+                                                <th style="width:170px; background-color:#f5f5f5;">住所</th>
+                                                <th style="width:105px; background-color:#f5f5f5;">電話 / FAX</th>
+                                                <th style="width:160px; background-color:#f5f5f5;">医師氏名</th>
+                                                <th style="width:40px; background-color:#f5f5f5;"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="family_doctors_selected_tbody"></tbody>
+                                    </table>
                                 </div>
                             </div>
-                            <div class="col-12 mb-3">
-                                <label class="form-label">かかりつけ医</label>
-                                <div class="row g-2">
-                                    <div class="col-6">
-                                        <input type="text" name="family_doctor_hospital_1" class="form-control family-doctor-hospital" data-field="1" placeholder="病院・クリニック名1" value="{{ form.family_doctor_hospital_1.value|default:'' }}">
-                                    </div>
-                                    <div class="col-6">
-                                        <input type="text" name="family_doctor_hospital_2" class="form-control family-doctor-hospital" data-field="2" placeholder="病院・クリニック名2" value="{{ form.family_doctor_hospital_2.value|default:'' }}">
-                                    </div>
-                                </div>
-                                <div class="row g-2 mt-2">
-                                    <div class="col-6">
-                                        <input type="text" name="family_doctor_hospital_3" class="form-control family-doctor-hospital" data-field="3" placeholder="病院・クリニック名3" value="{{ form.family_doctor_hospital_3.value|default:'' }}">
-                                    </div>
-                                    <div class="col-6">
-                                        <input type="text" name="family_doctor_hospital_4" class="form-control family-doctor-hospital" data-field="4" placeholder="病院・クリニック名4" value="{{ form.family_doctor_hospital_4.value|default:'' }}">
-                                    </div>
-                                </div>
-                            </div>
+                            <div id="family_doctors_selected_empty" class="text-muted small mb-2">未選択</div>
+                            <button type="button" class="btn btn-outline-secondary btn-sm"
+                                    onclick="openDoctorSelectModal('family_doctors')">
+                                <i class="fas fa-hospital me-1"></i>医療機関を選択
+                            </button>
                         </div>
                     </div>
                     
@@ -4807,6 +4851,436 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 })();
+</script>
+
+<!-- 医療機関選択モーダル -->
+<div class="modal fade" id="medicalSelectModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-scrollable" style="max-width:700px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-hospital me-2"></i>医療機関を選択</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3 d-flex align-items-center gap-2">
+                    <label class="form-label fw-bold mb-0" style="white-space:nowrap;">種別</label>
+                    <select id="doctor_slot_select" class="form-select form-select-sm" style="width:200px;"
+                            onchange="onDoctorSlotSelectChange()"></select>
+                </div>
+                <div class="mb-2">
+                    <input type="text" id="medical_modal_search" class="form-control"
+                           placeholder="医療機関名・医師氏名で検索..." oninput="applyMedicalFilter()">
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover table-bordered mb-0 doctor-display-table" style="font-size:0.9rem;">
+                        <thead>
+                            <tr>
+                                <th style="width:40px; background-color:#f5f5f5;"></th>
+                                <th style="background-color:#f5f5f5;">医療機関名</th>
+                                <th style="width:150px; background-color:#f5f5f5;">住所</th>
+                                <th style="width:105px; background-color:#f5f5f5;">電話 / FAX</th>
+                                <th style="width:130px; background-color:#f5f5f5;">医師氏名</th>
+                            </tr>
+                        </thead>
+                        <tbody id="medical_modal_list">
+                            {% for inst in medical_institutions %}
+                            <tr class="medical-modal-item" style="cursor:pointer;"
+                                data-pk="{{ inst.pk }}"
+                                data-hospital="{{ inst.hospital_name }}"
+                                data-doctor="{{ inst.doctor_name }}"
+                                data-furigana="{{ inst.hospital_furigana|default:'' }}"
+                                data-phone="{{ inst.phone|default:'' }}"
+                                data-fax="{{ inst.fax|default:'' }}"
+                                data-postal="{{ inst.postal_code|default:'' }}"
+                                data-address="{{ inst.address|default:'' }}"
+                                data-doctors="{{ inst.doctors|join:',' }}"
+                                onclick="selectMedicalRow(this)">
+                                <td class="text-center align-middle">
+                                    <input class="form-check-input medical-modal-radio" type="radio" name="medical_modal_radio"
+                                           value="{{ inst.pk }}" onclick="event.stopPropagation()">
+                                    <input class="form-check-input medical-modal-check" type="checkbox"
+                                           value="{{ inst.pk }}" style="display:none;"
+                                           onclick="event.stopPropagation(); limitFamilyDoctorCheck(this)">
+                                </td>
+                                <td class="align-middle">
+                                    {% if inst.hospital_furigana %}<small class="text-muted d-block" style="font-size:0.75rem;">{{ inst.hospital_furigana }}</small>{% endif %}
+                                    <span class="fw-bold">{{ inst.hospital_name }}</span>
+                                </td>
+                                <td class="align-middle" style="font-size:0.85rem;">
+                                    {% if inst.postal_code %}<small class="text-muted d-block" style="font-size:0.75rem;">〒{{ inst.postal_code }}</small>{% endif %}
+                                    {{ inst.address|default:"―" }}
+                                </td>
+                                <td class="align-middle" style="font-size:0.85rem; white-space:nowrap;">
+                                    <i class="fas fa-phone me-1 text-muted" style="font-size:0.75rem;"></i>{{ inst.phone|default:"―" }}<br>
+                                    <i class="fas fa-fax me-1 text-muted" style="font-size:0.75rem;"></i><span class="text-muted">{{ inst.fax|default:"―" }}</span>
+                                </td>
+                                <td class="align-middle" style="font-size:0.85rem;">
+                                    {% if inst.doctors %}
+                                        {% for d in inst.doctors|slice:":2" %}{{ d }} 先生{% if not forloop.last %}<br>{% endif %}{% endfor %}
+                                        {% if inst.doctors|length >= 3 %} <span class="text-muted">他</span>{% endif %}
+                                    {% else %}
+                                        <span class="text-muted">―</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="5" class="text-center text-muted py-3">医療機関が登録されていません</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer justify-content-between">
+                <div class="d-flex align-items-center gap-3">
+                    <span id="medical_modal_hint" class="text-muted small">1つ選択してください</span>
+                </div>
+                <div>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                    <button type="button" class="btn btn-primary" onclick="confirmMedicalSelection()">
+                        <i class="fas fa-check me-1"></i>確定
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+#medicalSelectModal .table-bordered th,
+#medicalSelectModal .table-bordered td { border-left: none; border-right: none; }
+#medicalSelectModal .table td,
+#medicalSelectModal .table th { vertical-align: middle; }
+#medicalSelectModal tbody tr.medical-modal-item:hover { background-color: rgba(0,0,0,0.04); }
+#medicalSelectModal tbody tr.selected-row { background-color: #e8f4fd !important; }
+.doctor-display-table.table-bordered th,
+.doctor-display-table.table-bordered td { border-left: none; border-right: none; }
+.doctor-display-table td, .doctor-display-table th { vertical-align: middle; }
+</style>
+
+<script>
+var DOCTOR_SLOTS = [
+    {% for slot_key, slot_label, init_inst in doctor_init_slots %}
+    {
+        key:      '{{ slot_key }}',
+        label:    '{{ slot_label }}',
+        pk:       '{% if init_inst %}{{ init_inst.pk }}{% endif %}',
+        hospital: '{% if init_inst %}{{ init_inst.hospital_name|escapejs }}{% endif %}',
+        doctor:   '{% if init_inst %}{{ init_inst.doctor_name|escapejs }}{% endif %}',
+        furigana: '{% if init_inst %}{{ init_inst.hospital_furigana|default:""|escapejs }}{% endif %}',
+        phone:    '{% if init_inst %}{{ init_inst.phone|default:""|escapejs }}{% endif %}',
+        fax:      '{% if init_inst %}{{ init_inst.fax|default:""|escapejs }}{% endif %}',
+        postal:   '{% if init_inst %}{{ init_inst.postal_code|default:""|escapejs }}{% endif %}',
+        address:  '{% if init_inst %}{{ init_inst.address|default:""|escapejs }}{% endif %}',
+        doctors:  [{% if init_inst %}{% for d in init_inst.doctors %}'{{ d|escapejs }}'{% if not forloop.last %},{% endif %}{% endfor %}{% endif %}]
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+];
+
+function _esc(s) {
+    if (!s) return '';
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function _buildDoctorRow(slot) {
+    var opts = '<option value="">----------</option>';
+    (slot.doctors || []).forEach(function(d) {
+        var sel = (slot.doctor === d) ? ' selected' : '';
+        opts += '<option value="' + _esc(d) + '"' + sel + '>' + _esc(d) + ' 先生</option>';
+    });
+    var selectHtml = '<select class="form-select form-select-sm" onchange="onDoctorPersonChange(\'' + slot.key + '\',this.value)">' + opts + '</select>';
+    return '<tr>' +
+        '<td class="align-middle">' +
+            (slot.furigana ? '<small class="text-muted d-block" style="font-size:0.75rem;">' + _esc(slot.furigana) + '</small>' : '') +
+            '<span class="fw-bold">' + _esc(slot.hospital) + '</span>' +
+        '</td>' +
+        '<td class="align-middle" style="font-size:0.85rem;">' +
+            (slot.postal ? '<small class="text-muted d-block" style="font-size:0.75rem;">〒' + _esc(slot.postal) + '</small>' : '') +
+            (slot.address ? _esc(slot.address) : '<span class="text-muted">―</span>') +
+        '</td>' +
+        '<td class="align-middle" style="width:105px; font-size:0.85rem; white-space:nowrap;">' +
+            '<i class="fas fa-phone me-1 text-muted" style="font-size:0.75rem;"></i>' + (_esc(slot.phone) || '―') + '<br>' +
+            '<i class="fas fa-fax me-1 text-muted" style="font-size:0.75rem;"></i><span class="text-muted">' + (_esc(slot.fax) || '―') + '</span>' +
+        '</td>' +
+        '<td class="align-middle" style="width:160px;">' + selectHtml + '</td>' +
+        '<td class="text-center align-middle">' +
+            '<button type="button" class="btn btn-sm btn-outline-secondary" style="padding:2px 7px;font-size:0.75rem;" ' +
+                    'onclick="removeDoctorSlot(\'' + slot.key + '\')" title="削除">' +
+                '<i class="fas fa-times"></i>' +
+            '</button>' +
+        '</td>' +
+    '</tr>';
+}
+
+function _renderSingleDoctorSlot(slotKey) {
+    var slot  = DOCTOR_SLOTS.find(function(s) { return s.key === slotKey; });
+    var tbody = document.getElementById(slotKey + '_selected_tbody');
+    var wrap  = document.getElementById(slotKey + '_table_wrap');
+    var empty = document.getElementById(slotKey + '_selected_empty');
+    if (!slot || !tbody || !wrap || !empty) return;
+    if (slot.pk) {
+        tbody.innerHTML     = _buildDoctorRow(slot);
+        wrap.style.display  = '';
+        empty.style.display = 'none';
+    } else {
+        tbody.innerHTML     = '';
+        wrap.style.display  = 'none';
+        empty.style.display = '';
+    }
+}
+
+function _renderFamilyDoctorSlots() {
+    var tbody = document.getElementById('family_doctors_selected_tbody');
+    var wrap  = document.getElementById('family_doctors_table_wrap');
+    var empty = document.getElementById('family_doctors_selected_empty');
+    if (!tbody || !wrap || !empty) return;
+    var filled = DOCTOR_SLOTS.filter(function(s) { return s.key.indexOf('family_doctor_') === 0 && s.pk; });
+    if (filled.length > 0) {
+        tbody.innerHTML     = filled.map(_buildDoctorRow).join('');
+        wrap.style.display  = '';
+        empty.style.display = 'none';
+    } else {
+        tbody.innerHTML     = '';
+        wrap.style.display  = 'none';
+        empty.style.display = '';
+    }
+}
+
+function renderDoctorTable() {
+    _renderSingleDoctorSlot('main_doctor');
+    _renderSingleDoctorSlot('visiting_doctor');
+    _renderFamilyDoctorSlots();
+}
+
+function quickSelectFamilyDoctor(pk, hospital, doctor, furigana, phone, fax, postal, address, doctorsStr) {
+    var familySlots = DOCTOR_SLOTS.filter(function(s) { return s.key.indexOf('family_doctor_') === 0; });
+    if (familySlots.some(function(s) { return s.pk === pk; })) return; // 重複スキップ
+    var emptySlot = familySlots.find(function(s) { return !s.pk; });
+    if (!emptySlot) { alert('かかりつけ医は最大4件まで登録できます。'); return; }
+    emptySlot.pk = pk; emptySlot.hospital = hospital; emptySlot.doctor = doctor;
+    emptySlot.furigana = furigana; emptySlot.phone = phone; emptySlot.fax = fax;
+    emptySlot.postal = postal; emptySlot.address = address;
+    emptySlot.doctors = doctorsStr ? doctorsStr.split(',').filter(Boolean) : [];
+    document.getElementById(emptySlot.key + '_id').value = pk;
+    renderDoctorTable();
+}
+
+function quickSelectDoctorSlot(slotKey, pk, hospital, doctor, furigana, phone, fax, postal, address, doctorsStr) {
+    var slot = DOCTOR_SLOTS.find(function(s) { return s.key === slotKey; });
+    if (!slot) return;
+    slot.pk = pk; slot.hospital = hospital; slot.doctor = doctor;
+    slot.furigana = furigana; slot.phone = phone; slot.fax = fax;
+    slot.postal = postal; slot.address = address;
+    slot.doctors = doctorsStr ? doctorsStr.split(',').filter(Boolean) : [];
+    document.getElementById(slotKey + '_id').value = pk;
+    renderDoctorTable();
+}
+
+function onDoctorPersonChange(slotKey, value) {
+    var slot = DOCTOR_SLOTS.find(function(s) { return s.key === slotKey; });
+    if (slot) slot.doctor = value;
+}
+
+function removeDoctorSlot(slotKey) {
+    var slot = DOCTOR_SLOTS.find(function(s) { return s.key === slotKey; });
+    if (slot) {
+        slot.pk = ''; slot.hospital = ''; slot.doctor = '';
+        slot.furigana = ''; slot.phone = ''; slot.fax = '';
+        document.getElementById(slotKey + '_id').value = '';
+    }
+    renderDoctorTable();
+}
+
+function populateDoctorSlotSelect(targetKey) {
+    var sel = document.getElementById('doctor_slot_select');
+    sel.innerHTML = '';
+    var familyKeys = ['family_doctor_1','family_doctor_2','family_doctor_3','family_doctor_4'];
+    var defs = [
+        { value: 'main_doctor',    label: '主治医' },
+        { value: 'visiting_doctor', label: '往診医' },
+        { value: 'family_doctors',  label: 'かかりつけ医' }
+    ];
+    defs.forEach(function(d) {
+        var opt = document.createElement('option');
+        opt.value = d.value; opt.textContent = d.label;
+        if (d.value === targetKey || (d.value === 'family_doctors' && familyKeys.indexOf(targetKey) >= 0)) {
+            opt.selected = true;
+        }
+        sel.appendChild(opt);
+    });
+    if (!sel.value && sel.options.length) sel.selectedIndex = 0;
+}
+
+var _modalPending = {};   // { slotKey: data } — 確定前の一時保存
+var _prevModalSlot = null;
+
+function _trToData(tr) {
+    return {
+        pk: tr.dataset.pk, hospital: tr.dataset.hospital, doctor: tr.dataset.doctor,
+        furigana: tr.dataset.furigana||'', phone: tr.dataset.phone||'',
+        fax: tr.dataset.fax||'', postal: tr.dataset.postal||'',
+        address: tr.dataset.address||'', doctors: tr.dataset.doctors||''
+    };
+}
+
+function _saveCurrentToPending(slotKey) {
+    if (!slotKey) return;
+    if (slotKey === 'family_doctors') {
+        var checked = Array.prototype.slice.call(
+            document.querySelectorAll('#medical_modal_list .medical-modal-check:checked')
+        );
+        if (checked.length > 0) {
+            _modalPending[slotKey] = checked.map(function(c) { return _trToData(c.closest('tr')); });
+        }
+    } else {
+        var sel = document.querySelector('#medical_modal_list .medical-modal-radio:checked');
+        if (sel) _modalPending[slotKey] = _trToData(sel.closest('tr'));
+    }
+}
+
+function _applyPendingToModal(slotKey) {
+    var isMulti = (slotKey === 'family_doctors');
+    var hint = document.getElementById('medical_modal_hint');
+
+    document.querySelectorAll('#medical_modal_list .medical-modal-radio').forEach(function(r) {
+        r.style.display = isMulti ? 'none' : ''; if (isMulti) r.checked = false;
+    });
+    document.querySelectorAll('#medical_modal_list .medical-modal-check').forEach(function(c) {
+        c.style.display = isMulti ? '' : 'none'; if (!isMulti) c.checked = false;
+    });
+
+    var pending = _modalPending[slotKey];
+    if (isMulti) {
+        if (hint) hint.textContent = '最大4件まで選択できます';
+        var pks = pending ? pending.map(function(d) { return d.pk; })
+            : DOCTOR_SLOTS.filter(function(s) { return s.key.indexOf('family_doctor_') === 0 && s.pk; }).map(function(s) { return s.pk; });
+        document.querySelectorAll('#medical_modal_list .medical-modal-check').forEach(function(c) { c.checked = pks.indexOf(c.value) >= 0; });
+        document.querySelectorAll('#medical_modal_list tr.medical-modal-item').forEach(function(tr) {
+            var c = tr.querySelector('.medical-modal-check');
+            tr.classList.toggle('selected-row', !!(c && c.checked));
+        });
+    } else {
+        if (hint) hint.textContent = '1つ選択してください';
+        var currentPk = pending ? pending.pk : (DOCTOR_SLOTS.find(function(s) { return s.key === slotKey; }) || {pk:''}).pk;
+        document.querySelectorAll('#medical_modal_list .medical-modal-radio').forEach(function(r) { r.checked = (r.value === currentPk); });
+        document.querySelectorAll('#medical_modal_list tr.medical-modal-item').forEach(function(tr) {
+            var r = tr.querySelector('.medical-modal-radio');
+            tr.classList.toggle('selected-row', !!(r && r.checked));
+        });
+    }
+}
+
+function syncModalSelectionToSlot() { _applyPendingToModal(document.getElementById('doctor_slot_select').value); }
+
+function onDoctorSlotSelectChange() {
+    _saveCurrentToPending(_prevModalSlot);
+    _prevModalSlot = document.getElementById('doctor_slot_select').value;
+    _applyPendingToModal(_prevModalSlot);
+}
+
+function openDoctorSelectModal(targetSlotKey) {
+    _modalPending = {};
+    populateDoctorSlotSelect(targetSlotKey);
+    _prevModalSlot = document.getElementById('doctor_slot_select').value;
+    _applyPendingToModal(_prevModalSlot);
+    document.getElementById('medical_modal_search').value = '';
+    applyMedicalFilter();
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('medicalSelectModal')).show();
+}
+
+function selectMedicalRow(tr) {
+    var slotKey = document.getElementById('doctor_slot_select').value;
+    if (slotKey === 'family_doctors') {
+        var check = tr.querySelector('.medical-modal-check');
+        if (check) { check.checked = !check.checked; limitFamilyDoctorCheck(check); }
+    } else {
+        var radio = tr.querySelector('.medical-modal-radio');
+        if (radio) radio.checked = true;
+        document.querySelectorAll('#medical_modal_list tr.medical-modal-item').forEach(function(r) {
+            r.classList.remove('selected-row');
+        });
+        tr.classList.add('selected-row');
+    }
+}
+
+function limitFamilyDoctorCheck(changedBox) {
+    var checked = document.querySelectorAll('#medical_modal_list .medical-modal-check:checked');
+    if (checked.length > 4) { changedBox.checked = false; }
+    document.querySelectorAll('#medical_modal_list tr.medical-modal-item').forEach(function(tr) {
+        var c = tr.querySelector('.medical-modal-check');
+        tr.classList.toggle('selected-row', !!(c && c.checked));
+    });
+}
+
+function confirmMedicalSelection() {
+    // 現在表示中のスロットの選択内容を保存
+    _saveCurrentToPending(_prevModalSlot);
+
+    // pending が空（何も選択していない）ならアラート
+    if (Object.keys(_modalPending).length === 0) {
+        alert('医療機関を選択してください。'); return;
+    }
+
+    // pending を全スロットに適用
+    Object.keys(_modalPending).forEach(function(key) {
+        var data = _modalPending[key];
+        if (!data) return;
+
+        if (key === 'family_doctors') {
+            var rows = Array.isArray(data) ? data : [data];
+            if (rows.length === 0) return;
+            var familySlots = DOCTOR_SLOTS.filter(function(s) { return s.key.indexOf('family_doctor_') === 0; });
+            familySlots.forEach(function(s) {
+                s.pk=''; s.hospital=''; s.doctor=''; s.furigana='';
+                s.phone=''; s.fax=''; s.postal=''; s.address=''; s.doctors=[];
+                document.getElementById(s.key + '_id').value = '';
+            });
+            rows.slice(0,4).forEach(function(d,i) {
+                var s = familySlots[i];
+                s.pk=d.pk; s.hospital=d.hospital; s.doctor=d.doctor;
+                s.furigana=d.furigana; s.phone=d.phone; s.fax=d.fax;
+                s.postal=d.postal; s.address=d.address;
+                s.doctors = d.doctors ? d.doctors.split(',').filter(Boolean) : [];
+                document.getElementById(s.key + '_id').value = s.pk;
+            });
+        } else {
+            var slot = DOCTOR_SLOTS.find(function(s) { return s.key === key; });
+            if (!slot) return;
+            slot.pk=data.pk; slot.hospital=data.hospital; slot.doctor=data.doctor;
+            slot.furigana=data.furigana; slot.phone=data.phone; slot.fax=data.fax;
+            slot.postal=data.postal; slot.address=data.address;
+            slot.doctors = data.doctors ? data.doctors.split(',').filter(Boolean) : [];
+            document.getElementById(key + '_id').value = slot.pk;
+        }
+    });
+
+    bootstrap.Modal.getInstance(document.getElementById('medicalSelectModal')).hide();
+    renderDoctorTable();
+}
+
+function applyMedicalFilter() {
+    var q = document.getElementById('medical_modal_search').value.toLowerCase();
+    document.querySelectorAll('#medical_modal_list tr.medical-modal-item').forEach(function(tr) {
+        var h = (tr.dataset.hospital || '').toLowerCase();
+        var d = (tr.dataset.doctor   || '').toLowerCase();
+        tr.style.display = (!q || h.includes(q) || d.includes(q)) ? '' : 'none';
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    renderDoctorTable();
+
+    var goto = new URLSearchParams(window.location.search).get('goto');
+    if (goto === 'medical-institutions') {
+        setTimeout(function() {
+            var healthTab = document.getElementById('health-tab');
+            if (healthTab) bootstrap.Tab.getOrCreateInstance(healthTab).show();
+            setTimeout(function() {
+                var miTab = document.getElementById('medical-institutions-tab');
+                if (miTab) bootstrap.Tab.getOrCreateInstance(miTab).show();
+            }, 120);
+        }, 250);
+    }
+});
 </script>
 
 {% endblock %}

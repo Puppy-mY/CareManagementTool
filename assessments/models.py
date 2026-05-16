@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
-from clients.models import Client
+from clients.models import Client, MedicalInstitution
 from django.utils import timezone
 
 
@@ -49,6 +49,14 @@ class Assessment(models.Model):
     adl = models.JSONField('ADL', default=dict, blank=True, help_text='食事、入浴、排泄等')
     iadl = models.JSONField('IADL', default=dict, blank=True, help_text='調理、掃除、洗濯等')
     
+    # 医療機関（マスタ参照）
+    main_doctor      = models.ForeignKey(MedicalInstitution, on_delete=models.SET_NULL, null=True, blank=True, related_name='main_assessments',    verbose_name='主治医')
+    visiting_doctor  = models.ForeignKey(MedicalInstitution, on_delete=models.SET_NULL, null=True, blank=True, related_name='visiting_assessments', verbose_name='往診医')
+    family_doctor_1  = models.ForeignKey(MedicalInstitution, on_delete=models.SET_NULL, null=True, blank=True, related_name='family1_assessments',  verbose_name='かかりつけ医①')
+    family_doctor_2  = models.ForeignKey(MedicalInstitution, on_delete=models.SET_NULL, null=True, blank=True, related_name='family2_assessments',  verbose_name='かかりつけ医②')
+    family_doctor_3  = models.ForeignKey(MedicalInstitution, on_delete=models.SET_NULL, null=True, blank=True, related_name='family3_assessments',  verbose_name='かかりつけ医③')
+    family_doctor_4  = models.ForeignKey(MedicalInstitution, on_delete=models.SET_NULL, null=True, blank=True, related_name='family4_assessments',  verbose_name='かかりつけ医④')
+
     # 総合評価
     general_assessment = models.TextField('総合所見', blank=True)
     support_goals = models.TextField('支援目標', blank=True)

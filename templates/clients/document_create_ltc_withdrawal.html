@@ -191,81 +191,7 @@
                         <div style="border-top: 1px solid #dee2e6; width: 50%; margin: 1.5rem 0;"></div>
 
                         <!-- 提出代行者（事業所情報） -->
-                        <input type="hidden" id="id_submitter_type" name="submitter_type" value="{{ initial.submitter_type|default:'office' }}">
-                        <div class="row g-3 mb-2">
-                            <div class="col-12">
-                                <div class="d-flex align-items-center gap-2 mb-2">
-                                    <label class="form-label fw-bold mb-0">提出代行者（事業所情報） <span class="text-danger">*</span></label>
-                                    <div class="birth-era-toggle">
-                                        <button type="button" class="era-btn {% if initial.submitter_type != 'person' %}active{% endif %}" id="submitter_btn_office" onclick="switchSubmitterType('office')">代行提出</button>
-                                        <button type="button" class="era-btn {% if initial.submitter_type == 'person' %}active{% endif %}" id="submitter_btn_person" onclick="switchSubmitterType('person')">その他</button>
-                                    </div>
-                                </div>
-                                <!-- 事業所モード -->
-                                <div id="submitter_office_section" {% if initial.submitter_type == 'person' %}style="display:none;"{% endif %}>
-                                    <div class="mb-1">
-                                        <select id="renewal_provider_select" class="form-select" style="width: 400px;" onchange="toggleRenewalProvider()">
-                                            <option value="auto" selected>{{ initial.office_name|default:"（事業所未設定）" }}</option>
-                                            <option value="other">その他（手入力）</option>
-                                        </select>
-                                    </div>
-                                    <div id="office_other_fields" class="mb-1" style="display:none;">
-                                        <input type="text" id="office_other_name" class="form-control" style="width:400px;" placeholder="事業所名を記入">
-                                    </div>
-                                </div>
-                                <!-- その他モード -->
-                                <div id="submitter_person_section" {% if initial.submitter_type != 'person' %}style="display:none;"{% endif %}>
-                                    <div class="mb-1">
-                                        <input type="text" name="staff_name" id="renewal_staff_name" class="form-control" style="width:400px;" placeholder="例：山田 太郎" value="{% if initial.submitter_type == 'person' %}{{ initial.staff_name }}{% endif %}">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div id="renewal_detail_section" class="accordion" style="margin: 0.5rem 0 1.5rem 0;">
-                            <div class="accordion-item" style="border: none; background-color: #f8f9fa; border-radius: 0.5rem;">
-                                <h2 class="accordion-header">
-                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#renewalDetailCollapse" aria-expanded="false" aria-controls="renewalDetailCollapse" style="background-color: #f8f9fa; padding: 0.5rem 1rem; color: #333;">
-                                        <span id="renewal_status_icon" class="me-2"><i class="fas fa-check-circle" style="color: rgba(25, 135, 84, 0.5);"></i></span>申請書提出者情報
-                                    </button>
-                                </h2>
-                                <div id="renewalDetailCollapse" class="accordion-collapse collapse">
-                                    <div class="accordion-body row g-3" style="padding: 0.5rem 1rem 1rem 1rem;">
-                                        <input type="hidden" name="office_furigana" id="renewal_office_furigana" value="{{ initial.office_furigana }}">
-                                        <input type="hidden" name="office_number" id="renewal_office_number" value="{{ initial.office_number }}">
-                                        <div class="col-md-4" id="renewal_office_name_row" {% if initial.submitter_type == 'person' %}style="display:none;"{% endif %}>
-                                            <label class="form-label">申請事業所名</label>
-                                            <input type="text" name="office_name" id="renewal_office_name" class="form-control" value="{{ initial.office_name }}" placeholder="任意" readonly>
-                                        </div>
-                                        <div class="col-md-4" id="renewal_staff_name_row" {% if initial.submitter_type == 'person' %}style="display:none;"{% endif %}>
-                                            <label class="form-label">申請者名</label>
-                                            <input type="text" name="staff_name_office" id="renewal_staff_name_accordion" class="form-control" value="{% if initial.submitter_type != 'person' %}{{ initial.staff_name_office|default:initial.staff_name }}{% endif %}" placeholder="氏名を入力">
-                                        </div>
-                                        <div class="col-12">
-                                            <label class="form-label">所在地</label>
-                                            <div class="d-flex gap-2">
-                                                <div class="input-group" style="width: 160px; flex-shrink: 0;">
-                                                    <span class="input-group-text bg-light text-muted">〒</span>
-                                                    <input type="text" name="office_postal_code" id="renewal_postal_code" class="form-control" value="{{ initial.office_postal_code }}" placeholder="000-0000" maxlength="8" readonly>
-                                                </div>
-                                                <div class="flex-grow-1">
-                                                    <input type="text" name="office_address" id="renewal_office_address" class="form-control" value="{{ initial.office_address }}" placeholder="住所を入力" readonly>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <label class="form-label">電話番号 <span class="text-danger">*</span></label>
-                                            <input type="text" name="office_phone" id="renewal_office_phone" class="form-control" value="{{ initial.office_phone }}" placeholder="電話番号を入力" readonly>
-                                        </div>
-                                        <div id="renewal_edit_button_wrapper" class="col-12 text-end mt-2" {% if initial.submitter_type == 'person' %}style="display:none;"{% endif %}>
-                                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openRenewalOfficeMasterModal()">
-                                                <i class="fas fa-edit me-1"></i>事業所マスタデータを編集
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        {% include 'clients/_submitter_section.html' with label_text="提出代行者（事業所情報）" %}
 
                         <div style="border-top: 1px solid #dee2e6; width: 50%; margin: 1.5rem 0;"></div>
 
@@ -297,8 +223,8 @@
                         <!-- 取下理由 -->
                         <div class="row g-3 mb-4">
                             <div class="col-12">
-                                <label class="form-label fw-bold mb-1">取下理由</label>
-                                <textarea id="id_withdrawal_reason" name="withdrawal_reason" class="form-control" rows="2" style="max-width: 480px;" placeholder="取下げの理由を入力してください">{{ initial.withdrawal_reason }}</textarea>
+                                <label class="form-label fw-bold mb-1">取下理由 <span class="text-danger">*</span></label>
+                                <textarea id="id_withdrawal_reason" name="withdrawal_reason" class="form-control" rows="2" style="max-width: 480px;" placeholder="取下げの理由を入力してください" required>{{ initial.withdrawal_reason }}</textarea>
                             </div>
                         </div>
 
@@ -427,62 +353,6 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
                 <button type="button" class="btn btn-primary" onclick="saveClientMasterData()">
-                    <i class="fas fa-save me-1"></i>保存して反映
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- 事業所マスタ編集モーダル -->
-<div class="modal fade" id="renewalOfficeModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content">
-            <input type="hidden" id="renewal_modal_pk" value="{% if user.profile.home_care_office %}{{ user.profile.home_care_office.pk }}{% endif %}">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="fas fa-hospital me-2"></i>居宅介護支援事業所編集</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div id="renewalOfficeModalError" class="alert alert-danger d-none"></div>
-                <div class="row g-3">
-                    <div class="col-12">
-                        <label class="form-label">事業所名 <span class="text-danger">*</span></label>
-                        <input type="text" id="renewal_modal_name" class="form-control" value="{{ initial.office_name }}" placeholder="例: 居宅介護支援事業所 安濃津ろまん" required>
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label">フリガナ</label>
-                        <input type="text" id="renewal_modal_furigana" class="form-control" value="{{ initial.office_furigana }}" placeholder="例: キョタクカイゴシエンジギョウショ アノツロマン">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">事業所番号 <span class="text-danger">*</span></label>
-                        <input type="text" id="renewal_modal_office_number" class="form-control" value="{{ initial.office_number }}" placeholder="例: 2470100419" required>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">管理者名</label>
-                        <input type="text" id="renewal_modal_manager_name" class="form-control" value="{{ initial.office_manager_name }}" placeholder="例: 山田 太郎">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">郵便番号</label>
-                        <input type="text" id="renewal_modal_postal_code" class="form-control" value="{{ initial.office_postal_code }}" placeholder="例: 514-0009">
-                    </div>
-                    <div class="col-md-8">
-                        <label class="form-label">住所</label>
-                        <input type="text" id="renewal_modal_address" class="form-control" value="{{ initial.office_address }}" placeholder="例: 三重県津市羽所町○○">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">電話番号</label>
-                        <input type="text" id="renewal_modal_phone" class="form-control" value="{{ initial.office_phone }}" placeholder="例: 059-123-4567">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">FAX</label>
-                        <input type="text" id="renewal_modal_fax" class="form-control" value="{{ initial.office_fax }}" placeholder="例: 059-123-4568">
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
-                <button type="button" class="btn btn-primary" id="renewalOfficeSaveBtn">
                     <i class="fas fa-save me-1"></i>保存して反映
                 </button>
             </div>
@@ -768,6 +638,9 @@ var _OFFICE_NUMBER   = '{{ current_office_number }}';
 var _OFFICE_POSTAL   = '{{ current_office_postal }}';
 var _OFFICE_ADDRESS  = '{{ current_office_address }}';
 var _OFFICE_PHONE    = '{{ current_office_phone }}';
+var _OFFICE_FAX      = '{{ initial.office_fax|escapejs }}';
+var _OFFICE_MANAGER  = '{{ initial.office_manager_name|escapejs }}';
+var _CURRENT_STAFF_NAMES = {{ office_staff_options_json|safe }};
 
 function handleModalManagerChange(sel) {
     var val = sel.value;
@@ -878,6 +751,13 @@ function switchSubmitterType(type) {
     document.getElementById('submitter_person_section').style.display = type === 'person' ? '' : 'none';
     document.getElementById('submitter_btn_office').classList.toggle('active', type === 'office');
     document.getElementById('submitter_btn_person').classList.toggle('active', type === 'person');
+    var officeTable = document.getElementById('renewal_office_table_section');
+    if (officeTable) officeTable.style.display = type === 'person' ? 'none' : '';
+    var personAccordion = document.getElementById('renewal_detail_section');
+    if (personAccordion) personAccordion.style.display = type === 'person' ? '' : 'none';
+    ['renewal_applicant_furigana_input', 'person_postal_code', 'person_office_address', 'person_office_phone', 'person_relation'].forEach(function(id) {
+        var el = document.getElementById(id); if (el) el.disabled = (type !== 'person');
+    });
 
     var officeNameRow  = document.getElementById('renewal_office_name_row');
     var staffNameRow   = document.getElementById('renewal_staff_name_row');
@@ -919,1182 +799,7 @@ function switchSubmitterType(type) {
     updateRenewalStatusIcon();
 }
 
-// 申請書提出者：その他（手入力）トグル
-function toggleRenewalProvider() {
-    const selectEl    = document.getElementById('renewal_provider_select');
-    const otherFields = document.getElementById('office_other_fields');
-    const readonlyIds = ['renewal_office_name', 'renewal_postal_code', 'renewal_office_address', 'renewal_office_phone'];
-
-    if (selectEl.value === 'other') {
-        if (otherFields) otherFields.style.display = '';
-        readonlyIds.forEach(function(id) {
-            const el = document.getElementById(id);
-            if (el) { el.removeAttribute('readonly'); el.value = ''; }
-        });
-        var collapseEl = document.getElementById('renewalDetailCollapse');
-        if (collapseEl && !collapseEl.classList.contains('show')) {
-            bootstrap.Collapse.getOrCreateInstance(collapseEl).show();
-        }
-    } else {
-        if (otherFields) otherFields.style.display = 'none';
-        readonlyIds.forEach(function(id) {
-            const el = document.getElementById(id);
-            if (el) { el.setAttribute('readonly', 'readonly'); el.value = el.defaultValue; }
-        });
-    }
-    updateRenewalStatusIcon();
-}
-
-// ステータスアイコン更新
-function updateRenewalStatusIcon() {
-    const statusIcon = document.getElementById('renewal_status_icon');
-    if (!statusIcon) return;
-    const submitterType = (document.getElementById('id_submitter_type') || {}).value || 'office';
-    let isComplete;
-    if (submitterType === 'person') {
-        const staffName = document.getElementById('renewal_staff_name');
-        const address   = document.getElementById('renewal_office_address');
-        const phone     = document.getElementById('renewal_office_phone');
-        isComplete = !!(staffName && staffName.value.trim())
-                  && !!(address   && address.value.trim())
-                  && !!(phone     && phone.value.trim());
-    } else {
-        const staffName = document.getElementById('renewal_staff_name_accordion');
-        const phone     = document.getElementById('renewal_office_phone');
-        isComplete = !!(staffName && staffName.value.trim())
-                  && !!(phone     && phone.value.trim());
-    }
-    statusIcon.innerHTML = isComplete
-        ? '<i class="fas fa-check-circle" style="color: rgba(25, 135, 84, 0.5);"></i>'
-        : '<i class="fas fa-circle-exclamation" style="color: rgba(220, 53, 69, 0.5);"></i>';
-    const renewalCollapse = document.getElementById('renewalDetailCollapse');
-    if (renewalCollapse) {
-        if (!isComplete && !renewalCollapse.classList.contains('show')) {
-            new bootstrap.Collapse(renewalCollapse, { toggle: false }).show();
-        } else if (isComplete && submitterType !== 'person' && renewalCollapse.classList.contains('show') && !renewalCollapse.contains(document.activeElement)) {
-            new bootstrap.Collapse(renewalCollapse, { toggle: false }).hide();
-        }
-    }
-}
-
-// 事業所マスタ編集モーダルを開く
-function openRenewalOfficeMasterModal() {
-    document.getElementById('renewalOfficeModalError').classList.add('d-none');
-    new bootstrap.Modal(document.getElementById('renewalOfficeModal')).show();
-}
-
-// ========================================
-// 認定情報 ステータスアイコン・モーダル
-// ========================================
-
-function jumpToMedicalAccordion() {
-    const collapseEl = document.getElementById('medicalInsuranceCollapse');
-    const targetEl   = document.getElementById('medicalInsuranceAccordion');
-    if (!collapseEl || !targetEl) return;
-    bootstrap.Collapse.getOrCreateInstance(collapseEl, { toggle: false }).show();
-    setTimeout(() => {
-        targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }, 50);
-}
-
-function jumpToInsuranceAccordion() {
-    const collapseEl = document.getElementById('insuranceInfoCollapse');
-    const targetEl   = document.getElementById('insuranceInfoAccordion');
-    if (!collapseEl || !targetEl) return;
-    // 展開
-    bootstrap.Collapse.getOrCreateInstance(collapseEl, { toggle: false }).show();
-    // スクロール（展開アニメーション後）
-    setTimeout(() => {
-        targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }, 50);
-}
-
-function updateCertStatusIcon() {
-    const icon      = document.getElementById('cert_status_icon');
-    if (!icon) return;
-    const insurance = document.getElementById('cert_display_insurance');
-    const careLevel = document.getElementById('cert_display_care_level');
-    const start     = document.getElementById('cert_display_start');
-    const end       = document.getElementById('cert_display_end');
-    const complete  = insurance && insurance.value.trim() !== ''
-                   && careLevel && careLevel.value.trim() !== ''
-                   && start     && start.value.trim()     !== ''
-                   && end       && end.value.trim()       !== '';
-    icon.innerHTML = complete
-        ? '<i class="fas fa-check-circle" style="color: rgba(25, 135, 84, 0.5);"></i>'
-        : '<i class="fas fa-circle-exclamation" style="color: rgba(220, 53, 69, 0.5);"></i>';
-    // 未完了時は展開・完了時は閉じる
-    const certCollapse = document.getElementById('certInfoCollapse');
-    if (certCollapse) {
-        if (!complete && !certCollapse.classList.contains('show')) {
-            new bootstrap.Collapse(certCollapse, { toggle: false }).show();
-        } else if (complete && certCollapse.classList.contains('show') && !certCollapse.contains(document.activeElement)) {
-            new bootstrap.Collapse(certCollapse, { toggle: false }).hide();
-        }
-    }
-}
-
-// 転入確認セクション
-function updateSurveyLocationStatusIcon() {
-    const icon    = document.getElementById('survey_location_status_icon');
-    if (!icon) return;
-    const postal  = document.getElementById('survey_loc_postal');
-    const address = document.getElementById('survey_loc_address');
-    const phone   = document.getElementById('survey_loc_phone');
-    const complete = postal  && postal.value.trim()  !== ''
-                  && address && address.value.trim() !== ''
-                  && phone   && phone.value.trim()   !== '';
-    icon.innerHTML = complete
-        ? '<i class="fas fa-check-circle" style="color: rgba(25, 135, 84, 0.5);"></i>'
-        : '<i class="fas fa-circle-exclamation" style="color: rgba(220, 53, 69, 0.5);"></i>';
-    // 未完了時は展開・完了時は閉じる（自宅の場合はアコーディオン非表示のためスキップ）
-    const surveyCollapse = document.getElementById('surveyLocationCollapse');
-    const surveyAccordion = document.getElementById('surveyLocationAccordion');
-    if (surveyCollapse && (!surveyAccordion || surveyAccordion.style.display !== 'none')) {
-        if (!complete && !surveyCollapse.classList.contains('show')) {
-            new bootstrap.Collapse(surveyCollapse, { toggle: false }).show();
-        } else if (complete && surveyCollapse.classList.contains('show') && !surveyCollapse.contains(document.activeElement)) {
-            new bootstrap.Collapse(surveyCollapse, { toggle: false }).hide();
-        }
-    }
-}
-
-function toggleSurveyLocationOther() {
-    const sel = document.getElementById('survey_location');
-    const wrapper = document.getElementById('survey_location_other_wrapper');
-    wrapper.style.display = sel.value === 'other' ? '' : 'none';
-    if (sel.value !== 'other') {
-        document.querySelector('[name="survey_location_other"]').value = '';
-    }
-
-    const postal  = document.querySelector('[name="survey_location_postal"]');
-    const address = document.querySelector('[name="survey_location_address"]');
-    const phone   = document.querySelector('[name="survey_location_phone"]');
-
-    if (sel.value === 'サービス付き高齢者向け住宅　安濃津ろまん') {
-        if (postal)  postal.value  = '514-0824';
-        if (address) address.value = '三重県津市神戸154-9';
-        if (phone)   phone.value   = '059-213-4165';
-    } else if (sel.value === 'other' || sel.value === '') {
-        if (postal)  postal.value  = '';
-        if (address) address.value = '';
-        if (phone)   phone.value   = '';
-    } else if (sel.value === '自宅') {
-        if (postal)  postal.value  = '';
-        if (address) address.value = '';
-        if (phone)   phone.value   = '';
-    }
-
-    // 自宅の場合はアコーディオンを非表示
-    const accordion = document.getElementById('surveyLocationAccordion');
-    if (accordion) {
-        if (sel.value === '自宅') {
-            accordion.style.display = 'none';
-            // 折りたたんでおく
-            const collapse = document.getElementById('surveyLocationCollapse');
-            if (collapse && collapse.classList.contains('show')) {
-                bootstrap.Collapse.getInstance(collapse)?.hide();
-            }
-        } else {
-            accordion.style.display = '';
-        }
-    }
-    updateSurveyLocationStatusIcon();
-}
-
-// ひらがな → カタカナ変換
-function toKatakana(str) {
-    return str.replace(/[\u3041-\u3096]/g, function(ch) {
-        return String.fromCharCode(ch.charCodeAt(0) + 0x60);
-    });
-}
-
-// 認定調査 連絡先 — 担当ケアマネ・本人 の自動反映データ
-const surveyContactPreset = {
-    carekm: {
-        name:     '{{ initial.user_full_name }}',
-        furigana: toKatakana('{{ initial.user_full_name_kana }}'),
-        relation: '担当ケアマネ',
-        phone:    '{{ initial.office_phone }}'
-    },
-    client: {
-        name:     '{{ initial.client_name }}',
-        furigana: '{{ initial.client_furigana }}',
-        relation: '本人',
-        phone:    '{{ initial.client_phone }}'
-    }
-};
-
-function updateSurveyContactStatusIcon() {
-    const icon  = document.getElementById('survey_contact_status_icon');
-    if (!icon) return;
-    const name  = document.getElementById('survey_contact_name');
-    const furi  = document.getElementById('survey_contact_furigana');
-    const rel   = document.getElementById('survey_contact_relation');
-    const phone = document.getElementById('survey_contact_phone');
-    const complete = (name  && name.value.trim()  !== '')
-                  && (furi  && furi.value.trim()  !== '')
-                  && (rel   && rel.value.trim()   !== '')
-                  && (phone && phone.value.trim() !== '');
-    icon.innerHTML = complete
-        ? '<i class="fas fa-check-circle" style="color: rgba(25, 135, 84, 0.5);"></i>'
-        : '<i class="fas fa-circle-exclamation" style="color: rgba(220, 53, 69, 0.5);"></i>';
-    // 未完了時は展開・完了時は閉じる
-    const contactCollapse = document.getElementById('surveyContactCollapse');
-    if (contactCollapse) {
-        if (!complete && !contactCollapse.classList.contains('show')) {
-            new bootstrap.Collapse(contactCollapse, { toggle: false }).show();
-        } else if (complete && contactCollapse.classList.contains('show') && !contactCollapse.contains(document.activeElement)) {
-            new bootstrap.Collapse(contactCollapse, { toggle: false }).hide();
-        }
-    }
-}
-
-function toggleSurveyContact(isInit) {
-    const sel     = document.getElementById('survey_contact_type');
-    const wrapper = document.getElementById('surveyContactAccordionWrapper');
-    const nameEl  = document.getElementById('survey_contact_name');
-    const furiEl  = document.getElementById('survey_contact_furigana');
-    const relEl   = document.getElementById('survey_contact_relation');
-    const phoneEl = document.getElementById('survey_contact_phone');
-
-    if (sel.value === '本人') {
-        if (wrapper) wrapper.style.display = 'none';
-    } else {
-        if (wrapper) wrapper.style.display = '';
-
-        if (sel.value === '担当ケアマネ') {
-            // 常にユーザー情報を自動反映
-            if (nameEl)  nameEl.value  = surveyContactPreset.carekm.name;
-            if (furiEl)  furiEl.value  = surveyContactPreset.carekm.furigana;
-            if (relEl)   relEl.value   = surveyContactPreset.carekm.relation;
-            if (phoneEl) phoneEl.value = surveyContactPreset.carekm.phone;
-        } else if (sel.value === '本人以外' && !isInit) {
-            // ユーザーが手動で切り替えたときのみクリア（初期表示・再編集では保持）
-            if (nameEl)  nameEl.value  = '';
-            if (furiEl)  furiEl.value  = '';
-            if (relEl)   relEl.value   = '';
-            if (phoneEl) phoneEl.value = '';
-        }
-        updateSurveyContactStatusIcon();
-    }
-}
-
-// 主治医意見書依頼先
-function toggleDoctorSelection(isInit) {
-    const sel      = document.getElementById('doctor_type_select');
-    const hospital = document.getElementById('doctor_hospital');
-    const name     = document.getElementById('doctor_name');
-    if (!sel) return;
-
-    if (sel.value === 'other') {
-        // 手動切替時のみクリア（初期表示では保持）
-        if (!isInit) {
-            if (hospital) hospital.value = '';
-            if (name)     name.value = '';
-        }
-    } else {
-        // 初期表示かつ既に値が入っている場合は上書きしない
-        const opt = sel.options[sel.selectedIndex];
-        if (!isInit || !(hospital && hospital.value.trim())) {
-            if (hospital) hospital.value = opt.dataset.hospital || '';
-        }
-        if (!isInit || !(name && name.value.trim())) {
-            if (name) name.value = opt.dataset.name || '';
-        }
-    }
-    updateDoctorStatusIcon();
-}
-
-function updateDoctorStatusIcon() {
-    const icon     = document.getElementById('doctor_status_icon');
-    if (!icon) return;
-    const hospital = document.getElementById('doctor_hospital');
-    const name     = document.getElementById('doctor_name');
-    const phone    = document.getElementById('doctor_phone');
-    const cb       = document.getElementById('doctor_outside_yes');
-    const addr     = document.getElementById('doctor_address');
-    const outsideOn = cb && cb.checked;
-    let complete = (hospital && hospital.value.trim() !== '')
-                && (name     && name.value.trim()     !== '')
-                && (phone    && phone.value.trim()    !== '');
-    if (outsideOn) {
-        complete = complete && (addr && addr.value.trim() !== '');
-    }
-    icon.innerHTML = complete
-        ? '<i class="fas fa-check-circle" style="color: rgba(25, 135, 84, 0.5);"></i>'
-        : '<i class="fas fa-circle-exclamation" style="color: rgba(220, 53, 69, 0.5);"></i>';
-    const doctorCollapse = document.getElementById('doctorInfoCollapse');
-    if (doctorCollapse) {
-        if (!complete && !doctorCollapse.classList.contains('show')) {
-            new bootstrap.Collapse(doctorCollapse, { toggle: false }).show();
-        } else if (complete && doctorCollapse.classList.contains('show') && !doctorCollapse.contains(document.activeElement)) {
-            new bootstrap.Collapse(doctorCollapse, { toggle: false }).hide();
-        }
-    }
-}
-
-function toggleDoctorOutside() {
-    const cb     = document.getElementById('doctor_outside_yes');
-    const fields = document.getElementById('doctor_outside_fields');
-    if (!cb || !fields) return;
-    if (cb.checked) {
-        fields.style.display = '';
-    } else {
-        fields.style.display = 'none';
-        const postal = document.getElementById('doctor_postal_code');
-        const addr   = document.getElementById('doctor_address');
-        if (postal) postal.value = '';
-        if (addr)   addr.value = '';
-    }
-    updateDoctorStatusIcon();
-}
-
-function toggleTransferSection(isInit) {
-    const yes = document.getElementById('transferred_yes');
-    const section = document.getElementById('transfer_detail_section');
-    section.style.display = yes && yes.checked ? '' : 'none';
-    if (!(yes && yes.checked) && !isInit) {
-        // 手動でチェックを外したときのみクリア
-        const municipality = document.querySelector('[name="transfer_from_municipality"]');
-        if (municipality) municipality.value = '';
-        const appliedYes = document.getElementById('transfer_applied_yes');
-        if (appliedYes) appliedYes.checked = false;
-        toggleTransferAppliedSection();
-    }
-}
-
-function toggleTransferAppliedSection() {
-    const yes = document.getElementById('transfer_applied_yes');
-    const section = document.getElementById('transfer_applied_date_section');
-    section.style.display = yes && yes.checked ? '' : 'none';
-    if (!(yes && yes.checked)) {
-        // 申請日をクリア
-        const hidden = document.getElementById('id_transfer_applied_date');
-        const warekiText = document.getElementById('transferDate_wareki_text');
-        const preview = document.getElementById('transferDate_wareki_preview');
-        if (hidden) hidden.value = '';
-        if (warekiText) warekiText.value = '';
-        if (preview) preview.textContent = '';
-        // 和暦モードに戻す
-        switchTransferDateEra('japanese');
-    }
-}
-
-function switchTransferDateEra(mode) {
-    const btnJa = document.getElementById('transferDate_era_japanese');
-    const btnWe = document.getElementById('transferDate_era_western');
-    const japDiv = document.getElementById('transferDate_japanese');
-    const wesDiv = document.getElementById('transferDate_western');
-    const hidden = document.getElementById('id_transfer_applied_date');
-    const warekiInput = document.getElementById('transferDate_wareki_text');
-    if (mode === 'western') {
-        wesDiv.style.display = ''; japDiv.style.display = 'none';
-        btnWe.classList.add('active'); btnJa.classList.remove('active');
-    } else {
-        japDiv.style.display = ''; wesDiv.style.display = 'none';
-        btnJa.classList.add('active'); btnWe.classList.remove('active');
-        if (hidden && hidden.value) {
-            const w = window.toWarekiTextLocal ? toWarekiTextLocal(hidden.value) : '';
-            if (warekiInput) warekiInput.value = w;
-            syncTransferDateFromWareki();
-        }
-    }
-}
-
-function syncTransferDateFromWareki() {
-    const input   = document.getElementById('transferDate_wareki_text');
-    const preview = document.getElementById('transferDate_wareki_preview');
-    const hidden  = document.getElementById('id_transfer_applied_date');
-    if (!input || !preview || !hidden) return;
-    const result = window.parseWarekiLocal ? parseWarekiLocal(input.value) : null;
-    if (result) {
-        const y = result.year, m = String(result.month).padStart(2,'0'), d = String(result.day).padStart(2,'0');
-        hidden.value = `${y}-${m}-${d}`;
-        preview.textContent = `→ 西暦 ${y}年${result.month}月${result.day}日`;
-        preview.style.color = '#6c757d';
-    } else {
-        hidden.value = '';
-        preview.textContent = input.value.trim() ? '例: 昭和40年3月15日　または　S40.3.15' : '';
-        preview.style.color = '#aaa';
-    }
-}
-
-function updateMedicalStatusIcon() {
-    const icon         = document.getElementById('medical_status_icon');
-    if (!icon) return;
-    const type         = document.querySelector('[name="medical_insurance_type"]');
-    const number       = document.querySelector('[name="medical_insurance_number"]');
-    const insurerName  = document.getElementById('medical_display_insurer_name');
-    const insurerNum   = document.getElementById('medical_display_insurer_number');
-    // 記号は任意。保険種別・番号・保険者名・保険者番号が必須
-    const complete = (type        && type.value.trim()        !== '')
-                  && (number      && number.value.trim()      !== '')
-                  && (insurerName && insurerName.value.trim() !== '')
-                  && (insurerNum  && insurerNum.value.trim()  !== '');
-    icon.innerHTML = complete
-        ? '<i class="fas fa-check-circle" style="color: rgba(25, 135, 84, 0.5);"></i>'
-        : '<i class="fas fa-circle-exclamation" style="color: rgba(220, 53, 69, 0.5);"></i>';
-    // 未完了時は展開・完了時は閉じる
-    const medicalCollapse = document.getElementById('medicalInfoCollapse');
-    if (medicalCollapse) {
-        if (!complete && !medicalCollapse.classList.contains('show')) {
-            new bootstrap.Collapse(medicalCollapse, { toggle: false }).show();
-        } else if (complete && medicalCollapse.classList.contains('show') && !medicalCollapse.contains(document.activeElement)) {
-            new bootstrap.Collapse(medicalCollapse, { toggle: false }).hide();
-        }
-    }
-}
-
-// 医療保険モーダル：保険者プリセット定義（client_form.html と同じデータ）
-const MEDICAL_INSURER_PRESETS = {
-    'national_health': [
-        { text: '津市',   value: '三重県 津市',   number: '240010' },
-        { text: '鈴鹿市', value: '三重県 鈴鹿市', number: '240077' },
-        { text: '亀山市', value: '三重県 亀山市', number: '241075' },
-        { text: '松阪市', value: '三重県 松阪市', number: '240044' },
-        { text: '伊勢市', value: '三重県 伊勢市', number: '240051' },
-        { text: '手入力', value: 'manual', number: '' }
-    ],
-    'latter_stage_elderly': [
-        { text: '三重県後期高齢者医療広域連合', value: '三重県後期高齢者医療広域連合', number: '39240007' },
-        { text: '手入力', value: 'manual', number: '' }
-    ],
-    'health_insurance_association': [
-        { text: '全国健康保険協会 三重支部（協会けんぽ）', value: '全国健康保険協会 三重支部', number: '01240019' },
-        { text: '手入力', value: 'manual', number: '' }
-    ],
-    'health_insurance_union': [
-        { text: '手入力（保険証に記載の保険者名を入力）', value: 'manual', number: '' }
-    ],
-    'mutual_aid': [
-        { text: '三重県市町村職員共済組合',                         value: '三重県市町村職員共済組合',                         number: '32240418' },
-        { text: '地方職員共済組合 三重県支部（県職員）',            value: '地方職員共済組合 三重県支部',                       number: '32250110' },
-        { text: '国家公務員共済組合連合会（各省庁）',               value: '国家公務員共済組合連合会',                          number: '' },
-        { text: '日本私立学校振興・共済事業団（私学共済）',         value: '日本私立学校振興・共済事業団',                      number: '34130021' },
-        { text: '手入力', value: 'manual', number: '' }
-    ],
-    'seamen': [
-        { text: '全国健康保険協会（船員保険）', value: '全国健康保険協会（船員保険）', number: '02' },
-        { text: '手入力', value: 'manual', number: '' }
-    ]
-};
-
-function updateMedicalModalPresetOptions(clearValues) {
-    const type         = document.getElementById('medical_modal_type').value;
-    const presetSel    = document.getElementById('medical_modal_insurer_preset');
-    const nameInput    = document.getElementById('medical_modal_insurer_name');
-    const numberInput  = document.getElementById('medical_modal_insurer_number');
-    const manualWrapper= document.getElementById('medical_modal_insurer_manual_wrapper');
-    const currentName  = clearValues ? '' : nameInput.value.trim();
-
-    presetSel.innerHTML = '<option value="">----------</option>';
-
-    const presets = MEDICAL_INSURER_PRESETS[type];
-    if (presets) {
-        presetSel.style.display = 'block';
-        let matched = false;
-        presets.forEach(function(item) {
-            const opt = document.createElement('option');
-            opt.value = item.value;
-            opt.textContent = item.text;
-            opt.dataset.number = item.number;
-            if (currentName !== '' && currentName === item.value) {
-                opt.selected = true;
-                matched = true;
-            }
-            presetSel.appendChild(opt);
-        });
-        if (currentName === '' || matched) {
-            manualWrapper.style.display = (presetSel.value === 'manual') ? 'block' : 'none';
-            if (currentName === '') presetSel.value = '';
-        } else {
-            presetSel.value = 'manual';
-            manualWrapper.style.display = 'block';
-        }
-    } else {
-        presetSel.style.display = 'none';
-        manualWrapper.style.display = 'block';
-    }
-
-    if (clearValues) {
-        nameInput.value   = '';
-        numberInput.value = '';
-    }
-}
-
-function toggleMedicalModalSymbolBranch(clearValues) {
-    const val = document.getElementById('medical_modal_type').value;
-    const isLatter = (val === 'latter_stage_elderly');
-    ['medical_modal_symbol_label', 'medical_modal_symbol_wrapper',
-     'medical_modal_branch_label', 'medical_modal_branch_wrapper'].forEach(function(id) {
-        const el = document.getElementById(id);
-        if (el) el.style.display = isLatter ? 'none' : '';
-    });
-    if (clearValues) {
-        document.getElementById('medical_modal_symbol').value = '';
-        document.getElementById('medical_modal_number').value = '';
-        document.getElementById('medical_modal_branch').value = '';
-        document.getElementById('medical_modal_burden').value = '';
-    } else if (isLatter) {
-        document.getElementById('medical_modal_symbol').value = '';
-        document.getElementById('medical_modal_branch').value = '';
-    }
-    updateMedicalModalPresetOptions(clearValues || false);
-}
-
-function openMedicalInfoModal() {
-    const h = (id) => { const el = document.getElementById(id); return el ? el.value : ''; };
-    document.getElementById('medical_modal_type').value           = h('medical_hidden_type');
-    document.getElementById('medical_modal_symbol').value         = h('medical_hidden_symbol');
-    document.getElementById('medical_modal_number').value         = h('medical_hidden_number');
-    document.getElementById('medical_modal_branch').value         = h('medical_hidden_branch');
-    document.getElementById('medical_modal_burden').value         = h('medical_hidden_burden');
-    document.getElementById('medical_modal_insurer_name').value   = h('medical_hidden_insurer_name');
-    document.getElementById('medical_modal_insurer_number').value = h('medical_hidden_insurer_number');
-    toggleMedicalModalSymbolBranch(false);
-    document.getElementById('medicalInfoModalError').classList.add('d-none');
-    new bootstrap.Modal(document.getElementById('medicalInfoModal')).show();
-}
-
-// preset select の選択連動
-document.addEventListener('DOMContentLoaded', function() {
-    const presetSel   = document.getElementById('medical_modal_insurer_preset');
-    const nameInput   = document.getElementById('medical_modal_insurer_name');
-    const numberInput = document.getElementById('medical_modal_insurer_number');
-    const manualWrap  = document.getElementById('medical_modal_insurer_manual_wrapper');
-    if (!presetSel) return;
-    presetSel.addEventListener('change', function() {
-        if (this.value === 'manual') {
-            manualWrap.style.display = 'block';
-            nameInput.value   = '';
-            numberInput.value = '';
-            nameInput.focus();
-        } else if (this.value === '') {
-            manualWrap.style.display = 'none';
-            nameInput.value   = '';
-            numberInput.value = '';
-        } else {
-            manualWrap.style.display = 'none';
-            nameInput.value = this.value;
-            const sel = this.options[this.selectedIndex];
-            numberInput.value = sel.dataset.number || '';
-        }
-    });
-});
-
-function openCertInfoModal() {
-    // 現在の値をモーダルに反映
-    document.getElementById('cert_modal_insurance').value =
-        document.getElementById('cert_hidden_insurance_number').value;
-    document.getElementById('cert_modal_care_level').value =
-        document.getElementById('cert_hidden_care_level').value;
-    document.getElementById('cert_modal_care_burden').value =
-        document.getElementById('cert_hidden_care_burden').value;
-
-    // 認定日
-    const certDateVal = document.getElementById('cert_hidden_cert_date').value;
-    document.getElementById('cert_modal_cert_date').value = certDateVal;
-    const certDateText = certDateVal ? toWarekiTextLocal(certDateVal) : '';
-    document.getElementById('certDate_wareki_text').value = certDateText;
-    if (certDateText) syncCertModalDate('date');
-    else document.getElementById('certDate_wareki_preview').textContent = '';
-
-    // 認定期間（開始）
-    const startVal = document.getElementById('cert_hidden_start').value;
-    document.getElementById('cert_modal_start').value = startVal;
-    const startText = startVal ? toWarekiTextLocal(startVal) : '';
-    document.getElementById('certStart_wareki_text').value = startText;
-    if (startText) syncCertModalDate('start');
-    else document.getElementById('certStart_wareki_preview').textContent = '';
-
-    // 認定期間（終了）
-    const endVal = document.getElementById('cert_hidden_end').value;
-    document.getElementById('cert_modal_end').value = endVal;
-    const endText = endVal ? toWarekiTextLocal(endVal) : '';
-    document.getElementById('certEnd_wareki_text').value = endText;
-    if (endText) syncCertModalDate('end');
-    else document.getElementById('certEnd_wareki_preview').textContent = '';
-
-    document.getElementById('certInfoModalError').classList.add('d-none');
-    new bootstrap.Modal(document.getElementById('certInfoModal')).show();
-}
-
-function switchCertDateEra(mode) {
-    const btnJa = document.getElementById('certDate_era_japanese');
-    const btnWe = document.getElementById('certDate_era_western');
-    const westernDiv  = document.getElementById('certDate_western');
-    const japaneseDiv = document.getElementById('certDate_japanese');
-    const hidden      = document.getElementById('cert_modal_cert_date');
-    const warekiInput = document.getElementById('certDate_wareki_text');
-    if (mode === 'western') {
-        westernDiv.style.display  = '';
-        japaneseDiv.style.display = 'none';
-        btnJa.classList.remove('active'); btnWe.classList.add('active');
-    } else {
-        if (hidden && warekiInput) {
-            warekiInput.value = toWarekiTextLocal(hidden.value);
-            syncCertModalDate('date');
-        }
-        westernDiv.style.display  = 'none';
-        japaneseDiv.style.display = '';
-        btnJa.classList.add('active'); btnWe.classList.remove('active');
-    }
-}
-
-function syncCertModalDate(which) {
-    const map = {
-        date:  { text: 'certDate_wareki_text',  hidden: 'cert_modal_cert_date', preview: 'certDate_wareki_preview' },
-        start: { text: 'certStart_wareki_text', hidden: 'cert_modal_start',     preview: 'certStart_wareki_preview' },
-        end:   { text: 'certEnd_wareki_text',   hidden: 'cert_modal_end',       preview: 'certEnd_wareki_preview' },
-    };
-    const textId    = map[which].text;
-    const hiddenId  = map[which].hidden;
-    const previewId = map[which].preview;
-    const text    = (document.getElementById(textId)    || {}).value || '';
-    const hidden  = document.getElementById(hiddenId);
-    const preview = document.getElementById(previewId);
-    const result  = parseWarekiLocal(text);
-    if (result) {
-        const yr = String(result.year), mo = String(result.month).padStart(2,'0'), dy = String(result.day).padStart(2,'0');
-        hidden.value = yr + '-' + mo + '-' + dy;
-        preview.textContent = '→ 西暦 ' + result.year + '年' + result.month + '月' + result.day + '日';
-        preview.style.color = '#6c757d';
-    } else {
-        hidden.value = '';
-        preview.textContent = text.length > 0 ? '例: 昭和40年3月15日　または　S40.3.15' : '';
-        preview.style.color = '#aaa';
-    }
-}
-
-function switchCertPeriodEra(mode) {
-    const btnJa = document.getElementById('certPeriod_era_japanese');
-    const btnWe = document.getElementById('certPeriod_era_western');
-    ['start', 'end'].forEach(function(which) {
-        const westernDiv  = document.getElementById('cert' + (which === 'start' ? 'Start' : 'End') + '_western');
-        const japaneseDiv = document.getElementById('cert' + (which === 'start' ? 'Start' : 'End') + '_japanese');
-        const hidden      = document.getElementById(which === 'start' ? 'cert_modal_start' : 'cert_modal_end');
-        const warekiInput = document.getElementById(which === 'start' ? 'certStart_wareki_text' : 'certEnd_wareki_text');
-        if (mode === 'western') {
-            westernDiv.style.display  = '';
-            japaneseDiv.style.display = 'none';
-        } else {
-            if (hidden && warekiInput) {
-                warekiInput.value = toWarekiTextLocal(hidden.value);
-                syncCertModalDate(which);
-            }
-            westernDiv.style.display  = 'none';
-            japaneseDiv.style.display = '';
-        }
-    });
-    if (mode === 'western') {
-        btnJa.classList.remove('active'); btnWe.classList.add('active');
-    } else {
-        btnJa.classList.add('active'); btnWe.classList.remove('active');
-    }
-}
-
-// ========================================
-// 申請年月日 和暦/西暦トグル
-// ========================================
-(function() {
-    var ERAS = [
-        { name: '令和', start: 2019, month: 5, day: 1 },
-        { name: '平成', start: 1989, month: 1, day: 8 },
-        { name: '昭和', start: 1926, month: 12, day: 25 },
-        { name: '大正', start: 1912, month: 7, day: 30 },
-        { name: '明治', start: 1868, month: 1, day: 25 },
-    ];
-    // 長い元号名を先にチェックして誤マッチを防ぐ
-    var ERA_KEYS = ['令和','平成','昭和','大正','明治','令','平','昭','大','明','R','H','S','T','M'];
-    var ERA_MAP  = {'令和':'令和','平成':'平成','昭和':'昭和','大正':'大正','明治':'明治',
-                    '令':'令和','平':'平成','昭':'昭和','大':'大正','明':'明治',
-                    'R':'令和','H':'平成','S':'昭和','T':'大正','M':'明治'};
-
-    window.parseWarekiLocal = function(text) { return parseWarekiLocalImpl(text); };
-    window.toWarekiTextLocal = function(dateStr) { return toWarekiTextLocalImpl(dateStr); };
-
-    function parseWarekiLocal(text) { return parseWarekiLocalImpl(text); }
-    function parseWarekiLocalImpl(text) {
-        if (!text) return null;
-        text = text.replace(/\s/g, '');
-        var eraName = null, rest = null;
-        for (var i = 0; i < ERA_KEYS.length; i++) {
-            var k = ERA_KEYS[i];
-            if (text.indexOf(k) === 0) { eraName = ERA_MAP[k]; rest = text.slice(k.length); break; }
-        }
-        if (!eraName) return null;
-        var era = ERAS.find(function(e) { return e.name === eraName; });
-        if (!era) return null;
-        var m = rest.match(/^(\d+)[年.\-\/](\d+)[月.\-\/](\d+)日?$/);
-        if (!m) return null;
-        var y = parseInt(m[1]), mo = parseInt(m[2]), d = parseInt(m[3]);
-        var wy = era.start + y - 1;
-        if (isNaN(wy) || isNaN(mo) || isNaN(d)) return null;
-        return { year: wy, month: mo, day: d, era: era, eraYear: y };
-    }
-
-    function toWarekiTextLocal(dateStr) { return toWarekiTextLocalImpl(dateStr); }
-    function toWarekiTextLocalImpl(dateStr) {
-        if (!dateStr) return '';
-        var p = dateStr.split('-');
-        var wy = parseInt(p[0]), mo = parseInt(p[1]), d = parseInt(p[2]);
-        for (var i = 0; i < ERAS.length; i++) {
-            var e = ERAS[i];
-            var eStart = new Date(e.start, e.month - 1, e.day);
-            if (new Date(wy, mo - 1, d) >= eStart) {
-                return e.name + (wy - e.start + 1) + '年' + mo + '月' + d + '日';
-            }
-        }
-        return '';
-    }
-
-    window.syncAppDateFromWareki = function() {
-        var text = (document.getElementById('appDate_wareki_text') || {}).value || '';
-        var hidden = document.getElementById('id_application_date');
-        var preview = document.getElementById('appDate_wareki_preview');
-        if (!hidden || !preview) return;
-        var result = parseWarekiLocal(text);
-        if (result) {
-            var yr = String(result.year), mo = String(result.month).padStart(2, '0'), dy = String(result.day).padStart(2, '0');
-            hidden.value = yr + '-' + mo + '-' + dy;
-            preview.textContent = '→ 西暦 ' + result.year + '年' + result.month + '月' + result.day + '日';
-            preview.style.color = '#6c757d';
-        } else {
-            hidden.value = '';
-            if (text.length > 0) {
-                preview.textContent = '例: 昭和40年3月15日　または　S40.3.15';
-                preview.style.color = '#aaa';
-            } else {
-                preview.textContent = '';
-            }
-        }
-    };
-
-    window.switchAppDateEra = function(mode) {
-        var westernDiv  = document.getElementById('appDate_western');
-        var japaneseDiv = document.getElementById('appDate_japanese');
-        var hidden      = document.getElementById('id_application_date');
-        var warekiInput = document.getElementById('appDate_wareki_text');
-        var btnJa = document.getElementById('appDate_era_japanese');
-        var btnWe = document.getElementById('appDate_era_western');
-        if (!westernDiv || !japaneseDiv) return;
-        if (mode === 'western') {
-            westernDiv.style.display  = '';
-            japaneseDiv.style.display = 'none';
-            btnJa.classList.remove('active'); btnWe.classList.add('active');
-        } else {
-            if (hidden && warekiInput) {
-                warekiInput.value = toWarekiTextLocal(hidden.value);
-                window.syncAppDateFromWareki();
-            }
-            westernDiv.style.display  = 'none';
-            japaneseDiv.style.display = '';
-            btnJa.classList.add('active'); btnWe.classList.remove('active');
-        }
-    };
-
-    window.syncWithdrawalDateFromWareki = function() {
-        var text    = (document.getElementById('withdrawalDate_wareki_text') || {}).value || '';
-        var hidden  = document.getElementById('id_withdrawal_date');
-        var preview = document.getElementById('withdrawalDate_wareki_preview');
-        if (!hidden || !preview) return;
-        var result = parseWarekiLocal(text);
-        if (result) {
-            var yr = String(result.year), mo = String(result.month).padStart(2,'0'), dy = String(result.day).padStart(2,'0');
-            hidden.value = yr + '-' + mo + '-' + dy;
-            preview.textContent = '→ 西暦 ' + result.year + '年' + result.month + '月' + result.day + '日';
-            preview.style.color = '#6c757d';
-        } else {
-            hidden.value = '';
-            preview.textContent = text.length > 0 ? '例: 令和7年4月1日　または　R7.4.1' : '';
-            preview.style.color = '#aaa';
-        }
-    };
-
-    window.switchWithdrawalDateEra = function(mode) {
-        var wDiv   = document.getElementById('withdrawalDate_western');
-        var jDiv   = document.getElementById('withdrawalDate_japanese');
-        var hidden = document.getElementById('id_withdrawal_date');
-        var wareki = document.getElementById('withdrawalDate_wareki_text');
-        var btnJa  = document.getElementById('withdrawalDate_era_japanese');
-        var btnWe  = document.getElementById('withdrawalDate_era_western');
-        if (!wDiv || !jDiv) return;
-        if (mode === 'western') {
-            wDiv.style.display = ''; jDiv.style.display = 'none';
-            btnJa.classList.remove('active'); btnWe.classList.add('active');
-        } else {
-            if (hidden && wareki) { wareki.value = toWarekiTextLocal(hidden.value); window.syncWithdrawalDateFromWareki(); }
-            wDiv.style.display = 'none'; jDiv.style.display = '';
-            btnJa.classList.add('active'); btnWe.classList.remove('active');
-        }
-    };
-
-    document.addEventListener('DOMContentLoaded', function() {
-        var hidden = document.getElementById('id_application_date');
-        var warekiInput = document.getElementById('appDate_wareki_text');
-        if (hidden && hidden.value && warekiInput) {
-            warekiInput.value = toWarekiTextLocal(hidden.value);
-            window.syncAppDateFromWareki();
-        }
-        // 取下申請日の初期化（本日の日付を和暦で表示）
-        var wdHidden = document.getElementById('id_withdrawal_date');
-        var wdWareki = document.getElementById('withdrawalDate_wareki_text');
-        if (wdHidden && wdHidden.value && wdWareki) {
-            wdWareki.value = toWarekiTextLocal(wdHidden.value);
-            window.syncWithdrawalDateFromWareki();
-        }
-    });
-})();
-
-document.addEventListener('DOMContentLoaded', function() {
-    // 入力イベントリスナー
-    ['renewal_staff_name_accordion', 'renewal_staff_name', 'renewal_office_address', 'renewal_office_phone'].forEach(function(id) {
-        const el = document.getElementById(id);
-        if (el) el.addEventListener('input', updateRenewalStatusIcon);
-    });
-
-    // 履歴読み込み時の初期UI状態
-    (function() {
-        var type = (document.getElementById('id_submitter_type').value || 'office');
-        if (type === 'person') {
-            var officeNameRow  = document.getElementById('renewal_office_name_row');
-            var staffNameRow   = document.getElementById('renewal_staff_name_row');
-            var editBtnWrapper = document.getElementById('renewal_edit_button_wrapper');
-            if (officeNameRow)  officeNameRow.style.display  = 'none';
-            if (staffNameRow)   staffNameRow.style.display   = 'none';
-            if (editBtnWrapper) editBtnWrapper.style.display = 'none';
-            ['renewal_office_name', 'renewal_postal_code', 'renewal_office_address', 'renewal_office_phone'].forEach(function(id) {
-                var el = document.getElementById(id);
-                if (el) el.removeAttribute('readonly');
-            });
-            var accStaff = document.getElementById('renewal_staff_name_accordion');
-            if (accStaff) accStaff.value = '';
-        }
-        updateRenewalStatusIcon();
-    })();
-    updateRenewalStatusIcon();
-
-    // モーダル保存ボタン
-    const saveBtn = document.getElementById('renewalOfficeSaveBtn');
-    if (!saveBtn) return;
-    saveBtn.addEventListener('click', function() {
-        const pk = document.getElementById('renewal_modal_pk').value;
-        if (!pk) { alert('事業所が設定されていません。'); return; }
-
-        const name        = document.getElementById('renewal_modal_name').value.trim();
-        const furigana    = document.getElementById('renewal_modal_furigana').value.trim();
-        const officeNumber = document.getElementById('renewal_modal_office_number').value.trim();
-        const managerName = document.getElementById('renewal_modal_manager_name').value.trim();
-        const postalCode  = document.getElementById('renewal_modal_postal_code').value.trim();
-        const address     = document.getElementById('renewal_modal_address').value.trim();
-        const phone       = document.getElementById('renewal_modal_phone').value.trim();
-        const fax         = document.getElementById('renewal_modal_fax').value.trim();
-
-        if (!name || !officeNumber) {
-            const errEl = document.getElementById('renewalOfficeModalError');
-            errEl.textContent = '事業所名と事業所番号は必須です。';
-            errEl.classList.remove('d-none');
-            return;
-        }
-
-        const formData = new FormData();
-        formData.append('name', name);
-        formData.append('furigana', furigana);
-        formData.append('office_number', officeNumber);
-        formData.append('manager_name', managerName);
-        formData.append('postal_code', postalCode);
-        formData.append('address', address);
-        formData.append('phone', phone);
-        formData.append('fax', fax);
-        formData.append('is_active', 'true');
-
-        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-        fetch(`/clients/home-care-offices/${pk}/edit/`, {
-            method: 'POST',
-            headers: { 'X-CSRFToken': csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
-            body: formData,
-        })
-        .then(r => r.json())
-        .then(data => {
-            if (data.success) {
-                const setField = function(id, val) {
-                    const el = document.getElementById(id);
-                    if (el) { el.value = val; el.defaultValue = val; }
-                };
-                setField('renewal_office_name',     name);
-                setField('renewal_office_furigana',  furigana);
-                setField('renewal_office_number',    officeNumber);
-                setField('renewal_postal_code',      postalCode);
-                setField('renewal_office_address',   address);
-                setField('renewal_office_phone',     phone);
-
-                // セレクトのオプションテキストも更新
-                const sel = document.getElementById('renewal_provider_select');
-                if (sel && sel.options[0]) sel.options[0].text = name;
-
-                bootstrap.Modal.getInstance(document.getElementById('renewalOfficeModal')).hide();
-                updateRenewalStatusIcon();
-            } else {
-                const errEl = document.getElementById('renewalOfficeModalError');
-                errEl.textContent = data.error || 'エラーが発生しました。';
-                errEl.classList.remove('d-none');
-            }
-        })
-        .catch(function() {
-            const errEl = document.getElementById('renewalOfficeModalError');
-            errEl.textContent = '通信エラーが発生しました。';
-            errEl.classList.remove('d-none');
-        });
-    });
-
-    // 認定情報 初期アイコン
-    updateCertStatusIcon();
-
-    // 医療保険情報 初期アイコン
-    updateMedicalStatusIcon();
-
-    // 転入状態 初期復元
-    toggleTransferSection(true);
-    toggleTransferAppliedSection();
-    // 申請日 和暦テキスト復元
-    (function() {
-        const hidden = document.getElementById('id_transfer_applied_date');
-        const warekiInput = document.getElementById('transferDate_wareki_text');
-        if (hidden && hidden.value && warekiInput) {
-            warekiInput.value = window.toWarekiTextLocal ? toWarekiTextLocal(hidden.value) : '';
-            syncTransferDateFromWareki();
-        }
-    })();
-
-    // 調査場所 初期入力・アイコン
-    toggleSurveyLocationOther();
-    updateSurveyLocationStatusIcon();
-
-    // 調査連絡先 初期状態（プルダウン選択に応じて表示・自動反映）
-    toggleSurveyContact(true);
-
-    // 主治医意見書依頼先 初期反映・アイコン
-    toggleDoctorSelection(true);
-    updateDoctorStatusIcon();
-
-    // 津市外フラグ 初期状態復元
-    toggleDoctorOutside();
-
-    // 認定情報 保存ボタン
-    const certSaveBtn = document.getElementById('certInfoSaveBtn');
-    if (certSaveBtn) {
-        certSaveBtn.addEventListener('click', function() {
-            const insurance   = document.getElementById('cert_modal_insurance').value.trim();
-            const careLevel   = document.getElementById('cert_modal_care_level').value;
-            const careBurden  = document.getElementById('cert_modal_care_burden').value;
-            const certDate    = document.getElementById('cert_modal_cert_date').value;
-            const certStart   = document.getElementById('cert_modal_start').value;
-            const certEnd     = document.getElementById('cert_modal_end').value;
-
-            if (!insurance || !careLevel) {
-                const errEl = document.getElementById('certInfoModalError');
-                errEl.textContent = '被保険者番号と要介護度は必須です。';
-                errEl.classList.remove('d-none');
-                return;
-            }
-
-            const formData = new FormData();
-            formData.append('insurance_number',  insurance);
-            formData.append('care_level',        careLevel);
-            formData.append('care_burden',        careBurden);
-            formData.append('certification_date', certDate);
-            formData.append('cert_start',        certStart);
-            formData.append('cert_end',          certEnd);
-
-            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-            fetch('{% url "client_cert_info_update" client_id=client.pk %}', {
-                method: 'POST',
-                headers: { 'X-CSRFToken': csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
-                body: formData,
-            })
-            .then(r => r.json())
-            .then(data => {
-                if (data.success) {
-                    // 表示フィールド更新（内側アコーディオン）
-                    document.getElementById('cert_display_insurance').value   = data.insurance_number;
-                    document.getElementById('cert_display_care_level').value  = data.care_level_display;
-                    document.getElementById('cert_display_start').value       = data.cert_start_wareki;
-                    document.getElementById('cert_display_end').value         = data.cert_end_wareki;
-                    // 表示フィールド更新（外側アコーディオン）
-                    const setOuter = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
-                    setOuter('ins_disp_insurance',  data.insurance_number);
-                    setOuter('ins_disp_care_level', data.care_level_display);
-                    setOuter('ins_disp_cert_date',  data.cert_date_wareki);
-                    setOuter('ins_disp_cert_start', data.cert_start_wareki);
-                    setOuter('ins_disp_cert_end',   data.cert_end_wareki);
-                    setOuter('ins_disp_care_burden', data.care_burden);
-                    // 隠しフィールド更新（Excel出力用）
-                    document.getElementById('cert_hidden_insurance_number').value = data.insurance_number;
-                    document.getElementById('cert_hidden_care_level').value       = data.care_level_value;
-                    document.getElementById('cert_hidden_care_burden').value      = data.care_burden;
-                    document.getElementById('cert_hidden_cert_date').value        = data.certification_date;
-                    document.getElementById('cert_hidden_start').value            = data.cert_start;
-                    document.getElementById('cert_hidden_end').value              = data.cert_end;
-                    updateCertStatusIcon();
-                    bootstrap.Modal.getInstance(document.getElementById('certInfoModal')).hide();
-                } else {
-                    const errEl = document.getElementById('certInfoModalError');
-                    errEl.textContent = data.error || 'エラーが発生しました。';
-                    errEl.classList.remove('d-none');
-                }
-            })
-            .catch(function() {
-                const errEl = document.getElementById('certInfoModalError');
-                errEl.textContent = '通信エラーが発生しました。';
-                errEl.classList.remove('d-none');
-            });
-        });
-    }
-
-    // 医療保険情報 保存ボタン
-    const medicalSaveBtn = document.getElementById('medicalInfoSaveBtn');
-    if (medicalSaveBtn) {
-        medicalSaveBtn.addEventListener('click', function() {
-            const type        = document.getElementById('medical_modal_type').value;
-            const symbol      = document.getElementById('medical_modal_symbol').value.trim();
-            const number      = document.getElementById('medical_modal_number').value.trim();
-            const branch      = document.getElementById('medical_modal_branch').value.trim();
-            const burden      = document.getElementById('medical_modal_burden').value;
-            const insurerName = document.getElementById('medical_modal_insurer_name').value.trim();
-            const insurerNum  = document.getElementById('medical_modal_insurer_number').value.trim();
-
-            const formData = new FormData();
-            formData.append('medical_insurance_type',   type);
-            formData.append('medical_insurance_symbol', symbol);
-            formData.append('medical_insurance_number', number);
-            formData.append('medical_insurance_branch', branch);
-            formData.append('medical_burden',           burden);
-            formData.append('medical_insurer_name',     insurerName);
-            formData.append('medical_insurer_number',   insurerNum);
-
-            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-            fetch('{% url "client_medical_info_update" client_id=client.pk %}', {
-                method: 'POST',
-                headers: { 'X-CSRFToken': csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
-                body: formData,
-            })
-            .then(r => r.json())
-            .then(data => {
-                if (data.success) {
-                    const setVal = (id, val) => { const el = document.getElementById(id); if (el) { el.value = val; el.defaultValue = val; } };
-                    setVal('medical_display_type',           data.medical_insurance_type_display);
-                    setVal('medical_display_symbol',         data.medical_insurance_symbol);
-                    setVal('medical_display_number',         data.medical_insurance_number);
-                    setVal('medical_display_insurer_name',   data.medical_insurer_name);
-                    setVal('medical_display_insurer_number', data.medical_insurer_number);
-                    // 外側アコーディオンも更新
-                    setVal('med_disp_type',           data.medical_insurance_type_display);
-                    setVal('med_disp_symbol',         data.medical_insurance_symbol);
-                    setVal('med_disp_number',         data.medical_insurance_number);
-                    setVal('med_disp_branch',         data.medical_insurance_branch);
-                    setVal('med_disp_burden',         data.medical_burden);
-                    setVal('med_disp_insurer_name',   data.medical_insurer_name);
-                    setVal('med_disp_insurer_number', data.medical_insurer_number);
-                    // hidden fields
-                    setVal('medical_hidden_type',           data.medical_insurance_type);
-                    setVal('medical_hidden_symbol',         data.medical_insurance_symbol);
-                    setVal('medical_hidden_number',         data.medical_insurance_number);
-                    setVal('medical_hidden_branch',         data.medical_insurance_branch);
-                    setVal('medical_hidden_burden',         data.medical_burden);
-                    setVal('medical_hidden_insurer_name',   data.medical_insurer_name);
-                    setVal('medical_hidden_insurer_number', data.medical_insurer_number);
-                    updateMedicalStatusIcon();
-                    bootstrap.Modal.getInstance(document.getElementById('medicalInfoModal')).hide();
-                } else {
-                    const errEl = document.getElementById('medicalInfoModalError');
-                    errEl.textContent = data.error || 'エラーが発生しました。';
-                    errEl.classList.remove('d-none');
-                }
-            })
-            .catch(function() {
-                const errEl = document.getElementById('medicalInfoModalError');
-                errEl.textContent = '通信エラーが発生しました。';
-                errEl.classList.remove('d-none');
-            });
-        });
-    }
-    // フォーム送信バリデーション
-    const documentForm = document.getElementById('documentForm');
-    if (documentForm) {
-        documentForm.addEventListener('submit', function(e) {
-            const errors = [];
-            function val(id) {
-                const el = document.getElementById(id);
-                return el ? el.value.trim() : '';
-            }
-
-            // 申請年月日
-            if (!val('id_application_date')) errors.push('申請年月日');
-
-            // 介護保険情報
-            if (!val('cert_display_insurance')) errors.push('被保険者番号');
-            if (!val('cert_display_care_level')) errors.push('要介護度');
-            if (!val('cert_display_start'))      errors.push('有効期間（開始）');
-            if (!val('cert_display_end'))        errors.push('有効期間（終了）');
-
-            // 特定疾病名（第2号被保険者の場合のみ）
-            const diseaseEl = document.querySelector('select[name="specific_disease"]');
-            if (diseaseEl && !diseaseEl.value) errors.push('特定疾病名');
-
-            // 医療保険情報
-            if (!val('medical_hidden_insurer_name'))   errors.push('医療保険者名');
-            if (!val('medical_hidden_insurer_number')) errors.push('保険者番号');
-            if (!val('medical_hidden_number'))         errors.push('被保険者証 番号');
-
-            // 転入関係
-            const transferredYes = document.getElementById('transferred_yes');
-            if (transferredYes && transferredYes.checked) {
-                const municipality = document.querySelector('[name="transfer_from_municipality"]');
-                if (!municipality || !municipality.value.trim()) errors.push('転出元自治体（市町村）名');
-
-                const transferAppliedYes = document.getElementById('transfer_applied_yes');
-                if (transferAppliedYes && transferAppliedYes.checked) {
-                    const appliedDate = document.getElementById('id_transfer_applied_date');
-                    if (!appliedDate || !appliedDate.value) errors.push('転出元自治体への申請日');
-                }
-            }
-
-            // 認定調査場所（自宅以外）
-            const surveyAccordion = document.getElementById('surveyLocationAccordion');
-            if (surveyAccordion && surveyAccordion.style.display !== 'none') {
-                if (!val('survey_loc_postal'))  errors.push('認定調査場所 郵便番号');
-                if (!val('survey_loc_address')) errors.push('認定調査場所 住所');
-                if (!val('survey_loc_phone'))   errors.push('認定調査場所 電話番号');
-            }
-
-            // 調査連絡先（本人以外）
-            const contactWrapper = document.getElementById('surveyContactAccordionWrapper');
-            if (contactWrapper && contactWrapper.style.display !== 'none') {
-                if (!val('survey_contact_name'))     errors.push('調査連絡先 氏名');
-                if (!val('survey_contact_furigana')) errors.push('調査連絡先 フリガナ');
-                if (!val('survey_contact_relation')) errors.push('調査連絡先 本人との関係');
-                if (!val('survey_contact_phone'))    errors.push('調査連絡先 電話番号');
-            }
-
-            // 医療機関情報
-            if (!val('doctor_hospital')) errors.push('医療機関名');
-            if (!val('doctor_name'))     errors.push('医師氏名');
-            if (!val('doctor_phone'))    errors.push('医療機関 電話番号');
-
-            // 津市外の場合 住所
-            const outsideCb = document.getElementById('doctor_outside_yes');
-            if (outsideCb && outsideCb.checked) {
-                if (!val('doctor_address')) errors.push('医療機関 住所');
-            }
-
-            if (errors.length > 0) {
-                e.preventDefault();
-                alert('以下の必須項目が未入力です。\n\n・' + errors.join('\n・'));
-            }
-        });
-    }
-});
+{% include 'clients/_submitter_js.html' %}
 
 // 利用者マスタ編集モーダル 生年月日 和暦/西暦切り替え
 (function() {
@@ -2185,6 +890,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <style>
 .birth-era-toggle { display: inline-flex; border: 1px solid #ced4da; border-radius: 0.375rem; overflow: hidden; font-size: 0.72rem; flex-shrink: 0; }
+#renewal_office_inst_table th, #renewal_office_inst_table td { border-left: none !important; border-right: none !important; }
+#renewal_office_inst_table td, #renewal_office_inst_table th { vertical-align: middle; }
 .birth-era-toggle .era-btn { background: #fff; border: none; padding: 2px 7px; cursor: pointer; color: #6c757d; font-size: 0.72rem; line-height: 1.5; transition: background 0.15s, color 0.15s; }
 .birth-era-toggle .era-btn:not(:last-child) { border-right: 1px solid #ced4da; }
 .birth-era-toggle .era-btn.active { background: #6c757d; color: #fff; }
@@ -2253,4 +960,91 @@ input[readonly]:focus, textarea[readonly]:focus {
     background-color: #f8f9fa !important;
 }
 </style>
+
+<script>
+// 申請年月日 和暦/西暦
+(function() {
+    var APP_ERA = [
+        { keys: ['令和','R','r'], start: 2019, label: '令和' },
+        { keys: ['平成','H','h'], start: 1989, label: '平成' },
+        { keys: ['昭和','S','s'], start: 1926, label: '昭和' },
+        { keys: ['大正','T','t'], start: 1912, label: '大正' },
+    ];
+    function parseAppWareki(text) {
+        if (!text) return null;
+        text = text.replace(/\s/g, '');
+        var era = null, rest = text;
+        for (var i = 0; i < APP_ERA.length; i++) {
+            for (var k = 0; k < APP_ERA[i].keys.length; k++) {
+                if (text.indexOf(APP_ERA[i].keys[k]) === 0) { era = APP_ERA[i]; rest = text.slice(APP_ERA[i].keys[k].length); break; }
+            }
+            if (era) break;
+        }
+        if (!era) return null;
+        var m1 = rest.match(/^(\d{1,2})年(\d{1,2})月(\d{1,2})日?$/);
+        if (m1) return { era: era, year: parseInt(m1[1]), month: parseInt(m1[2]), day: parseInt(m1[3]) };
+        var m2 = rest.match(/^(\d{1,2})[.\-\/](\d{1,2})[.\-\/](\d{1,2})$/);
+        if (m2) return { era: era, year: parseInt(m2[1]), month: parseInt(m2[2]), day: parseInt(m2[3]) };
+        return null;
+    }
+    function isoToWarekiText(iso) {
+        if (!iso) return '';
+        var p = iso.split('-'); if (p.length < 3) return '';
+        var y = parseInt(p[0]), m = parseInt(p[1]), d = parseInt(p[2]);
+        for (var i = 0; i < APP_ERA.length; i++) {
+            if (y >= APP_ERA[i].start) return APP_ERA[i].label + (y - APP_ERA[i].start + 1) + '年' + m + '月' + d + '日';
+        }
+        return '';
+    }
+    window.switchAppDateEra = function(mode) {
+        var jDiv = document.getElementById('appDate_japanese');
+        var wDiv = document.getElementById('appDate_western');
+        var hidden = document.getElementById('id_application_date');
+        var warekiInput = document.getElementById('appDate_wareki_text');
+        if (mode === 'western') {
+            jDiv.style.display = 'none'; wDiv.style.display = '';
+            document.getElementById('appDate_era_western').classList.add('active');
+            document.getElementById('appDate_era_japanese').classList.remove('active');
+            if (hidden.value) wDiv.querySelector('input[type=date]').value = hidden.value;
+        } else {
+            warekiInput.value = isoToWarekiText(hidden.value);
+            syncAppDateFromWareki();
+            wDiv.style.display = 'none'; jDiv.style.display = '';
+            document.getElementById('appDate_era_japanese').classList.add('active');
+            document.getElementById('appDate_era_western').classList.remove('active');
+        }
+    };
+    window.syncAppDateFromWareki = function() {
+        var text = document.getElementById('appDate_wareki_text').value;
+        var preview = document.getElementById('appDate_wareki_preview');
+        var hidden = document.getElementById('id_application_date');
+        var r = parseAppWareki(text);
+        if (r) {
+            var wy = r.era.start + r.year - 1;
+            var mo = String(r.month).padStart(2,'0'), d = String(r.day).padStart(2,'0');
+            hidden.value = wy + '-' + mo + '-' + d;
+            preview.textContent = '→ 西暦 ' + wy + '年' + r.month + '月' + r.day + '日';
+            preview.style.color = '#6c757d';
+        } else {
+            hidden.value = '';
+            preview.textContent = text.length > 0 ? '例: 令和7年5月16日　または　R7.5.16' : '';
+            preview.style.color = '#aaa';
+        }
+    };
+    window.initAppDate = function() {
+        var hidden = document.getElementById('id_application_date');
+        if (!hidden.value) {
+            var today = new Date();
+            var y = today.getFullYear(), m = String(today.getMonth()+1).padStart(2,'0'), d = String(today.getDate()).padStart(2,'0');
+            hidden.value = y + '-' + m + '-' + d;
+        }
+        document.getElementById('appDate_wareki_text').value = isoToWarekiText(hidden.value);
+        syncAppDateFromWareki();
+    };
+    document.addEventListener('DOMContentLoaded', function() { initAppDate(); });
+})();
+</script>
+{% with validation_date_fields="id_application_date:更新・区分変更申請日" %}
+{% include 'clients/_generic_form_validator.html' %}
+{% endwith %}
 {% endblock %}

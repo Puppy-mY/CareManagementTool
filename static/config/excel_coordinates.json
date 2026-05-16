@@ -107,8 +107,8 @@
         "office_phone": "D11",
         "request_doc_chousasho": "C15",
         "request_doc_ikensho": "C16",
-        "staff_name": "C18",
-        "staff_job_title": "C19",
+        "staff_name_office": "C18",
+        "relation": "C19",
         "client_address": "C20",
         "client_birth_date": "C21",
         "client_insurance_number": "F21"

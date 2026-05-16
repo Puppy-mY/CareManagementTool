@@ -1,0 +1,350 @@
+{% comment %}
+申請書提出者セクション 共通 JavaScript
+使用側で事前に以下の変数を定義しておくこと:
+  var _OFFICE_NAME, _OFFICE_FURIGANA, _OFFICE_NUMBER, _OFFICE_POSTAL,
+      _OFFICE_ADDRESS, _OFFICE_PHONE, _OFFICE_FAX, _OFFICE_MANAGER,
+      _CURRENT_STAFF_NAMES
+{% endcomment %}
+
+// 担当者行を追加（モーダル内）
+function addRenewalModalStaffRow(value) {
+    var c = document.getElementById('renewal_modal_staff_container');
+    if (!c) return;
+    var col = document.createElement('div');
+    col.className = 'col-6 renewal-staff-row';
+    col.innerHTML = '<div class="d-flex align-items-center gap-1">'
+        + '<input type="text" name="staff_names[]" class="form-control form-control-sm" placeholder="例: 山田 太郎" value="' + (value ? value.replace(/"/g,'&quot;') : '') + '">'
+        + '<button type="button" class="btn-close" style="font-size:0.7rem;" onclick="this.closest(\'.renewal-staff-row\').remove()"></button>'
+        + '</div>';
+    c.appendChild(col);
+}
+
+// 担当者ドロップダウンを更新
+function _updateStaffDropdown(names) {
+    var sel = document.getElementById('renewal_staff_name_accordion');
+    if (!sel) return;
+    var current = sel.value;
+    Array.from(sel.options).forEach(function(o) { if (o.dataset.fromStaff) o.remove(); });
+    names.forEach(function(n) {
+        if (!n) return;
+        var found = Array.from(sel.options).some(function(o) { return o.value === n; });
+        if (!found) {
+            var opt = document.createElement('option');
+            opt.value = n; opt.textContent = n; opt.dataset.fromStaff = '1';
+            sel.appendChild(opt);
+        }
+    });
+    if (current) sel.value = current;
+}
+
+// 申請書提出者：代行提出 / 本人 / その他 トグル
+function switchSubmitterType(type) {
+    document.getElementById('id_submitter_type').value = type;
+    document.getElementById('submitter_office_section').style.display  = type === 'office' ? '' : 'none';
+    document.getElementById('submitter_person_section').style.display  = type === 'person' ? '' : 'none';
+    var selfSection = document.getElementById('submitter_self_section');
+    if (selfSection) selfSection.style.display = type === 'self' ? '' : 'none';
+    document.getElementById('submitter_btn_office').classList.toggle('active', type === 'office');
+    document.getElementById('submitter_btn_person').classList.toggle('active', type === 'person');
+    var selfBtn = document.getElementById('submitter_btn_self');
+    if (selfBtn) selfBtn.classList.toggle('active', type === 'self');
+    var officeTable     = document.getElementById('renewal_office_table_section');
+    var personAccordion = document.getElementById('renewal_detail_section');
+    if (officeTable)     officeTable.style.display     = (type === 'person' || type === 'self') ? 'none' : '';
+    if (personAccordion) personAccordion.style.display = type === 'person' ? '' : 'none';
+    var relationWrapper = document.getElementById('office_relation_wrapper');
+    var relationInput   = document.getElementById('office_relation');
+    if (relationWrapper) relationWrapper.style.display = type === 'person' ? 'none' : '';
+    if (relationInput)   relationInput.disabled = (type === 'person');
+    ['renewal_applicant_furigana_input','person_postal_code','person_office_address','person_office_phone','renewal_relation'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.disabled = (type !== 'person');
+    });
+    if (type === 'person') {
+        ['renewal_office_furigana','renewal_office_name','renewal_office_number',
+         'renewal_postal_code','renewal_office_address','renewal_office_phone','renewal_relation'].forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) { el.removeAttribute('readonly'); el.value = ''; }
+        });
+        document.getElementById('renewal_applicant_furigana_input') && (document.getElementById('renewal_applicant_furigana_input').value = '');
+        var staffTop = document.getElementById('renewal_staff_name');
+        if (staffTop) staffTop.value = '';
+    } else {
+        var officeRestore = {
+            'renewal_office_furigana': _OFFICE_FURIGANA,
+            'renewal_office_name':     _OFFICE_NAME,
+            'renewal_office_number':   _OFFICE_NUMBER,
+            'renewal_postal_code':     _OFFICE_POSTAL,
+            'renewal_office_address':  _OFFICE_ADDRESS,
+            'renewal_office_phone':    _OFFICE_PHONE,
+            'renewal_relation':        '',
+        };
+        Object.keys(officeRestore).forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) { el.setAttribute('readonly', 'readonly'); el.value = officeRestore[id]; }
+        });
+        var sel = document.getElementById('renewal_provider_select');
+        if (sel && sel.options[0]) sel.options[0].text = _OFFICE_NAME || '（事業所未設定）';
+    }
+    updateRenewalStatusIcon();
+}
+
+// 代行提出：auto / その他（新規登録）切替
+function toggleRenewalProvider() {
+    var selectEl = document.getElementById('renewal_provider_select');
+    if (!selectEl) return;
+    var g = function(id) { return document.getElementById(id); };
+    if (selectEl.value === 'other') {
+        ['renewal_office_furigana','renewal_office_name','renewal_office_number',
+         'renewal_postal_code','renewal_office_address','renewal_office_phone',
+         'renewal_office_fax','renewal_office_manager'].forEach(function(id){ if(g(id)) g(id).value=''; });
+        var clr={'disp_office_furigana':'','disp_office_number':'','disp_office_name':'',
+                 'disp_office_postal':'','disp_office_address':'',
+                 'disp_office_phone':'―','disp_office_fax':'―','disp_office_manager':'―'};
+        Object.keys(clr).forEach(function(id){if(g(id))g(id).textContent=clr[id];});
+        var staffSel  = document.getElementById('renewal_staff_name_accordion');
+        var staffDash = document.getElementById('disp_staff_dash');
+        if (staffSel)  { staffSel.style.display = 'none'; staffSel.value = ''; }
+        if (staffDash) staffDash.style.display = '';
+    } else {
+        var d={
+            'renewal_office_furigana': typeof _OFFICE_FURIGANA!=='undefined'?_OFFICE_FURIGANA:'',
+            'renewal_office_name':     typeof _OFFICE_NAME!=='undefined'?_OFFICE_NAME:'',
+            'renewal_office_number':   typeof _OFFICE_NUMBER!=='undefined'?_OFFICE_NUMBER:'',
+            'renewal_postal_code':     typeof _OFFICE_POSTAL!=='undefined'?_OFFICE_POSTAL:'',
+            'renewal_office_address':  typeof _OFFICE_ADDRESS!=='undefined'?_OFFICE_ADDRESS:'',
+            'renewal_office_phone':    typeof _OFFICE_PHONE!=='undefined'?_OFFICE_PHONE:'',
+            'renewal_office_fax':      typeof _OFFICE_FAX!=='undefined'?_OFFICE_FAX:'',
+            'renewal_office_manager':  typeof _OFFICE_MANAGER!=='undefined'?_OFFICE_MANAGER:'',
+        };
+        Object.keys(d).forEach(function(id){if(g(id)) g(id).value=d[id];});
+        if(g('disp_office_furigana')) g('disp_office_furigana').textContent=d['renewal_office_furigana'];
+        if(g('disp_office_name'))     g('disp_office_name').textContent=d['renewal_office_name'];
+        if(g('disp_office_number'))   g('disp_office_number').textContent=d['renewal_office_number'];
+        if(g('disp_office_postal'))   g('disp_office_postal').textContent=d['renewal_postal_code']?'〒'+d['renewal_postal_code']:'';
+        if(g('disp_office_address'))  g('disp_office_address').textContent=d['renewal_office_address'];
+        if(g('disp_office_phone'))    g('disp_office_phone').textContent=d['renewal_office_phone']||'―';
+        if(g('disp_office_fax'))      g('disp_office_fax').textContent=d['renewal_office_fax']||'―';
+        if(g('disp_office_manager'))  g('disp_office_manager').textContent=d['renewal_office_manager']||'―';
+        if(selectEl.options[0] && d['renewal_office_name']) selectEl.options[0].text=d['renewal_office_name'];
+        var staffSel2  = document.getElementById('renewal_staff_name_accordion');
+        var staffDash2 = document.getElementById('disp_staff_dash');
+        if (staffSel2)  staffSel2.style.display = '';
+        if (staffDash2) staffDash2.style.display = 'none';
+    }
+}
+
+// ステータスアイコン更新
+function updateRenewalStatusIcon() {
+    const statusIcon = document.getElementById('renewal_status_icon');
+    if (!statusIcon) return;
+    const submitterType = document.getElementById('id_submitter_type').value;
+    const selectEl = document.getElementById('renewal_provider_select');
+    let isComplete = true;
+    if (submitterType === 'person') {
+        const staffName = document.getElementById('renewal_staff_name');
+        const relation  = document.getElementById('renewal_relation');
+        const address   = document.getElementById('person_office_address');
+        isComplete = !!(staffName && staffName.value.trim())
+                  && !!(relation  && relation.value.trim())
+                  && !!(address   && address.value.trim());
+    } else if (selectEl && selectEl.value === 'other') {
+        const officeNum = document.getElementById('renewal_office_number');
+        const address   = document.getElementById('renewal_office_address');
+        const phone     = document.getElementById('renewal_office_phone');
+        isComplete = officeNum && officeNum.value.trim() !== ''
+                  && address   && address.value.trim()   !== ''
+                  && phone     && phone.value.trim()     !== '';
+    }
+    statusIcon.innerHTML = isComplete
+        ? '<i class="fas fa-check-circle" style="color: rgba(25, 135, 84, 0.5);"></i>'
+        : '<i class="fas fa-circle-exclamation" style="color: rgba(220, 53, 69, 0.5);"></i>';
+    const renewalCollapse = document.getElementById('renewalDetailCollapse');
+    if (renewalCollapse) {
+        if (!isComplete && !renewalCollapse.classList.contains('show')) {
+            new bootstrap.Collapse(renewalCollapse, { toggle: false }).show();
+        } else if (isComplete && submitterType !== 'person' && renewalCollapse.classList.contains('show') && !renewalCollapse.contains(document.activeElement)) {
+            new bootstrap.Collapse(renewalCollapse, { toggle: false }).hide();
+        }
+    }
+}
+
+// 事業所マスタ編集モーダルを開く
+function openRenewalOfficeMasterModal() {
+    var isNew = (document.getElementById('renewal_provider_select') || {}).value === 'other';
+    var errEl = document.getElementById('renewalOfficeModalError');
+    if (errEl) errEl.classList.add('d-none');
+    var container = document.getElementById('renewal_modal_staff_container');
+    if (container) container.innerHTML = '';
+    if (isNew) {
+        ['renewal_modal_company_name','renewal_modal_name','renewal_modal_furigana',
+         'renewal_modal_office_number','renewal_modal_manager_name',
+         'renewal_modal_postal_code','renewal_modal_address',
+         'renewal_modal_phone','renewal_modal_fax'].forEach(function(id) {
+            var el = document.getElementById(id); if (el) el.value = '';
+        });
+        var pkEl = document.getElementById('renewal_modal_pk');
+        if (pkEl) pkEl.value = '';
+    } else {
+        var _staffNames = typeof _CURRENT_STAFF_NAMES !== 'undefined' ? _CURRENT_STAFF_NAMES : [];
+        _staffNames.forEach(function(n) { addRenewalModalStaffRow(n); });
+    }
+    new bootstrap.Modal(document.getElementById('renewalOfficeModal')).show();
+}
+
+// モーダル保存処理
+document.addEventListener('DOMContentLoaded', function() {
+    // 入力イベントリスナー
+    ['renewal_office_number','renewal_office_address','renewal_office_phone',
+     'renewal_staff_name','person_postal_code','person_office_address',
+     'person_office_phone','renewal_relation'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.addEventListener('input', updateRenewalStatusIcon);
+    });
+
+    // 初期UI状態
+    (function() {
+        var type = (document.getElementById('id_submitter_type') || {}).value || 'office';
+        var officeTable     = document.getElementById('renewal_office_table_section');
+        var personAccordion = document.getElementById('renewal_detail_section');
+        if (type === 'person') {
+            if (officeTable)     officeTable.style.display     = 'none';
+            if (personAccordion) personAccordion.style.display = '';
+        } else if (type === 'self') {
+            if (officeTable)     officeTable.style.display     = 'none';
+            if (personAccordion) personAccordion.style.display = 'none';
+        } else {
+            if (officeTable)     officeTable.style.display     = '';
+            if (personAccordion) personAccordion.style.display = 'none';
+        }
+        ['renewal_applicant_furigana_input','person_postal_code','person_office_address','person_office_phone','renewal_relation'].forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) el.disabled = (type !== 'person');
+        });
+        updateRenewalStatusIcon();
+    })();
+
+    // モーダル保存ボタン
+    var saveBtn = document.getElementById('renewalOfficeSaveBtn');
+    if (!saveBtn) return;
+    saveBtn.addEventListener('click', function() {
+        var pk = document.getElementById('renewal_modal_pk').value;
+
+        // スペース正規化ユーティリティ（全角・半角の連続スペースを半角1つに統一）
+        function _normSp(s) { return s.trim().replace(/[ 　]+/g, ' '); }
+
+        // 新規登録
+        if (!pk) {
+            var companyNameN  = _normSp(document.getElementById('renewal_modal_company_name').value);
+            var nameN         = _normSp(document.getElementById('renewal_modal_name').value);
+            var furiganaN     = _normSp(document.getElementById('renewal_modal_furigana').value);
+            var officeNumberN = document.getElementById('renewal_modal_office_number').value.trim();
+            var managerNameN  = _normSp(document.getElementById('renewal_modal_manager_name').value);
+            var postalCodeN   = document.getElementById('renewal_modal_postal_code').value.trim();
+            var addressN      = document.getElementById('renewal_modal_address').value.trim();
+            var phoneN        = document.getElementById('renewal_modal_phone').value.trim();
+            var faxN          = document.getElementById('renewal_modal_fax').value.trim();
+            if (!nameN || !officeNumberN) {
+                document.getElementById('renewalOfficeModalError').textContent = '事業所名と事業所番号は必須です。';
+                document.getElementById('renewalOfficeModalError').classList.remove('d-none');
+                return;
+            }
+            var fd2 = new FormData();
+            fd2.append('company_name',companyNameN); fd2.append('name',nameN); fd2.append('furigana',furiganaN);
+            fd2.append('office_number',officeNumberN); fd2.append('manager_name',managerNameN);
+            fd2.append('postal_code',postalCodeN); fd2.append('address',addressN);
+            fd2.append('phone',phoneN); fd2.append('fax',faxN); fd2.append('is_active','true');
+            document.querySelectorAll('#renewal_modal_staff_container input[name="staff_names[]"]').forEach(function(inp) {
+                var v = _normSp(inp.value); if (v) fd2.append('staff_names[]', v);
+            });
+            fetch('/clients/home-care-offices/create/', {
+                method:'POST', headers:{'X-CSRFToken':document.querySelector('[name=csrfmiddlewaretoken]').value,'X-Requested-With':'XMLHttpRequest'}, body:fd2
+            }).then(r=>r.json()).then(function(data) {
+                if (data.success) {
+                    document.getElementById('renewal_modal_pk').value = data.pk;
+                    var sv=function(id,v){var e=document.getElementById(id);if(e)e.value=v;};
+                    sv('renewal_office_name',data.name); sv('renewal_office_furigana',data.furigana||'');
+                    sv('renewal_office_number',data.office_number||''); sv('renewal_postal_code',data.postal_code||'');
+                    sv('renewal_office_address',data.address||''); sv('renewal_office_phone',data.phone||'');
+                    sv('renewal_office_fax',data.fax||''); sv('renewal_office_manager',managerNameN||'');
+                    var st=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v||'';};
+                    st('disp_office_name',data.name); st('disp_office_furigana',data.furigana||'');
+                    st('disp_office_number',data.office_number||'');
+                    st('disp_office_postal',data.postal_code?'〒'+data.postal_code:'');
+                    st('disp_office_address',data.address||'');
+                    st('disp_office_phone',data.phone||'―'); st('disp_office_fax',data.fax||'―');
+                    st('disp_office_manager',managerNameN||'―');
+                    if (typeof _OFFICE_MANAGER !== 'undefined') _OFFICE_MANAGER = managerNameN;
+                    var _mgrInput=document.getElementById('renewal_modal_manager_name'); if(_mgrInput) _mgrInput.value=managerNameN;
+                    var sel=document.getElementById('renewal_provider_select');
+                    if(sel){var nOpt=sel.querySelector('option[data-new="1"]');if(!nOpt){nOpt=document.createElement('option');nOpt.dataset.new='1';sel.insertBefore(nOpt,sel.querySelector('option[value="other"]'));}nOpt.value='new_'+data.pk;nOpt.textContent=data.name;sel.value=nOpt.value;}
+                    if(data.staff_names){_CURRENT_STAFF_NAMES=data.staff_names;_updateStaffDropdown(data.staff_names);}
+                    bootstrap.Modal.getInstance(document.getElementById('renewalOfficeModal')).hide();
+                } else {
+                    document.getElementById('renewalOfficeModalError').textContent = data.error||'エラーが発生しました。';
+                    document.getElementById('renewalOfficeModalError').classList.remove('d-none');
+                }
+            });
+            return;
+        }
+
+        // 編集
+        var companyName  = _normSp(document.getElementById('renewal_modal_company_name').value);
+        var name         = _normSp(document.getElementById('renewal_modal_name').value);
+        var furigana     = _normSp(document.getElementById('renewal_modal_furigana').value);
+        var officeNumber = document.getElementById('renewal_modal_office_number').value.trim();
+        var managerName  = _normSp(document.getElementById('renewal_modal_manager_name').value);
+        var postalCode   = document.getElementById('renewal_modal_postal_code').value.trim();
+        var address      = document.getElementById('renewal_modal_address').value.trim();
+        var phone        = document.getElementById('renewal_modal_phone').value.trim();
+        var fax          = document.getElementById('renewal_modal_fax').value.trim();
+        if (!name || !officeNumber) {
+            var errEl = document.getElementById('renewalOfficeModalError');
+            errEl.textContent = '事業所名と事業所番号は必須です。';
+            errEl.classList.remove('d-none');
+            return;
+        }
+        var formData = new FormData();
+        formData.append('company_name',companyName); formData.append('name',name);
+        formData.append('furigana',furigana); formData.append('office_number',officeNumber);
+        formData.append('manager_name',managerName); formData.append('postal_code',postalCode);
+        formData.append('address',address); formData.append('phone',phone);
+        formData.append('fax',fax); formData.append('is_active','true');
+        document.querySelectorAll('#renewal_modal_staff_container input[name="staff_names[]"]').forEach(function(inp) {
+            var v = _normSp(inp.value); if (v) formData.append('staff_names[]', v);
+        });
+        fetch('/clients/home-care-offices/'+pk+'/edit/', {
+            method:'POST', headers:{'X-CSRFToken':document.querySelector('[name=csrfmiddlewaretoken]').value,'X-Requested-With':'XMLHttpRequest'}, body:formData
+        }).then(r=>r.json()).then(function(data) {
+            if (data.success) {
+                var sf=function(id,v){var e=document.getElementById(id);if(e){e.value=v;e.defaultValue=v;}};
+                sf('renewal_office_name',name); sf('renewal_office_furigana',furigana);
+                sf('renewal_office_number',officeNumber); sf('renewal_postal_code',postalCode);
+                sf('renewal_office_address',address); sf('renewal_office_phone',phone);
+                sf('renewal_office_fax',fax); sf('renewal_office_manager',managerName);
+                var st=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v||'';};
+                st('disp_office_name',name); st('disp_office_furigana',furigana);
+                st('disp_office_number',officeNumber);
+                st('disp_office_postal',postalCode?'〒'+postalCode:'');
+                st('disp_office_address',address);
+                st('disp_office_phone',phone||'―'); st('disp_office_fax',fax||'―');
+                st('disp_office_manager',managerName||'―');
+                if (typeof _OFFICE_MANAGER !== 'undefined') _OFFICE_MANAGER = managerName;
+                var _mgrInput2=document.getElementById('renewal_modal_manager_name'); if(_mgrInput2) _mgrInput2.value=managerName;
+                var sel=document.getElementById('renewal_provider_select');
+                if(sel&&sel.options[0])sel.options[0].text=name;
+                if(data.staff_names){_CURRENT_STAFF_NAMES=data.staff_names;_updateStaffDropdown(data.staff_names);}
+                bootstrap.Modal.getInstance(document.getElementById('renewalOfficeModal')).hide();
+                updateRenewalStatusIcon();
+            } else {
+                var errEl2=document.getElementById('renewalOfficeModalError');
+                errEl2.textContent=data.error||'エラーが発生しました。';
+                errEl2.classList.remove('d-none');
+            }
+        }).catch(function() {
+            var errEl3=document.getElementById('renewalOfficeModalError');
+            errEl3.textContent='通信エラーが発生しました。';
+            errEl3.classList.remove('d-none');
+        });
+    });
+});

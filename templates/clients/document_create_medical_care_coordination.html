@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load django_bootstrap5 %}
 
-{% block title %}区分変更申請書 - {{ client.name }}様 - {{ block.super }}{% endblock %}
+{% block title %}医療・介護連携シート - {{ client.name }}様 - {{ block.super }}{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
@@ -9,7 +9,7 @@
         <div class="col-12">
             <div class="mb-4 pb-2 border-bottom">
                 <h1 class="h4 mb-1 text-dark fw-bold">
-                    <i class="fas fa-file-alt me-2 text-secondary"></i>区分変更申請書
+                    <i class="fas fa-file-alt me-2 text-secondary"></i>医療・介護連携シート
                 </h1>
                 <div class="d-flex justify-content-between align-items-center">
                     <span class="text-muted small">
@@ -151,64 +151,6 @@
                     </div>
                 </div>
 
-                <!-- 医療保険情報（自動反映）アコーディオン -->
-                <div class="accordion mb-4" id="medicalInsuranceAccordion">
-                    <div class="accordion-item">
-                        <h2 class="accordion-header" id="medicalInsuranceHeading">
-                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#medicalInsuranceCollapse" aria-expanded="false" aria-controls="medicalInsuranceCollapse">
-                                <i class="fas fa-hospital me-2"></i>
-                                <strong>医療保険情報（自動反映）</strong>
-                                <small class="text-muted ms-2">※利用者データから自動入力</small>
-                            </button>
-                        </h2>
-                        <div id="medicalInsuranceCollapse" class="accordion-collapse collapse" aria-labelledby="medicalInsuranceHeading">
-                            <div class="accordion-body">
-                                <div class="row g-3 mb-3">
-                                    <div class="col-md-6">
-                                        <label class="form-label">医療保険種別</label>
-                                        <input type="text" id="med_disp_type" class="form-control" value="{{ initial.medical_insurance_type }}" readonly>
-                                    </div>
-                                </div>
-                                <div class="row g-3 mb-3">
-                                    <div class="col-12">
-                                        <label class="form-label">被保険者番号</label>
-                                        <div class="d-flex align-items-center gap-2 flex-wrap">
-                                            <span class="text-nowrap">記号</span>
-                                            <input type="text" id="med_disp_symbol" class="form-control" style="width:120px;" value="{{ initial.medical_insurance_symbol }}" readonly>
-                                            <span class="text-nowrap">番号</span>
-                                            <input type="text" id="med_disp_number" class="form-control" style="width:200px;" value="{{ initial.medical_insurance_number }}" readonly>
-                                            <span class="text-nowrap">枝番</span>
-                                            <input type="text" id="med_disp_branch" class="form-control" style="width:80px;" value="{{ client.medical_insurance_branch }}" readonly>
-                                        </div>
-                                        <small class="text-muted">医療保険証に記載されている被保険者番号です（介護保険の被保険者番号とは別の番号）</small>
-                                    </div>
-                                </div>
-                                <div class="row g-3 mb-3">
-                                    <div class="col-md-4">
-                                        <label class="form-label">負担割合</label>
-                                        <input type="text" id="med_disp_burden" class="form-control" value="{{ client.medical_burden }}" readonly>
-                                    </div>
-                                </div>
-                                <div class="row g-3 mb-2">
-                                    <div class="col-md-8">
-                                        <label class="form-label">保険者名称・交付者</label>
-                                        <input type="text" id="med_disp_insurer_name" class="form-control" value="{{ initial.medical_insurer_name }}" readonly>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">保険者番号</label>
-                                        <input type="text" id="med_disp_insurer_number" class="form-control" value="{{ initial.medical_insurer_number }}" readonly>
-                                    </div>
-                                </div>
-                                <div class="text-end mt-2">
-                                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openMedicalInfoModal()">
-                                        <i class="fas fa-edit me-1"></i>医療保険情報を編集
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- 入力項目 -->
                 <div class="card mb-4">
                     <div class="card-header d-flex align-items-center">
@@ -217,14 +159,15 @@
                     </div>
                     <div class="card-body">
 
-                        {% include 'clients/_submitter_section.html' with label_text="申請書提出者" %}
+                        {% include 'clients/_submitter_section.html' with label_text="作成事業所" show_toggle=False %}
+
                         <div style="border-top: 1px solid #dee2e6; width: 50%; margin: 1.5rem 0;"></div>
 
-                        <!-- 申請年月日 -->
+                        <!-- 作成日 -->
                         <div class="row g-3 mb-4">
                             <div class="col-12">
                                 <div class="d-flex align-items-center gap-2 mb-1">
-                                    <label class="form-label fw-bold mb-0">申請年月日 <span class="text-danger">*</span></label>
+                                    <label class="form-label fw-bold mb-0">作成日 <span class="text-danger">*</span></label>
                                     <div class="birth-era-toggle" title="和暦 / 西暦を切り替え">
                                         <button type="button" class="era-btn active" id="appDate_era_japanese" onclick="switchAppDateEra('japanese')">和暦</button>
                                         <button type="button" class="era-btn" id="appDate_era_western" onclick="switchAppDateEra('western')">西暦</button>
@@ -244,310 +187,13 @@
                             </div>
                         </div>
 
-                        <!-- 区分変更の理由 -->
-                        <div class="row g-3 mb-4">
-                            <div class="col-12">
-                                <label class="form-label fw-bold">区分変更の理由 <span class="text-danger">*</span></label>
-                                <textarea name="change_reason" id="id_change_reason" class="form-control" rows="2"
-                                          placeholder="区分変更を申請する理由を入力してください"
-                                          oninput="updateChangeReasonStatus()">{{ initial.change_reason }}</textarea>
-                            </div>
-                        </div>
-
                         <div style="border-top: 1px solid #dee2e6; width: 50%; margin: 1.5rem 0;"></div>
 
-                        <!-- 介護保険及び医療保険情報 -->
+                        <!-- 連携医療機関 -->
                         <div class="row g-3 mb-2">
                             <div class="col-12">
-                                <label class="form-label fw-bold">介護保険及び医療保険情報</label>
-                            </div>
-                        </div>
-                        <div class="accordion mb-4" id="certInfoAccordion">
-                            <div class="accordion-item" style="border: none; background-color: #f8f9fa; border-radius: 0.5rem;">
-                                <h2 class="accordion-header">
-                                    <button type="button"
-                                            onclick="jumpToInsuranceAccordion()"
-                                            style="display:flex; align-items:center; width:100%; border:none; text-align:left; background-color:#f8f9fa; padding:0.5rem 1rem; color:#333; cursor:pointer; border-radius:0.5rem; font-size:1rem; font-weight:400;">
-                                        <span id="cert_status_icon" class="me-2"><i class="fas fa-check-circle" style="color: rgba(25, 135, 84, 0.5);"></i></span>介護保険情報
-                                        <small class="text-muted ms-2" style="font-size:0.78em;">↑ クリックで上の介護保険情報を表示</small>
-                                    </button>
-                                </h2>
-                                <div id="certInfoCollapse" class="accordion-collapse collapse">
-                                    <div class="accordion-body row g-3" style="padding: 0.5rem 1rem 1rem 1rem;">
-                                        <!-- 送信用隠しフィールド（西暦） -->
-                                        <input type="hidden" id="cert_hidden_start"            name="cert_start"          value="{{ initial.cert_start }}">
-                                        <input type="hidden" id="cert_hidden_end"              name="cert_end"            value="{{ initial.cert_end }}">
-                                        <input type="hidden" id="cert_hidden_cert_date"        name="certification_date"  value="{{ initial.certification_date }}">
-                                        <input type="hidden" id="cert_hidden_insurance_number" name="insurance_number"    value="{{ initial.insurance_number }}">
-                                        <input type="hidden" id="cert_hidden_care_level"       name="care_level"          value="{{ client.care_level }}">
-                                        <input type="hidden" id="cert_hidden_care_burden"      name="care_burden"         value="{{ initial.care_burden }}">
-                                        <!-- 1行目: 被保険者番号・要介護度 -->
-                                        <div class="col-md-4">
-                                            <label class="form-label">被保険者番号 <span class="text-danger">*</span></label>
-                                            <input type="text" id="cert_display_insurance" class="form-control"
-                                                   value="{{ initial.insurance_number }}" readonly>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <label class="form-label">要介護度 <span class="text-danger">*</span></label>
-                                            <input type="text" id="cert_display_care_level" class="form-control"
-                                                   value="{{ initial.care_level }}" readonly>
-                                        </div>
-                                        <!-- 2行目: 認定期間（和暦表示） -->
-                                        <div class="col-12">
-                                            <label class="form-label">認定期間 <span class="text-danger">*</span></label>
-                                            <div class="d-flex align-items-center gap-2">
-                                                <input type="text" id="cert_display_start" class="form-control" style="max-width: 200px;"
-                                                       value="{{ initial.cert_start_wareki }}" readonly>
-                                                <span class="text-muted">～</span>
-                                                <input type="text" id="cert_display_end" class="form-control" style="max-width: 200px;"
-                                                       value="{{ initial.cert_end_wareki }}" readonly>
-                                            </div>
-                                        </div>
-                                        <!-- 編集ボタン -->
-                                        <div class="col-12 text-end mt-2">
-                                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openCertInfoModal()">
-                                                <i class="fas fa-edit me-1"></i>介護保険情報を編集
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- 医療保険情報 -->
-                        <div class="accordion mb-3" id="medicalInfoAccordion">
-                            <div class="accordion-item" style="border: none; background-color: #f8f9fa; border-radius: 0.5rem;">
-                                <h2 class="accordion-header">
-                                    <button type="button"
-                                            onclick="jumpToMedicalAccordion()"
-                                            style="display:flex; align-items:center; width:100%; border:none; text-align:left; background-color:#f8f9fa; padding:0.5rem 1rem; color:#333; cursor:pointer; border-radius:0.5rem; font-size:1rem; font-weight:400;">
-                                        <span id="medical_status_icon" class="me-2"><i class="fas fa-check-circle" style="color: rgba(25, 135, 84, 0.5);"></i></span>医療保険情報
-                                        <small class="text-muted ms-2" style="font-size:0.78em;">↑ クリックで上の医療保険情報を表示</small>
-                                    </button>
-                                </h2>
-                                <div id="medicalInfoCollapse" class="accordion-collapse collapse">
-                                    <div class="accordion-body row g-3" style="padding: 0.5rem 1rem 1rem 1rem;">
-                                        <!-- 隠しフィールド（モーダル用） -->
-                                        <input type="hidden" id="medical_hidden_type"          value="{{ client.medical_insurance_type }}">
-                                        <input type="hidden" id="medical_hidden_symbol"        value="{{ client.medical_insurance_symbol }}">
-                                        <input type="hidden" id="medical_hidden_number"        value="{{ client.medical_insurance_number }}">
-                                        <input type="hidden" id="medical_hidden_branch"        value="{{ client.medical_insurance_branch }}">
-                                        <input type="hidden" id="medical_hidden_burden"        value="{{ client.medical_burden }}">
-                                        <input type="hidden" id="medical_hidden_insurer_name"  value="{{ client.medical_insurer_name_issuer }}">
-                                        <input type="hidden" id="medical_hidden_insurer_number" value="{{ client.medical_insurer_number }}">
-                                        <!-- 保険種別 -->
-                                        <div class="col-md-6">
-                                            <label class="form-label">保険種別 <span class="text-danger">*</span></label>
-                                            <input type="text" id="medical_display_type" name="medical_insurance_type" class="form-control"
-                                                   value="{{ initial.medical_insurance_type }}" readonly>
-                                        </div>
-                                        <!-- 被保険者番号：記号・番号 -->
-                                        <div class="col-12">
-                                            <label class="form-label">被保険者番号（記号 / 番号）</label>
-                                            <div class="d-flex align-items-center gap-2 flex-wrap">
-                                                <span class="text-nowrap">記号</span>
-                                                <input type="text" id="medical_display_symbol" name="medical_insurance_symbol" class="form-control" style="width:120px;"
-                                                       value="{{ initial.medical_insurance_symbol }}" placeholder="----------" readonly>
-                                                <span class="text-nowrap">番号 <span class="text-danger">*</span></span>
-                                                <input type="text" id="medical_display_number" name="medical_insurance_number" class="form-control" style="width:200px;"
-                                                       value="{{ initial.medical_insurance_number }}" readonly>
-                                            </div>
-                                        </div>
-                                        <!-- 医療保険者名・保険者番号 -->
-                                        <div class="col-md-8">
-                                            <label class="form-label">医療保険者名 <span class="text-danger">*</span></label>
-                                            <input type="text" id="medical_display_insurer_name" name="medical_insurer_name" class="form-control"
-                                                   value="{{ initial.medical_insurer_name }}" readonly>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <label class="form-label">保険者番号 <span class="text-danger">*</span></label>
-                                            <input type="text" id="medical_display_insurer_number" name="medical_insurer_number" class="form-control"
-                                                   value="{{ initial.medical_insurer_number }}" readonly>
-                                        </div>
-                                        <!-- 編集ボタン -->
-                                        <div class="col-12 text-end mt-2">
-                                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openMedicalInfoModal()">
-                                                <i class="fas fa-edit me-1"></i>医療保険情報を編集
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- 特定疾病名（第2号被保険者のみ・40〜64歳） -->
-                        {% if is_second_insured %}
-                        <div class="row g-3 mb-3">
-                            <div class="col-12">
-                                <label class="form-label fw-bold">特定疾病名 <span class="text-danger">*</span>
-                                    <span class="badge bg-secondary ms-1" style="font-weight:normal; font-size:0.72rem;">第２号被保険者</span>
-                                </label>
-                                <div class="mt-1">
-                                    <small class="text-muted">40〜64歳の方のみ記入してください</small>
-                                </div>
-                            </div>
-                            <div class="col-md-10">
-                                <select name="specific_disease" class="form-select">
-                                    <option value="">----------</option>
-                                    {% for disease in specific_diseases %}
-                                    <option value="{{ disease }}" {% if initial.specific_disease == disease %}selected{% endif %}>{{ disease }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                        </div>
-
-                        <!-- 医療保険資格確認書類の添付案内 -->
-                        <div class="alert alert-warning d-flex align-items-start gap-2 py-2 px-3" role="alert" style="font-size:0.9rem;">
-                            <i class="fas fa-paperclip mt-1 flex-shrink-0"></i>
-                            <div>
-                                <strong>申請書に医療保険の資格が確認できる書類（健康保険証等）のコピーを添付してください。</strong>
-                            </div>
-                        </div>
-                        {% endif %}
-
-                        <div style="border-top: 1px solid #dee2e6; width: 50%; margin: 1.5rem 0;"></div>
-
-                        <!-- 認定調査場所 -->
-                        <div class="row g-3 mb-4">
-                            <div class="col-12">
-                                <label class="form-label fw-bold mb-1">認定調査 場所</label>
-                                <div class="mb-1">
-                                    <select name="survey_location" id="survey_location" class="form-select" style="width:400px;" onchange="toggleSurveyLocationOther()">
-                                        <option value="サービス付き高齢者向け住宅　安濃津ろまん" selected>サービス付き高齢者向け住宅　安濃津ろまん</option>
-                                        <option value="自宅">自宅</option>
-                                        <option value="other">その他（新規登録）</option>
-                                    </select>
-                                </div>
-                                <div id="survey_location_other_wrapper" class="mb-1" style="display:none;">
-                                    <input type="text" name="survey_location_other" class="form-control" style="width:400px;" placeholder="調査場所を入力">
-                                </div>
-                                <small class="text-muted">※その他を選択すると、調査場所を手入力できます</small>
-                            </div>
-
-                            <!-- 調査場所情報アコーディオン -->
-                            <div class="col-12">
-                                <div class="accordion" id="surveyLocationAccordion">
-                                    <div class="accordion-item" style="border: none; background-color: #f8f9fa; border-radius: 0.5rem;">
-                                        <h2 class="accordion-header">
-                                            <button class="accordion-button collapsed" type="button"
-                                                    data-bs-toggle="collapse" data-bs-target="#surveyLocationCollapse"
-                                                    style="background-color: #f8f9fa; padding: 0.5rem 1rem; color: #333;">
-                                                <span id="survey_location_status_icon" class="me-2"><i class="fas fa-circle-exclamation" style="color: rgba(220, 53, 69, 0.5);"></i></span>調査場所情報
-                                            </button>
-                                        </h2>
-                                        <div id="surveyLocationCollapse" class="accordion-collapse collapse">
-                                            <div class="accordion-body row g-3" style="padding: 0.5rem 1rem 1rem 1rem;">
-                                                <div class="col-md-3">
-                                                    <label class="form-label">郵便番号 <span class="text-danger">*</span></label>
-                                                    <div class="input-group">
-                                                        <input type="text" id="survey_loc_postal" name="survey_location_postal" class="form-control"
-                                                               value="{{ initial.survey_location_postal }}"
-                                                               placeholder="514-0000"
-                                                               oninput="updateSurveyLocationStatusIcon()">
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <label class="form-label">住所 <span class="text-danger">*</span></label>
-                                                    <input type="text" id="survey_loc_address" name="survey_location_address" class="form-control"
-                                                           value="{{ initial.survey_location_address }}"
-                                                           placeholder="例: 三重県津市○○町1-2-3"
-                                                           oninput="updateSurveyLocationStatusIcon()">
-                                                </div>
-                                                <div class="col-md-3">
-                                                    <label class="form-label">電話番号 <span class="text-danger">*</span></label>
-                                                    <input type="text" id="survey_loc_phone" name="survey_location_phone" class="form-control"
-                                                           value="{{ initial.survey_location_phone }}"
-                                                           placeholder="059-000-0000"
-                                                           oninput="updateSurveyLocationStatusIcon()">
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="col-12">
-                                <label class="form-label fw-bold mb-1">認定調査 連絡先</label>
-                                <div class="mb-1">
-                                    <select name="survey_contact_type" id="survey_contact_type" class="form-select" style="width:400px;" onchange="toggleSurveyContact()">
-                                        <option value="担当ケアマネ" {% if initial.survey_contact_type == '担当ケアマネ' or not initial.survey_contact_type %}selected{% endif %}>担当ケアマネ</option>
-                                        <option value="本人" {% if initial.survey_contact_type == '本人' %}selected{% endif %}>本人</option>
-                                        <option value="本人以外" {% if initial.survey_contact_type == '本人以外' %}selected{% endif %}>本人以外</option>
-                                    </select>
-                                </div>
-                                <small class="text-muted">※本人以外を選択すると、調査連絡先を手入力できます</small>
-                            </div>
-
-                            <!-- 調査連絡先情報アコーディオン -->
-                            <div class="col-12" id="surveyContactAccordionWrapper">
-                                <div class="accordion" id="surveyContactAccordion">
-                                    <div class="accordion-item" style="border: none; background-color: #f8f9fa; border-radius: 0.5rem;">
-                                        <h2 class="accordion-header">
-                                            <button class="accordion-button collapsed" type="button"
-                                                    data-bs-toggle="collapse" data-bs-target="#surveyContactCollapse"
-                                                    style="background-color: #f8f9fa; padding: 0.5rem 1rem; color: #333;">
-                                                <span id="survey_contact_status_icon" class="me-2"><i class="fas fa-check-circle" style="color: rgba(25, 135, 84, 0.5);"></i></span>調査連絡先情報
-                                            </button>
-                                        </h2>
-                                        <div id="surveyContactCollapse" class="accordion-collapse collapse">
-                                            <div class="accordion-body row g-3" style="padding: 0.5rem 1rem 1rem 1rem;">
-                                                <div class="col-md-3">
-                                                    <label class="form-label">氏名 <span class="text-danger">*</span></label>
-                                                    <input type="text" id="survey_contact_name" name="survey_contact_name" class="form-control"
-                                                           value="{{ initial.survey_contact_name }}"
-                                                           placeholder="例: 田中 太郎"
-                                                           oninput="updateSurveyContactStatusIcon()">
-                                                </div>
-                                                <div class="col-md-3">
-                                                    <label class="form-label">フリガナ <span class="text-danger">*</span></label>
-                                                    <input type="text" id="survey_contact_furigana" name="survey_contact_furigana" class="form-control"
-                                                           value="{{ initial.survey_contact_furigana }}"
-                                                           placeholder="例: タナカ タロウ"
-                                                           oninput="updateSurveyContactStatusIcon()">
-                                                </div>
-                                                <div class="col-md-3">
-                                                    <label class="form-label">本人との関係 <span class="text-danger">*</span></label>
-                                                    <input type="text" id="survey_contact_relation" name="survey_contact_relation" class="form-control"
-                                                           value="{{ initial.survey_contact_relation }}"
-                                                           placeholder="例: 長男、長女"
-                                                           oninput="updateSurveyContactStatusIcon()">
-                                                </div>
-                                                <div class="col-md-3">
-                                                    <label class="form-label" style="font-size:0.85em;">電話番号（携帯可）<span class="text-danger">*</span></label>
-                                                    <input type="text" id="survey_contact_phone" name="survey_contact_phone" class="form-control"
-                                                           value="{{ initial.survey_contact_phone }}"
-                                                           placeholder="例: 090-1234-5678"
-                                                           oninput="updateSurveyContactStatusIcon()">
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <!-- アコーディオン外：連絡希望時間・備考 -->
-                                <div class="row g-3 mt-1">
-                                    <div class="col-md-8">
-                                        <label class="form-label text-muted">連絡希望時間</label>
-                                        <input type="text" name="survey_preferred_time" class="form-control"
-                                               value="{{ initial.survey_preferred_time }}"
-                                               placeholder="例: 平日午前中希望、火・木不可">
-                                    </div>
-                                    <div class="col-12">
-                                        <label class="form-label text-muted">備考</label>
-                                        <input type="text" name="survey_notes" class="form-control"
-                                               value="{{ initial.survey_notes }}"
-                                               placeholder="例: 水・金はデイサービス利用のためそれ以外で調査希望、家族も立ち会い希望">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div style="border-top: 1px solid #dee2e6; width: 50%; margin: 1.5rem 0;"></div>
-
-                        <!-- 主治医意見書依頼先 -->
-                        <div class="row g-3 mb-2">
-                            <div class="col-12">
-                                <label class="form-label fw-bold">主治医意見書の記載を依頼する医療機関・医師 <span class="text-danger">*</span></label>
-                                <div class="mb-1">
+                                <label class="form-label fw-bold">連携医療機関 <span class="text-danger">*</span></label>
+                                <div class="d-flex align-items-center gap-2 mb-1">
                                     <select id="doctor_type_select" class="form-select" style="width:400px;" onchange="toggleDoctorSelection()">
                                         {% for opt in doctor_options %}
                                         <option value="{{ forloop.counter0 }}"
@@ -566,22 +212,28 @@
                                         {% endfor %}
                                         <option value="other">その他（新規登録）</option>
                                     </select>
+                                    <input type="checkbox" name="fax_attached" value="yes" class="btn-check" id="fax_attached"
+                                           {% if initial.fax_attached == 'yes' %}checked{% endif %}
+                                           onchange="toggleFaxAccordion()">
+                                    <label class="btn btn-outline-secondary btn-sm" for="fax_attached"><i class="fas fa-fax me-1"></i>FAX送付状</label>
+                                    <input type="checkbox" name="mail_attached" value="yes" class="btn-check" id="mail_attached"
+                                           {% if initial.mail_attached == 'yes' %}checked{% endif %}
+                                           onchange="toggleMailAccordion()">
+                                    <label class="btn btn-outline-secondary btn-sm" for="mail_attached"><i class="fas fa-envelope me-1"></i>郵送送付状</label>
                                 </div>
-                                <small class="text-muted">※その他（新規登録）を選択してボタンを押すと新規登録できます</small>
+                                <small class="text-muted">※その他（新規登録）を選択して新規登録ボタンを押すと新たに医療機関を登録できます</small>
                             </div>
 
-                            <!-- 津市外フラグ（住所から自動判定） -->
                             <input type="hidden" name="doctor_outside_city" id="doctor_outside_city" value="{{ initial.doctor_outside_city|default:'' }}">
 
                             <!-- 医療機関情報テーブル -->
                             <div class="col-12">
-                                <!-- フォーム送信用hidden -->
                                 <input type="hidden" name="doctor_hospital"    id="doctor_hospital">
                                 <input type="hidden" name="doctor_furigana"    id="doctor_furigana">
                                 <input type="hidden" name="doctor_name"        id="doctor_name">
                                 <input type="hidden" name="doctor_phone"       id="doctor_phone">
                                 <input type="hidden" name="doctor_fax"         id="doctor_fax">
-                                <input type="hidden" name="doctor_postal_code"  id="doctor_postal_code">
+                                <input type="hidden" name="doctor_postal_code" id="doctor_postal_code">
                                 <input type="hidden" name="doctor_address"     id="doctor_address">
 
                                 <div id="doctor_inst_table_wrap" class="mb-2" style="display:none;">
@@ -606,10 +258,185 @@
                                         <i class="fas fa-edit me-1"></i>医療機関を新規登録・編集
                                     </button>
                                 </div>
+
+                                <!-- FAX送付状 本文アコーディオン -->
+                                {% include 'clients/_fax_accordion.html' with fax_storage_key="mcc_fax_v1" fax_default_body=fax_default_body %}
+                                {% include 'clients/_fax_accordion.html' with fax_id_prefix="mail" fax_fn_prefix="Mail" fax_checkbox_id="mail_attached" fax_storage_key="mcc_mail_v1" fax_default_body=mail_default_body fax_title="郵送送付状 本文" fax_icon="fas fa-envelope" %}
+                            </div>
+                        </div>
+
+                        <div style="border-top: 1px solid #dee2e6; width: 50%; margin: 1.5rem 0;"></div>
+
+                        <!-- 連携の同意 -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-12">
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    <label class="form-label fw-bold mb-0">連携の同意 <span class="text-danger">*</span></label>
+                                    <div class="birth-era-toggle" title="クリックして編集">
+                                        <button type="button" class="era-btn" id="consent_edit_btn" onclick="toggleConsentEdit()">編集</button>
+                                    </div>
+                                </div>
+                                <div id="consent_options">
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="radio" name="consent_type" id="consent_today" value="today"
+                                               {% if initial.consent_type == 'today' %}checked{% endif %}
+                                               onchange="onConsentChange()">
+                                        <label class="form-check-label" for="consent_today">
+                                            今回ご本人・ご家族の同意を得て、ご都合のよろしい連絡方法でご回答をお願いいたします。<br>
+                                            <span id="consent_date_placeholder" class="text-muted" style="font-size:0.9em;{% if initial.consent_type == 'today' %}display:none;{% endif %}">【同意日　令和　年　月　日】</span>
+                                        </label>
+                                        <!-- 同意日（「今回同意」選択時のみ表示） -->
+                                        <div id="consent_date_wrap" class="ms-4 mt-2" style="{% if initial.consent_type != 'today' %}display:none;{% endif %}">
+                                            <div class="d-flex align-items-center gap-2 mb-1">
+                                                <span style="font-size:0.9em;">【同意日】</span>
+                                                <div class="birth-era-toggle" title="和暦 / 西暦を切り替え">
+                                                    <button type="button" class="era-btn active" id="consentDate_era_japanese" onclick="switchConsentDateEra('japanese')">和暦</button>
+                                                    <button type="button" class="era-btn" id="consentDate_era_western" onclick="switchConsentDateEra('western')">西暦</button>
+                                                </div>
+                                            </div>
+                                            <div id="consentDate_japanese">
+                                                <input type="text" id="consentDate_wareki_text" class="form-control" style="max-width:220px;"
+                                                       placeholder="例: 令和6年4月1日" autocomplete="off"
+                                                       oninput="syncConsentDateFromWareki()" readonly>
+                                                <small id="consentDate_wareki_preview" style="font-size:0.78em; display:block; margin-top:2px;"></small>
+                                            </div>
+                                            <div id="consentDate_western" style="display:none;">
+                                                <input type="date" id="id_consent_date" class="form-control" style="max-width:200px;"
+                                                       value="{{ initial.consent_date }}" readonly
+                                                       oninput="document.getElementById('consent_date_hidden').value=this.value">
+                                            </div>
+                                            <input type="hidden" id="consent_date_hidden" name="consent_date" value="{{ initial.consent_date }}">
+                                        </div>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="radio" name="consent_type" id="consent_previous" value="previous"
+                                               {% if initial.consent_type != 'today' %}checked{% endif %}
+                                               onchange="onConsentChange()">
+                                        <label class="form-check-label" for="consent_previous">
+                                            契約時の同意に基づき、介護支援に必要がありますので、ご連絡をさせていただきます。
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="border-top: 1px solid #dee2e6; width: 50%; margin: 1.5rem 0;"></div>
+
+                        <!-- 照会目的 -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold mb-2">照会目的 <span class="text-danger">*</span> <span class="text-muted fw-normal" style="font-size:0.85em;">（複数選択可）</span></label>
+                            <table style="border-collapse: collapse; font-size: 0.9rem;">
+                                <tr>
+                                    <td style="padding: 5px 20px 5px 8px; border: 1px solid #e8e8e8; background: #fafafa; white-space: nowrap; min-width: 22em;">
+                                        <div class="form-check mb-0">
+                                            <input class="form-check-input" type="checkbox" name="purpose_careplan" id="purpose_careplan" value="yes"
+                                                   {% if initial.purpose_careplan == 'yes' %}checked{% endif %}>
+                                            <label class="form-check-label" for="purpose_careplan">ケアプラン作成時の意見について</label>
+                                        </div>
+                                    </td>
+                                    <td style="padding: 5px 20px 5px 8px; border: 1px solid #e8e8e8; background: #fafafa; white-space: nowrap;">
+                                        <div class="form-check mb-0">
+                                            <input class="form-check-input" type="checkbox" name="purpose_service_meeting" id="purpose_service_meeting" value="yes"
+                                                   {% if initial.purpose_service_meeting == 'yes' %}checked{% endif %}>
+                                            <label class="form-check-label" for="purpose_service_meeting">サービス担当者会議の開催及び意見等について</label>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 5px 20px 5px 8px; border: 1px solid #e8e8e8; background: #fafafa; white-space: nowrap;">
+                                        <div class="form-check mb-0">
+                                            <input class="form-check-input" type="checkbox" name="purpose_medical_service" id="purpose_medical_service" value="yes"
+                                                   {% if initial.purpose_medical_service == 'yes' %}checked{% endif %}>
+                                            <label class="form-check-label" for="purpose_medical_service">医療系サービスの導入について</label>
+                                        </div>
+                                    </td>
+                                    <td style="padding: 5px 20px 5px 8px; border: 1px solid #e8e8e8; background: #fafafa; white-space: nowrap;">
+                                        <div class="form-check mb-0">
+                                            <input class="form-check-input" type="checkbox" name="purpose_condition_change" id="purpose_condition_change" value="yes"
+                                                   {% if initial.purpose_condition_change == 'yes' %}checked{% endif %}>
+                                            <label class="form-check-label" for="purpose_condition_change">利用者の心身状況の変化についての意見</label>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 5px 20px 5px 8px; border: 1px solid #e8e8e8; background: #fafafa; white-space: nowrap;">
+                                        <div class="form-check mb-0">
+                                            <input class="form-check-input" type="checkbox" name="purpose_facility" id="purpose_facility" value="yes"
+                                                   {% if initial.purpose_facility == 'yes' %}checked{% endif %}>
+                                            <label class="form-check-label" for="purpose_facility">施設系サービスの利用について</label>
+                                        </div>
+                                    </td>
+                                    <td style="padding: 5px 20px 5px 8px; border: 1px solid #e8e8e8; background: #fafafa; white-space: nowrap;">
+                                        <div class="form-check mb-0">
+                                            <input class="form-check-input" type="checkbox" name="purpose_welfare_equipment" id="purpose_welfare_equipment" value="yes"
+                                                   {% if initial.purpose_welfare_equipment == 'yes' %}checked{% endif %}>
+                                            <label class="form-check-label" for="purpose_welfare_equipment">福祉用具貸与（購入）における医学的意見</label>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 5px 20px 5px 8px; border: 1px solid #e8e8e8; background: #fafafa; white-space: nowrap;">
+                                        <div class="form-check mb-0">
+                                            <input class="form-check-input" type="checkbox" name="purpose_greeting" id="purpose_greeting" value="yes"
+                                                   {% if initial.purpose_greeting == 'yes' %}checked{% endif %}>
+                                            <label class="form-check-label" for="purpose_greeting">担当ケアマネージャーになった挨拶</label>
+                                        </div>
+                                    </td>
+                                    <td style="padding: 5px 20px 5px 8px; border: 1px solid #e8e8e8; background: #fafafa; white-space: nowrap;">
+                                        <div class="form-check mb-0">
+                                            <input class="form-check-input" type="checkbox" name="purpose_other" id="purpose_other" value="yes"
+                                                   {% if initial.purpose_other == 'yes' %}checked{% endif %}>
+                                            <label class="form-check-label" for="purpose_other">その他利用者に関する相談・報告等</label>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <div style="border-top: 1px solid #dee2e6; width: 50%; margin: 1.5rem 0;"></div>
+
+                        <!-- 相談内容 -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-12">
+                                <label class="form-label fw-bold mb-2">相談内容 <span class="text-danger">*</span></label>
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    <select id="consultation_template_select" class="form-select form-select-sm" style="width:auto;" onchange="insertConsultationTemplate(this.value)">
+                                        <option value="">── 定型文を選択 ──</option>
+                                        <option value="更新">介護保険被保険者証の更新</option>
+                                        <option value="変更">介護保険被保険者証の区分変更</option>
+                                        <option value="相談">その他相談内容</option>
+                                    </select>
+                                    <div class="birth-era-toggle" title="定型文を編集">
+                                        <button type="button" class="era-btn" onclick="openConsultationTemplateModal()">編集</button>
+                                    </div>
+                                </div>
+                                <textarea name="consultation_content" id="consultation_content"
+                                          class="form-control" rows="7"
+                                          style="width: calc(50em + 1.5rem); max-width: 100%; resize: none; pointer-events: auto; position: relative; z-index: 1;"
+                                          placeholder="">{{ initial.consultation_content }}</textarea>
+                            </div>
+                        </div>
+
+                        <div style="border-top: 1px solid #dee2e6; width: 50%; margin: 1.5rem 0;"></div>
+
+                        <!-- 返信希望の有無 -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">返信希望の有無</label>
+                            <div class="d-flex align-items-center gap-3 flex-wrap">
+                                <label class="form-label mb-0 text-muted" style="font-weight:normal;">返信は必要ですか？不要の場合は【返信不要】を選択</label>
+                                <input type="checkbox" name="reply_not_needed" value="yes" class="btn-check" id="reply_not_needed"
+                                       {% if initial.reply_not_needed == 'yes' %}checked{% endif %}>
+                                <label class="btn btn-outline-secondary btn-sm" for="reply_not_needed">返信不要</label>
                             </div>
                         </div>
 
                     </div>
+                </div>
+
+                <!-- バリデーションエラー表示 -->
+                <div id="formValidationError" class="alert alert-danger d-none mt-3 mb-0" role="alert">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <span id="formValidationErrorMsg"></span>
                 </div>
 
                 <!-- アクションボタン -->
@@ -897,64 +724,71 @@
                         <h5 class="section-title"><i class="fas fa-notes-medical me-2"></i>医療保険関係</h5>
                     </div>
                     <div class="card-body">
-                <div class="row g-3">
-                    <!-- 医療保険種別 -->
-                    <div class="col-md-6">
-                        <label class="form-label">医療保険種別</label>
-                        <select id="medical_modal_type" class="form-select" onchange="toggleMedicalModalSymbolBranch(true)">
-                            <option value="">----------</option>
-                            <option value="national_health">国民健康保険</option>
-                            <option value="latter_stage_elderly">後期高齢者医療</option>
-                            <option value="health_insurance_association">健康保険（協会けんぽ）</option>
-                            <option value="health_insurance_union">健康保険（組合）</option>
-                            <option value="mutual_aid">共済組合</option>
-                            <option value="seamen">船員保険</option>
-                            <option value="other">その他</option>
-                        </select>
-                    </div>
-                    <!-- 被保険者番号 記号・番号・枝番 -->
-                    <div class="col-12">
-                        <label class="form-label">被保険者番号</label>
-                        <div class="d-flex align-items-center gap-2 flex-wrap">
-                            <span class="text-nowrap" id="medical_modal_symbol_label">記号</span>
-                            <div style="width:90px;" id="medical_modal_symbol_wrapper">
-                                <input type="text" id="medical_modal_symbol" class="form-control">
-                            </div>
-                            <span class="text-nowrap">番号</span>
-                            <div style="width:150px;">
-                                <input type="text" id="medical_modal_number" class="form-control">
-                            </div>
-                            <span class="text-nowrap" id="medical_modal_branch_label">枝番</span>
-                            <div style="width:65px;" id="medical_modal_branch_wrapper">
-                                <input type="text" id="medical_modal_branch" class="form-control">
+                        <div class="row g-3 mb-3">
+                            <!-- 医療保険種別 -->
+                            <div class="col-md-6">
+                                <label class="form-label">医療保険種別</label>
+                                <select id="medical_modal_type" class="form-select" onchange="toggleMedicalModalSymbolBranch(true)">
+                                    <option value="">----------</option>
+                                    <option value="national_health">国民健康保険</option>
+                                    <option value="latter_stage_elderly">後期高齢者医療</option>
+                                    <option value="health_insurance_association">健康保険（協会けんぽ）</option>
+                                    <option value="health_insurance_union">健康保険（組合）</option>
+                                    <option value="mutual_aid">共済組合</option>
+                                    <option value="seamen">船員保険</option>
+                                    <option value="other">その他</option>
+                                </select>
                             </div>
                         </div>
-                    </div>
-                    <!-- 負担割合 -->
-                    <div class="col-12">
-                        <label class="form-label">負担割合</label>
-                        <select id="medical_modal_burden" class="form-select" style="max-width:180px;">
-                            <option value="">----------</option>
-                            <option value="1割負担">1割負担</option>
-                            <option value="2割負担">2割負担</option>
-                            <option value="3割負担">3割負担</option>
-                        </select>
-                    </div>
-                    <!-- 保険者名称・保険者番号（同じ行） -->
-                    <div class="col-md-8">
-                        <label class="form-label">保険者名称・交付者</label>
-                        <select id="medical_modal_insurer_preset" class="form-select mb-2" style="display:none;">
-                            <option value="">----------</option>
-                        </select>
-                        <div id="medical_modal_insurer_manual_wrapper">
-                            <input type="text" id="medical_modal_insurer_name" class="form-control">
+                        <!-- 被保険者番号 記号・番号・枝番 -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-12">
+                                <label class="form-label">被保険者番号</label>
+                                <div class="d-flex align-items-center gap-2 flex-wrap">
+                                    <span class="text-nowrap" id="medical_modal_symbol_label">記号</span>
+                                    <div style="width:120px;" id="medical_modal_symbol_wrapper">
+                                        <input type="text" id="medical_modal_symbol" class="form-control">
+                                    </div>
+                                    <span class="text-nowrap">番号</span>
+                                    <div style="width:200px;">
+                                        <input type="text" id="medical_modal_number" class="form-control">
+                                    </div>
+                                    <span class="text-nowrap" id="medical_modal_branch_label">枝番</span>
+                                    <div style="width:80px;" id="medical_modal_branch_wrapper">
+                                        <input type="text" id="medical_modal_branch" class="form-control">
+                                    </div>
+                                </div>
+                                <small class="text-muted mt-1 d-block">医療保険証に記載されている被保険者番号です（介護保険の被保険者番号とは別の番号）</small>
+                            </div>
                         </div>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">保険者番号</label>
-                        <input type="text" id="medical_modal_insurer_number" class="form-control">
-                    </div>
-                </div>
+                        <!-- 負担割合 -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label">負担割合</label>
+                                <select id="medical_modal_burden" class="form-select">
+                                    <option value="">----------</option>
+                                    <option value="1割負担">1割負担</option>
+                                    <option value="2割負担">2割負担</option>
+                                    <option value="3割負担">3割負担</option>
+                                </select>
+                            </div>
+                        </div>
+                        <!-- 保険者名称・保険者番号 -->
+                        <div class="row g-3">
+                            <div class="col-md-8">
+                                <label class="form-label">保険者名称・交付者</label>
+                                <select id="medical_modal_insurer_preset" class="form-select mb-2" style="display:none;">
+                                    <option value="">----------</option>
+                                </select>
+                                <div id="medical_modal_insurer_manual_wrapper">
+                                    <input type="text" id="medical_modal_insurer_name" class="form-control">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">保険者番号</label>
+                                <input type="text" id="medical_modal_insurer_number" class="form-control">
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -968,7 +802,97 @@
     </div>
 </div>
 
+<!-- 定型文編集モーダル -->
+<div class="modal fade" id="consultationTemplateModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:700px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-list-alt me-2"></i>相談内容の定型文を編集</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- 選択＋追加・削除 -->
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <select id="tpl_select" class="form-select" onchange="tplSelectChange()"></select>
+                    <button type="button" class="btn btn-outline-secondary btn-sm text-nowrap" onclick="tplAddNew()">
+                        <i class="fas fa-plus me-1"></i>追加
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm text-nowrap" onclick="openTplSortModal()">
+                        <i class="fas fa-sort me-1"></i>並び替え
+                    </button>
+                    <button type="button" class="btn btn-outline-danger btn-sm text-nowrap" onclick="tplDeleteCurrent()">
+                        <i class="fas fa-trash me-1"></i>削除
+                    </button>
+                </div>
+                <!-- 編集フォーム -->
+                <div id="tpl_edit_area">
+                    <div class="mb-2">
+                        <label class="form-label mb-1" style="font-size:0.85rem;">プルダウン表示名</label>
+                        <input type="text" id="tpl_name" class="form-control form-control-sm" placeholder="例：介護保険被保険者証の更新" oninput="tplNameChange()">
+                    </div>
+                    <div>
+                        <div class="d-flex align-items-center justify-content-between mb-1">
+                            <label class="form-label mb-0" style="font-size:0.85rem;">定型文</label>
+                            <div class="d-flex align-items-center gap-1">
+                                <small class="text-muted me-1" style="font-size:0.75rem;">カーソル位置に挿入：</small>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" style="font-size:0.75rem; padding:1px 8px;" onclick="insertTplPlaceholder('{client_name}')">利用者名</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" style="font-size:0.75rem; padding:1px 8px;" onclick="insertTplPlaceholder('{care_level}')">介護度</button>
+                            </div>
+                        </div>
+                        <textarea id="tpl_text" class="form-control" rows="7"
+                                  style="width: calc(50em + 1.5rem); max-width: 100%; resize: none; pointer-events: auto; position: relative; z-index: 1;"
+                                  oninput="tplTextChange()" placeholder="選択時にテキストエリアへ入力される文章"></textarea>
+                        <small class="text-muted" style="font-size:0.75rem;"><code>{client_name}</code>＝利用者名　<code>{care_level}</code>＝現在の要介護度（選択時に自動置換）</small>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                <button type="button" class="btn btn-primary" onclick="saveConsultationTemplates()">
+                    <i class="fas fa-save me-1"></i>保存して閉じる
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 定型文並び替えモーダル -->
+<div class="modal fade" id="tplSortModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" style="z-index:1060;">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:480px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-sort me-2"></i>定型文の並び替え</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted small mb-2"><i class="fas fa-grip-vertical me-1"></i>行をドラッグして順番を変更できます</p>
+                <table class="table table-bordered mb-0" style="font-size:0.9rem;">
+                    <tbody id="tplSortBody"></tbody>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" onclick="applyTplSort()">
+                    <i class="fas fa-check me-1"></i>完了
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% include 'clients/_medical_inst_mgmt.html' %}
+
+<style>
+#doctor_inst_table.table-bordered th,
+#doctor_inst_table.table-bordered td { border-left: none; border-right: none; }
+#doctor_inst_table td, #doctor_inst_table th { vertical-align: middle; }
+#office_inst_table.table-bordered th,
+#office_inst_table.table-bordered td { border-left: none; border-right: none; }
+#office_inst_table td, #office_inst_table th { vertical-align: middle; }
+#renewal_office_inst_table th, #renewal_office_inst_table td { border-left: none !important; border-right: none !important; }
+#renewal_office_inst_table td, #renewal_office_inst_table th { vertical-align: middle; }
+#tplSortModal { z-index: 1065; }
+#tplSortModal + .modal-backdrop { z-index: 1060; }
+</style>
 
 {% endblock %}
 
@@ -977,20 +901,297 @@
 
 let currentDrawerType = null;
 
-function jumpToInsuranceAccordion() {
-    const collapseEl = document.getElementById('insuranceInfoCollapse');
-    const targetEl   = document.getElementById('insuranceInfoAccordion');
-    if (!collapseEl || !targetEl) return;
-    bootstrap.Collapse.getOrCreateInstance(collapseEl, { toggle: false }).show();
-    setTimeout(() => { targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 50);
+// ---- FAX送付状：MCC固有の追加置換変数 ----
+window._faxExtraReplacers = {
+    care_level: function () { return (document.getElementById('ins_disp_care_level') || {}).value || ''; }
+};
+window._faxExtraLabels = { care_level: '介護度' };
+
+// ---- 連携の同意：編集ロック制御 ----
+function _applyConsentLock(locked) {
+    document.querySelectorAll('#consent_options .form-check').forEach(function(c) {
+        c.style.pointerEvents = locked ? 'none' : '';
+        c.style.opacity = (locked && !c.querySelector('.form-check-input').checked) ? '0.3' : '1';
+    });
+    var warekiInput = document.getElementById('consentDate_wareki_text');
+    var westernInput = document.getElementById('id_consent_date');
+    if (warekiInput) warekiInput.readOnly = locked;
+    if (westernInput) westernInput.readOnly = locked;
+    var btn = document.getElementById('consent_edit_btn');
+    if (btn) btn.classList.toggle('active', !locked);
 }
 
-function jumpToMedicalAccordion() {
-    const collapseEl = document.getElementById('medicalInsuranceCollapse');
-    const targetEl   = document.getElementById('medicalInsuranceAccordion');
-    if (!collapseEl || !targetEl) return;
-    bootstrap.Collapse.getOrCreateInstance(collapseEl, { toggle: false }).show();
-    setTimeout(() => { targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 50);
+function toggleConsentEdit() { _applyConsentLock(false); }
+
+// ---- 相談内容 定型文管理 ----
+var _TPLKEY = 'consultation_templates_mcc_v11';
+var _DEFAULT_TEMPLATES = [
+    { name: '介護保険被保険者証の更新', text: 'いつもお世話になっております。\n{client_name} 様ですが、介護保険被保険者証の更新を行った結果、{care_level}となりました。\n\n必要と考えられる支援についてはケアプランに記載いたしましたので、ご確認して頂き、先生から何かご指示やご助言等がございましたら、ご教示頂けますと幸いです。\nお手数をおかけいたしますが、何卒よろしくお願い申し上げます。' },
+    { name: '介護保険被保険者証の区分変更', text: 'いつもお世話になっております。\n{client_name} 様ですが、現在のADLと介護度に相違がありましたので介護保険被保険者証の区分変更を行わせて頂いた結果、{care_level}となりました。\n\n必要と考えられる支援についてはケアプランに記載いたしましたので、ご確認して頂き、先生から何かご指示やご助言等がございましたら、ご教示頂けますと幸いです。\nお手数をおかけいたしますが、何卒よろしくお願い申し上げます。' },
+    { name: 'その他相談内容', text: '' },
+];
+var _editTemplates = [];  // モーダル編集中の作業コピー
+var _tplCurrentIdx = 0;
+
+function _tplLoad() {
+    try {
+        var s = localStorage.getItem(_TPLKEY);
+        if (s) return JSON.parse(s);
+    } catch(e) {}
+    return JSON.parse(JSON.stringify(_DEFAULT_TEMPLATES));
+}
+
+function _tplSaveToStorage(arr) {
+    try { localStorage.setItem(_TPLKEY, JSON.stringify(arr)); } catch(e) {}
+}
+
+function _tplRefreshMainSelect(arr) {
+    var sel = document.getElementById('consultation_template_select');
+    if (!sel) return;
+    var curVal = sel.value;
+    sel.innerHTML = '<option value="">── 定型文を選択 ──</option>';
+    (arr || _tplLoad()).forEach(function(t, i) {
+        var opt = document.createElement('option');
+        opt.value = String(i);
+        opt.textContent = t.name;
+        sel.appendChild(opt);
+    });
+    sel.value = curVal;
+}
+
+function insertConsultationTemplate(idxStr) {
+    if (idxStr === '' || idxStr === null || idxStr === undefined) return;
+    var arr = _tplLoad();
+    var item = arr[parseInt(idxStr)];
+    var textarea = document.getElementById('consultation_content');
+    if (!textarea || !item) return;
+
+    var text = item.text || '';
+    var clientName = ((document.querySelector('[name="client_name"]') || {}).value || '（利用者名）').replace(/[\s　]/g, '');
+    var careLevel  = (document.getElementById('ins_disp_care_level') || {}).value || '（現在の要介護度）';
+    // {変数} 形式と （旧形式） 両方を置換
+    text = text.replace(/\{client_name\}/g, clientName);
+    text = text.replace(/\{care_level\}/g, careLevel);
+    text = text.replace(/（利用者名）/g, clientName);
+    text = text.replace(/（現在の要介護度）/g, careLevel);
+
+    textarea.value = text;
+    textarea.focus();
+}
+
+function insertTplPlaceholder(placeholder) {
+    var ta = document.getElementById('tpl_text');
+    if (!ta) return;
+    var start = ta.selectionStart, end = ta.selectionEnd;
+    ta.value = ta.value.slice(0, start) + placeholder + ta.value.slice(end);
+    ta.selectionStart = ta.selectionEnd = start + placeholder.length;
+    ta.focus();
+    tplTextChange();
+}
+
+// ---- モーダル操作 ----
+function _tplRenderSelect(arr, selectIdx) {
+    var sel = document.getElementById('tpl_select');
+    sel.innerHTML = '';
+    arr.forEach(function(t, i) {
+        var opt = document.createElement('option');
+        opt.value = String(i);
+        opt.textContent = t.name || '（名称未設定）';
+        sel.appendChild(opt);
+    });
+    sel.value = String(selectIdx);
+    _tplShowItem(selectIdx);
+}
+
+function _tplShowItem(idx) {
+    _tplCurrentIdx = idx;
+    var item = _editTemplates[idx];
+    if (!item) return;
+    document.getElementById('tpl_name').value = item.name || '';
+    document.getElementById('tpl_text').value = item.text || '';
+}
+
+function tplSelectChange() {
+    _tplShowItem(parseInt(document.getElementById('tpl_select').value));
+}
+
+function tplNameChange() {
+    _editTemplates[_tplCurrentIdx].name = document.getElementById('tpl_name').value;
+    var sel = document.getElementById('tpl_select');
+    sel.options[_tplCurrentIdx].textContent = document.getElementById('tpl_name').value || '（名称未設定）';
+}
+
+function tplTextChange() {
+    _editTemplates[_tplCurrentIdx].text = document.getElementById('tpl_text').value;
+}
+
+function tplAddNew() {
+    _editTemplates[_tplCurrentIdx].name = document.getElementById('tpl_name').value;
+    _editTemplates[_tplCurrentIdx].text = document.getElementById('tpl_text').value;
+    _editTemplates.push({ name: '', text: '' });
+    var newIdx = _editTemplates.length - 1;
+    _tplRenderSelect(_editTemplates, newIdx);
+    document.getElementById('tpl_name').focus();
+}
+
+// ---- 並び替えモーダル ----
+var _tplDragSrc = null;
+
+function openTplSortModal() {
+    // 編集中の内容を反映してから開く
+    _editTemplates[_tplCurrentIdx].name = document.getElementById('tpl_name').value;
+    _editTemplates[_tplCurrentIdx].text = document.getElementById('tpl_text').value;
+
+    var tbody = document.getElementById('tplSortBody');
+    tbody.innerHTML = '';
+    _editTemplates.forEach(function(t, i) {
+        var tr = document.createElement('tr');
+        tr.setAttribute('draggable', 'true');
+        tr.dataset.sortIdx = String(i);
+        tr.style.cursor = 'grab';
+        tr.innerHTML = '<td class="align-middle text-center text-muted" style="width:32px; font-size:1rem;"><i class="fas fa-grip-vertical"></i></td>'
+                     + '<td class="align-middle py-2">' + (t.name || '（名称未設定）') + '</td>';
+        tr.addEventListener('dragstart', function(e) {
+            _tplDragSrc = tr;
+            e.dataTransfer.effectAllowed = 'move';
+            tr.style.opacity = '0.4';
+        });
+        tr.addEventListener('dragend', function() {
+            tr.style.opacity = '';
+            tbody.querySelectorAll('tr').forEach(function(r){ r.style.background = ''; });
+        });
+        tr.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            tbody.querySelectorAll('tr').forEach(function(r){ r.style.background = ''; });
+            tr.style.background = '#e8f4ff';
+        });
+        tr.addEventListener('drop', function(e) {
+            e.preventDefault();
+            if (_tplDragSrc && _tplDragSrc !== tr) {
+                var rows = Array.from(tbody.querySelectorAll('tr'));
+                var si = rows.indexOf(_tplDragSrc), ti = rows.indexOf(tr);
+                if (si < ti) tbody.insertBefore(_tplDragSrc, tr.nextSibling);
+                else         tbody.insertBefore(_tplDragSrc, tr);
+            }
+        });
+        tbody.appendChild(tr);
+    });
+    new bootstrap.Modal(document.getElementById('tplSortModal')).show();
+}
+
+function applyTplSort() {
+    var tbody = document.getElementById('tplSortBody');
+    var newOrder = Array.from(tbody.querySelectorAll('tr')).map(function(r){ return parseInt(r.dataset.sortIdx); });
+    var sorted = newOrder.map(function(i){ return _editTemplates[i]; });
+    _editTemplates = sorted;
+    var prevName = _editTemplates[_tplCurrentIdx] ? _editTemplates[_tplCurrentIdx].name : '';
+    var newIdx = _editTemplates.findIndex(function(t){ return t.name === prevName; });
+    _tplRenderSelect(_editTemplates, Math.max(0, newIdx));
+    bootstrap.Modal.getInstance(document.getElementById('tplSortModal')).hide();
+}
+
+function tplDeleteCurrent() {
+    if (_editTemplates.length <= 1) { alert('最低1件は必要です。'); return; }
+    _editTemplates.splice(_tplCurrentIdx, 1);
+    var newIdx = Math.min(_tplCurrentIdx, _editTemplates.length - 1);
+    _tplRenderSelect(_editTemplates, newIdx);
+}
+
+function openConsultationTemplateModal() {
+    _editTemplates = JSON.parse(JSON.stringify(_tplLoad()));
+    _tplRenderSelect(_editTemplates, 0);
+    new bootstrap.Modal(document.getElementById('consultationTemplateModal')).show();
+}
+
+function saveConsultationTemplates() {
+    _editTemplates[_tplCurrentIdx].name = document.getElementById('tpl_name').value;
+    _editTemplates[_tplCurrentIdx].text = document.getElementById('tpl_text').value;
+    var cleaned = _editTemplates.filter(function(t) { return t.name.trim(); });
+    if (!cleaned.length) { alert('少なくとも1件の名称を入力してください。'); return; }
+    _tplSaveToStorage(cleaned);
+    _tplRefreshMainSelect(cleaned);
+    bootstrap.Modal.getInstance(document.getElementById('consultationTemplateModal')).hide();
+}
+
+// ページロード時にメインプルダウンを反映
+document.addEventListener('DOMContentLoaded', function() { _tplRefreshMainSelect(); });
+
+function _setConsentDateToday() {
+    var hidden = document.getElementById('consent_date_hidden');
+    var warekiInput = document.getElementById('consentDate_wareki_text');
+    if (!hidden || !warekiInput) return;
+    var today = new Date();
+    var y = today.getFullYear(), m = today.getMonth() + 1, d = today.getDate();
+    var pad = function(n) { return String(n).padStart(2, '0'); };
+    hidden.value = y + '-' + pad(m) + '-' + pad(d);
+    var wareki = '';
+    if (today >= new Date(2019, 4, 1))        wareki = '令和' + (y - 2018) + '年' + m + '月' + d + '日';
+    else if (today >= new Date(1989, 0, 8))   wareki = '平成' + (y - 1988) + '年' + m + '月' + d + '日';
+    else if (today >= new Date(1926, 11, 25)) wareki = '昭和' + (y - 1925) + '年' + m + '月' + d + '日';
+    warekiInput.value = wareki;
+    syncConsentDateFromWareki();
+}
+
+function onConsentChange() {
+    var todayRadio = document.getElementById('consent_today');
+    var isToday = todayRadio && todayRadio.checked;
+    var wrap = document.getElementById('consent_date_wrap');
+    var placeholder = document.getElementById('consent_date_placeholder');
+    if (wrap) wrap.style.display = isToday ? '' : 'none';
+    if (placeholder) placeholder.style.display = isToday ? 'none' : '';
+    if (isToday) {
+        var hidden = document.getElementById('consent_date_hidden');
+        if (hidden && !hidden.value) _setConsentDateToday();
+    } else {
+        var h = document.getElementById('consent_date_hidden');
+        if (h) h.value = '';
+    }
+    // ロック中のopacity更新
+    var btn = document.getElementById('consent_edit_btn');
+    var locked = btn && !btn.classList.contains('active');
+    if (locked) _applyConsentLock(true);
+}
+
+function switchConsentDateEra(mode) {
+    var btnJa = document.getElementById('consentDate_era_japanese');
+    var btnWe = document.getElementById('consentDate_era_western');
+    var japDiv = document.getElementById('consentDate_japanese');
+    var wesDiv = document.getElementById('consentDate_western');
+    var hidden = document.getElementById('consent_date_hidden');
+    var warekiInput = document.getElementById('consentDate_wareki_text');
+    if (mode === 'western') {
+        wesDiv.style.display = ''; japDiv.style.display = 'none';
+        btnWe.classList.add('active'); btnJa.classList.remove('active');
+        if (hidden && hidden.value) {
+            var dateInput = document.getElementById('id_consent_date');
+            if (dateInput) dateInput.value = hidden.value;
+        }
+    } else {
+        japDiv.style.display = ''; wesDiv.style.display = 'none';
+        btnJa.classList.add('active'); btnWe.classList.remove('active');
+        if (hidden && hidden.value && warekiInput) {
+            var w = window.toWarekiTextLocal ? toWarekiTextLocal(hidden.value) : '';
+            if (w) { warekiInput.value = w; syncConsentDateFromWareki(); }
+        }
+    }
+}
+
+function syncConsentDateFromWareki() {
+    var input   = document.getElementById('consentDate_wareki_text');
+    var preview = document.getElementById('consentDate_wareki_preview');
+    var hidden  = document.getElementById('consent_date_hidden');
+    if (!input || !preview || !hidden) return;
+    var result = window.parseWarekiLocal ? parseWarekiLocal(input.value) : null;
+    if (result) {
+        var y = result.year, m = String(result.month).padStart(2,'0'), d = String(result.day).padStart(2,'0');
+        hidden.value = y + '-' + m + '-' + d;
+        preview.textContent = '→ 西暦 ' + y + '年' + result.month + '月' + result.day + '日';
+        preview.style.color = '#6c757d';
+    } else {
+        hidden.value = '';
+        preview.textContent = input.value.trim() ? '例: 令和6年4月1日　または　S40.3.15' : '';
+        preview.style.color = '#aaa';
+    }
 }
 
 function goBack() {
@@ -1024,6 +1225,7 @@ function saveMasterData() {
 
 var _LOGIN_USER_ID = '{{ request.user.id }}';
 var _LOGIN_USER_NAME = '{% with p=request.user.profile %}{% if p.last_name %}{{ p.last_name }} {{ p.first_name }}{% else %}{{ request.user.username }}{% endif %}{% endwith %}';
+// 現在の事業所マスタ情報（モード切替時に復元用・常に最新の事業所から）
 var _OFFICE_NAME     = '{{ current_office_name }}';
 var _OFFICE_FURIGANA = '{{ current_office_furigana }}';
 var _OFFICE_NUMBER   = '{{ current_office_number }}';
@@ -1033,6 +1235,7 @@ var _OFFICE_PHONE    = '{{ current_office_phone }}';
 var _OFFICE_FAX      = '{{ initial.office_fax|escapejs }}';
 var _OFFICE_MANAGER  = '{{ initial.office_manager_name|escapejs }}';
 var _CURRENT_STAFF_NAMES = {{ office_staff_options_json|safe }};
+{% include 'clients/_submitter_js.html' %}
 
 function handleModalManagerChange(sel) {
     var val = sel.value;
@@ -1136,13 +1339,24 @@ function saveClientMasterData() {
     });
 }
 
-{% include 'clients/_submitter_js.html' %}
-
 
 
 // ========================================
 // 認定情報 ステータスアイコン・モーダル
 // ========================================
+
+
+function jumpToInsuranceAccordion() {
+    const collapseEl = document.getElementById('insuranceInfoCollapse');
+    const targetEl   = document.getElementById('insuranceInfoAccordion');
+    if (!collapseEl || !targetEl) return;
+    // 展開
+    bootstrap.Collapse.getOrCreateInstance(collapseEl, { toggle: false }).show();
+    // スクロール（展開アニメーション後）
+    setTimeout(() => {
+        targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 50);
+}
 
 function updateCertStatusIcon() {
     const icon      = document.getElementById('cert_status_icon');
@@ -1315,7 +1529,7 @@ function toggleSurveyContact(isInit) {
     }
 }
 
-// 主治医意見書依頼先
+// 連携医療機関
 function _escDI(s) {
     if (!s) return '';
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -1350,7 +1564,6 @@ function toggleDoctorSelection(isInit) {
         });
         _renderDoctorInstTable(opt);
     }
-    updateDoctorStatusIcon();
 }
 
 function _renderDoctorInstTable(opt) {
@@ -1392,12 +1605,10 @@ function _renderDoctorInstTable(opt) {
         + ' onclick="document.getElementById(\'doctor_type_select\').value=\'other\';toggleDoctorSelection(false);">'
         + '<i class="fas fa-times"></i></button></td>'
         + '</tr>';
-    // 津市外判定：住所に「津市」が含まれなければ津市外
     var outsideEl = document.getElementById('doctor_outside_city');
     if (outsideEl) {
         outsideEl.value = (address && !address.includes('津市')) ? 'yes' : '';
     }
-
     wrap.style.display = ''; empty.style.display = 'none';
 }
 
@@ -1407,15 +1618,9 @@ function updateDoctorStatusIcon() {
     const hospital = document.getElementById('doctor_hospital');
     const name     = document.getElementById('doctor_name');
     const phone    = document.getElementById('doctor_phone');
-    const cb       = document.getElementById('doctor_outside_yes');
-    const addr     = document.getElementById('doctor_address');
-    const outsideOn = cb && cb.checked;
     let complete = (hospital && hospital.value.trim() !== '')
                 && (name     && name.value.trim()     !== '')
                 && (phone    && phone.value.trim()    !== '');
-    if (outsideOn) {
-        complete = complete && (addr && addr.value.trim() !== '');
-    }
     icon.innerHTML = complete
         ? '<i class="fas fa-check-circle" style="color: rgba(25, 135, 84, 0.5);"></i>'
         : '<i class="fas fa-circle-exclamation" style="color: rgba(220, 53, 69, 0.5);"></i>';
@@ -1429,20 +1634,75 @@ function updateDoctorStatusIcon() {
     }
 }
 
-function toggleDoctorOutside() {
-    const cb     = document.getElementById('doctor_outside_yes');
-    const fields = document.getElementById('doctor_outside_fields');
-    if (!cb || !fields) return;
-    if (cb.checked) {
-        fields.style.display = '';
-    } else {
-        fields.style.display = 'none';
-        const postal = document.getElementById('doctor_postal_code');
-        const addr   = document.getElementById('doctor_address');
-        if (postal) postal.value = '';
-        if (addr)   addr.value = '';
+
+function toggleTransferSection(isInit) {
+    const yes = document.getElementById('transferred_yes');
+    const section = document.getElementById('transfer_detail_section');
+    section.style.display = yes && yes.checked ? '' : 'none';
+    if (!(yes && yes.checked) && !isInit) {
+        // 手動でチェックを外したときのみクリア
+        const municipality = document.querySelector('[name="transfer_from_municipality"]');
+        if (municipality) municipality.value = '';
+        const appliedYes = document.getElementById('transfer_applied_yes');
+        if (appliedYes) appliedYes.checked = false;
+        toggleTransferAppliedSection();
     }
-    updateDoctorStatusIcon();
+}
+
+function toggleTransferAppliedSection() {
+    const yes = document.getElementById('transfer_applied_yes');
+    const section = document.getElementById('transfer_applied_date_section');
+    section.style.display = yes && yes.checked ? '' : 'none';
+    if (!(yes && yes.checked)) {
+        // 申請日をクリア
+        const hidden = document.getElementById('id_transfer_applied_date');
+        const warekiText = document.getElementById('transferDate_wareki_text');
+        const preview = document.getElementById('transferDate_wareki_preview');
+        if (hidden) hidden.value = '';
+        if (warekiText) warekiText.value = '';
+        if (preview) preview.textContent = '';
+        // 和暦モードに戻す
+        switchTransferDateEra('japanese');
+    }
+}
+
+function switchTransferDateEra(mode) {
+    const btnJa = document.getElementById('transferDate_era_japanese');
+    const btnWe = document.getElementById('transferDate_era_western');
+    const japDiv = document.getElementById('transferDate_japanese');
+    const wesDiv = document.getElementById('transferDate_western');
+    const hidden = document.getElementById('id_transfer_applied_date');
+    const warekiInput = document.getElementById('transferDate_wareki_text');
+    if (mode === 'western') {
+        wesDiv.style.display = ''; japDiv.style.display = 'none';
+        btnWe.classList.add('active'); btnJa.classList.remove('active');
+    } else {
+        japDiv.style.display = ''; wesDiv.style.display = 'none';
+        btnJa.classList.add('active'); btnWe.classList.remove('active');
+        if (hidden && hidden.value) {
+            const w = window.toWarekiTextLocal ? toWarekiTextLocal(hidden.value) : '';
+            if (warekiInput) warekiInput.value = w;
+            syncTransferDateFromWareki();
+        }
+    }
+}
+
+function syncTransferDateFromWareki() {
+    const input   = document.getElementById('transferDate_wareki_text');
+    const preview = document.getElementById('transferDate_wareki_preview');
+    const hidden  = document.getElementById('id_transfer_applied_date');
+    if (!input || !preview || !hidden) return;
+    const result = window.parseWarekiLocal ? parseWarekiLocal(input.value) : null;
+    if (result) {
+        const y = result.year, m = String(result.month).padStart(2,'0'), d = String(result.day).padStart(2,'0');
+        hidden.value = `${y}-${m}-${d}`;
+        preview.textContent = `→ 西暦 ${y}年${result.month}月${result.day}日`;
+        preview.style.color = '#6c757d';
+    } else {
+        hidden.value = '';
+        preview.textContent = input.value.trim() ? '例: 昭和40年3月15日　または　S40.3.15' : '';
+        preview.style.color = '#aaa';
+    }
 }
 
 function updateMedicalStatusIcon() {
@@ -1829,276 +2089,6 @@ function switchCertPeriodEra(mode) {
     });
 })();
 
-document.addEventListener('DOMContentLoaded', function() {
-    // 全角スペース → 半角スペース変換（申請者フリガナ・担当者名）
-    function normalizeSpace(el) {
-        var pos = el.selectionStart;
-        var before = el.value;
-        el.value = before.replace(/　/g, ' ');
-        if (el.value !== before) el.setSelectionRange(pos, pos);
-    }
-    var furiganaInput = document.getElementById('renewal_applicant_furigana_input');
-    var furiganaHidden = document.getElementById('renewal_office_furigana');
-    if (furiganaInput && furiganaHidden) {
-        furiganaInput.addEventListener('input', function() { normalizeSpace(this); furiganaHidden.value = this.value; });
-    }
-    var staffNameInput = document.getElementById('renewal_staff_name');
-    if (staffNameInput) {
-        staffNameInput.addEventListener('input', function() { normalizeSpace(this); });
-    }
-    var ltcForm = document.querySelector('form');
-    if (ltcForm) {
-        ltcForm.addEventListener('submit', function() {
-            [staffNameInput, furiganaInput].forEach(function(el) {
-                if (el) { el.value = el.value.replace(/　/g, ' '); if (furiganaHidden && el === furiganaInput) furiganaHidden.value = el.value; }
-            });
-        });
-    }
-
-    // 認定情報 初期アイコン
-    updateCertStatusIcon();
-
-    // 医療保険情報 初期アイコン
-    updateMedicalStatusIcon();
-
-    // 調査場所 初期入力・アイコン
-    toggleSurveyLocationOther();
-    updateSurveyLocationStatusIcon();
-
-    // 調査連絡先 初期状態（プルダウン選択に応じて表示・自動反映）
-    toggleSurveyContact(true);
-
-    // 主治医意見書依頼先 初期反映・アイコン
-    toggleDoctorSelection(true);
-    updateDoctorStatusIcon();
-
-    // 津市外フラグ 初期状態復元
-    toggleDoctorOutside();
-
-    // 認定情報 保存ボタン
-    const certSaveBtn = document.getElementById('certInfoSaveBtn');
-    if (certSaveBtn) {
-        certSaveBtn.addEventListener('click', function() {
-            const insurance   = document.getElementById('cert_modal_insurance').value.trim();
-            const careLevel   = document.getElementById('cert_modal_care_level').value;
-            const careBurden  = document.getElementById('cert_modal_care_burden').value;
-            const certDate    = document.getElementById('cert_modal_cert_date').value;
-            const certStart   = document.getElementById('cert_modal_start').value;
-            const certEnd     = document.getElementById('cert_modal_end').value;
-
-            if (!insurance || !careLevel) {
-                const errEl = document.getElementById('certInfoModalError');
-                errEl.textContent = '被保険者番号と要介護度は必須です。';
-                errEl.classList.remove('d-none');
-                return;
-            }
-
-            const formData = new FormData();
-            formData.append('insurance_number',  insurance);
-            formData.append('care_level',        careLevel);
-            formData.append('care_burden',        careBurden);
-            formData.append('certification_date', certDate);
-            formData.append('cert_start',        certStart);
-            formData.append('cert_end',          certEnd);
-
-            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-            fetch('{% url "client_cert_info_update" client_id=client.pk %}', {
-                method: 'POST',
-                headers: { 'X-CSRFToken': csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
-                body: formData,
-            })
-            .then(r => r.json())
-            .then(data => {
-                if (data.success) {
-                    const setOuter = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
-                    // 表示フィールド更新
-                    document.getElementById('cert_display_insurance').value   = data.insurance_number;
-                    document.getElementById('cert_display_care_level').value  = data.care_level_display;
-                    document.getElementById('cert_display_start').value       = data.cert_start_wareki;
-                    document.getElementById('cert_display_end').value         = data.cert_end_wareki;
-                    // 外側アコーディオン更新
-                    setOuter('ins_disp_insurance',  data.insurance_number);
-                    setOuter('ins_disp_care_level', data.care_level_display);
-                    setOuter('ins_disp_cert_date',  data.cert_date_wareki || '');
-                    setOuter('ins_disp_cert_start', data.cert_start_wareki);
-                    setOuter('ins_disp_cert_end',   data.cert_end_wareki);
-                    setOuter('ins_disp_care_burden', data.care_burden);
-                    // 隠しフィールド更新（Excel出力用）
-                    document.getElementById('cert_hidden_insurance_number').value = data.insurance_number;
-                    document.getElementById('cert_hidden_care_level').value       = data.care_level_value;
-                    document.getElementById('cert_hidden_care_burden').value      = data.care_burden;
-                    document.getElementById('cert_hidden_cert_date').value        = data.certification_date;
-                    document.getElementById('cert_hidden_start').value            = data.cert_start;
-                    document.getElementById('cert_hidden_end').value              = data.cert_end;
-                    updateCertStatusIcon();
-                    bootstrap.Modal.getInstance(document.getElementById('certInfoModal')).hide();
-                } else {
-                    const errEl = document.getElementById('certInfoModalError');
-                    errEl.textContent = data.error || 'エラーが発生しました。';
-                    errEl.classList.remove('d-none');
-                }
-            })
-            .catch(function() {
-                const errEl = document.getElementById('certInfoModalError');
-                errEl.textContent = '通信エラーが発生しました。';
-                errEl.classList.remove('d-none');
-            });
-        });
-    }
-
-    // 医療保険情報 保存ボタン
-    const medicalSaveBtn = document.getElementById('medicalInfoSaveBtn');
-    if (medicalSaveBtn) {
-        medicalSaveBtn.addEventListener('click', function() {
-            const type        = document.getElementById('medical_modal_type').value;
-            const symbol      = document.getElementById('medical_modal_symbol').value.trim();
-            const number      = document.getElementById('medical_modal_number').value.trim();
-            const branch      = document.getElementById('medical_modal_branch').value.trim();
-            const burden      = document.getElementById('medical_modal_burden').value;
-            const insurerName = document.getElementById('medical_modal_insurer_name').value.trim();
-            const insurerNum  = document.getElementById('medical_modal_insurer_number').value.trim();
-
-            const formData = new FormData();
-            formData.append('medical_insurance_type',   type);
-            formData.append('medical_insurance_symbol', symbol);
-            formData.append('medical_insurance_number', number);
-            formData.append('medical_insurance_branch', branch);
-            formData.append('medical_burden',           burden);
-            formData.append('medical_insurer_name',     insurerName);
-            formData.append('medical_insurer_number',   insurerNum);
-
-            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-            fetch('{% url "client_medical_info_update" client_id=client.pk %}', {
-                method: 'POST',
-                headers: { 'X-CSRFToken': csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
-                body: formData,
-            })
-            .then(r => r.json())
-            .then(data => {
-                if (data.success) {
-                    const setVal = (id, val) => { const el = document.getElementById(id); if (el) { el.value = val; el.defaultValue = val; } };
-                    const setOuter2 = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
-                    setVal('medical_display_type',           data.medical_insurance_type_display);
-                    setVal('medical_display_symbol',         data.medical_insurance_symbol);
-                    setVal('medical_display_number',         data.medical_insurance_number);
-                    setVal('medical_display_insurer_name',   data.medical_insurer_name);
-                    setVal('medical_display_insurer_number', data.medical_insurer_number);
-                    // 外側アコーディオン更新
-                    setOuter2('med_disp_type',          data.medical_insurance_type_display);
-                    setOuter2('med_disp_symbol',        data.medical_insurance_symbol);
-                    setOuter2('med_disp_number',        data.medical_insurance_number);
-                    setOuter2('med_disp_branch',        data.medical_insurance_branch);
-                    setOuter2('med_disp_burden',        data.medical_burden);
-                    setOuter2('med_disp_insurer_name',  data.medical_insurer_name);
-                    setOuter2('med_disp_insurer_number', data.medical_insurer_number);
-                    // hidden fields
-                    setVal('medical_hidden_type',           data.medical_insurance_type);
-                    setVal('medical_hidden_symbol',         data.medical_insurance_symbol);
-                    setVal('medical_hidden_number',         data.medical_insurance_number);
-                    setVal('medical_hidden_branch',         data.medical_insurance_branch);
-                    setVal('medical_hidden_burden',         data.medical_burden);
-                    setVal('medical_hidden_insurer_name',   data.medical_insurer_name);
-                    setVal('medical_hidden_insurer_number', data.medical_insurer_number);
-                    updateMedicalStatusIcon();
-                    bootstrap.Modal.getInstance(document.getElementById('medicalInfoModal')).hide();
-                } else {
-                    const errEl = document.getElementById('medicalInfoModalError');
-                    errEl.textContent = data.error || 'エラーが発生しました。';
-                    errEl.classList.remove('d-none');
-                }
-            })
-            .catch(function() {
-                const errEl = document.getElementById('medicalInfoModalError');
-                errEl.textContent = '通信エラーが発生しました。';
-                errEl.classList.remove('d-none');
-            });
-        });
-    }
-    // フォーム送信バリデーション
-    const documentForm = document.getElementById('documentForm');
-    if (documentForm) {
-        documentForm.addEventListener('input',  function(e) { e.target.classList.remove('is-invalid'); });
-        documentForm.addEventListener('change', function(e) { e.target.classList.remove('is-invalid'); });
-
-        documentForm.addEventListener('submit', function(e) {
-            const errors = [];
-            documentForm.querySelectorAll('.is-invalid').forEach(function(el) { el.classList.remove('is-invalid'); });
-
-            function check(elOrId, label) {
-                const el = typeof elOrId === 'string' ? document.getElementById(elOrId) : elOrId;
-                if (!el || !el.value.trim()) {
-                    errors.push(label);
-                    if (el) el.classList.add('is-invalid');
-                }
-            }
-            function checkProxy(id, label, proxyEl) {
-                const el = document.getElementById(id);
-                if (!el || !el.value.trim()) {
-                    errors.push(label);
-                    if (proxyEl) proxyEl.classList.add('is-invalid');
-                }
-            }
-
-            // 申請年月日
-            check('id_application_date', '申請年月日');
-
-            // 区分変更の理由
-            check('id_change_reason', '区分変更の理由');
-
-            // 介護保険情報
-            check('cert_display_insurance',  '被保険者番号');
-            check('cert_display_care_level', '要介護度');
-            check('cert_display_start',      '有効期間（開始）');
-            check('cert_display_end',        '有効期間（終了）');
-
-            // 特定疾病名（第2号被保険者の場合のみ）
-            const diseaseEl = document.querySelector('select[name="specific_disease"]');
-            if (diseaseEl && !diseaseEl.value) { errors.push('特定疾病名'); diseaseEl.classList.add('is-invalid'); }
-
-            // 医療保険情報（hidden → アコーディオンボタンをプロキシ）
-            const medBtn = document.querySelector('#medicalInfoAccordion .accordion-button');
-            checkProxy('medical_hidden_insurer_name',   '医療保険者名',    medBtn);
-            checkProxy('medical_hidden_insurer_number', '保険者番号',      medBtn);
-            checkProxy('medical_hidden_number',         '被保険者証 番号', medBtn);
-
-            // 認定調査場所（自宅以外）
-            const surveyAccordion = document.getElementById('surveyLocationAccordion');
-            if (surveyAccordion && surveyAccordion.style.display !== 'none') {
-                check('survey_loc_postal',  '認定調査場所 郵便番号');
-                check('survey_loc_address', '認定調査場所 住所');
-                check('survey_loc_phone',   '認定調査場所 電話番号');
-            }
-
-            // 調査連絡先（本人以外）
-            const contactWrapper = document.getElementById('surveyContactAccordionWrapper');
-            if (contactWrapper && contactWrapper.style.display !== 'none') {
-                check('survey_contact_name',     '調査連絡先 氏名');
-                check('survey_contact_furigana', '調査連絡先 フリガナ');
-                check('survey_contact_relation', '調査連絡先 本人との関係');
-                check('survey_contact_phone',    '調査連絡先 電話番号');
-            }
-
-            // 医療機関情報（hidden → doctor_type_select をプロキシ）
-            const docSel = document.getElementById('doctor_type_select');
-            checkProxy('doctor_hospital', '医療機関名',        docSel);
-            checkProxy('doctor_name',     '医師氏名',          docSel);
-            checkProxy('doctor_phone',    '医療機関 電話番号', docSel);
-
-            // 津市外の場合 住所
-            const outsideCb = document.getElementById('doctor_outside_yes');
-            if (outsideCb && outsideCb.checked) {
-                check('doctor_address', '医療機関 住所');
-            }
-
-            if (errors.length > 0) {
-                e.preventDefault();
-                const firstInvalid = documentForm.querySelector('.is-invalid');
-                if (firstInvalid) firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                alert('以下の必須項目が未入力です。\n\n・' + errors.join('\n・'));
-            }
-        });
-    }
-});
 
 // 利用者マスタ編集モーダル 生年月日 和暦/西暦切り替え
 (function() {
@@ -2189,13 +2179,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <style>
 .birth-era-toggle { display: inline-flex; border: 1px solid #ced4da; border-radius: 0.375rem; overflow: hidden; font-size: 0.72rem; flex-shrink: 0; }
-#renewal_office_inst_table th, #renewal_office_inst_table td { border-left: none !important; border-right: none !important; }
-#renewal_office_inst_table td, #renewal_office_inst_table th { vertical-align: middle; }
 .birth-era-toggle .era-btn { background: #fff; border: none; padding: 2px 7px; cursor: pointer; color: #6c757d; font-size: 0.72rem; line-height: 1.5; transition: background 0.15s, color 0.15s; }
 .birth-era-toggle .era-btn:not(:last-child) { border-right: 1px solid #ced4da; }
 .birth-era-toggle .era-btn.active { background: #6c757d; color: #fff; }
 .birth-era-toggle .era-btn:hover:not(.active) { background: #f0f0f0; }
-.accordion-button.is-invalid { border: 1px solid #dc3545 !important; box-shadow: 0 0 0 0.2rem rgba(220,53,69,.25) !important; }
 .btn { transition: all 0.2s ease; }
 .btn:hover { transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
 .btn.btn-outline-secondary.btn-back:hover {
@@ -2254,16 +2241,70 @@ input[readonly]:focus, textarea[readonly]:focus {
 #surveyLocationAccordion .accordion-button:not(.collapsed),
 #surveyContactAccordion .accordion-button,
 #surveyContactAccordion .accordion-button:not(.collapsed),
-#doctor_inst_table.table-bordered th,
-#doctor_inst_table.table-bordered td { border-left: none; border-right: none; }
-#doctor_inst_table td, #doctor_inst_table th { vertical-align: middle; }
 #doctorInfoAccordion .accordion-button,
 #doctorInfoAccordion .accordion-button:not(.collapsed) {
     color: #333 !important;
     background-color: #f8f9fa !important;
 }
 </style>
-{% with validation_date_fields="id_application_date:申請年月日" %}
-{% include 'clients/_generic_form_validator.html' %}
-{% endwith %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    _applyConsentLock(true);
+    onConsentChange();
+    if (typeof toggleFaxAccordion  === 'function') toggleFaxAccordion();
+    if (typeof toggleMailAccordion === 'function') toggleMailAccordion();
+});
+document.addEventListener('DOMContentLoaded', function() {
+    // 連携医療機関 初期反映（表示・hidden input セット）
+    toggleDoctorSelection(true);
+    updateDoctorStatusIcon();
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('documentForm').addEventListener('submit', function(e) {
+        var errors = [];
+
+        // 連携医療機関
+        var hospitalEl = document.getElementById('doctor_hospital');
+        if (!hospitalEl || !hospitalEl.value.trim()) {
+            errors.push('連携医療機関を選択してください');
+        }
+
+        // 連携の同意
+        var consentChecked = document.querySelector('input[name="consent_type"]:checked');
+        if (!consentChecked) {
+            errors.push('連携の同意を選択してください');
+        }
+
+        // 照会目的（1つ以上チェック）
+        var purposeNames = ['purpose_careplan','purpose_medical_service','purpose_facility',
+            'purpose_greeting','purpose_service_meeting','purpose_condition_change',
+            'purpose_welfare_equipment','purpose_other'];
+        var anyPurpose = purposeNames.some(function(n) {
+            var el = document.querySelector('input[name="' + n + '"]:checked');
+            return !!el;
+        });
+        if (!anyPurpose) {
+            errors.push('照会目的を1つ以上選択してください');
+        }
+
+        // 相談内容
+        var consultationEl = document.getElementById('consultation_content');
+        if (!consultationEl || !consultationEl.value.trim()) {
+            errors.push('相談内容を入力してください');
+        }
+
+        if (errors.length > 0) {
+            e.preventDefault();
+            var errDiv = document.getElementById('formValidationError');
+            var errMsg = document.getElementById('formValidationErrorMsg');
+            errMsg.textContent = errors.join(' / ');
+            errDiv.classList.remove('d-none');
+            errDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    });
+});
+
+</script>
 {% endblock %}

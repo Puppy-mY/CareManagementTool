@@ -3,6 +3,16 @@ from datetime import date
 
 register = template.Library()
 
+_SVC_SHORT = {
+    '訪問リハビリテーション': '訪問リハ',
+    '福祉用具貸与': '福祉用具',
+}
+
+@register.filter
+def svc_label(value):
+    """サービス種別の表示名を短縮形に変換"""
+    return _SVC_SHORT.get(value, value)
+
 @register.filter
 def get_item(dictionary, key):
     """辞書から指定されたキーの値を取得"""

@@ -640,8 +640,8 @@
             <div class="document-section">
                 <h6 class="document-section-title">医療及び介護連携</h6>
                 <ul class="document-list">
-                    <li class="document-item" onclick="selectDocument('入院時情報提供書', '開発中', event)">入院時情報提供書（開発中）</li>
-                    <li class="document-item" onclick="selectDocument('医療・介護連携シート', '開発中', event)">医療・介護連携シート（開発中）</li>
+                    <li class="document-item" onclick="selectDocument('入院時情報提供書', '利用可能', event)">入院時情報提供書</li>
+                    <li class="document-item" onclick="selectDocument('医療・介護連携シート', '利用可能', event)">医療・介護連携シート</li>
                 </ul>
             </div>
 
@@ -1805,6 +1805,10 @@ function selectDocument(documentName, status, event) {
                 `/clients/${currentClientId}/document/kyotaku-selection-confirmation/`,
             'サービス担当者会議開催のご案内':
                 `/clients/${currentClientId}/document/care-service-meeting-notice/`,
+            '医療・介護連携シート':
+                `/clients/${currentClientId}/document/medical-care-coordination/`,
+            '入院時情報提供書':
+                `/clients/${currentClientId}/document/hospital-admission-info/`,
         };
 
         const url = documentUrlMap[documentName];
