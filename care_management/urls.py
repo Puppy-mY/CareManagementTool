@@ -15,22 +15,30 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 
+import os
 from django.contrib import admin
 from django.urls import path, include
 from django.contrib.auth import views as auth_views
 from django.shortcuts import redirect
 from . import views
 
-urlpatterns = [
-    path("admin/", admin.site.urls),
-    path("accounts/login/", auth_views.LoginView.as_view(), name="login"),
-    path("accounts/logout/", auth_views.LogoutView.as_view(), name="logout"),
-    path("sw.js", views.serve_sw, name="service_worker"),
-    path("", lambda request: redirect('client_list'), name='root'),
-    path("clients/", include("clients.urls")),
-    path("assessments/", include("assessments.urls")),
-    path("memo/", views.view_memo, name="view_memo"),
-    path("release-notes/", views.release_notes, name="release_notes"),
-    path("facilities/", include("facilities.urls")),
-    path("public/", include("public.urls")),
-]
+if os.environ.get('PUBLIC_ONLY') == 'True':
+    # PythonAnywhere公開モード: /public/ 以下の3ページのみ公開
+    urlpatterns = [
+        path("public/", include("public.urls")),
+        path("", lambda request: redirect('/public/fee-simulation/'), name='root'),
+    ]
+else:
+    urlpatterns = [
+        path("admin/", admin.site.urls),
+        path("accounts/login/", auth_views.LoginView.as_view(), name="login"),
+        path("accounts/logout/", auth_views.LogoutView.as_view(), name="logout"),
+        path("sw.js", views.serve_sw, name="service_worker"),
+        path("", lambda request: redirect('client_list'), name='root'),
+        path("clients/", include("clients.urls")),
+        path("assessments/", include("assessments.urls")),
+        path("memo/", views.view_memo, name="view_memo"),
+        path("release-notes/", views.release_notes, name="release_notes"),
+        path("facilities/", include("facilities.urls")),
+        path("public/", include("public.urls")),
+    ]
