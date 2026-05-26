@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}安濃津ろまん{% endblock %}</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <style>
+        body { background: #f7fafc; font-family: 'Helvetica Neue', Arial, sans-serif; }
+        .pub-navbar {
+            background: linear-gradient(135deg, #4a5568 0%, #64748b 100%);
+            padding: 12px 20px;
+        }
+        .pub-navbar-brand {
+            color: #fff;
+            font-weight: 700;
+            font-size: 1rem;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .pub-navbar-sub {
+            color: rgba(255,255,255,0.65);
+            font-size: 0.78rem;
+            margin-left: 4px;
+        }
+        .pub-nav-links {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+        .pub-nav-link {
+            color: rgba(255,255,255,0.85);
+            text-decoration: none;
+            font-size: 0.83rem;
+            padding: 5px 12px;
+            border-radius: 6px;
+            transition: background 0.15s;
+        }
+        .pub-nav-link:hover, .pub-nav-link.active {
+            background: rgba(255,255,255,0.15);
+            color: #fff;
+        }
+        .pub-nav-link i { margin-right: 4px; }
+        .pub-footer {
+            background: linear-gradient(135deg, #4a5568 0%, #64748b 100%);
+            color: rgba(255,255,255,0.6);
+            text-align: center;
+            font-size: 0.75rem;
+            padding: 14px;
+            margin-top: auto;
+        }
+        body { display: flex; flex-direction: column; min-height: 100vh; }
+        .pub-main { flex: 1; padding: 1.5rem 0 3rem; }
+        {% block extra_style %}{% endblock %}
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+<nav class="pub-navbar d-flex align-items-center justify-content-between flex-wrap gap-2">
+    <a class="pub-navbar-brand" href="/public/fee-simulation/">
+        <i class="fas fa-leaf"></i>
+        安濃津ろまん
+        <span class="pub-navbar-sub">サービス付き高齢者向け住宅</span>
+    </a>
+    <div class="pub-nav-links">
+        <a class="pub-nav-link {% block nav_fee %}{% endblock %}" href="/public/fee-simulation/">
+            <i class="fas fa-calculator"></i>料金シミュレーション
+        </a>
+        <a class="pub-nav-link {% block nav_fax %}{% endblock %}" href="/public/fax-cover-sheet/">
+            <i class="fas fa-fax"></i>FAX送付状
+        </a>
+        <a class="pub-nav-link {% block nav_facilities %}{% endblock %}" href="/public/facilities/">
+            <i class="fas fa-search"></i>施設検索
+        </a>
+    </div>
+</nav>
+
+<div class="pub-main">
+    <div class="container-fluid px-3">
+        {% block content %}{% endblock %}
+    </div>
+</div>
+
+<footer class="pub-footer">
+    サービス付き高齢者向け住宅　安濃津ろまん
+</footer>
+
+{% block extra_js %}{% endblock %}
+</body>
+</html>

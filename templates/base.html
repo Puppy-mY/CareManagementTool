@@ -806,6 +806,16 @@
                             <p class="text-white-50 mb-1 ps-2" style="font-size: 0.72rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;">便利機能</p>
                             <ul class="navbar-nav flex-column">
                                 <li class="nav-item">
+                                    <a class="nav-link py-1" href="{% url 'document_create_fax_cover_sheet' %}">
+                                        <i class="fas fa-fax fa-fw"></i> FAX送付状
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link py-1" href="{% url 'fee_simulation' %}">
+                                        <i class="fas fa-calculator fa-fw"></i> 利用料金シミュレーション
+                                    </a>
+                                </li>
+                                <li class="nav-item">
                                     <a class="nav-link py-1" href="{% url 'facilities:facility_list' %}">
                                         <i class="fas fa-search fa-fw"></i> 施設検索
                                     </a>

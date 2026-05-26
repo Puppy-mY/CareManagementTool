@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     "clients",
     "assessments",
     "facilities",
+    "public",
 ]
 
 MIDDLEWARE = [

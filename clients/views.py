@@ -3717,68 +3717,67 @@ def _generate_medical_care_coordination_excel_bytes(client, form_data):
     has_fax  = form_data.get('fax_attached')  == 'yes'
     has_mail = form_data.get('mail_attached') == 'yes'
     if has_fax or has_mail:
-        import xlwings as xw
+        from openpyxl import load_workbook as _lw_cover
+        from openpyxl.cell import MergedCell as _MC_cover
         FAX_TEMPLATE_PATH  = str(settings.BASE_DIR / 'templates' / 'forms' / 'fax_cover_sheet.xlsx')
         MAIL_TEMPLATE_PATH = str(settings.BASE_DIR / 'templates' / 'forms' / 'mail_cover_sheet.xlsx')
-        app = xw.App(visible=False)
-        try:
-            mcc_book = app.books.open(mcc_tmp)
 
-            def _write_cover(cover_ws, title, body_text):
-                """送付状 共通マッピング"""
-                cover_ws.range('I4').value  = title
-                cover_ws.range('T11').value = form_data.get('user_full_name', '')
-                cover_ws.range('T12').value = form_data.get('fax_pages', '')
-                cover_ws.range('J29').value = form_data.get('office_name', '')
-                cover_ws.range('F11').value = form_data.get('doctor_hospital', '')
-                cover_ws.range('F12').value = form_data.get('doctor_name', '')
-                cover_ws.range('V10').value = to_wareki(form_data.get('application_date', ''))
-                cover_ws.range('W11').value = form_data.get('user_full_name', '')
-                cover_ws.range('J30').value = form_data.get('office_company_name', '')
-                cover_ws.range('J31').value = form_data.get('office_name', '')
-                cover_ws.range('K32').value = form_data.get('office_postal_code', '')
-                cover_ws.range('O32').value = form_data.get('office_address', '')
-                cover_ws.range('M33').value = form_data.get('office_phone', '')
-                cover_ws.range('M34').value = form_data.get('office_fax', '')
-                body = (body_text
-                    .replace('{user_name}',   form_data.get('user_full_name', ''))
-                    .replace('{office_name}', form_data.get('office_name', ''))
-                    .replace('{client_name}', (form_data.get('client_name', '') or '').replace(' ', '').replace('　', ''))
-                    .replace('{care_level}',  care_level))
-                lines = []
-                for para in body.splitlines():
-                    if not para.strip():
-                        lines.append('')
-                    else:
-                        while para:
-                            lines.append(para[:43])
-                            para = para[43:]
-                lines = (lines + [''] * 11)[:11]
-                for i, line in enumerate(lines):
-                    cover_ws.range(f'C{17 + i}').value = line
+        mcc_wb = _lw_cover(mcc_tmp)
 
-            # FAX送付状
-            if has_fax:
-                fax_book = app.books.open(FAX_TEMPLATE_PATH)
-                fax_book.sheets[0].copy(before=mcc_book.sheets[0])
-                fax_book.close()
-                cover_ws = mcc_book.sheets[0]
-                cover_ws.name = 'FAX送付状'
-                _write_cover(cover_ws, 'FAX送付状', form_data.get('fax_message', ''))
+        def _write_cover(cover_ws, title, body_text):
+            def _wc(ref, val):
+                c = cover_ws[ref]
+                if isinstance(c, _MC_cover):
+                    for mr in cover_ws.merged_cells.ranges:
+                        if ref in mr:
+                            cover_ws.cell(mr.min_row, mr.min_col).value = val
+                            return
+                else:
+                    c.value = val
+            _wc('I4',  title)
+            _wc('T11', form_data.get('user_full_name', ''))
+            _wc('T12', form_data.get('fax_pages', ''))
+            _wc('J29', form_data.get('office_name', ''))
+            _wc('F11', form_data.get('doctor_hospital', ''))
+            _wc('F12', form_data.get('doctor_name', ''))
+            _wc('V10', to_wareki(form_data.get('application_date', '')))
+            _wc('W11', form_data.get('user_full_name', ''))
+            _wc('J30', form_data.get('office_company_name', ''))
+            _wc('J31', form_data.get('office_name', ''))
+            _wc('K32', form_data.get('office_postal_code', ''))
+            _wc('O32', form_data.get('office_address', ''))
+            _wc('M33', form_data.get('office_phone', ''))
+            _wc('M34', form_data.get('office_fax', ''))
+            body = (body_text
+                .replace('{user_name}',   form_data.get('user_full_name', ''))
+                .replace('{office_name}', form_data.get('office_name', ''))
+                .replace('{client_name}', (form_data.get('client_name', '') or '').replace(' ', '').replace('　', ''))
+                .replace('{care_level}',  care_level))
+            lines = []
+            for para in body.splitlines():
+                if not para.strip():
+                    lines.append('')
+                else:
+                    while para:
+                        lines.append(para[:43])
+                        para = para[43:]
+            lines = (lines + [''] * 11)[:11]
+            for i, line in enumerate(lines):
+                _wc(f'C{17 + i}', line)
 
-            # 郵送送付状
-            if has_mail:
-                mail_book = app.books.open(MAIL_TEMPLATE_PATH)
-                mail_book.sheets[0].copy(before=mcc_book.sheets[0])
-                mail_book.close()
-                cover_ws = mcc_book.sheets[0]
-                cover_ws.name = '郵送送付状'
-                _write_cover(cover_ws, '送付状', form_data.get('mail_message', ''))
+        # FAX送付状（先に挿入）
+        if has_fax:
+            fax_src = _lw_cover(FAX_TEMPLATE_PATH)
+            cover_ws = _copy_ws_openpyxl(fax_src.active, mcc_wb, 'FAX送付状', at_pos=0)
+            _write_cover(cover_ws, 'FAX送付状', form_data.get('fax_message', ''))
 
-            mcc_book.save()
-            mcc_book.close()
-        finally:
-            app.quit()
+        # 郵送送付状（FAXの前に挿入）
+        if has_mail:
+            mail_src = _lw_cover(MAIL_TEMPLATE_PATH)
+            cover_ws = _copy_ws_openpyxl(mail_src.active, mcc_wb, '郵送送付状', at_pos=0)
+            _write_cover(cover_ws, '送付状', form_data.get('mail_message', ''))
+
+        mcc_wb.save(mcc_tmp)
 
     with open(mcc_tmp, 'rb') as f:
         result = f.read()
@@ -4497,6 +4496,287 @@ def fax_cover_sheet_download(request):
     return response
 
 
+@login_required
+def fee_simulation(request):
+    return render(request, 'clients/fee_simulation.html', {})
+
+
+
+@login_required
+def document_create_fax_cover_sheet(request):
+    """FAX送付状 作成画面（スタンドアロン）"""
+    import json as _json
+    from datetime import date as _date
+    from .models import FaxMessageTemplate, MedicalInstitution, RegionalSupportCenter
+
+    profile = getattr(request.user, 'profile', None)
+    office  = getattr(profile, 'home_care_office', None)
+    if not office:
+        office = HomeCareSupportOffice.objects.filter(is_active=True).first()
+    user_full_name = profile.get_full_name() if profile else request.user.username
+
+    if request.method == 'POST':
+        from urllib.parse import quote
+        content  = _generate_fax_cover_sheet_standalone_bytes(request, office, user_full_name)
+        dl_name  = 'FAX送付状.xlsx'
+        response = HttpResponse(content, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = (
+            f"attachment; filename=\"download.xlsx\"; "
+            f"filename*=UTF-8''{quote(dl_name, safe='')}"
+        )
+        return response
+
+    care_offices     = list(CareServiceOffice.objects.filter(office_type='external'))
+    medical_insts    = list(MedicalInstitution.objects.all())
+    homecare_offices = list(HomeCareSupportOffice.objects.filter(is_active=True))
+    support_centers  = list(RegionalSupportCenter.objects.filter(is_active=True))
+    initial = {
+        'submitter_type':     'office',
+        'office_name':        (office.name          if office else '') or '',
+        'office_company_name': (office.company_name  if office else '') or '',
+        'office_furigana':    (office.furigana       if office else '') or '',
+        'office_number':      (office.office_number  if office else '') or '',
+        'office_postal_code': (office.postal_code    if office else '') or '',
+        'office_address':     (office.address        if office else '') or '',
+        'office_phone':       (office.phone          if office else '') or '',
+        'office_manager_name': (office.manager_name  if office else '') or '',
+        'office_fax':         (office.fax            if office else '') or '',
+        'office_is_active':   office.is_active if office else True,
+        'staff_name':         user_full_name,
+        'staff_name_office':  user_full_name,
+    }
+    staff_options = _build_office_staff_options(office)
+    return render(request, 'clients/document_create_fax_cover_sheet.html', {
+        'care_offices':            care_offices,
+        'medical_insts':           medical_insts,
+        'homecare_offices':        homecare_offices,
+        'support_centers':         support_centers,
+        'today':                   _date.today(),
+        'initial':                 initial,
+        'fax_template_body':       FaxMessageTemplate.get_body(),
+        'current_office_name':     (office.name         if office else '') or '',
+        'current_office_furigana': (office.furigana      if office else '') or '',
+        'current_office_number':   (office.office_number if office else '') or '',
+        'current_office_postal':   (office.postal_code   if office else '') or '',
+        'current_office_address':  (office.address       if office else '') or '',
+        'current_office_phone':    (office.phone         if office else '') or '',
+        'office_staff_options':    staff_options,
+        'office_staff_options_json': _json.dumps(staff_options),
+    })
+
+
+def _copy_ws_openpyxl(src_ws, dst_wb, name, at_pos=None):
+    """openpyxl専用: 他ブックのワークシートをコピーして追加（スタイル・結合・寸法を保持）"""
+    from copy import copy as _cp
+    from openpyxl.cell import MergedCell as _MC
+
+    if at_pos is not None:
+        dst_ws = dst_wb.create_sheet(name, at_pos)
+    else:
+        dst_ws = dst_wb.create_sheet(name)
+
+    try:
+        dst_ws.sheet_format.defaultColWidth  = src_ws.sheet_format.defaultColWidth
+        dst_ws.sheet_format.defaultRowHeight = src_ws.sheet_format.defaultRowHeight
+    except Exception:
+        pass
+
+    for ri, rd in src_ws.row_dimensions.items():
+        dst_ws.row_dimensions[ri].height = rd.height
+        dst_ws.row_dimensions[ri].hidden = rd.hidden
+    for cl, cd in src_ws.column_dimensions.items():
+        dst_ws.column_dimensions[cl].width  = cd.width
+        dst_ws.column_dimensions[cl].hidden = cd.hidden
+
+    for mr in src_ws.merged_cells.ranges:
+        dst_ws.merge_cells(str(mr))
+
+    for row in src_ws.iter_rows():
+        for cell in row:
+            if isinstance(cell, _MC):
+                continue
+            dc = dst_ws.cell(row=cell.row, column=cell.column)
+            dc.value = cell.value
+            if cell.has_style:
+                dc.font          = _cp(cell.font)
+                dc.border        = _cp(cell.border)
+                dc.fill          = _cp(cell.fill)
+                dc.number_format = cell.number_format
+                dc.protection    = _cp(cell.protection)
+                dc.alignment     = _cp(cell.alignment)
+
+    try:
+        dst_ws.page_setup = _cp(src_ws.page_setup)
+        if src_ws.print_area:
+            dst_ws.print_area = src_ws.print_area
+    except Exception:
+        pass
+
+    return dst_ws
+
+
+def _highlight_selection(ws, start_ref, end_ref=None):
+    """選択済みセル範囲を黄色ハイライト（xlwings楕円描画の代替）"""
+    from openpyxl.styles import PatternFill
+    from openpyxl.utils import range_boundaries
+    from openpyxl.cell import MergedCell as _MC
+
+    if end_ref is None:
+        end_ref = start_ref
+    try:
+        min_col, min_row, max_col, max_row = range_boundaries(f'{start_ref}:{end_ref}')
+    except Exception:
+        return
+    fill = PatternFill(start_color='FFFF00', end_color='FFFF00', fill_type='solid')
+    for r in range(min_row, max_row + 1):
+        for c in range(min_col, max_col + 1):
+            cell = ws.cell(row=r, column=c)
+            if not isinstance(cell, _MC):
+                cell.fill = fill
+
+
+def _generate_fax_cover_sheet_standalone_bytes(request, home_office, user_full_name):
+    """FAX送付状（スタンドアロン版）のXLSXバイト列を生成（全送付先タイプ対応）"""
+    import tempfile, os
+    from datetime import datetime as _dt, date as _date_cls
+    from .models import MedicalInstitution, RegionalSupportCenter
+
+    post    = request.POST
+    creator = post.get('staff_name_office', '') or user_full_name
+
+    created_date_str = post.get('created_date', '')
+    try:
+        created_date = _dt.strptime(created_date_str, '%Y-%m-%d').date()
+    except Exception:
+        created_date = _date_cls.today()
+
+    def _to_wareki(d):
+        if not d:
+            return ''
+        if d >= _date_cls(2019, 5, 1):
+            return f'令和{d.year - 2018}年{d.month}月{d.day}日'
+        elif d >= _date_cls(1989, 1, 8):
+            return f'平成{d.year - 1988}年{d.month}月{d.day}日'
+        elif d >= _date_cls(1926, 12, 25):
+            return f'昭和{d.year - 1925}年{d.month}月{d.day}日'
+        return f'{d.year}年{d.month}月{d.day}日'
+
+    fax_raw = (post.get('fax_message', '')
+               .replace('{user_name}',   creator)
+               .replace('{office_name}', home_office.name if home_office else ''))
+    fax_lines = []
+    for para in fax_raw.splitlines():
+        if not para.strip():
+            fax_lines.append('')
+        else:
+            while para:
+                fax_lines.append(para[:43])
+                para = para[43:]
+    fax_lines = (fax_lines + [''] * 11)[:11]
+
+    # ---- 全送付先を (recipient_name, person_name) のリストに統合 ----
+    recipients = []
+
+    # 介護サービス事業所
+    for pk in post.getlist('selected_office'):
+        try:
+            o = CareServiceOffice.objects.get(pk=pk, office_type='external')
+            person = post.get(f'selected_office_person_{pk}', '')
+            recipients.append((o.name or '', person))
+        except CareServiceOffice.DoesNotExist:
+            pass
+
+    # 主治医・医療機関
+    for pk in post.getlist('selected_medical'):
+        try:
+            m = MedicalInstitution.objects.get(pk=pk)
+            doctor = post.get(f'selected_medical_doctor_{pk}', '')
+            recipients.append((m.hospital_name or '', doctor))
+        except MedicalInstitution.DoesNotExist:
+            pass
+
+    # 居宅介護支援事業所
+    for pk in post.getlist('selected_homecare'):
+        try:
+            h = HomeCareSupportOffice.objects.get(pk=pk)
+            recipients.append((h.name or '', ''))
+        except HomeCareSupportOffice.DoesNotExist:
+            pass
+
+    # 地域包括支援センター
+    for pk in post.getlist('selected_supportcenter'):
+        try:
+            s = RegionalSupportCenter.objects.get(pk=pk)
+            recipients.append((s.name or '', ''))
+        except RegionalSupportCenter.DoesNotExist:
+            pass
+
+    FAX_TEMPLATE = str(settings.BASE_DIR / 'templates' / 'forms' / 'fax_cover_sheet.xlsx')
+
+    if not recipients:
+        with open(FAX_TEMPLATE, 'rb') as f:
+            return f.read()
+
+    from openpyxl import load_workbook as _lw
+    from openpyxl.cell import MergedCell as _MC
+    import io
+
+    wb = _lw(FAX_TEMPLATE)
+
+    def _w(ws, ref, value):
+        cell = ws[ref]
+        if isinstance(cell, _MC):
+            for mr in ws.merged_cells.ranges:
+                if ref in mr:
+                    ws.cell(row=mr.min_row, column=mr.min_col).value = value
+                    return
+        else:
+            cell.value = value
+
+    sheet_names_used = []
+
+    def _unique_name(raw):
+        raw = (raw or '送付先')[:31]
+        name = raw
+        suffix = 2
+        while name in sheet_names_used:
+            name = f'{raw[:28]}_{suffix}'
+            suffix += 1
+        sheet_names_used.append(name)
+        return name
+
+    def _fill(ws, recipient_name, person):
+        _w(ws, 'I4',  'FAX送付状')
+        _w(ws, 'F11', recipient_name)
+        _w(ws, 'F12', person)
+        _w(ws, 'T11', creator)
+        _w(ws, 'T12', '')
+        _w(ws, 'V10', _to_wareki(created_date))
+        if home_office:
+            _w(ws, 'J29', home_office.name or '')
+            _w(ws, 'J30', getattr(home_office, 'company_name', '') or '')
+            _w(ws, 'K32', getattr(home_office, 'postal_code',  '') or '')
+            _w(ws, 'O32', getattr(home_office, 'address',       '') or '')
+            _w(ws, 'M33', getattr(home_office, 'phone',         '') or '')
+            _w(ws, 'M34', getattr(home_office, 'fax',           '') or '')
+        for j, line in enumerate(fax_lines):
+            _w(ws, f'C{17 + j}', line)
+
+    first_name, first_person = recipients[0]
+    base_ws = wb.active
+    base_ws.title = _unique_name(first_name)
+    _fill(base_ws, first_name, first_person)
+
+    for rec_name, rec_person in recipients[1:]:
+        new_ws = wb.copy_worksheet(base_ws)
+        new_ws.title = _unique_name(rec_name)
+        _fill(new_ws, rec_name, rec_person)
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    return buf.getvalue()
+
+
 def document_create_care_service_meeting_notice(request, client_id):
     """サービス担当者会議開催のご案内 作成画面"""
     from datetime import date as _date
@@ -4671,75 +4951,70 @@ def _generate_care_service_meeting_notice_excel_bytes(client, form_data, request
         f.write(buf.getvalue())
 
     try:
-        # ---- 外部事業所がある場合のみ xlwings で FAXシートを挿入 ----
+        # ---- 外部事業所がある場合のみ openpyxl で FAXシートを挿入 ----
         if external_indices:
-            import xlwings as xw
+            from openpyxl import load_workbook as _lw_notice
+            from openpyxl.cell import MergedCell as _MC_notice
             FAX_TEMPLATE_PATH = str(settings.BASE_DIR / 'templates' / 'forms' / 'fax_cover_sheet.xlsx')
-            app = xw.App(visible=False)
-            try:
-                notice_book = app.books.open(notice_tmp)
-                fax_book    = app.books.open(FAX_TEMPLATE_PATH)
-                fax_sheet   = fax_book.sheets[0]
 
-                # 作成者の居宅介護支援事業所情報
-                _home_office = getattr(getattr(request.user, 'profile', None), 'home_care_office', None)
+            notice_wb      = _lw_notice(notice_tmp)
+            fax_template_wb = _lw_notice(FAX_TEMPLATE_PATH)
 
-                # FAX本文をC17〜C27用に分割（明示的改行を保持・43文字で自動折り返し）
-                _fax_raw = (post.get('fax_message', '')
-                            .replace('{user_name}', creator)
-                            .replace('{office_name}', office_name)
-                            .replace('{client_name}', (client.name or '').replace(' ', '').replace('　', '') + ('様' if client.name else '')))
-                _fax_lines = []
-                for _para in _fax_raw.splitlines():
-                    if not _para.strip():
-                        _fax_lines.append('')
+            _home_office = getattr(getattr(request.user, 'profile', None), 'home_care_office', None)
+
+            _fax_raw = (post.get('fax_message', '')
+                        .replace('{user_name}', creator)
+                        .replace('{office_name}', office_name)
+                        .replace('{client_name}', (client.name or '').replace(' ', '').replace('　', '') + ('様' if client.name else '')))
+            _fax_lines = []
+            for _para in _fax_raw.splitlines():
+                if not _para.strip():
+                    _fax_lines.append('')
+                else:
+                    while _para:
+                        _fax_lines.append(_para[:43])
+                        _para = _para[43:]
+            _fax_lines = (_fax_lines + [''] * 11)[:11]
+
+            offset = 0
+            for notice_idx, fax_title, ext_office in external_indices:
+                insert_pos = notice_idx + offset
+                fax_ws = _copy_ws_openpyxl(fax_template_wb.active, notice_wb, fax_title)
+                notice_wb._sheets.remove(fax_ws)
+                notice_wb._sheets.insert(insert_pos, fax_ws)
+
+                def _wf(ref, val, _ws=fax_ws):
+                    c = _ws[ref]
+                    if isinstance(c, _MC_notice):
+                        for mr in _ws.merged_cells.ranges:
+                            if ref in mr:
+                                _ws.cell(mr.min_row, mr.min_col).value = val
+                                return
                     else:
-                        while _para:
-                            _fax_lines.append(_para[:43])
-                            _para = _para[43:]
-                _fax_lines = (_fax_lines + [''] * 11)[:11]
+                        c.value = val
 
-                offset = 0
-                for notice_idx, fax_title, ext_office in external_indices:
-                    target = notice_book.sheets[notice_idx + offset]
-                    fax_sheet.copy(before=target)
-                    fax_ws = notice_book.sheets[notice_idx + offset]
-                    fax_ws.name = fax_title
+                person = post.get(f'selected_office_person_{ext_office.pk}', '')
+                _wf('I4',  'FAX送付状')
+                _wf('T11', creator)
+                _wf('T12', '')
+                _wf('J29', _home_office.name if _home_office else '')
+                _wf('F11', ext_office.name or '')
+                _wf('F12', person)
+                _wf('V10', created_date)
+                _wf('W11', creator)
+                if _home_office:
+                    _wf('J30', _home_office.company_name or '')
+                    _wf('J31', _home_office.name or '')
+                    _wf('K32', _home_office.postal_code or '')
+                    _wf('O32', _home_office.address or '')
+                    _wf('M33', _home_office.phone or '')
+                    _wf('M34', _home_office.fax or '')
+                for _i, _line in enumerate(_fax_lines):
+                    _wf(f'C{17 + _i}', _line)
 
-                    # 宛先：外部事業所
-                    person = post.get(f'selected_office_person_{ext_office.pk}', '')
-                    # タイトル・送付先・送付者・送付元
-                    fax_ws.range('I4').value  = 'FAX送付状'
-                    fax_ws.range('T11').value = creator
-                    fax_ws.range('T12').value = ''
-                    fax_ws.range('J29').value = _home_office.name if _home_office else ''
-                    # 宛先詳細
-                    fax_ws.range('F11').value = ext_office.name or ''
-                    fax_ws.range('F12').value = person
+                offset += 1
 
-                    # 書類情報
-                    fax_ws.range('V10').value = created_date
-                    fax_ws.range('W11').value = creator
-
-                    # 送信元：作成者の事業所
-                    if _home_office:
-                        fax_ws.range('J30').value = _home_office.company_name or ''
-                        fax_ws.range('J31').value = _home_office.name or ''
-                        fax_ws.range('K32').value = _home_office.postal_code or ''
-                        fax_ws.range('O32').value = _home_office.address or ''
-                        fax_ws.range('M33').value = _home_office.phone or ''
-                        fax_ws.range('M34').value = _home_office.fax or ''
-
-                    # FAX本文 C17〜C27
-                    for _i, _line in enumerate(_fax_lines):
-                        fax_ws.range(f'C{17 + _i}').value = _line
-
-                    offset += 1
-                fax_book.close()
-                notice_book.save()
-                notice_book.close()
-            finally:
-                app.quit()
+            notice_wb.save(notice_tmp)
 
         # ---- 全会議通知シートにテンプレートのprinterSettings.binを注入（片面印刷を保証） ----
         # openpyxlはprinterSettings.binを保存しないため、Excelがシステムデフォルト（両面）を使ってしまう
@@ -4971,7 +5246,6 @@ def _generate_ltc_withdrawal_excel_bytes(client, form_data):
 def _generate_kyotaku_selection_confirmation_excel_bytes(client, form_data):
     """居宅サービス事業所の選択に関する説明に係る確認書（XLSX）のバイト列を生成して返す"""
     import tempfile, shutil, re
-    import xlwings as xw
     from openpyxl.utils import column_index_from_string, get_column_letter
     from datetime import date as date_cls, datetime as dt_cls
 
@@ -5016,138 +5290,121 @@ def _generate_kyotaku_selection_confirmation_excel_bytes(client, form_data):
                 para = para[max_len:]
         return (lines + [''] * max_lines)[:max_lines]
 
-    app = xw.App(visible=False)
-    app.display_alerts = False
+    from openpyxl import load_workbook as _lw_ky
+    wb = _lw_ky(tmp_path)
+    ws = wb.active
+
+    def circle(start_ref, end_ref=None):
+        _highlight_selection(ws, start_ref, end_ref)
+
+    # (フォームフィールド名, プレフィックス, サービス選択○開始, 終了, 列オフセット)
+    ALL_SERVICES = [
+        ('service_houmon', 'houmon', 'J7',  'L7',   0),
+        ('service_tsusho', 'tsusho', 'AS7', 'AV7', 32),
+        ('service_fukushi','fukushi', 'CC7', 'CG7', 64),
+        ('service_chiiki', 'chiiki',  'DN7', 'DT7', 96),
+    ]
+    selected = [s for s in ALL_SERVICES if form_data.get(s[0]) == 'yes']
+
+    # ① 該当サービスに○
+    for field, prefix, cs, ce, offset in selected:
+        circle(cs, ce)
+
+    # ② 選択理由に○（各フォームに共通）
+    reason_map = {
+        'shinki':  ('T11', 'V11'),
+        'henkou':  ('X11', 'AA11'),
+        'koushin': ('AC11', 'AE11'),
+    }
+    rs, re_ = reason_map.get(form_data.get('selection_reason', 'shinki'), ('T11', 'V11'))
+    for field, prefix, cs, ce, offset in selected:
+        circle(shift(rs, offset), shift(re_, offset))
+
+    # ③ 選択理由テキスト（5行・各44文字以内）
+    lines = wrap_text(form_data.get('selection_reason_text', ''))
+    for field, prefix, cs, ce, offset in selected:
+        for i, line in enumerate(lines):
+            ws[shift(f'B{12 + i}', offset)].value = line
+
+    # ④ 事業所情報（5件分）
+    for field, prefix, cs, ce, offset in selected:
+        for i in range(1, 6):
+            row = 19 + i
+            ws[shift(f'D{row}', offset)].value = form_data.get(f'{prefix}_{i}_number', '')
+            ws[shift(f'I{row}', offset)].value = form_data.get(f'{prefix}_{i}_name', '')
+            ws[shift(f'U{row}', offset)].value = form_data.get(f'{prefix}_{i}_corp', '')
+
+    # ⑤ 事業所番号1番に○（初期固定、B20:C20の範囲）
+    init_circle = {
+        'houmon':  ('B20',  'C20'),
+        'tsusho':  ('AH20', 'AI20'),
+        'fukushi': ('BN20', 'BO20'),
+        'chiiki':  ('CT20', 'CU20'),
+    }
+    for field, prefix, cs, ce, offset in selected:
+        s, e = init_circle[prefix]
+        circle(s, e)
+
+    # ⑥ 説明に使用した資料に○
+    material_map = {
+        'shitei':   'B30',
+        'shicho':   'R30',
+        'kaigo':    'B31',
+        'pamphlet': 'O31',
+        'sonota':   'B32',
+    }
+    material = form_data.get('explanation_material', 'kaigo')
+    mat_cell = material_map.get(material, 'B31')
+    for field, prefix, cs, ce, offset in selected:
+        circle(shift(mat_cell, offset))
+
+    # その他の場合、内容をG32に反映
+    if material == 'sonota':
+        sonota_text = form_data.get('explanation_material_sonota', '')
+        for field, prefix, cs, ce, offset in selected:
+            ws[shift('G32', offset)].value = sonota_text
+
+    # ⑦ 説明日
+    explanation_date = to_wareki(form_data.get('withdrawal_date', ''))
+    for field, prefix, cs, ce, offset in selected:
+        ws[shift('G34', offset)].value = explanation_date
+        ws[shift('D42', offset)].value = explanation_date
+
+    # ⑧ 説明者
+    person = form_data.get('explanation_person', '')
+    for field, prefix, cs, ce, offset in selected:
+        ws[shift('O36', offset)].value = person
+
+    # ⑨ 利用者氏名（印字する場合）
+    if form_data.get('client_confirmation') == 'yes':
+        name = (client.name or '').replace('　', ' ')
+        for field, prefix, cs, ce, offset in selected:
+            ws[shift('I44', offset)].value = name
+
+    # ★ 未選択サービスのフォームを列削除（右→左の順で実行）
+    selected_fields = {s[0] for s in selected}
+    for field, start_col, count in [
+        ('service_chiiki',  97, 34),  # Form4: CS〜DZ
+        ('service_fukushi', 65, 32),  # Form3: BM〜CR
+        ('service_tsusho',  33, 32),  # Form2: AG〜BL
+        ('service_houmon',   1, 32),  # Form1: A〜AF
+    ]:
+        if field not in selected_fields:
+            ws.delete_cols(start_col, count)
+
+    import io as _io_ky
+    buf = _io_ky.BytesIO()
+    wb.save(buf)
     try:
-        wb = app.books.open(tmp_path, update_links=False, read_only=False)
-        ws = wb.sheets[0]
-
-        def circle(start_ref, end_ref=None):
-            c1 = ws[start_ref].api
-            if end_ref:
-                c2 = ws[end_ref].api
-                left, top = c1.Left, c1.Top
-                width = c2.Left + c2.Width - c1.Left
-                height = c1.Height
-            else:
-                left, top, width, height = c1.Left, c1.Top, c1.Width, c1.Height
-            shp = ws.api.Shapes.AddShape(9, left, top, width, height)
-            shp.Fill.Visible = False
-            shp.Line.Weight = 0.5
-            shp.Line.ForeColor.RGB = 0x000000
-
-        # (フォームフィールド名, プレフィックス, サービス選択○開始, 終了, 列オフセット)
-        ALL_SERVICES = [
-            ('service_houmon', 'houmon', 'J7',  'L7',   0),
-            ('service_tsusho', 'tsusho', 'AS7', 'AV7', 32),
-            ('service_fukushi','fukushi', 'CC7', 'CG7', 64),
-            ('service_chiiki', 'chiiki',  'DN7', 'DT7', 96),
-        ]
-        selected = [s for s in ALL_SERVICES if form_data.get(s[0]) == 'yes']
-
-        # ① 該当サービスに○
-        for field, prefix, cs, ce, offset in selected:
-            circle(cs, ce)
-
-        # ② 選択理由に○（各フォームに共通）
-        reason_map = {
-            'shinki':  ('T11', 'V11'),
-            'henkou':  ('X11', 'AA11'),
-            'koushin': ('AC11', 'AE11'),
-        }
-        rs, re_ = reason_map.get(form_data.get('selection_reason', 'shinki'), ('T11', 'V11'))
-        for field, prefix, cs, ce, offset in selected:
-            circle(shift(rs, offset), shift(re_, offset))
-
-        # ③ 選択理由テキスト（5行・各44文字以内）
-        lines = wrap_text(form_data.get('selection_reason_text', ''))
-        for field, prefix, cs, ce, offset in selected:
-            for i, line in enumerate(lines):
-                ws[shift(f'B{12 + i}', offset)].value = line
-
-        # ④ 事業所情報（5件分）
-        for field, prefix, cs, ce, offset in selected:
-            for i in range(1, 6):
-                row = 19 + i
-                ws[shift(f'D{row}', offset)].value = form_data.get(f'{prefix}_{i}_number', '')
-                ws[shift(f'I{row}', offset)].value = form_data.get(f'{prefix}_{i}_name', '')
-                ws[shift(f'U{row}', offset)].value = form_data.get(f'{prefix}_{i}_corp', '')
-
-        # ⑤ 事業所番号1番に○（初期固定、B20:C20の範囲）
-        init_circle = {
-            'houmon':  ('B20',  'C20'),
-            'tsusho':  ('AH20', 'AI20'),
-            'fukushi': ('BN20', 'BO20'),
-            'chiiki':  ('CT20', 'CU20'),
-        }
-        for field, prefix, cs, ce, offset in selected:
-            s, e = init_circle[prefix]
-            circle(s, e)
-
-        # ⑥ 説明に使用した資料に○
-        material_map = {
-            'shitei':   'B30',
-            'shicho':   'R30',
-            'kaigo':    'B31',
-            'pamphlet': 'O31',
-            'sonota':   'B32',
-        }
-        material = form_data.get('explanation_material', 'kaigo')
-        mat_cell = material_map.get(material, 'B31')
-        for field, prefix, cs, ce, offset in selected:
-            circle(shift(mat_cell, offset))
-
-        # その他の場合、内容をG32に反映
-        if material == 'sonota':
-            sonota_text = form_data.get('explanation_material_sonota', '')
-            for field, prefix, cs, ce, offset in selected:
-                ws[shift('G32', offset)].value = sonota_text
-
-        # ⑦ 説明日
-        explanation_date = to_wareki(form_data.get('withdrawal_date', ''))
-        for field, prefix, cs, ce, offset in selected:
-            ws[shift('G34', offset)].value = explanation_date
-            ws[shift('D42', offset)].value = explanation_date
-
-        # ⑧ 説明者
-        person = form_data.get('explanation_person', '')
-        for field, prefix, cs, ce, offset in selected:
-            ws[shift('O36', offset)].value = person
-
-        # ⑨ 利用者氏名（印字する場合）
-        if form_data.get('client_confirmation') == 'yes':
-            name = (client.name or '').replace('　', ' ')
-            for field, prefix, cs, ce, offset in selected:
-                ws[shift('I44', offset)].value = name
-
-        # ★ 未選択サービスのフォームを列削除（右→左の順で実行）
-        selected_fields = {s[0] for s in selected}
-        for field, start_col, count in [
-            ('service_chiiki',  97, 34),  # Form4: CS〜DZ
-            ('service_fukushi', 65, 32),  # Form3: BM〜CR
-            ('service_tsusho',  33, 32),  # Form2: AG〜BL
-            ('service_houmon',   1, 32),  # Form1: A〜AF
-        ]:
-            if field not in selected_fields:
-                s_col = get_column_letter(start_col)
-                e_col = get_column_letter(start_col + count - 1)
-                ws.api.Columns(f'{s_col}:{e_col}').Delete()
-
-        wb.save()
-        wb.close()
-    finally:
-        app.quit()
-
-    with open(tmp_path, 'rb') as f:
-        content = f.read()
-    os.unlink(tmp_path)
-    return content
+        os.unlink(tmp_path)
+    except Exception:
+        pass
+    return buf.getvalue()
 
 
 def _generate_ltc_doctor_change_excel_bytes(client, form_data):
     """認定申請主治医変更届出書（XLSX）のバイト列を生成して返す"""
     import tempfile, shutil
-    import xlwings as xw
     from datetime import date as date_cls, datetime as dt_cls
 
     template_path = os.path.join(
@@ -5176,89 +5433,72 @@ def _generate_ltc_doctor_change_excel_bytes(client, form_data):
         except Exception:
             return date_str
 
-    app = xw.App(visible=False)
-    app.display_alerts = False
+    from openpyxl import load_workbook as _lw_dc
+    wb = _lw_dc(tmp_path)
+    ws = wb.active
+
+    # 申請日
+    ws['J2'].value = to_wareki(form_data.get('application_date', ''))
+
+    # 申請者
+    submitter_type = form_data.get('submitter_type', 'office')
+    ws['I3'].value = form_data.get('office_postal_code', '')
+    ws['H4'].value = form_data.get('office_address', '')
+    if submitter_type == 'office':
+        office_name = form_data.get('office_name', '').strip()
+        staff_name  = form_data.get('staff_name_office', '').strip()
+        ws['H5'].value = f"{office_name}\n{staff_name}" if (office_name and staff_name) else (office_name or staff_name)
+        ws['H6'].value = form_data.get('relation', '介護支援専門員')
+    else:
+        ws['H5'].value = form_data.get('staff_name', '').strip()
+        ws['H6'].value = form_data.get('relation', '')
+
+    # 被保険者
+    ins = str(client.insurance_number).strip() if client.insurance_number else ''
+    ws['B11'].value = int(ins) if ins.isdigit() else ins
+    ws['B12'].value = client.name or form_data.get('client_name', '')
+
+    # 更新・区分変更申請日 / 申請区分
+    ws['B13'].value = to_wareki(form_data.get('original_application_date', ''))
+
+    def _circle_range(start_ref, end_ref=None):
+        _highlight_selection(ws, start_ref, end_ref)
+
+    app_type = form_data.get('application_type', '')
+    if app_type == '新規申請':
+        _circle_range('F14', 'G14')
+    elif app_type == '更新申請':
+        _circle_range('H14', 'I14')
+    elif app_type == '変更申請':
+        _circle_range('J14')
+
+    # 変更理由：選択肢に応じてセルを楕円で囲む
+    def _circle(cell_ref):
+        _circle_range(cell_ref)
+
+    reason = form_data.get('change_reason_type', '')
+    if reason == 'transferred':
+        _circle('B15')
+    elif reason == 'different_doctor':
+        _circle('B16')
+    elif reason == 'other':
+        _circle('B17')
+        ws['F17'].value = form_data.get('change_reason_other', '')
+
+    # 主治医変更（変更前・変更後）
+    ws['C20'].value = form_data.get('before_doctor_hospital', '')
+    ws['K20'].value = form_data.get('before_doctor_name', '')
+    ws['C21'].value = form_data.get('after_doctor_hospital', '')
+    ws['K21'].value = form_data.get('after_doctor_name', '')
+
+    import io as _io_dc
+    buf = _io_dc.BytesIO()
+    wb.save(buf)
     try:
-        wb = app.books.open(tmp_path, update_links=False, read_only=False)
-        ws = wb.sheets[0]
-
-        # 申請日
-        ws['J2'].value = to_wareki(form_data.get('application_date', ''))
-
-        # 申請者
-        submitter_type = form_data.get('submitter_type', 'office')
-        ws['I3'].value = form_data.get('office_postal_code', '')
-        ws['H4'].value = form_data.get('office_address', '')
-        if submitter_type == 'office':
-            office_name = form_data.get('office_name', '').strip()
-            staff_name  = form_data.get('staff_name_office', '').strip()
-            ws['H5'].value = f"{office_name}\n{staff_name}" if (office_name and staff_name) else (office_name or staff_name)
-            ws['H6'].value = form_data.get('relation', '介護支援専門員')
-        else:
-            ws['H5'].value = form_data.get('staff_name', '').strip()
-            ws['H6'].value = form_data.get('relation', '')
-
-        # 被保険者
-        ins = str(client.insurance_number).strip() if client.insurance_number else ''
-        ws['B11'].value = int(ins) if ins.isdigit() else ins
-        ws['B12'].value = client.name or form_data.get('client_name', '')
-
-        # 更新・区分変更申請日 / 申請区分
-        ws['B13'].value = to_wareki(form_data.get('original_application_date', ''))
-
-        def _circle_range(start_ref, end_ref=None):
-            c1 = ws[start_ref].api
-            if end_ref:
-                c2 = ws[end_ref].api
-                left, top = c1.Left, c1.Top
-                width = c2.Left + c2.Width - c1.Left
-                height = c1.Height
-            else:
-                left, top, width, height = c1.Left, c1.Top, c1.Width, c1.Height
-            shape = ws.api.Shapes.AddShape(9, left, top, width, height)
-            shape.Fill.Visible = False
-            shape.Line.Weight = 0.5
-            shape.Line.ForeColor.RGB = 0x000000
-
-        app_type = form_data.get('application_type', '')
-        if app_type == '新規申請':
-            _circle_range('F14', 'G14')
-        elif app_type == '更新申請':
-            _circle_range('H14', 'I14')
-        elif app_type == '変更申請':
-            _circle_range('J14')
-
-        # 変更理由：選択肢に応じてセルを楕円で囲む
-        def _circle(cell_ref):
-            _circle_range(cell_ref)
-
-        reason = form_data.get('change_reason_type', '')
-        if reason == 'transferred':
-            _circle('B15')
-        elif reason == 'different_doctor':
-            _circle('B16')
-        elif reason == 'other':
-            _circle('B17')
-            ws['F17'].value = form_data.get('change_reason_other', '')
-
-        # 主治医変更（変更前・変更後）
-        ws['C20'].value = form_data.get('before_doctor_hospital', '')
-        ws['K20'].value = form_data.get('before_doctor_name', '')
-        ws['C21'].value = form_data.get('after_doctor_hospital', '')
-        ws['K21'].value = form_data.get('after_doctor_name', '')
-
-        wb.save(tmp_path)
-        wb.close()
-
-        with open(tmp_path, 'rb') as f:
-            content = f.read()
-        return content
-    finally:
-        app.quit()
-        try:
-            os.unlink(tmp_path)
-        except Exception:
-            pass
+        os.unlink(tmp_path)
+    except Exception:
+        pass
+    return buf.getvalue()
 
 
 def _generate_ltc_address_change_excel_bytes(client, form_data):

@@ -32,4 +32,5 @@ urlpatterns = [
     path("memo/", views.view_memo, name="view_memo"),
     path("release-notes/", views.release_notes, name="release_notes"),
     path("facilities/", include("facilities.urls")),
+    path("public/", include("public.urls")),
 ]
