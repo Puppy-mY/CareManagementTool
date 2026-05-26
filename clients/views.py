@@ -4615,25 +4615,6 @@ def _copy_ws_openpyxl(src_ws, dst_wb, name, at_pos=None):
     return dst_ws
 
 
-def _highlight_selection(ws, start_ref, end_ref=None):
-    """選択済みセル範囲を黄色ハイライト（xlwings楕円描画の代替）"""
-    from openpyxl.styles import PatternFill
-    from openpyxl.utils import range_boundaries
-    from openpyxl.cell import MergedCell as _MC
-
-    if end_ref is None:
-        end_ref = start_ref
-    try:
-        min_col, min_row, max_col, max_row = range_boundaries(f'{start_ref}:{end_ref}')
-    except Exception:
-        return
-    fill = PatternFill(start_color='FFFF00', end_color='FFFF00', fill_type='solid')
-    for r in range(min_row, max_row + 1):
-        for c in range(min_col, max_col + 1):
-            cell = ws.cell(row=r, column=c)
-            if not isinstance(cell, _MC):
-                cell.fill = fill
-
 
 def _generate_fax_cover_sheet_standalone_bytes(request, home_office, user_full_name):
     """FAX送付状（スタンドアロン版）のXLSXバイト列を生成（全送付先タイプ対応）"""
@@ -5245,7 +5226,7 @@ def _generate_ltc_withdrawal_excel_bytes(client, form_data):
 
 def _generate_kyotaku_selection_confirmation_excel_bytes(client, form_data):
     """居宅サービス事業所の選択に関する説明に係る確認書（XLSX）のバイト列を生成して返す"""
-    import tempfile, shutil, re
+    import tempfile, shutil, re, io as _io_ky
     from openpyxl.utils import column_index_from_string, get_column_letter
     from datetime import date as date_cls, datetime as dt_cls
 
@@ -5275,7 +5256,6 @@ def _generate_kyotaku_selection_confirmation_excel_bytes(client, form_data):
             return date_str
 
     def shift(ref, col_offset):
-        """セル参照に列オフセットを加算 (例: 'T11' + 32 → 'AZ11')"""
         m = re.match(r'^([A-Z]+)(\d+)$', ref)
         if not m:
             return ref
@@ -5294,21 +5274,28 @@ def _generate_kyotaku_selection_confirmation_excel_bytes(client, form_data):
     wb = _lw_ky(tmp_path)
     ws = wb.active
 
-    def circle(start_ref, end_ref=None):
-        _highlight_selection(ws, start_ref, end_ref)
-
-    # (フォームフィールド名, プレフィックス, サービス選択○開始, 終了, 列オフセット)
+    # サービスブロック定義（列削除調整に使用）
     ALL_SERVICES = [
         ('service_houmon', 'houmon', 'J7',  'L7',   0),
         ('service_tsusho', 'tsusho', 'AS7', 'AV7', 32),
         ('service_fukushi','fukushi', 'CC7', 'CG7', 64),
         ('service_chiiki', 'chiiki',  'DN7', 'DT7', 96),
     ]
+    SERVICE_BLOCKS = [
+        ('service_houmon',  1, 32),
+        ('service_tsusho', 33, 32),
+        ('service_fukushi', 65, 32),
+        ('service_chiiki',  97, 34),
+    ]
     selected = [s for s in ALL_SERVICES if form_data.get(s[0]) == 'yes']
+    selected_fields = {s[0] for s in selected}
+
+    # 楕円を後処理で追加するためにリストに収集: (from_ref, to_ref_or_None, service_field)
+    pending_ovals = []
 
     # ① 該当サービスに○
     for field, prefix, cs, ce, offset in selected:
-        circle(cs, ce)
+        pending_ovals.append((cs, ce, field))
 
     # ② 選択理由に○（各フォームに共通）
     reason_map = {
@@ -5318,7 +5305,7 @@ def _generate_kyotaku_selection_confirmation_excel_bytes(client, form_data):
     }
     rs, re_ = reason_map.get(form_data.get('selection_reason', 'shinki'), ('T11', 'V11'))
     for field, prefix, cs, ce, offset in selected:
-        circle(shift(rs, offset), shift(re_, offset))
+        pending_ovals.append((shift(rs, offset), shift(re_, offset), field))
 
     # ③ 選択理由テキスト（5行・各44文字以内）
     lines = wrap_text(form_data.get('selection_reason_text', ''))
@@ -5334,7 +5321,7 @@ def _generate_kyotaku_selection_confirmation_excel_bytes(client, form_data):
             ws[shift(f'I{row}', offset)].value = form_data.get(f'{prefix}_{i}_name', '')
             ws[shift(f'U{row}', offset)].value = form_data.get(f'{prefix}_{i}_corp', '')
 
-    # ⑤ 事業所番号1番に○（初期固定、B20:C20の範囲）
+    # ⑤ 事業所番号1番に○
     init_circle = {
         'houmon':  ('B20',  'C20'),
         'tsusho':  ('AH20', 'AI20'),
@@ -5343,7 +5330,7 @@ def _generate_kyotaku_selection_confirmation_excel_bytes(client, form_data):
     }
     for field, prefix, cs, ce, offset in selected:
         s, e = init_circle[prefix]
-        circle(s, e)
+        pending_ovals.append((s, e, field))
 
     # ⑥ 説明に使用した資料に○
     material_map = {
@@ -5356,7 +5343,7 @@ def _generate_kyotaku_selection_confirmation_excel_bytes(client, form_data):
     material = form_data.get('explanation_material', 'kaigo')
     mat_cell = material_map.get(material, 'B31')
     for field, prefix, cs, ce, offset in selected:
-        circle(shift(mat_cell, offset))
+        pending_ovals.append((shift(mat_cell, offset), None, field))
 
     # その他の場合、内容をG32に反映
     if material == 'sonota':
@@ -5382,24 +5369,49 @@ def _generate_kyotaku_selection_confirmation_excel_bytes(client, form_data):
             ws[shift('I44', offset)].value = name
 
     # ★ 未選択サービスのフォームを列削除（右→左の順で実行）
-    selected_fields = {s[0] for s in selected}
-    for field, start_col, count in [
-        ('service_chiiki',  97, 34),  # Form4: CS〜DZ
-        ('service_fukushi', 65, 32),  # Form3: BM〜CR
-        ('service_tsusho',  33, 32),  # Form2: AG〜BL
-        ('service_houmon',   1, 32),  # Form1: A〜AF
-    ]:
+    for field, start_col, count in reversed(SERVICE_BLOCKS):
         if field not in selected_fields:
             ws.delete_cols(start_col, count)
 
-    import io as _io_ky
     buf = _io_ky.BytesIO()
     wb.save(buf)
+    content = buf.getvalue()
     try:
         os.unlink(tmp_path)
     except Exception:
         pass
-    return buf.getvalue()
+
+    # 列削除後のセル参照調整：そのサービスブロックより前にある未選択ブロック幅の合計を引く
+    def get_col_shift(service_field):
+        shift_amt = 0
+        for blk_field, _blk_start, blk_count in SERVICE_BLOCKS:
+            if blk_field == service_field:
+                break
+            if blk_field not in selected_fields:
+                shift_amt += blk_count
+        return shift_amt
+
+    def adjust_ref(ref, service_field):
+        if not ref:
+            return ref
+        m = re.match(r'^([A-Z]+)(\d+)$', ref)
+        if not m:
+            return ref
+        col_str, row_str = m.groups()
+        new_col = column_index_from_string(col_str) - get_col_shift(service_field)
+        return get_column_letter(new_col) + row_str
+
+    # XML楕円を追加（再交付申請書と同じ _add_oval_to_xlsx_bytes を使用）
+    for from_ref, to_ref, service_field in pending_ovals:
+        content = _add_oval_to_xlsx_bytes(
+            content,
+            adjust_ref(from_ref, service_field),
+            to_cell_ref=adjust_ref(to_ref, service_field) if to_ref else None,
+            padding=8000,
+            line_width_emu=9525,
+        )
+
+    return content
 
 
 def _generate_ltc_doctor_change_excel_bytes(client, form_data):
@@ -5461,28 +5473,24 @@ def _generate_ltc_doctor_change_excel_bytes(client, form_data):
     # 更新・区分変更申請日 / 申請区分
     ws['B13'].value = to_wareki(form_data.get('original_application_date', ''))
 
-    def _circle_range(start_ref, end_ref=None):
-        _highlight_selection(ws, start_ref, end_ref)
+    # 楕円を後処理で追加するためにリストに収集
+    pending_ovals = []
 
     app_type = form_data.get('application_type', '')
     if app_type == '新規申請':
-        _circle_range('F14', 'G14')
+        pending_ovals.append(('F14', 'G14'))
     elif app_type == '更新申請':
-        _circle_range('H14', 'I14')
+        pending_ovals.append(('H14', 'I14'))
     elif app_type == '変更申請':
-        _circle_range('J14')
-
-    # 変更理由：選択肢に応じてセルを楕円で囲む
-    def _circle(cell_ref):
-        _circle_range(cell_ref)
+        pending_ovals.append(('J14', None))
 
     reason = form_data.get('change_reason_type', '')
     if reason == 'transferred':
-        _circle('B15')
+        pending_ovals.append(('B15', None))
     elif reason == 'different_doctor':
-        _circle('B16')
+        pending_ovals.append(('B16', None))
     elif reason == 'other':
-        _circle('B17')
+        pending_ovals.append(('B17', None))
         ws['F17'].value = form_data.get('change_reason_other', '')
 
     # 主治医変更（変更前・変更後）
@@ -5494,11 +5502,19 @@ def _generate_ltc_doctor_change_excel_bytes(client, form_data):
     import io as _io_dc
     buf = _io_dc.BytesIO()
     wb.save(buf)
+    content = buf.getvalue()
     try:
         os.unlink(tmp_path)
     except Exception:
         pass
-    return buf.getvalue()
+
+    for from_ref, to_ref in pending_ovals:
+        content = _add_oval_to_xlsx_bytes(
+            content, from_ref, to_cell_ref=to_ref,
+            padding=8000, line_width_emu=9525,
+        )
+
+    return content
 
 
 def _generate_ltc_address_change_excel_bytes(client, form_data):
