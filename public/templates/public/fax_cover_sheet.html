@@ -159,6 +159,18 @@
                                 <label class="form-label fw-bold mb-2">送付元</label>
                                 <div class="row g-2" style="max-width:500px;">
                                     <div class="col-12">
+                                        <label class="form-label small text-muted mb-1">事業所名</label>
+                                        <input type="text" name="sender_office_name" id="sender_office_name" class="form-control" placeholder="例：〇〇居宅介護支援事業所" style="max-width:400px;">
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label small text-muted mb-1">電話番号</label>
+                                        <input type="text" name="sender_phone" id="sender_phone" class="form-control" placeholder="例：059-000-0000" style="max-width:220px;">
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label small text-muted mb-1">FAX番号</label>
+                                        <input type="text" name="sender_fax" id="sender_fax" class="form-control" placeholder="例：059-000-0001" style="max-width:220px;">
+                                    </div>
+                                    <div class="col-12">
                                         <label class="form-label small text-muted mb-1">担当者名</label>
                                         <input type="text" name="staff_name_office" id="staff_name_office" class="form-control" placeholder="例：山田 太郎" style="max-width:300px;">
                                     </div>
@@ -335,8 +347,40 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <div class="mb-2">
+                <div class="d-flex gap-2 mb-2">
                     <input type="text" id="homecare_modal_search" class="form-control" placeholder="事業所名で検索..." oninput="applyHomecareFilter()">
+                    <button type="button" class="btn btn-outline-success btn-sm text-nowrap" onclick="toggleHomecareAddForm()">
+                        <i class="fas fa-plus me-1"></i>新規追加
+                    </button>
+                </div>
+                <div id="homecare_add_form" class="card mb-3" style="display:none;">
+                    <div class="card-body py-2 px-3">
+                        <div class="row g-2">
+                            <div class="col-12">
+                                <label class="form-label small text-muted mb-0">事業所名 <span class="text-danger">*</span></label>
+                                <input type="text" id="homecare_new_name" class="form-control form-control-sm" placeholder="例：〇〇居宅介護支援事業所">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label small text-muted mb-0">フリガナ</label>
+                                <input type="text" id="homecare_new_furigana" class="form-control form-control-sm" placeholder="例：マルマル キョタク カイゴシエンジギョウショ">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small text-muted mb-0">電話番号</label>
+                                <input type="text" id="homecare_new_phone" class="form-control form-control-sm" placeholder="059-000-0000">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small text-muted mb-0">FAX番号</label>
+                                <input type="text" id="homecare_new_fax" class="form-control form-control-sm" placeholder="059-000-0001">
+                            </div>
+                            <div class="col-12 d-flex gap-2 mt-1">
+                                <button type="button" class="btn btn-success btn-sm" onclick="submitHomecareAdd()">
+                                    <i class="fas fa-save me-1"></i>登録
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="toggleHomecareAddForm()">キャンセル</button>
+                                <span id="homecare_add_msg" class="small text-muted align-self-center"></span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="table-responsive">
                     <table class="table table-hover table-bordered mb-0" style="font-size:0.9rem;">
@@ -368,7 +412,7 @@
                                     <i class="fas fa-fax me-1 text-muted" style="font-size:0.75rem;"></i><span class="text-muted">{{ h.fax|default:"―" }}</span>
                                 </td>
                             </tr>
-                            {% empty %}<tr><td colspan="3" class="text-center text-muted py-3">登録されていません</td></tr>{% endfor %}
+                            {% empty %}<tr id="homecare_empty_row"><td colspan="3" class="text-center text-muted py-3">登録されていません</td></tr>{% endfor %}
                         </tbody>
                     </table>
                 </div>
@@ -393,8 +437,51 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <div class="mb-2">
+                <div class="d-flex gap-2 mb-2">
                     <input type="text" id="supportcenter_modal_search" class="form-control" placeholder="センター名で検索..." oninput="applySupportcenterFilter()">
+                    <button type="button" class="btn btn-outline-success btn-sm text-nowrap" onclick="toggleSupportcenterAddForm()">
+                        <i class="fas fa-plus me-1"></i>新規追加
+                    </button>
+                </div>
+                <div id="supportcenter_add_form" class="card mb-3" style="display:none;">
+                    <div class="card-body py-2 px-3">
+                        <div class="row g-2">
+                            <div class="col-12">
+                                <label class="form-label small text-muted mb-0">センター名 <span class="text-danger">*</span></label>
+                                <input type="text" id="supportcenter_new_name" class="form-control form-control-sm" placeholder="例：〇〇地域包括支援センター">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small text-muted mb-0">電話番号</label>
+                                <input type="text" id="supportcenter_new_phone" class="form-control form-control-sm" placeholder="059-000-0000">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small text-muted mb-0">地域区分</label>
+                                <select id="supportcenter_new_area" class="form-select form-select-sm">
+                                    <option value="tsu">津市</option>
+                                    <option value="suzuka">鈴鹿市</option>
+                                    <option value="kameyama">亀山市</option>
+                                    <option value="matsusaka">松阪市</option>
+                                    <option value="ise">伊勢市</option>
+                                    <option value="yokkaichi">四日市市</option>
+                                    <option value="kuwana">桑名市</option>
+                                    <option value="iga">伊賀市</option>
+                                    <option value="nabari">名張市</option>
+                                    <option value="inabe">いなべ市</option>
+                                    <option value="kumano">熊野市</option>
+                                    <option value="owase">尾鷲市</option>
+                                    <option value="toba">鳥羽市</option>
+                                    <option value="other">その他</option>
+                                </select>
+                            </div>
+                            <div class="col-12 d-flex gap-2 mt-1">
+                                <button type="button" class="btn btn-success btn-sm" onclick="submitSupportcenterAdd()">
+                                    <i class="fas fa-save me-1"></i>登録
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="toggleSupportcenterAddForm()">キャンセル</button>
+                                <span id="supportcenter_add_msg" class="small text-muted align-self-center"></span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="table-responsive">
                     <table class="table table-hover table-bordered mb-0" style="font-size:0.9rem;">
@@ -424,7 +511,7 @@
                                     <i class="fas fa-phone me-1 text-muted" style="font-size:0.75rem;"></i>{{ s.phone|default:"―" }}
                                 </td>
                             </tr>
-                            {% empty %}<tr><td colspan="3" class="text-center text-muted py-3">登録されていません</td></tr>{% endfor %}
+                            {% empty %}<tr id="supportcenter_empty_row"><td colspan="3" class="text-center text-muted py-3">登録されていません</td></tr>{% endfor %}
                         </tbody>
                     </table>
                 </div>
@@ -703,5 +790,107 @@ function _updateSupportcenterInputs(){
 document.addEventListener('DOMContentLoaded',function(){
     document.querySelectorAll('.supportcenter-modal-check').forEach(function(c){c.addEventListener('change',_updateSupportcenterModalCount);});
 });
+
+// ==================== 居宅介護支援事業所 新規追加 ====================
+function toggleHomecareAddForm() {
+    var form = document.getElementById('homecare_add_form');
+    var visible = form.style.display !== 'none';
+    form.style.display = visible ? 'none' : '';
+    if (!visible) {
+        document.getElementById('homecare_new_name').value = '';
+        document.getElementById('homecare_new_furigana').value = '';
+        document.getElementById('homecare_new_phone').value = '';
+        document.getElementById('homecare_new_fax').value = '';
+        document.getElementById('homecare_add_msg').textContent = '';
+    }
+}
+
+function submitHomecareAdd() {
+    var name     = document.getElementById('homecare_new_name').value.trim();
+    var furigana = document.getElementById('homecare_new_furigana').value.trim();
+    var phone    = document.getElementById('homecare_new_phone').value.trim();
+    var fax      = document.getElementById('homecare_new_fax').value.trim();
+    var msg      = document.getElementById('homecare_add_msg');
+    if (!name) { msg.textContent = '事業所名を入力してください'; msg.style.color = '#dc3545'; return; }
+    msg.textContent = '登録中...'; msg.style.color = '#6c757d';
+
+    var csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    var fd = new FormData();
+    fd.append('name', name); fd.append('furigana', furigana);
+    fd.append('phone', phone); fd.append('fax', fax);
+    fd.append('csrfmiddlewaretoken', csrfToken);
+
+    fetch('{% url "public:homecare_office_create" %}', {method:'POST', body:fd})
+        .then(function(r){return r.json();})
+        .then(function(data) {
+            if (data.status !== 'ok') { msg.textContent = data.message || '登録に失敗しました'; msg.style.color = '#dc3545'; return; }
+            var tbody = document.getElementById('homecare_modal_list');
+            var emptyRow = document.getElementById('homecare_empty_row');
+            if (emptyRow) emptyRow.remove();
+            var uid = 'new_' + data.id;
+            var tr = document.createElement('tr');
+            tr.className = 'homecare-modal-item';
+            tr.style.cursor = 'pointer';
+            tr.dataset.name = data.name;
+            tr.setAttribute('onclick', 'toggleHomecareRow(this)');
+            tr.innerHTML = '<td class="text-center align-middle"><input class="form-check-input homecare-modal-check" type="checkbox" id="modal_homecare_'+data.id+'" value="'+data.id+'" data-id="'+data.id+'" data-name="'+_escHtml(data.name)+'" data-furigana="'+_escHtml(data.furigana||'')+'" data-phone="'+_escHtml(data.phone||'')+'" data-fax="'+_escHtml(data.fax||'')+'" onclick="event.stopPropagation()"></td>'
+                + '<td class="align-middle"><label for="modal_homecare_'+data.id+'" style="cursor:pointer;margin:0;" onclick="event.stopPropagation()">'+(data.furigana?'<small class="text-muted d-block" style="font-size:0.75rem;">'+_escHtml(data.furigana)+'</small>':'')+'<span class="fw-bold">'+_escHtml(data.name)+'</span></label></td>'
+                + '<td class="align-middle" style="font-size:0.85rem;white-space:nowrap;"><i class="fas fa-phone me-1 text-muted" style="font-size:0.75rem;"></i>'+(data.phone||'―')+'<br><i class="fas fa-fax me-1 text-muted" style="font-size:0.75rem;"></i><span class="text-muted">'+(data.fax||'―')+'</span></td>';
+            tbody.appendChild(tr);
+            tr.querySelector('.homecare-modal-check').addEventListener('change', _updateHomecareModalCount);
+            msg.textContent = '登録しました'; msg.style.color = '#198754';
+            setTimeout(function(){ toggleHomecareAddForm(); }, 800);
+        })
+        .catch(function(){ msg.textContent = '通信エラーが発生しました'; msg.style.color = '#dc3545'; });
+}
+
+// ==================== 地域包括支援センター 新規追加 ====================
+function toggleSupportcenterAddForm() {
+    var form = document.getElementById('supportcenter_add_form');
+    var visible = form.style.display !== 'none';
+    form.style.display = visible ? 'none' : '';
+    if (!visible) {
+        document.getElementById('supportcenter_new_name').value = '';
+        document.getElementById('supportcenter_new_phone').value = '';
+        document.getElementById('supportcenter_new_area').value = 'other';
+        document.getElementById('supportcenter_add_msg').textContent = '';
+    }
+}
+
+function submitSupportcenterAdd() {
+    var name  = document.getElementById('supportcenter_new_name').value.trim();
+    var phone = document.getElementById('supportcenter_new_phone').value.trim();
+    var area  = document.getElementById('supportcenter_new_area').value;
+    var msg   = document.getElementById('supportcenter_add_msg');
+    if (!name) { msg.textContent = 'センター名を入力してください'; msg.style.color = '#dc3545'; return; }
+    msg.textContent = '登録中...'; msg.style.color = '#6c757d';
+
+    var csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    var fd = new FormData();
+    fd.append('name', name); fd.append('phone', phone); fd.append('area', area);
+    fd.append('csrfmiddlewaretoken', csrfToken);
+
+    fetch('{% url "public:support_center_create" %}', {method:'POST', body:fd})
+        .then(function(r){return r.json();})
+        .then(function(data) {
+            if (data.status !== 'ok') { msg.textContent = data.message || '登録に失敗しました'; msg.style.color = '#dc3545'; return; }
+            var tbody = document.getElementById('supportcenter_modal_list');
+            var emptyRow = document.getElementById('supportcenter_empty_row');
+            if (emptyRow) emptyRow.remove();
+            var tr = document.createElement('tr');
+            tr.className = 'supportcenter-modal-item';
+            tr.style.cursor = 'pointer';
+            tr.dataset.name = data.name;
+            tr.setAttribute('onclick', 'toggleSupportcenterRow(this)');
+            tr.innerHTML = '<td class="text-center align-middle"><input class="form-check-input supportcenter-modal-check" type="checkbox" id="modal_supportcenter_'+data.id+'" value="'+data.id+'" data-id="'+data.id+'" data-name="'+_escHtml(data.name)+'" data-phone="'+_escHtml(data.phone||'')+'" onclick="event.stopPropagation()"></td>'
+                + '<td class="align-middle"><label for="modal_supportcenter_'+data.id+'" style="cursor:pointer;margin:0;" onclick="event.stopPropagation()"><span class="fw-bold">'+_escHtml(data.name)+'</span><small class="text-muted ms-1">('+_escHtml(data.area_label)+')</small></label></td>'
+                + '<td class="align-middle" style="font-size:0.85rem;white-space:nowrap;"><i class="fas fa-phone me-1 text-muted" style="font-size:0.75rem;"></i>'+(data.phone||'―')+'</td>';
+            tbody.appendChild(tr);
+            tr.querySelector('.supportcenter-modal-check').addEventListener('change', _updateSupportcenterModalCount);
+            msg.textContent = '登録しました'; msg.style.color = '#198754';
+            setTimeout(function(){ toggleSupportcenterAddForm(); }, 800);
+        })
+        .catch(function(){ msg.textContent = '通信エラーが発生しました'; msg.style.color = '#dc3545'; });
+}
 </script>
 {% endblock %}

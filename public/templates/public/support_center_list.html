@@ -1,0 +1,273 @@
+{% extends 'public/base_public.html' %}
+{% block title %}地域包括支援センター一覧{% endblock %}
+{% block nav_support %}active{% endblock %}
+
+{% block extra_style %}
+.btn-new-pastel { background-color:#fff; border:1px solid #6c757d; color:#6c757d; }
+.btn-new-pastel:hover,.btn-new-pastel:focus { background-color:#e3f2fd; border:1px solid #0d6efd; color:#0d6efd; }
+.btn-edit-pastel { background-color:#fff; border:1px solid #6c757d; color:#6c757d; }
+.btn-edit-pastel:hover,.btn-edit-pastel:focus { background-color:#ffe5cc; border:1px solid #fd7e14; color:#fd7e14; }
+.btn-delete-pastel { background-color:#fff; border:1px solid #6c757d; color:#6c757d; }
+.btn-delete-pastel:hover,.btn-delete-pastel:focus { background-color:#f8d7da; border:1px solid #dc3545; color:#dc3545; }
+{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0"><i class="fas fa-building me-2"></i>地域包括支援センター一覧</h4>
+    <button type="button" class="btn btn-new-pastel btn-sm" onclick="openCreateModal()">
+        <i class="fas fa-plus"></i> 新規登録
+    </button>
+</div>
+
+<div class="card mb-3">
+    <div class="card-body py-2">
+        <div class="row g-2">
+            <div class="col-md-7 col-9">
+                <input type="text" class="form-control form-control-sm" id="search"
+                       placeholder="事業所名・事業所番号・住所で検索" autocomplete="off">
+            </div>
+            <div class="col-md-4 col-2">
+                <select class="form-select form-select-sm" id="areaFilter">
+                    <option value="">地域：すべて</option>
+                    {% for value, label in area_choices %}
+                    <option value="{{ value }}">{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-1">
+                <button type="button" id="clearFilters" class="btn btn-outline-secondary btn-sm w-100" title="クリア">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if centers %}
+<div class="accordion" id="centerAccordion">
+    {% for center in centers %}
+    <div class="accordion-item center-item"
+         data-pk="{{ center.pk }}"
+         data-name="{{ center.name }}"
+         data-office-number="{{ center.office_number }}"
+         data-postal-code="{{ center.postal_code|default:'' }}"
+         data-address="{{ center.address|default:'' }}"
+         data-phone="{{ center.phone|default:'' }}"
+         data-area="{{ center.area }}">
+        <h2 class="accordion-header">
+            <button class="accordion-button collapsed py-2" type="button"
+                    data-bs-toggle="collapse" data-bs-target="#center{{ center.pk }}">
+                <span class="me-3">
+                    <span class="badge" style="font-size:0.7rem; min-width:60px; color:#000; border:1px solid #999;
+                        {% if center.area == 'tsu' %}background-color:#e3f2fd;
+                        {% elif center.area == 'matsusaka' or center.area == 'ise' %}background-color:#e8f5e8;
+                        {% elif center.area == 'suzuka' or center.area == 'kameyama' %}background-color:#fff3e0;
+                        {% elif center.area == 'kuwana' or center.area == 'yokkaichi' %}background-color:#f3e5f5;
+                        {% elif center.area == 'toba' or center.area == 'owase' or center.area == 'kumano' %}background-color:#ffebee;
+                        {% elif center.area == 'iga' or center.area == 'nabari' or center.area == 'inabe' %}background-color:#fff9c4;
+                        {% else %}background-color:#f5f5f5;{% endif %}">{{ center.get_area_display }}</span>
+                </span>
+                <span class="fw-bold">{{ center.name }}</span>
+            </button>
+        </h2>
+        <div id="center{{ center.pk }}" class="accordion-collapse collapse">
+            <div class="accordion-body py-3">
+                <div class="row">
+                    <div class="col-md-8">
+                        <table class="table table-sm table-bordered mb-0">
+                            <tr><th style="width:100px;" class="table-light">事業所番号</th><td>{{ center.office_number }}</td></tr>
+                            <tr><th class="table-light">郵便番号</th><td>{{ center.postal_code|default:"-" }}</td></tr>
+                            <tr><th class="table-light">所在地</th><td>{{ center.address|default:"-" }}</td></tr>
+                            <tr><th class="table-light">電話番号</th><td>{{ center.phone|default:"-" }}</td></tr>
+                        </table>
+                    </div>
+                    <div class="col-md-4 text-end mt-2 mt-md-0">
+                        <button type="button" class="btn btn-sm btn-edit-pastel me-1" onclick="openEditModal({{ center.pk }})">
+                            <i class="fas fa-edit"></i> 編集
+                        </button>
+                        <button type="button" class="btn btn-sm btn-delete-pastel" onclick="confirmDelete({{ center.pk }},'{{ center.name|escapejs }}')">
+                            <i class="fas fa-trash"></i> 削除
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card">
+    <div class="card-body text-center py-5">
+        <i class="fas fa-building fa-3x text-muted mb-3"></i>
+        <h5 class="text-muted">地域包括支援センターが登録されていません</h5>
+        <button type="button" class="btn btn-primary mt-3" onclick="openCreateModal()">
+            <i class="fas fa-plus"></i> 新規登録
+        </button>
+    </div>
+</div>
+{% endif %}
+
+<!-- 編集・新規登録モーダル -->
+<div class="modal fade" id="centerModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:620px;">
+        <div class="modal-content">
+            <form id="centerForm">
+                {% csrf_token %}
+                <input type="hidden" id="modal_pk" value="">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-building me-2"></i><span id="modalTitleText">センター編集</span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="modalError" class="alert alert-danger d-none"></div>
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label">センター名 <span class="text-danger">*</span></label>
+                            <input type="text" id="modal_name" name="name" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">事業所番号 <span class="text-danger">*</span></label>
+                            <input type="text" id="modal_office_number" name="office_number" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">地域区分</label>
+                            <select id="modal_area" name="area" class="form-select">
+                                {% for value, label in area_choices %}
+                                <option value="{{ value }}">{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">郵便番号</label>
+                            <div class="input-group">
+                                <span class="input-group-text">〒</span>
+                                <input type="text" id="modal_postal_code" name="postal_code" class="form-control" placeholder="000-0000">
+                            </div>
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label">住所</label>
+                            <input type="text" id="modal_address" name="address" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">電話番号</label>
+                            <input type="text" id="modal_phone" name="phone" class="form-control">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i>保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 削除確認モーダル -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h6 class="modal-title"><i class="fas fa-exclamation-triangle text-danger"></i> 削除確認</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body"><p class="mb-0"><strong id="deleteCenterName"></strong>を削除しますか？</p></div>
+            <div class="modal-footer py-2">
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                <button type="button" class="btn btn-sm btn-danger" id="deleteConfirmBtn">削除</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+let _deletePk = null;
+
+function openCreateModal() {
+    document.getElementById('modal_pk').value = '';
+    document.getElementById('modalTitleText').textContent = '新規登録';
+    document.getElementById('centerForm').reset();
+    document.getElementById('modalError').classList.add('d-none');
+    new bootstrap.Modal(document.getElementById('centerModal')).show();
+}
+
+function openEditModal(pk) {
+    const item = document.querySelector('.center-item[data-pk="' + pk + '"]');
+    document.getElementById('modal_pk').value = pk;
+    document.getElementById('modalTitleText').textContent = 'センター編集';
+    document.getElementById('modal_name').value = item.dataset.name || '';
+    document.getElementById('modal_office_number').value = item.dataset.officeNumber || '';
+    document.getElementById('modal_area').value = item.dataset.area || 'other';
+    document.getElementById('modal_postal_code').value = item.dataset.postalCode || '';
+    document.getElementById('modal_address').value = item.dataset.address || '';
+    document.getElementById('modal_phone').value = item.dataset.phone || '';
+    document.getElementById('modalError').classList.add('d-none');
+    new bootstrap.Modal(document.getElementById('centerModal')).show();
+}
+
+document.getElementById('centerForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const pk = document.getElementById('modal_pk').value;
+    const url = pk ? '/public/support-centers/' + pk + '/edit/' : '/public/support-centers/create/';
+    fetch(url, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrfToken },
+        body: new FormData(this),
+    })
+    .then(r => r.json())
+    .then(function(data) {
+        if (data.success) { location.reload(); }
+        else {
+            const el = document.getElementById('modalError');
+            el.textContent = data.error || 'エラーが発生しました。';
+            el.classList.remove('d-none');
+        }
+    });
+});
+
+function confirmDelete(pk, name) {
+    _deletePk = pk;
+    document.getElementById('deleteCenterName').textContent = name;
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+document.getElementById('deleteConfirmBtn').addEventListener('click', function() {
+    if (!_deletePk) return;
+    fetch('/public/support-centers/' + _deletePk + '/delete/', {
+        method: 'POST', headers: { 'X-CSRFToken': csrfToken },
+    })
+    .then(r => r.json())
+    .then(function(data) {
+        if (data.success) { location.reload(); }
+        else { alert(data.error); }
+    });
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('search');
+    const areaSelect = document.getElementById('areaFilter');
+    const clearButton = document.getElementById('clearFilters');
+    const items = document.querySelectorAll('.center-item');
+
+    function filter() {
+        const q = searchInput.value.toLowerCase();
+        const area = areaSelect.value;
+        items.forEach(function(item) {
+            const nameMatch = !q ||
+                (item.dataset.name || '').toLowerCase().includes(q) ||
+                (item.dataset.officeNumber || '').toLowerCase().includes(q) ||
+                (item.dataset.address || '').toLowerCase().includes(q);
+            const areaMatch = !area || item.dataset.area === area;
+            item.style.display = (nameMatch && areaMatch) ? '' : 'none';
+        });
+    }
+    if (searchInput) { searchInput.addEventListener('input', filter); searchInput.addEventListener('focus', function(){ this.select(); }); }
+    if (areaSelect) areaSelect.addEventListener('change', filter);
+    if (clearButton) { clearButton.addEventListener('click', function(){ searchInput.value=''; areaSelect.value=''; filter(); }); }
+});
+</script>
+{% endblock %}

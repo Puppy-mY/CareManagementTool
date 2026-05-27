@@ -55,6 +55,7 @@
         }
         body { display: flex; flex-direction: column; min-height: 100vh; }
         .pub-main { flex: 1; padding: 1.5rem 0 3rem; }
+        .pub-main .container { max-width: 960px; }
         {% block extra_style %}{% endblock %}
     </style>
     {% block extra_head %}{% endblock %}
@@ -77,11 +78,23 @@
         <a class="pub-nav-link {% block nav_facilities %}{% endblock %}" href="/public/facilities/">
             <i class="fas fa-search"></i>施設検索
         </a>
+        <a class="pub-nav-link {% block nav_homecare %}{% endblock %}" href="/public/homecare-offices/">
+            <i class="fas fa-home"></i>居宅介護支援
+        </a>
+        <a class="pub-nav-link {% block nav_support %}{% endblock %}" href="/public/support-centers/">
+            <i class="fas fa-building"></i>包括支援センター
+        </a>
+        <a class="pub-nav-link {% block nav_care_svc %}{% endblock %}" href="/public/care-service-offices/">
+            <i class="fas fa-clinic-medical"></i>介護サービス
+        </a>
+        <a class="pub-nav-link {% block nav_medical %}{% endblock %}" href="/public/medical-institutions/">
+            <i class="fas fa-stethoscope"></i>主治医・医療機関
+        </a>
     </div>
 </nav>
 
 <div class="pub-main">
-    <div class="container-fluid px-3">
+    <div class="container px-3">
         {% block content %}{% endblock %}
     </div>
 </div>
