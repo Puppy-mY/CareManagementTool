@@ -8,7 +8,31 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <style>
-        body { background: #f7fafc; font-family: 'Helvetica Neue', Arial, sans-serif; }
+        :root {
+            --primary-color: #4a5568;
+            --secondary-color: #718096;
+            --accent-color: #2d3748;
+            --background-color: #f7fafc;
+            --surface-color: #ffffff;
+            --border-color: #e2e8f0;
+            --text-primary: #2d3748;
+            --text-secondary: #4a5568;
+            --table-header-bg: #f8f9fa;
+        }
+        body { background: var(--background-color); font-family: 'Helvetica Neue', Arial, sans-serif; }
+        /* ボタン */
+        .btn-primary { background-color: var(--primary-color); border-color: var(--primary-color); }
+        .btn-primary:hover { background-color: var(--accent-color); border-color: var(--accent-color); }
+        /* テーブル */
+        .table th { background-color: var(--table-header-bg); color: var(--text-primary); border-color: var(--border-color); }
+        /* カード */
+        .card { border-color: var(--border-color); }
+        .card-header { background-color: var(--background-color); border-color: var(--border-color); }
+        /* フォームフォーカス */
+        .form-control:focus { border-color: var(--primary-color); box-shadow: 0 0 0 0.2rem rgba(74,85,104,0.25); }
+        .form-select:focus { border-color: var(--primary-color); box-shadow: 0 0 0 0.2rem rgba(74,85,104,0.25); }
+        /* フォームラベル */
+        .form-label { color: var(--text-primary); font-weight: 500; }
         .pub-navbar {
             background: linear-gradient(135deg, #4a5568 0%, #64748b 100%);
             padding: 12px 20px;
