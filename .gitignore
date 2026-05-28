@@ -36,6 +36,21 @@ Thumbs.db
 tmpclaude-*
 nul_backup.txt
 
+# Test screenshots / debug scripts
+test_*.png
+ss2_*.png
+ss3_*.png
+*.bak
+fix_*.py
+revert.py
+gen_*.py
+take_*.py
+test_compare_tables.py
+test_insurer_ellipsis.py
+test_prev_data.py
+test_office_btn.py
+fixtures/
+
 # Claude Code local settings
 .claude/
 
