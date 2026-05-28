@@ -33,6 +33,17 @@
         .form-select:focus { border-color: var(--primary-color); box-shadow: 0 0 0 0.2rem rgba(74,85,104,0.25); }
         /* フォームラベル */
         .form-label { color: var(--text-primary); font-weight: 500; }
+        /* チェックボックス：パステルブルー */
+        .form-check-input:checked {
+            background-color: #6eb3ff !important;
+            border-color: #6eb3ff !important;
+        }
+        /* 選択ボタン（負担割合など）：緑系 */
+        .btn-check:checked + .btn-outline-secondary {
+            background-color: #d1f2d1 !important;
+            border-color: #198754 !important;
+            color: #198754 !important;
+        }
         .pub-navbar {
             background: linear-gradient(135deg, #4a5568 0%, #64748b 100%);
             padding: 12px 20px;
