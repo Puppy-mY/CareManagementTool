@@ -16,6 +16,7 @@
 .office-furigana { font-size:0.75rem; color:#6c757d; display:block; }
 select.text-muted { color: #adb5bd !important; }
 select.text-muted option:not([value=""]) { color: #212529; }
+.svc-type-badge { display:inline-block;padding:2px 5px;border:1px solid #999;border-radius:4px;font-size:11px;color:#000;white-space:nowrap; }
 </style>
 
 <div class="row">
@@ -63,81 +64,82 @@ select.text-muted option:not([value=""]) { color: #212529; }
 <!-- 一覧 -->
 <div class="row">
   <div class="col-12">
-    {% if offices %}
-    <div class="accordion" id="officeAccordion">
-      {% for office in offices %}
-      <div class="accordion-item"
-           data-pk="{{ office.pk }}"
-           data-name="{{ office.name }}"
-           data-furigana="{{ office.furigana|default:'' }}"
-           data-office-number="{{ office.office_number|default:'' }}"
-           data-postal-code="{{ office.postal_code|default:'' }}"
-           data-address="{{ office.address|default:'' }}"
-           data-phone="{{ office.phone|default:'' }}"
-           data-fax="{{ office.fax|default:'' }}"
-           data-persons="{{ office.persons|join:',' }}"
-           data-service-type="{{ office.service_type|default:'' }}">
-        <h2 class="accordion-header">
-          <button class="accordion-button collapsed py-2" type="button"
-                  data-bs-toggle="collapse" data-bs-target="#office{{ office.pk }}">
-            <span>
-              <span class="office-furigana">{{ office.furigana|default:"　" }}</span>
-              <span class="fw-bold">{{ office.name }}</span>
-            </span>
-          </button>
-        </h2>
-        <div id="office{{ office.pk }}" class="accordion-collapse collapse" data-bs-parent="#officeAccordion">
-          <div class="accordion-body py-3">
-            <div class="row">
-              <div class="col-md-8">
-                <table class="table table-sm table-bordered mb-0">
-                  <tr>
-                    <th style="width:120px;" class="table-light">事業所名</th>
-                    <td>
-                      {% if office.furigana %}<span class="d-block" style="font-size:0.8rem;color:#6c757d;">{{ office.furigana }}</span>{% endif %}
-                      {{ office.name }}
-                    </td>
-                  </tr>
-                  <tr><th class="table-light">事業所種類</th><td>{{ office.service_type|svc_label|default:"-" }}</td></tr>
-                  <tr><th class="table-light">事業所番号</th><td>{{ office.office_number|default:"-" }}</td></tr>
-                  <tr><th class="table-light">郵便番号</th><td>{{ office.postal_code|default:"-" }}</td></tr>
-                  <tr><th class="table-light">住所</th><td>{{ office.address|default:"-" }}</td></tr>
-                  <tr><th class="table-light">電話番号</th><td>{{ office.phone|default:"-" }}</td></tr>
-                  <tr><th class="table-light">FAX番号</th><td>{{ office.fax|default:"-" }}</td></tr>
-                  <tr><th class="table-light">担当者名</th><td>{% if office.persons %}{% for p in office.persons %}{% if not forloop.first %}、{% endif %}{{ p }} 様{% endfor %}{% else %}-{% endif %}</td></tr>
-                </table>
-              </div>
-              <div class="col-md-4 text-end">
-                <button type="button" class="btn btn-sm btn-edit-pastel" onclick="openEditModal({{ office.pk }})">
-                  <i class="fas fa-edit"></i> 編集
-                </button>
-                <button type="button" class="btn btn-sm btn-delete-pastel" onclick="confirmDelete({{ office.pk }},'{{ office.name|escapejs }}')">
-                  <i class="fas fa-trash"></i> 削除
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      {% endfor %}
+    <div class="table-responsive">
+      <table class="table table-hover mb-0" style="font-size:0.9rem; border-top:1px solid #dee2e6;">
+        <thead class="align-middle">
+          <tr>
+            <th style="width:35%; background-color:#f5f5f5; font-size:0.8rem;">事業所名</th>
+            <th style="width:25%; background-color:#f5f5f5; font-size:0.8rem;">住所</th>
+            <th style="width:130px; background-color:#f5f5f5; font-size:0.8rem; white-space:nowrap;">担当者</th>
+            <th style="width:110px; background-color:#f5f5f5; font-size:0.8rem;">電話 / FAX</th>
+            <th style="width:70px; background-color:#f5f5f5;"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for office in offices %}
+          <tr class="office-row"
+              data-pk="{{ office.pk }}"
+              data-company-name="{{ office.company_name|default:'' }}"
+              data-name="{{ office.name }}"
+              data-furigana="{{ office.furigana|default:'' }}"
+              data-office-number="{{ office.office_number|default:'' }}"
+              data-postal-code="{{ office.postal_code|default:'' }}"
+              data-address="{{ office.address|default:'' }}"
+              data-phone="{{ office.phone|default:'' }}"
+              data-fax="{{ office.fax|default:'' }}"
+              data-persons="{{ office.persons|join:',' }}"
+              data-service-type="{{ office.service_type|default:'' }}">
+            <td class="align-middle">
+              <span class="svc-type-badge d-inline-block mb-1"
+                {% if office.service_type == '訪問介護' %}style="background-color:#fff9c4;font-size:10px;padding:1px 4px;"
+                {% elif office.service_type == '訪問看護' %}style="background-color:#ffd5d5;font-size:10px;padding:1px 4px;"
+                {% elif office.service_type == '訪問入浴介護' %}style="background-color:#d5eaf9;font-size:10px;padding:1px 4px;"
+                {% elif office.service_type == '訪問リハビリテーション' %}style="background-color:#ffebee;font-size:10px;padding:1px 4px;"
+                {% elif office.service_type == '通所介護' or office.service_type == '地域密着型通所介護' %}style="background-color:#e8f5e8;font-size:10px;padding:1px 4px;"
+                {% elif office.service_type == '通所リハビリテーション' %}style="background-color:#fff3e0;font-size:10px;padding:1px 4px;"
+                {% elif office.service_type == '福祉用具貸与' or office.service_type == '特定福祉用具販売' %}style="background-color:#f3e5f5;font-size:10px;padding:1px 4px;"
+                {% else %}style="background-color:#f5f5f5;font-size:10px;padding:1px 4px;"{% endif %}>
+                {{ office.service_type|svc_label|default:"―" }}
+              </span>
+              {% if office.company_name %}<small class="text-muted d-block" style="font-size:0.75rem;">{{ office.company_name }}</small>{% endif %}
+              <span class="fw-bold d-block">{{ office.name }}</span>
+            </td>
+            <td class="align-middle" style="font-size:0.85rem;">
+              {% if office.postal_code %}<small class="text-muted d-block" style="font-size:0.75rem;">〒{{ office.postal_code }}</small>{% endif %}
+              {{ office.address|default:"―" }}
+            </td>
+            <td class="align-middle" style="font-size:0.85rem;">
+              {% if office.persons %}
+                <div style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                  {{ office.persons.0 }} 様{% if office.persons|length > 1 %}<br>{{ office.persons.1 }} 様{% if office.persons|length > 2 %} 他{% endif %}{% endif %}
+                </div>
+              {% else %}<span class="text-muted">―</span>{% endif %}
+            </td>
+            <td class="align-middle" style="font-size:0.85rem; white-space:nowrap;">
+              <i class="fas fa-phone me-1 text-muted" style="font-size:0.75rem;"></i>{{ office.phone|default:"―" }}<br>
+              <i class="fas fa-fax me-1 text-muted" style="font-size:0.75rem;"></i><span class="text-muted">{{ office.fax|default:"―" }}</span>
+            </td>
+            <td class="align-middle text-center" style="white-space:nowrap;">
+              <button type="button" class="btn btn-sm btn-edit-pastel me-1 px-1 py-0" onclick="openEditModal({{ office.pk }})">
+                <i class="fas fa-edit"></i>
+              </button>
+              <button type="button" class="btn btn-sm btn-delete-pastel px-1 py-0" onclick="confirmDelete({{ office.pk }},'{{ office.name|escapejs }}')">
+                <i class="fas fa-trash"></i>
+              </button>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="text-center text-muted py-4">登録されていません</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
-    {% else %}
-    <div class="card">
-      <div class="card-body text-center py-5">
-        <i class="fas fa-clinic-medical fa-3x text-muted mb-3"></i>
-        <h5 class="text-muted">介護サービス事業所が登録されていません</h5>
-        <button type="button" class="btn btn-primary mt-3" onclick="openCreateModal()">
-          <i class="fas fa-plus"></i> 新規登録
-        </button>
-      </div>
-    </div>
-    {% endif %}
   </div>
 </div>
 
 <!-- 編集・新規登録モーダル -->
 <div class="modal fade" id="officeModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
-  <div class="modal-dialog modal-lg">
+  <div class="modal-dialog modal-dialog-centered" style="max-width:700px;">
     <div class="modal-content">
       <form id="officeForm">
         {% csrf_token %}
@@ -153,17 +155,21 @@ select.text-muted option:not([value=""]) { color: #212529; }
           <div class="row g-3">
             <div class="col-12">
               <label class="form-label">事業所種類 <span class="text-danger">*</span></label>
-              <select id="modal_service_type" name="service_type" class="form-select" onchange="this.classList.toggle('text-muted',!this.value)">
+              <select id="modal_service_type" name="service_type" class="form-select" style="max-width:280px;" onchange="this.classList.toggle('text-muted',!this.value)">
                 {% for key, label in service_type_choices %}
                 <option value="{{ key }}">{{ label }}</option>
                 {% endfor %}
               </select>
             </div>
             <div class="col-12">
+              <label class="form-label">会社・法人名</label>
+              <input type="text" id="modal_company_name" name="company_name" class="form-control" placeholder="例: 株式会社 〇〇">
+            </div>
+            <div class="col-md-6">
               <label class="form-label">事業所名 <span class="text-danger">*</span></label>
               <input type="text" id="modal_name" name="name" class="form-control" placeholder="例: 安濃津ろまん訪問介護" required>
             </div>
-            <div class="col-12">
+            <div class="col-md-6">
               <label class="form-label">フリガナ</label>
               <input type="text" id="modal_furigana" name="furigana" class="form-control" placeholder="例: アノツロマンホウモンカイゴ">
             </div>
@@ -171,11 +177,21 @@ select.text-muted option:not([value=""]) { color: #212529; }
               <label class="form-label">事業所番号</label>
               <input type="text" id="modal_office_number" name="office_number" class="form-control" placeholder="例: 2470600210">
             </div>
-            <div class="col-md-6">
-              <label class="form-label">郵便番号</label>
-              <input type="text" id="modal_postal_code" name="postal_code" class="form-control" placeholder="例: 514-0009">
-            </div>
             <div class="col-12">
+              <label class="form-label">担当者名</label>
+              <div id="modal_staff_container" class="row g-2 mb-1"></div>
+              <button type="button" class="btn btn-outline-secondary btn-sm" onclick="addStaffRow()">
+                <i class="fas fa-plus me-1"></i>担当者を追加
+              </button>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">郵便番号</label>
+              <div class="input-group">
+                <span class="input-group-text">〒</span>
+                <input type="text" id="modal_postal_code" name="postal_code" class="form-control" placeholder="000-0000">
+              </div>
+            </div>
+            <div class="col-md-8">
               <label class="form-label">住所</label>
               <input type="text" id="modal_address" name="address" class="form-control" placeholder="例: 三重県津市羽所町○○">
             </div>
@@ -186,13 +202,6 @@ select.text-muted option:not([value=""]) { color: #212529; }
             <div class="col-md-6">
               <label class="form-label">FAX番号 <span class="text-danger">*</span></label>
               <input type="text" id="modal_fax" name="fax" class="form-control" placeholder="例: 059-123-4568" required>
-            </div>
-            <div class="col-12">
-              <label class="form-label">担当者名</label>
-              <div id="persons_container"></div>
-              <button type="button" class="btn btn-outline-secondary btn-sm mt-1" onclick="addPersonRow()">
-                <i class="fas fa-plus me-1"></i>担当者を追加
-              </button>
             </div>
           </div>
         </div>
@@ -230,15 +239,16 @@ select.text-muted option:not([value=""]) { color: #212529; }
 <script>
 const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
 
-function addPersonRow(value) {
-    var container = document.getElementById('persons_container');
-    var div = document.createElement('div');
-    div.className = 'd-flex gap-2 mb-2';
-    div.innerHTML = '<input type="text" name="person_name" class="form-control" placeholder="例: 山田　太郎" value="' + (value || '') + '">'
-                  + '<button type="button" class="btn btn-outline-danger btn-sm px-2" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>';
-    container.appendChild(div);
+function addStaffRow(value) {
+    var c = document.getElementById('modal_staff_container');
+    var col = document.createElement('div');
+    col.className = 'col-6 staff-row';
+    col.innerHTML = '<div class="d-flex align-items-center gap-1">'
+        + '<input type="text" name="staff_names[]" class="form-control form-control-sm" placeholder="例: 山田 太郎" value="' + (value ? value.replace(/"/g,'&quot;') : '') + '">'
+        + '<button type="button" class="btn-close" style="font-size:0.7rem;" onclick="this.closest(\'.staff-row\').remove()"></button>'
+        + '</div>';
+    c.appendChild(col);
 }
-
 
 function _syncSvcTypeColor() {
     var sel = document.getElementById('modal_service_type');
@@ -250,16 +260,16 @@ function openCreateModal() {
     document.getElementById('modalTitleText').textContent = '新規登録';
     document.getElementById('officeForm').reset();
     document.getElementById('modalError').classList.add('d-none');
-    document.getElementById('persons_container').innerHTML = '';
+    document.getElementById('modal_staff_container').innerHTML = '';
     _syncSvcTypeColor();
-    addPersonRow();
     new bootstrap.Modal(document.getElementById('officeModal')).show();
 }
 
 function openEditModal(pk) {
-    const item = document.querySelector(`.accordion-item[data-pk="${pk}"]`);
+    const item = document.querySelector(`.office-row[data-pk="${pk}"]`);
     document.getElementById('modal_pk').value = pk;
     document.getElementById('modalTitleText').textContent = '事業所編集';
+    document.getElementById('modal_company_name').value = item.dataset.companyName || '';
     document.getElementById('modal_name').value = item.dataset.name || '';
     document.getElementById('modal_furigana').value = item.dataset.furigana || '';
     document.getElementById('modal_office_number').value = item.dataset.officeNumber || '';
@@ -270,10 +280,10 @@ function openEditModal(pk) {
     document.getElementById('modal_service_type').value = item.dataset.serviceType || '';
     _syncSvcTypeColor();
     document.getElementById('modalError').classList.add('d-none');
-    document.getElementById('persons_container').innerHTML = '';
+    document.getElementById('modal_staff_container').innerHTML = '';
     const persons = item.dataset.persons ? item.dataset.persons.split(',').filter(Boolean) : [];
-    if (persons.length === 0) { addPersonRow(); }
-    else { persons.forEach(function(p) { addPersonRow(p); }); }
+    if (persons.length === 0) { addStaffRow(); }
+    else { persons.forEach(function(p) { addStaffRow(p); }); }
     new bootstrap.Modal(document.getElementById('officeModal')).show();
 }
 
@@ -333,7 +343,7 @@ document.getElementById('deleteConfirmBtn').addEventListener('click', function()
 document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.getElementById('search');
     const clearButton = document.getElementById('clearFilters');
-    const items = document.querySelectorAll('.accordion-item');
+    const items = document.querySelectorAll('.office-row');
 
     function filter() {
         const q = searchInput.value.toLowerCase();

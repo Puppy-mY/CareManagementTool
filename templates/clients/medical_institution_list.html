@@ -11,11 +11,8 @@
 .btn-edit-pastel:hover,.btn-edit-pastel:focus    { background-color:#ffe5cc; border:1px solid #fd7e14; color:#fd7e14; }
 .btn-delete-pastel  { background-color:#ffffff; border:1px solid #6c757d; color:#6c757d; }
 .btn-delete-pastel:hover,.btn-delete-pastel:focus { background-color:#f8d7da; border:1px solid #dc3545; color:#dc3545; }
-#instTable.table-bordered th,
-#instTable.table-bordered td { border-left: none; border-right: none; }
 #instTable td,
 #instTable th { vertical-align: middle; }
-#instTable tbody tr:hover { background-color: rgba(0,0,0,0.04); }
 </style>
 
 <div class="d-flex justify-content-between align-items-center mb-1">
@@ -42,13 +39,13 @@
 
 <!-- 一覧テーブル -->
 <div class="table-responsive">
-    <table id="instTable" class="table table-hover table-bordered mb-0" style="font-size:0.9rem;">
-        <thead>
+    <table id="instTable" class="table table-hover mb-0" style="font-size:0.9rem; border-top:1px solid #dee2e6;">
+        <thead class="align-middle">
             <tr>
-                <th style="background-color:#f5f5f5;">医療機関名</th>
-                <th style="width:120px; background-color:#f5f5f5;">医師氏名</th>
-                <th style="width:180px; background-color:#f5f5f5;">住所</th>
-                <th style="width:120px; background-color:#f5f5f5;">電話 / FAX</th>
+                <th style="width:35%; background-color:#f5f5f5; font-size:0.8rem;">医療機関名</th>
+                <th style="width:25%; background-color:#f5f5f5; font-size:0.8rem;">住所</th>
+                <th style="width:130px; background-color:#f5f5f5; font-size:0.8rem; white-space:nowrap;">医師名</th>
+                <th style="width:110px; background-color:#f5f5f5; font-size:0.8rem;">電話 / FAX</th>
                 <th style="width:60px; background-color:#f5f5f5;"></th>
             </tr>
         </thead>
@@ -73,24 +70,24 @@
                     <span class="fw-bold">{{ inst.hospital_name }}</span>
                 </td>
                 <td class="align-middle" style="font-size:0.85rem;">
-                    {% if inst.doctors %}
-                        {% for d in inst.doctors|slice:":2" %}{{ d }} 先生{% if not forloop.last %}<br>{% endif %}{% endfor %}{% if inst.doctors|length > 2 %} <span class="text-muted">他</span>{% endif %}
-                    {% else %}―{% endif %}
-                </td>
-                <td class="align-middle" style="font-size:0.85rem;">
-                    {% if inst.postal_code %}<small class="text-muted d-block" style="font-size:0.75rem;">〒{{ inst.postal_code }}</small>{% endif %}
+                    {% if inst.postal_code %}<small class="text-muted d-block" style="font-size:0.8rem;">〒{{ inst.postal_code }}</small>{% endif %}
                     {{ inst.address|default:"―" }}
                 </td>
-                <td class="align-middle" style="font-size:0.85rem; white-space:nowrap;">
-                    <i class="fas fa-phone me-1 text-muted" style="font-size:0.75rem;"></i>{{ inst.phone|default:"―" }}<br>
-                    <i class="fas fa-fax me-1 text-muted" style="font-size:0.75rem;"></i><span class="text-muted">{{ inst.fax|default:"―" }}</span>
+                <td class="align-middle" style="font-size:0.78rem; white-space:nowrap;">
+                    {% if inst.doctors %}
+                        {{ inst.doctors.0 }} 先生{% if inst.doctors|length > 1 %}<br>{{ inst.doctors.1 }} 先生{% if inst.doctors|length > 2 %} 他{% endif %}{% endif %}
+                    {% else %}―{% endif %}
                 </td>
-                <td class="align-middle text-end" style="white-space:nowrap;">
-                    <button class="btn btn-sm btn-edit-pastel me-1 px-1"
+                <td class="align-middle" style="font-size:0.85rem; white-space:nowrap;">
+                    <i class="fas fa-phone me-1 text-muted" style="font-size:0.8rem;"></i>{{ inst.phone|default:"―" }}<br>
+                    <i class="fas fa-fax me-1 text-muted" style="font-size:0.8rem;"></i><span class="text-muted">{{ inst.fax|default:"―" }}</span>
+                </td>
+                <td class="align-middle text-center" style="white-space:nowrap;">
+                    <button class="btn btn-sm btn-edit-pastel me-1 px-1 py-0"
                             onclick="openEditModal({{ inst.pk }})">
                         <i class="fas fa-edit"></i>
                     </button>
-                    <button class="btn btn-sm btn-delete-pastel px-1"
+                    <button class="btn btn-sm btn-delete-pastel px-1 py-0"
                             onclick="confirmDelete({{ inst.pk }},'{{ inst.hospital_name|escapejs }}')">
                         <i class="fas fa-trash"></i>
                     </button>
@@ -218,7 +215,6 @@ function openCreateModal() {
     document.getElementById('instForm').reset();
     document.getElementById('modalError').classList.add('d-none');
     document.getElementById('doctors_container').innerHTML = '';
-    addDoctorRow();
     bootstrap.Modal.getOrCreateInstance(document.getElementById('instModal')).show();
 }
 
@@ -236,8 +232,7 @@ function openEditModal(pk) {
     document.getElementById('modalError').classList.add('d-none');
     document.getElementById('doctors_container').innerHTML = '';
     const doctors = row.dataset.doctors ? row.dataset.doctors.split(',').filter(Boolean) : [];
-    if (doctors.length === 0) { addDoctorRow(); }
-    else { doctors.forEach(function(d) { addDoctorRow(d); }); }
+    doctors.forEach(function(d) { addDoctorRow(d); });
     bootstrap.Modal.getOrCreateInstance(document.getElementById('instModal')).show();
 }
 

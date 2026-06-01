@@ -86,12 +86,12 @@
         {% if offices %}
         <div class="table-responsive">
             <table class="table table-hover table-bordered mb-0" id="officeTable" style="font-size:0.9rem;">
-                <thead>
+                <thead class="align-middle">
                     <tr>
-                        <th style="width:35%; background-color:#f5f5f5;">事業所名</th>
-                        <th style="width:25%; background-color:#f5f5f5;">住所</th>
-                        <th style="width:110px; background-color:#f5f5f5;">電話 / FAX</th>
+                        <th style="width:35%; background-color:#f5f5f5; font-size:0.8rem;">事業所名</th>
+                        <th style="width:25%; background-color:#f5f5f5; font-size:0.8rem;">住所</th>
                         <th style="width:130px; background-color:#f5f5f5; font-size:0.8rem; white-space:nowrap;">管理者 / 担当者</th>
+                        <th style="width:110px; background-color:#f5f5f5; font-size:0.8rem;">電話 / FAX</th>
                         <th style="width:60px; background-color:#f5f5f5;"></th>
                     </tr>
                 </thead>
@@ -117,26 +117,26 @@
                             {% if not office.is_active %}<span class="badge bg-secondary" style="font-size:0.7rem;">無効</span>{% endif %}
                         </td>
                         <td class="align-middle" style="font-size:0.85rem;">
-                            {% if office.postal_code %}<small class="text-muted d-block" style="font-size:0.75rem;">〒{{ office.postal_code }}</small>{% endif %}
+                            {% if office.postal_code %}<small class="text-muted d-block" style="font-size:0.8rem;">〒{{ office.postal_code }}</small>{% endif %}
                             {{ office.address|default:"―" }}
                         </td>
-                        <td class="align-middle" style="font-size:0.85rem; white-space:nowrap;">
-                            <i class="fas fa-phone me-1 text-muted" style="font-size:0.75rem;"></i>{{ office.phone|default:"―" }}<br>
-                            <i class="fas fa-fax me-1 text-muted" style="font-size:0.75rem;"></i><span class="text-muted">{{ office.fax|default:"―" }}</span>
-                        </td>
-                        <td class="align-middle" style="max-width:130px; overflow:hidden;">
-                            <div style="font-size:0.85rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ office.manager_name|default:"―" }}</div>
+                        <td class="align-middle" style="font-size:0.78rem; overflow:hidden;">
+                            <div style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ office.manager_name|default:"―" }}</div>
                             {% if office.all_staff_names %}
-                            <div class="text-muted mt-1" style="font-size:0.82rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                            <div class="text-muted mt-1" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
                                 {{ office.all_staff_names.0 }}{% if office.all_staff_names|length > 1 %} 他{% endif %}
                             </div>
                             {% endif %}
                         </td>
+                        <td class="align-middle" style="font-size:0.85rem; white-space:nowrap;">
+                            <i class="fas fa-phone me-1 text-muted" style="font-size:0.8rem;"></i>{{ office.phone|default:"―" }}<br>
+                            <i class="fas fa-fax me-1 text-muted" style="font-size:0.8rem;"></i><span class="text-muted">{{ office.fax|default:"―" }}</span>
+                        </td>
                         <td class="align-middle text-center" style="white-space:nowrap;">
-                            <button type="button" class="btn btn-sm btn-edit-pastel me-1 px-1" onclick="openEditModal({{ office.pk }})">
+                            <button type="button" class="btn btn-sm btn-edit-pastel me-1 px-1 py-0" onclick="openEditModal({{ office.pk }})">
                                 <i class="fas fa-edit"></i>
                             </button>
-                            <button type="button" class="btn btn-sm btn-delete-pastel px-1" onclick="confirmDelete({{ office.pk }}, '{{ office.name|escapejs }}')">
+                            <button type="button" class="btn btn-sm btn-delete-pastel px-1 py-0" onclick="confirmDelete({{ office.pk }}, '{{ office.name|escapejs }}')">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </td>
@@ -177,7 +177,7 @@
                     <div id="modalError" class="alert alert-danger d-none"></div>
                     <div class="row g-3">
                         <div class="col-12">
-                            <label class="form-label">会社名</label>
+                            <label class="form-label">会社・法人名</label>
                             <input type="text" id="modal_company_name" name="company_name" class="form-control"
                                    placeholder="例: 株式会社 アールビーサポート">
                         </div>

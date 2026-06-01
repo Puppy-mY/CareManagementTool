@@ -282,6 +282,8 @@ def pub_support_center_create(request):
         postal_code=request.POST.get('postal_code', '').strip(),
         address=request.POST.get('address', '').strip(),
         phone=request.POST.get('phone', '').strip(),
+        fax=request.POST.get('fax', '').strip(),
+        persons=[p.strip() for p in request.POST.getlist('staff_names[]') if p.strip()],
         area=request.POST.get('area', 'other'),
         is_active=True,
     )
@@ -302,6 +304,8 @@ def pub_support_center_edit(request, pk):
     center.postal_code = request.POST.get('postal_code', '').strip()
     center.address = request.POST.get('address', '').strip()
     center.phone = request.POST.get('phone', '').strip()
+    center.fax = request.POST.get('fax', '').strip()
+    center.persons = [p.strip() for p in request.POST.getlist('staff_names[]') if p.strip()]
     center.area = request.POST.get('area', 'other')
     center.save()
     return JsonResponse({'success': True})
@@ -339,6 +343,7 @@ def pub_care_service_office_create(request):
     if not phone or not fax:
         return JsonResponse({'success': False, 'error': '電話番号とFAX番号は必須です。'})
     office = CareServiceOffice.objects.create(
+        company_name=request.POST.get('company_name', '').strip(),
         name=name,
         furigana=request.POST.get('furigana', '').strip(),
         service_type=service_type,
@@ -348,7 +353,7 @@ def pub_care_service_office_create(request):
         address=request.POST.get('address', '').strip(),
         phone=phone,
         fax=fax,
-        persons=[p.strip().replace('　', ' ') for p in request.POST.getlist('person_name') if p.strip()],
+        persons=[p.strip().replace('　', ' ') for p in request.POST.getlist('staff_names[]') if p.strip()],
     )
     return JsonResponse({'success': True, 'id': office.pk})
 
@@ -366,6 +371,7 @@ def pub_care_service_office_update(request, pk):
         return JsonResponse({'success': False, 'error': '事業所種類を選択してください。'})
     if not phone or not fax:
         return JsonResponse({'success': False, 'error': '電話番号とFAX番号は必須です。'})
+    office.company_name = request.POST.get('company_name', office.company_name).strip()
     office.name = name
     office.furigana = request.POST.get('furigana', office.furigana).strip()
     office.service_type = service_type
@@ -374,7 +380,7 @@ def pub_care_service_office_update(request, pk):
     office.address = request.POST.get('address', office.address).strip()
     office.phone = phone
     office.fax = fax
-    office.persons = [p.strip().replace('　', ' ') for p in request.POST.getlist('person_name') if p.strip()]
+    office.persons = [p.strip().replace('　', ' ') for p in request.POST.getlist('staff_names[]') if p.strip()]
     office.save()
     return JsonResponse({'success': True})
 

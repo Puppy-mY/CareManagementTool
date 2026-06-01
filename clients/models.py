@@ -823,6 +823,8 @@ class RegionalSupportCenter(models.Model):
     postal_code = models.CharField('郵便番号', max_length=10, blank=True)
     address = models.CharField('所在地', max_length=200, blank=True)
     phone = models.CharField('電話番号', max_length=20, blank=True)
+    fax = models.CharField('FAX番号', max_length=20, blank=True)
+    persons = models.JSONField('担当者名', default=list, blank=True)
     area = models.CharField('地域区分', max_length=20, choices=AREA_CHOICES, default='other')
     is_active = models.BooleanField('有効', default=True)
     created_at = models.DateTimeField('作成日時', auto_now_add=True)
@@ -900,6 +902,7 @@ class CareServiceOffice(models.Model):
         ('internal', '内部'),
     ]
 
+    company_name = models.CharField('会社名・法人名', max_length=100, blank=True)
     name         = models.CharField('事業所名', max_length=100)
     furigana     = models.CharField('フリガナ', max_length=100, blank=True)
     service_type = models.CharField('事業所種類', max_length=50, blank=True,

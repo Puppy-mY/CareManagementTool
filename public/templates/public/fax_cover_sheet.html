@@ -5,8 +5,7 @@
 {% block nav_fax %}active{% endblock %}
 
 {% block extra_style %}
-.svc-type-badge { display:inline-block;padding:3px 7px;border:1px solid #999999;border-radius:4px;font-size:12px;color:#000000;white-space:nowrap; }
-#selected_all_table_wrap .svc-type-badge { padding:2px 5px;font-size:11px; }
+.svc-type-badge { display:inline-block;padding:2px 5px;border:1px solid #999999;border-radius:4px;font-size:11px;color:#000000;white-space:nowrap; }
 #officeSelectModal .table-bordered th, #officeSelectModal .table-bordered td,
 #medicalSelectModal .table-bordered th, #medicalSelectModal .table-bordered td,
 #homecareSelectModal .table-bordered th, #homecareSelectModal .table-bordered td,
@@ -317,10 +316,10 @@
                     <table class="table table-hover table-bordered mb-0" style="font-size:0.9rem;">
                         <thead><tr>
                             <th style="width:40px;background-color:#f5f5f5;"></th>
+                            <th style="width:90px;background-color:#f5f5f5;">種別</th>
                             <th style="background-color:#f5f5f5;">事業所名</th>
-                            <th style="width:110px;background-color:#f5f5f5;">業種</th>
-                            <th style="width:130px;background-color:#f5f5f5;">電話 / FAX</th>
-                            <th style="width:100px;background-color:#f5f5f5;">担当者</th>
+                            <th style="width:150px;background-color:#f5f5f5;">担当者</th>
+                            <th style="width:115px;background-color:#f5f5f5;">電話 / FAX</th>
                         </tr></thead>
                         <tbody id="office_modal_list">
                             {% for o in care_offices %}
@@ -333,22 +332,22 @@
                                            data-persons="{{ o.persons|join:',' }}" onclick="event.stopPropagation()">
                                 </td>
                                 <td class="align-middle">
+                                    {% if o.service_type %}
+                                    <span class="svc-type-badge" {% if o.service_type == '訪問介護' %}style="background-color:#fff9c4;"{% elif o.service_type == '訪問看護' %}style="background-color:#ffd5d5;"{% elif o.service_type == '訪問入浴介護' %}style="background-color:#d5eaf9;"{% elif o.service_type == '訪問リハビリテーション' %}style="background-color:#ffebee;"{% elif o.service_type == '通所介護' or o.service_type == '地域密着型通所介護' %}style="background-color:#e8f5e8;"{% elif o.service_type == '通所リハビリテーション' %}style="background-color:#fff3e0;"{% elif o.service_type == '福祉用具貸与' or o.service_type == '特定福祉用具販売' %}style="background-color:#f3e5f5;"{% else %}style="background-color:#f5f5f5;"{% endif %}>{{ o.service_type|svc_label }}</span>
+                                    {% else %}<span class="text-muted">―</span>{% endif %}
+                                </td>
+                                <td class="align-middle">
                                     <label for="modal_office_{{ o.id }}" style="cursor:pointer;margin:0;" onclick="event.stopPropagation()">
                                         {% if o.furigana %}<small class="text-muted d-block" style="font-size:0.75rem;">{{ o.furigana }}</small>{% endif %}
                                         <span class="fw-bold">{{ o.name }}</span>
                                     </label>
                                 </td>
-                                <td class="align-middle">
-                                    {% if o.service_type %}
-                                    <span class="svc-type-badge" {% if o.service_type == '訪問介護' %}style="background-color:#fff9c4;"{% elif o.service_type == '訪問看護' %}style="background-color:#ffd5d5;"{% elif o.service_type == '通所介護' or o.service_type == '地域密着型通所介護' %}style="background-color:#e8f5e8;"{% elif o.service_type == '福祉用具貸与' %}style="background-color:#f3e5f5;"{% elif o.service_type == '訪問リハビリテーション' %}style="background-color:#ffebee;"{% else %}style="background-color:#f5f5f5;"{% endif %}>{{ o.service_type|svc_label }}</span>
-                                    {% else %}<span class="text-muted">―</span>{% endif %}
+                                <td class="align-middle" style="font-size:0.85rem;">
+                                    {% if o.persons %}{% for p in o.persons|slice:":2" %}{% if not forloop.first %}<br>{% endif %}{{ p }} 様{% endfor %}{% else %}<span class="text-muted">―</span>{% endif %}
                                 </td>
                                 <td class="align-middle" style="font-size:0.85rem;white-space:nowrap;">
                                     <i class="fas fa-phone me-1 text-muted" style="font-size:0.75rem;"></i>{{ o.phone|default:"―" }}<br>
                                     <i class="fas fa-fax me-1 text-muted" style="font-size:0.75rem;"></i><span class="text-muted">{{ o.fax|default:"―" }}</span>
-                                </td>
-                                <td class="align-middle" style="font-size:0.85rem;">
-                                    {% if o.persons %}{% for p in o.persons|slice:":2" %}{% if not forloop.first %}<br>{% endif %}{{ p }} 様{% endfor %}{% else %}<span class="text-muted">―</span>{% endif %}
                                 </td>
                             </tr>
                             {% empty %}<tr><td colspan="5" class="text-center text-muted py-3">登録されていません</td></tr>{% endfor %}
@@ -383,10 +382,10 @@
                     <table class="table table-hover table-bordered mb-0" style="font-size:0.9rem;">
                         <thead><tr>
                             <th style="width:40px;background-color:#f5f5f5;"></th>
+                            <th style="width:90px;background-color:#f5f5f5;">種別</th>
                             <th style="background-color:#f5f5f5;">医療機関名</th>
-                            <th style="width:80px;background-color:#f5f5f5;">種別</th>
-                            <th style="width:130px;background-color:#f5f5f5;">電話 / FAX</th>
-                            <th style="width:100px;background-color:#f5f5f5;">医師名</th>
+                            <th style="width:150px;background-color:#f5f5f5;">医師名</th>
+                            <th style="width:115px;background-color:#f5f5f5;">電話 / FAX</th>
                         </tr></thead>
                         <tbody id="medical_modal_list">
                             {% for m in medical_insts %}
@@ -404,18 +403,20 @@
                                            onclick="event.stopPropagation()">
                                 </td>
                                 <td class="align-middle">
+                                    <span class="svc-type-badge" style="background-color:#fde8e8;">医療機関</span>
+                                </td>
+                                <td class="align-middle">
                                     <label for="modal_medical_{{ m.id }}" style="cursor:pointer;margin:0;" onclick="event.stopPropagation()">
                                         {% if m.hospital_furigana %}<small class="text-muted d-block" style="font-size:0.75rem;">{{ m.hospital_furigana }}</small>{% endif %}
                                         <span class="fw-bold">{{ m.hospital_name }}</span>
                                     </label>
                                 </td>
-                                <td class="align-middle"><span class="text-muted" style="font-size:0.85rem;">{{ m.doctor_type|default:"―" }}</span></td>
+                                <td class="align-middle" style="font-size:0.85rem;">
+                                    {% if m.doctors %}{% for d in m.doctors|slice:":2" %}{% if not forloop.first %}<br>{% endif %}{{ d }} 先生{% endfor %}{% else %}<span class="text-muted">―</span>{% endif %}
+                                </td>
                                 <td class="align-middle" style="font-size:0.85rem;white-space:nowrap;">
                                     <i class="fas fa-phone me-1 text-muted" style="font-size:0.75rem;"></i>{{ m.phone|default:"―" }}<br>
                                     <i class="fas fa-fax me-1 text-muted" style="font-size:0.75rem;"></i><span class="text-muted">{{ m.fax|default:"―" }}</span>
-                                </td>
-                                <td class="align-middle" style="font-size:0.85rem;">
-                                    {% if m.doctors %}{% for d in m.doctors|slice:":2" %}{% if not forloop.first %}<br>{% endif %}{{ d }} 先生{% endfor %}{% else %}<span class="text-muted">―</span>{% endif %}
                                 </td>
                             </tr>
                             {% empty %}<tr><td colspan="5" class="text-center text-muted py-3">登録されていません</td></tr>{% endfor %}
@@ -453,12 +454,42 @@
                     <div class="card-body py-2 px-3">
                         <div class="row g-2">
                             <div class="col-12">
+                                <label class="form-label small text-muted mb-0">会社名</label>
+                                <input type="text" id="homecare_new_company" class="form-control form-control-sm" placeholder="例：株式会社 〇〇">
+                            </div>
+                            <div class="col-6">
                                 <label class="form-label small text-muted mb-0">事業所名 <span class="text-danger">*</span></label>
                                 <input type="text" id="homecare_new_name" class="form-control form-control-sm" placeholder="例：〇〇居宅介護支援事業所">
                             </div>
-                            <div class="col-12">
+                            <div class="col-6">
                                 <label class="form-label small text-muted mb-0">フリガナ</label>
-                                <input type="text" id="homecare_new_furigana" class="form-control form-control-sm" placeholder="例：マルマル キョタク カイゴシエンジギョウショ">
+                                <input type="text" id="homecare_new_furigana" class="form-control form-control-sm" placeholder="例：マルマル キョタク">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small text-muted mb-0">事業所番号 <span class="text-danger">*</span></label>
+                                <input type="text" id="homecare_new_office_number" class="form-control form-control-sm" placeholder="例：2470100419">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small text-muted mb-0">管理者名</label>
+                                <input type="text" id="homecare_new_manager" class="form-control form-control-sm" placeholder="例：山田 太郎">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label small text-muted mb-0">担当者名</label>
+                                <div id="homecare_new_staff_container" class="row g-1 mb-1"></div>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="addHomecareNewStaffRow()">
+                                    <i class="fas fa-plus me-1"></i>担当者を追加
+                                </button>
+                            </div>
+                            <div class="col-5">
+                                <label class="form-label small text-muted mb-0">郵便番号</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">〒</span>
+                                    <input type="text" id="homecare_new_postal" class="form-control form-control-sm" placeholder="000-0000">
+                                </div>
+                            </div>
+                            <div class="col-7">
+                                <label class="form-label small text-muted mb-0">住所</label>
+                                <input type="text" id="homecare_new_address" class="form-control form-control-sm" placeholder="住所を入力">
                             </div>
                             <div class="col-6">
                                 <label class="form-label small text-muted mb-0">電話番号</label>
@@ -482,8 +513,10 @@
                     <table class="table table-hover table-bordered mb-0" style="font-size:0.9rem;">
                         <thead><tr>
                             <th style="width:40px;background-color:#f5f5f5;"></th>
+                            <th style="width:90px;background-color:#f5f5f5;">種別</th>
                             <th style="background-color:#f5f5f5;">事業所名</th>
-                            <th style="width:130px;background-color:#f5f5f5;">電話 / FAX</th>
+                            <th style="width:150px;background-color:#f5f5f5;">担当者</th>
+                            <th style="width:115px;background-color:#f5f5f5;">電話 / FAX</th>
                         </tr></thead>
                         <tbody id="homecare_modal_list">
                             {% for h in homecare_offices %}
@@ -498,17 +531,21 @@
                                            onclick="event.stopPropagation()">
                                 </td>
                                 <td class="align-middle">
+                                    <span class="svc-type-badge" style="background-color:#dde8f8;">居宅支援</span>
+                                </td>
+                                <td class="align-middle">
                                     <label for="modal_homecare_{{ h.id }}" style="cursor:pointer;margin:0;" onclick="event.stopPropagation()">
                                         {% if h.furigana %}<small class="text-muted d-block" style="font-size:0.75rem;">{{ h.furigana }}</small>{% endif %}
                                         <span class="fw-bold">{{ h.name }}</span>
                                     </label>
                                 </td>
+                                <td class="align-middle"><span class="text-muted">―</span></td>
                                 <td class="align-middle" style="font-size:0.85rem;white-space:nowrap;">
                                     <i class="fas fa-phone me-1 text-muted" style="font-size:0.75rem;"></i>{{ h.phone|default:"―" }}<br>
                                     <i class="fas fa-fax me-1 text-muted" style="font-size:0.75rem;"></i><span class="text-muted">{{ h.fax|default:"―" }}</span>
                                 </td>
                             </tr>
-                            {% empty %}<tr id="homecare_empty_row"><td colspan="3" class="text-center text-muted py-3">登録されていません</td></tr>{% endfor %}
+                            {% empty %}<tr id="homecare_empty_row"><td colspan="5" class="text-center text-muted py-3">登録されていません</td></tr>{% endfor %}
                         </tbody>
                     </table>
                 </div>
@@ -583,8 +620,10 @@
                     <table class="table table-hover table-bordered mb-0" style="font-size:0.9rem;">
                         <thead><tr>
                             <th style="width:40px;background-color:#f5f5f5;"></th>
+                            <th style="width:90px;background-color:#f5f5f5;">種別</th>
                             <th style="background-color:#f5f5f5;">センター名</th>
-                            <th style="width:130px;background-color:#f5f5f5;">電話</th>
+                            <th style="width:150px;background-color:#f5f5f5;">担当者</th>
+                            <th style="width:115px;background-color:#f5f5f5;">電話 / FAX</th>
                         </tr></thead>
                         <tbody id="supportcenter_modal_list">
                             {% for s in support_centers %}
@@ -598,16 +637,21 @@
                                            onclick="event.stopPropagation()">
                                 </td>
                                 <td class="align-middle">
+                                    <span class="svc-type-badge" style="background-color:#e8f5e8;">地域包括</span>
+                                </td>
+                                <td class="align-middle">
                                     <label for="modal_supportcenter_{{ s.id }}" style="cursor:pointer;margin:0;" onclick="event.stopPropagation()">
                                         <span class="fw-bold">{{ s.name }}</span>
-                                        <small class="text-muted ms-1">({{ s.get_area_display }})</small>
+                                        <small class="text-muted d-block" style="font-size:0.75rem;">{{ s.get_area_display }}</small>
                                     </label>
                                 </td>
+                                <td class="align-middle"><span class="text-muted">―</span></td>
                                 <td class="align-middle" style="font-size:0.85rem;white-space:nowrap;">
-                                    <i class="fas fa-phone me-1 text-muted" style="font-size:0.75rem;"></i>{{ s.phone|default:"―" }}
+                                    <i class="fas fa-phone me-1 text-muted" style="font-size:0.75rem;"></i>{{ s.phone|default:"―" }}<br>
+                                    <span class="text-muted">―</span>
                                 </td>
                             </tr>
-                            {% empty %}<tr id="supportcenter_empty_row"><td colspan="3" class="text-center text-muted py-3">登録されていません</td></tr>{% endfor %}
+                            {% empty %}<tr id="supportcenter_empty_row"><td colspan="5" class="text-center text-muted py-3">登録されていません</td></tr>{% endfor %}
                         </tbody>
                     </table>
                 </div>
@@ -1015,47 +1059,77 @@ function toggleHomecareAddForm() {
     var visible = form.style.display !== 'none';
     form.style.display = visible ? 'none' : '';
     if (!visible) {
-        document.getElementById('homecare_new_name').value = '';
-        document.getElementById('homecare_new_furigana').value = '';
-        document.getElementById('homecare_new_phone').value = '';
-        document.getElementById('homecare_new_fax').value = '';
+        ['homecare_new_company','homecare_new_name','homecare_new_furigana',
+         'homecare_new_office_number','homecare_new_manager',
+         'homecare_new_postal','homecare_new_address',
+         'homecare_new_phone','homecare_new_fax'].forEach(function(id){
+            var el = document.getElementById(id); if(el) el.value = '';
+        });
+        var sc = document.getElementById('homecare_new_staff_container');
+        if (sc) sc.innerHTML = '';
         document.getElementById('homecare_add_msg').textContent = '';
     }
 }
+function addHomecareNewStaffRow() {
+    var c = document.getElementById('homecare_new_staff_container');
+    if (!c) return;
+    var col = document.createElement('div');
+    col.className = 'col-6 homecare-staff-row';
+    col.innerHTML = '<div class="d-flex align-items-center gap-1">'
+        + '<input type="text" name="staff_names[]" class="form-control form-control-sm" placeholder="例: 山田 太郎">'
+        + '<button type="button" class="btn-close" style="font-size:0.7rem;" onclick="this.closest(\'.homecare-staff-row\').remove()"></button>'
+        + '</div>';
+    c.appendChild(col);
+}
 
 function submitHomecareAdd() {
-    var name     = document.getElementById('homecare_new_name').value.trim();
-    var furigana = document.getElementById('homecare_new_furigana').value.trim();
-    var phone    = document.getElementById('homecare_new_phone').value.trim();
-    var fax      = document.getElementById('homecare_new_fax').value.trim();
-    var msg      = document.getElementById('homecare_add_msg');
-    if (!name) { msg.textContent = '事業所名を入力してください'; msg.style.color = '#dc3545'; return; }
+    var name         = (document.getElementById('homecare_new_name')||{}).value.trim();
+    var officeNumber = (document.getElementById('homecare_new_office_number')||{}).value.trim();
+    var msg          = document.getElementById('homecare_add_msg');
+    if (!name)         { msg.textContent = '事業所名を入力してください'; msg.style.color = '#dc3545'; return; }
+    if (!officeNumber) { msg.textContent = '事業所番号を入力してください'; msg.style.color = '#dc3545'; return; }
     msg.textContent = '登録中...'; msg.style.color = '#6c757d';
 
+    var g = function(id){ return (document.getElementById(id)||{}).value||''; };
     var csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
     var fd = new FormData();
-    fd.append('name', name); fd.append('furigana', furigana);
-    fd.append('phone', phone); fd.append('fax', fax);
+    fd.append('company_name', g('homecare_new_company'));
+    fd.append('name', name);
+    fd.append('furigana', g('homecare_new_furigana'));
+    fd.append('office_number', officeNumber);
+    fd.append('manager_name', g('homecare_new_manager'));
+    fd.append('postal_code', g('homecare_new_postal'));
+    fd.append('address', g('homecare_new_address'));
+    fd.append('phone', g('homecare_new_phone'));
+    fd.append('fax', g('homecare_new_fax'));
+    document.querySelectorAll('#homecare_new_staff_container input[name="staff_names[]"]').forEach(function(inp){
+        var v = inp.value.trim(); if(v) fd.append('staff_names[]', v);
+    });
     fd.append('csrfmiddlewaretoken', csrfToken);
 
-    fetch('{% url "public:homecare_office_create" %}', {method:'POST', body:fd})
+    fetch('{% url "public:pub_homecare_office_create" %}', {method:'POST', body:fd})
         .then(function(r){return r.json();})
         .then(function(data) {
-            if (data.status !== 'ok') { msg.textContent = data.message || '登録に失敗しました'; msg.style.color = '#dc3545'; return; }
+            if (!data.success) { msg.textContent = data.error || '登録に失敗しました'; msg.style.color = '#dc3545'; return; }
             var tbody = document.getElementById('homecare_modal_list');
             var emptyRow = document.getElementById('homecare_empty_row');
             if (emptyRow) emptyRow.remove();
-            var uid = 'new_' + data.id;
+            var id = data.pk;
             var tr = document.createElement('tr');
             tr.className = 'homecare-modal-item';
             tr.style.cursor = 'pointer';
             tr.dataset.name = data.name;
             tr.setAttribute('onclick', 'toggleHomecareRow(this)');
-            tr.innerHTML = '<td class="text-center align-middle"><input class="form-check-input homecare-modal-check" type="checkbox" id="modal_homecare_'+data.id+'" value="'+data.id+'" data-id="'+data.id+'" data-name="'+_escHtml(data.name)+'" data-furigana="'+_escHtml(data.furigana||'')+'" data-phone="'+_escHtml(data.phone||'')+'" data-fax="'+_escHtml(data.fax||'')+'" onclick="event.stopPropagation()"></td>'
-                + '<td class="align-middle"><label for="modal_homecare_'+data.id+'" style="cursor:pointer;margin:0;" onclick="event.stopPropagation()">'+(data.furigana?'<small class="text-muted d-block" style="font-size:0.75rem;">'+_escHtml(data.furigana)+'</small>':'')+'<span class="fw-bold">'+_escHtml(data.name)+'</span></label></td>'
+            tr.innerHTML = '<td class="text-center align-middle"><input class="form-check-input homecare-modal-check" type="checkbox" id="modal_homecare_'+id+'" value="'+id+'" data-id="'+id+'" data-name="'+_escHtml(data.name)+'" data-furigana="'+_escHtml(data.furigana||'')+'" data-phone="'+_escHtml(data.phone||'')+'" data-fax="'+_escHtml(data.fax||'')+'" onclick="event.stopPropagation()"></td>'
+                + '<td class="align-middle"><span class="svc-type-badge" style="background-color:#dde8f8;">居宅支援</span></td>'
+                + '<td class="align-middle"><label for="modal_homecare_'+id+'" style="cursor:pointer;margin:0;" onclick="event.stopPropagation()">'+(data.furigana?'<small class="text-muted d-block" style="font-size:0.75rem;">'+_escHtml(data.furigana)+'</small>':'')+'<span class="fw-bold">'+_escHtml(data.name)+'</span></label></td>'
+                + '<td class="align-middle"><span class="text-muted">―</span></td>'
                 + '<td class="align-middle" style="font-size:0.85rem;white-space:nowrap;"><i class="fas fa-phone me-1 text-muted" style="font-size:0.75rem;"></i>'+(data.phone||'―')+'<br><i class="fas fa-fax me-1 text-muted" style="font-size:0.75rem;"></i><span class="text-muted">'+(data.fax||'―')+'</span></td>';
             tbody.appendChild(tr);
-            tr.querySelector('.homecare-modal-check').addEventListener('change', _updateHomecareModalCount);
+            var chk = tr.querySelector('.homecare-modal-check');
+            chk.addEventListener('change', _updateHomecareModalCount);
+            chk.checked = true;
+            _updateHomecareModalCount();
             msg.textContent = '登録しました'; msg.style.color = '#198754';
             setTimeout(function(){ toggleHomecareAddForm(); }, 800);
         })

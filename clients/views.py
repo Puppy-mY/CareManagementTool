@@ -1,5 +1,6 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.views.decorators.http import require_POST
 
 def staff_required(user):
     return user.is_active and (user.is_staff or user.is_superuser)
@@ -5913,6 +5914,7 @@ def support_center_list(request):
     centers = RegionalSupportCenter.objects.all().order_by(area_order, 'name')
     context = {
         'centers': centers,
+        'area_choices': RegionalSupportCenter.AREA_CHOICES,
     }
     return render(request, 'clients/support_center_list.html', context)
 
@@ -6002,20 +6004,79 @@ def support_center_edit(request, pk):
 @login_required
 def support_center_delete(request, pk):
     """地域包括支援センター削除"""
-    # 管理者権限チェック
     if not request.user.is_staff and not request.user.is_superuser:
         messages.error(request, 'このページにアクセスする権限がありません。')
         return redirect('client_list')
-
     center = get_object_or_404(RegionalSupportCenter, pk=pk)
-
     if request.method == 'POST':
         name = center.name
         center.delete()
         messages.success(request, f'{name} を削除しました。')
         return redirect('support_center_list')
-
     return redirect('support_center_list')
+
+
+@login_required
+@require_POST
+def support_center_create_api(request):
+    """地域包括支援センター新規登録（JSON API）"""
+    name          = request.POST.get('name', '').strip()
+    office_number = request.POST.get('office_number', '').strip()
+    if not name:
+        return JsonResponse({'success': False, 'error': '事業所名は必須です。'})
+    if not office_number:
+        return JsonResponse({'success': False, 'error': '事業所番号は必須です。'})
+    if RegionalSupportCenter.objects.filter(office_number=office_number).exists():
+        return JsonResponse({'success': False, 'error': 'この事業所番号は既に登録されています。'})
+    center = RegionalSupportCenter.objects.create(
+        name=name,
+        office_number=office_number,
+        postal_code=request.POST.get('postal_code', '').strip(),
+        address=request.POST.get('address', '').strip(),
+        phone=request.POST.get('phone', '').strip(),
+        fax=request.POST.get('fax', '').strip(),
+        persons=[p.strip() for p in request.POST.getlist('staff_names[]') if p.strip()],
+        area=request.POST.get('area', 'other'),
+        is_active=True,
+    )
+    return JsonResponse({'success': True, 'pk': center.pk, 'name': center.name,
+                         'area': center.area, 'area_label': center.get_area_display(),
+                         'office_number': center.office_number,
+                         'postal_code': center.postal_code, 'address': center.address,
+                         'phone': center.phone, 'fax': center.fax})
+
+
+@login_required
+@require_POST
+def support_center_update_api(request, pk):
+    """地域包括支援センター更新（JSON API）"""
+    center        = get_object_or_404(RegionalSupportCenter, pk=pk)
+    name          = request.POST.get('name', '').strip()
+    office_number = request.POST.get('office_number', '').strip()
+    if not name:
+        return JsonResponse({'success': False, 'error': '事業所名は必須です。'})
+    if not office_number:
+        return JsonResponse({'success': False, 'error': '事業所番号は必須です。'})
+    if RegionalSupportCenter.objects.filter(office_number=office_number).exclude(pk=pk).exists():
+        return JsonResponse({'success': False, 'error': 'この事業所番号は既に登録されています。'})
+    center.name          = name
+    center.office_number = office_number
+    center.postal_code   = request.POST.get('postal_code', '').strip()
+    center.address       = request.POST.get('address', '').strip()
+    center.phone         = request.POST.get('phone', '').strip()
+    center.fax           = request.POST.get('fax', '').strip()
+    center.persons       = [p.strip() for p in request.POST.getlist('staff_names[]') if p.strip()]
+    center.area          = request.POST.get('area', 'other')
+    center.save()
+    return JsonResponse({'success': True})
+
+
+@login_required
+@require_POST
+def support_center_delete_api(request, pk):
+    """地域包括支援センター削除（JSON API）"""
+    get_object_or_404(RegionalSupportCenter, pk=pk).delete()
+    return JsonResponse({'success': True})
 
 
 @login_required
@@ -6092,7 +6153,7 @@ def care_service_office_create(request):
     address       = request.POST.get('address', '').strip()
     phone         = request.POST.get('phone', '').strip()
     fax           = request.POST.get('fax', '').strip()
-    persons       = [p.strip().replace('　', ' ') for p in request.POST.getlist('person_name') if p.strip()]
+    persons       = [p.strip().replace('　', ' ') for p in request.POST.getlist('staff_names[]') if p.strip()]
     if not name:
         return JsonResponse({'success': False, 'error': '事業所名は必須です。'})
     if not service_type:
@@ -6100,6 +6161,7 @@ def care_service_office_create(request):
     if not phone or not fax:
         return JsonResponse({'success': False, 'error': '電話番号とFAX番号は必須です。'})
     office = CareServiceOffice.objects.create(
+        company_name=request.POST.get('company_name', '').strip(),
         name=name, furigana=furigana, service_type=service_type,
         office_type='external',
         office_number=office_number, postal_code=postal_code, address=address,
@@ -6123,6 +6185,7 @@ def care_service_office_update(request, pk):
         office = CareServiceOffice.objects.get(pk=pk)
     except CareServiceOffice.DoesNotExist:
         return JsonResponse({'success': False, 'error': '見つかりません。'})
+    office.company_name  = request.POST.get('company_name', office.company_name).strip()
     office.name          = request.POST.get('name', office.name).strip()
     office.furigana      = request.POST.get('furigana', office.furigana).strip()
     office.service_type  = request.POST.get('service_type', '').strip()
@@ -6131,7 +6194,7 @@ def care_service_office_update(request, pk):
     office.address       = request.POST.get('address', office.address).strip()
     office.phone         = request.POST.get('phone', office.phone).strip()
     office.fax           = request.POST.get('fax', office.fax).strip()
-    office.persons       = [p.strip().replace('　', ' ') for p in request.POST.getlist('person_name') if p.strip()]
+    office.persons       = [p.strip().replace('　', ' ') for p in request.POST.getlist('staff_names[]') if p.strip()]
     if not office.name:
         return JsonResponse({'success': False, 'error': '事業所名は必須です。'})
     if not office.service_type:

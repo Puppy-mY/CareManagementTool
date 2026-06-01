@@ -69,6 +69,9 @@ urlpatterns = [
     path('support-centers/<int:pk>/edit/', views.support_center_edit, name='support_center_edit'),
     path('support-centers/<int:pk>/delete/', views.support_center_delete, name='support_center_delete'),
     path('support-centers/api/', views.support_center_api, name='support_center_api'),
+    path('support-centers/create-api/', views.support_center_create_api, name='support_center_create_api'),
+    path('support-centers/<int:pk>/update-api/', views.support_center_update_api, name='support_center_update_api'),
+    path('support-centers/<int:pk>/delete-api/', views.support_center_delete_api, name='support_center_delete_api'),
 
     # 居宅介護支援事業所管理
     path('home-care-offices/', views.home_care_office_list, name='home_care_office_list'),
