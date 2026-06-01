@@ -3,8 +3,16 @@
 {% block nav_care_svc %}active{% endblock %}
 
 {% block extra_style %}
-.btn-new-pastel { background-color:#fff; border:1px solid #6c757d; color:#6c757d; }
+.btn { transition:all 0.2s ease; }
+.btn:hover { transform:translateY(-1px);box-shadow:0 2px 4px rgba(0,0,0,0.1); }
+.btn-new-pastel { background-color:#ffffff; border:1px solid #6c757d; color:#6c757d; }
 .btn-new-pastel:hover,.btn-new-pastel:focus { background-color:#e3f2fd; border:1px solid #0d6efd; color:#0d6efd; }
+.btn-save-pastel { background-color:#ffffff; border:1px solid #6c757d; color:#6c757d; }
+.btn-save-pastel:hover,.btn-save-pastel:focus { background-color:#f8d7da; border:1px solid #dc3545; color:#dc3545; }
+.btn-back-pastel { background-color:#ffffff; border:1px solid #6c757d; color:#6c757d; }
+.btn-back-pastel:hover,.btn-back-pastel:focus { background-color:#f5f5f5; border:1px solid #999999; color:#333333; }
+.btn-delete-confirm-pastel { background-color:#ffffff; border:1px solid #6c757d; color:#6c757d; }
+.btn-delete-confirm-pastel:hover,.btn-delete-confirm-pastel:focus { background-color:#f8d7da; border:1px solid #dc3545; color:#dc3545; }
 .btn-edit-pastel { background-color:#fff; border:1px solid #6c757d; color:#6c757d; }
 .btn-edit-pastel:hover,.btn-edit-pastel:focus { background-color:#ffe5cc; border:1px solid #fd7e14; color:#fd7e14; }
 .btn-delete-pastel { background-color:#fff; border:1px solid #6c757d; color:#6c757d; }
@@ -116,7 +124,7 @@ select.text-muted option:not([value=""]) { color:#212529; }
     <div class="card-body text-center py-5">
         <i class="fas fa-clinic-medical fa-3x text-muted mb-3"></i>
         <h5 class="text-muted">介護サービス事業所が登録されていません</h5>
-        <button type="button" class="btn btn-primary mt-3" onclick="openCreateModal()">
+        <button type="button" class="btn btn-new-pastel mt-3" onclick="openCreateModal()">
             <i class="fas fa-plus"></i> 新規登録
         </button>
     </div>
@@ -165,7 +173,7 @@ select.text-muted option:not([value=""]) { color:#212529; }
                         <div class="col-12">
                             <label class="form-label">担当者名</label>
                             <div id="modal_staff_container" class="row g-2 mb-1"></div>
-                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="addStaffRow()">
+                            <button type="button" class="btn btn-back-pastel btn-sm" onclick="addStaffRow()">
                                 <i class="fas fa-plus me-1"></i>担当者を追加
                             </button>
                         </div>
@@ -191,8 +199,8 @@ select.text-muted option:not([value=""]) { color:#212529; }
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
-                    <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i>保存</button>
+                    <button type="button" class="btn btn-back-pastel" data-bs-dismiss="modal">キャンセル</button>
+                    <button type="submit" class="btn btn-save-pastel"><i class="fas fa-save me-1"></i>保存</button>
                 </div>
             </form>
         </div>
@@ -210,7 +218,7 @@ select.text-muted option:not([value=""]) { color:#212529; }
             <div class="modal-body"><p class="mb-0"><strong id="deleteOfficeName"></strong>を削除しますか？</p></div>
             <div class="modal-footer py-2">
                 <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">キャンセル</button>
-                <button type="button" class="btn btn-sm btn-danger" id="deleteConfirmBtn">削除</button>
+                <button type="button" class="btn btn-sm btn-delete-confirm-pastel" id="deleteConfirmBtn">削除</button>
             </div>
         </div>
     </div>
@@ -325,3 +333,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 {% endblock %}
+
+
+
+

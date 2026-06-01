@@ -57,7 +57,7 @@ def fax_cover_sheet(request):
         )
         return response
 
-    care_offices     = list(CareServiceOffice.objects.filter(office_type='external'))
+    care_offices     = list(CareServiceOffice.objects.filter(office_type='external').order_by('service_type', 'name'))
     medical_insts    = list(MedicalInstitution.objects.all())
     homecare_offices = list(HomeCareSupportOffice.objects.filter(is_active=True))
     support_centers  = list(RegionalSupportCenter.objects.filter(is_active=True))
@@ -77,14 +77,16 @@ def fax_cover_sheet(request):
     } if own_office else None, ensure_ascii=False)
 
     return render(request, 'public/fax_cover_sheet.html', {
-        'care_offices':     care_offices,
-        'medical_insts':    medical_insts,
-        'homecare_offices': homecare_offices,
-        'support_centers':  support_centers,
-        'own_office':       own_office,
-        'own_office_json':  own_office_json,
-        'today':            date.today(),
-        'fax_template_body': FaxMessageTemplate.get_body(),
+        'care_offices':        care_offices,
+        'medical_insts':       medical_insts,
+        'homecare_offices':    homecare_offices,
+        'support_centers':     support_centers,
+        'own_office':          own_office,
+        'own_office_json':     own_office_json,
+        'today':               date.today(),
+        'fax_template_body':   FaxMessageTemplate.get_body(),
+        'service_type_choices': CareServiceOffice.SERVICE_TYPE_CHOICES,
+        'area_choices':         RegionalSupportCenter.AREA_CHOICES,
     })
 
 
@@ -287,7 +289,8 @@ def pub_support_center_create(request):
         area=request.POST.get('area', 'other'),
         is_active=True,
     )
-    return JsonResponse({'success': True, 'id': center.pk})
+    return JsonResponse({'success': True, 'id': center.pk,
+                         'area_label': center.get_area_display()})
 
 
 @require_POST
