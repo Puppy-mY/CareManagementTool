@@ -21,6 +21,7 @@
 .btn:hover { transform:translateY(-1px);box-shadow:0 2px 4px rgba(0,0,0,0.1); }
 .btn.btn-outline-secondary.excel-btn:hover { background-color:#d1f2d1!important;border-color:#198754!important;color:#198754!important; }
 .card-header { border-bottom:2px solid #dee2e6; }
+#renewal_office_inst_table th, #renewal_office_inst_table td { border-left:none!important; border-right:none!important; }
 {% endblock %}
 
 {% block content %}
@@ -52,19 +53,27 @@
                             <div class="col-12">
                                 <label class="form-label fw-bold mb-2">送付先 <span class="text-danger">*</span></label>
 
-                                <div class="d-flex flex-wrap gap-2 mb-3">
-                                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openOfficeSelectModal()">
-                                        <i class="fas fa-building me-1"></i>介護サービス事業所
-                                    </button>
-                                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openMedicalSelectModal()">
-                                        <i class="fas fa-hospital me-1"></i>主治医・医療機関
-                                    </button>
-                                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openHomecareSelectModal()">
-                                        <i class="fas fa-home me-1"></i>居宅介護支援事業所
-                                    </button>
-                                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openSupportcenterSelectModal()">
-                                        <i class="fas fa-map-marker-alt me-1"></i>地域包括支援センター
-                                    </button>
+                                <div class="row g-1 mb-3">
+                                    <div class="col-3">
+                                        <button type="button" class="btn btn-outline-secondary w-100" style="font-size:0.78rem; padding:0.3rem 0.4rem;" onclick="openOfficeSelectModal()">
+                                            <i class="fas fa-building me-1"></i>介護サービス事業所
+                                        </button>
+                                    </div>
+                                    <div class="col-3">
+                                        <button type="button" class="btn btn-outline-secondary w-100" style="font-size:0.78rem; padding:0.3rem 0.4rem;" onclick="openMedicalSelectModal()">
+                                            <i class="fas fa-hospital me-1"></i>主治医・医療機関
+                                        </button>
+                                    </div>
+                                    <div class="col-3">
+                                        <button type="button" class="btn btn-outline-secondary w-100" style="font-size:0.78rem; padding:0.3rem 0.4rem;" onclick="openHomecareSelectModal()">
+                                            <i class="fas fa-home me-1"></i>居宅介護支援事業所
+                                        </button>
+                                    </div>
+                                    <div class="col-3">
+                                        <button type="button" class="btn btn-outline-secondary w-100" style="font-size:0.78rem; padding:0.3rem 0.4rem;" onclick="openSupportcenterSelectModal()">
+                                            <i class="fas fa-map-marker-alt me-1"></i>地域包括支援センター
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <div id="selected_all_empty" class="text-muted small mb-2">未選択</div>
@@ -75,7 +84,7 @@
                                                 <tr>
                                                     <th style="width:90px; background-color:#f5f5f5;">種別</th>
                                                     <th style="background-color:#f5f5f5;">送付先名</th>
-                                                    <th style="width:140px; background-color:#f5f5f5;">宛先<small style="font-size:0.7rem; color:#6c757d;">（担当者/医師）</small></th>
+                                                    <th style="width:150px; background-color:#f5f5f5;">宛先<small style="font-size:0.68rem; color:#6c757d; margin-left:4px;">※空白：ご担当者様</small></th>
                                                     <th style="width:115px; background-color:#f5f5f5;">電話 / FAX</th>
                                                     <th style="width:40px; background-color:#f5f5f5;"></th>
                                                 </tr>
@@ -90,33 +99,6 @@
                                 <div id="selected_homecare_inputs"></div>
                                 <div id="selected_supportcenter_inputs"></div>
 
-                                <div id="fax_body_accordion" class="mt-3" style="display:none;">
-                                    <div class="accordion">
-                                        <div class="accordion-item" style="border: none; background-color: #f8f9fa; border-radius: 0.5rem;">
-                                            <h2 class="accordion-header">
-                                                <button class="accordion-button collapsed"
-                                                        type="button" style="background-color: #f8f9fa; padding: 0.5rem 1rem; color: #333;"
-                                                        data-bs-toggle="collapse" data-bs-target="#faxBodyCollapse">
-                                                    <i class="fas fa-fax me-1"></i> FAX送付状 本文
-                                                </button>
-                                            </h2>
-                                            <div id="faxBodyCollapse" class="accordion-collapse collapse">
-                                                <div class="accordion-body py-2 px-3">
-                                                    <textarea id="fax_message" name="fax_message"
-                                                              class="form-control" rows="11"
-                                                              data-office-name=""
-                                                              data-client-name=""
-                                                              style="font-size:0.9rem; font-family:monospace; overflow:hidden; resize:none; width:calc(43em + 1.5rem); max-width:100%; word-break:break-all;"></textarea>
-                                                    <div class="d-flex justify-content-start mt-2">
-                                                        <button id="fax_reset_normal" type="button" class="btn btn-sm btn-outline-secondary" onclick="resetFaxMessage()">
-                                                            <i class="fas fa-undo me-1"></i>リセット
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
 
                             </div>
                         </div>
@@ -156,23 +138,137 @@
                         <!-- 送付元 -->
                         <div class="row g-3 mb-2">
                             <div class="col-12">
-                                <label class="form-label fw-bold mb-2">送付元</label>
-                                <div class="row g-2" style="max-width:500px;">
-                                    <div class="col-12">
-                                        <label class="form-label small text-muted mb-1">事業所名</label>
-                                        <input type="text" name="sender_office_name" id="sender_office_name" class="form-control" placeholder="例：〇〇居宅介護支援事業所" style="max-width:400px;">
+                                <label class="form-label fw-bold mb-2">送付元（作成事業所） <span class="text-danger">*</span></label>
+                                <div class="mb-1">
+                                    <select id="renewal_provider_select" class="form-select" style="width: 400px;" onchange="toggleRenewalProvider()">
+                                        <option value="auto" selected>{% if own_office %}{{ own_office.name }}{% else %}（事業所未設定）{% endif %}</option>
+                                        <option value="other">その他（新規登録）</option>
+                                    </select>
+                                </div>
+                                <small class="text-muted">※その他（新規登録）を選択して新規登録ボタンを押すと新たに事業所を登録できます</small>
+                            </div>
+                        </div>
+
+                        <input type="hidden" name="office_furigana"     id="renewal_office_furigana" value="{% if own_office %}{{ own_office.furigana }}{% endif %}">
+                        <input type="hidden" name="office_name"         id="renewal_office_name"     value="{% if own_office %}{{ own_office.name }}{% endif %}">
+                        <input type="hidden" name="office_number"       id="renewal_office_number"   value="{% if own_office %}{{ own_office.office_number }}{% endif %}">
+                        <input type="hidden" name="office_postal_code"  id="renewal_postal_code"     value="{% if own_office %}{{ own_office.postal_code }}{% endif %}">
+                        <input type="hidden" name="office_address"      id="renewal_office_address"  value="{% if own_office %}{{ own_office.address }}{% endif %}">
+                        <input type="hidden" name="office_phone"        id="renewal_office_phone"    value="{% if own_office %}{{ own_office.phone }}{% endif %}">
+                        <input type="hidden" name="office_fax"          id="renewal_office_fax"      value="{% if own_office %}{{ own_office.fax }}{% endif %}">
+                        <input type="hidden" name="office_manager_name" id="renewal_office_manager"  value="{% if own_office %}{{ own_office.manager_name }}{% endif %}">
+
+                        <div id="renewal_office_table_section" class="mb-3">
+                            <div class="table-responsive mb-1">
+                                <table id="renewal_office_inst_table" class="table table-hover table-bordered mb-0" style="font-size:0.9rem; table-layout:fixed;">
+                                    <thead>
+                                        <tr>
+                                            <th style="background-color:#f5f5f5;">事業所名</th>
+                                            <th style="width:180px; background-color:#f5f5f5;">住所</th>
+                                            <th style="width:110px; background-color:#f5f5f5;">電話 / FAX</th>
+                                            <th style="width:120px; background-color:#f5f5f5; font-size:0.78rem; white-space:nowrap;">管理者 / 担当者 <span class="text-danger">*</span></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td class="align-middle">
+                                                <small id="disp_office_number" style="display:none;">{% if own_office %}{{ own_office.office_number }}{% endif %}</small>
+                                                <small id="disp_office_furigana" class="text-muted d-block" style="font-size:0.75rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{% if own_office %}{{ own_office.furigana }}{% endif %}</small>
+                                                <span id="disp_office_name" class="fw-bold d-block" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:clamp(0.7rem,1.5vw,0.9rem);">{% if own_office %}{{ own_office.name }}{% endif %}</span>
+                                            </td>
+                                            <td class="align-middle" style="font-size:0.85rem;">
+                                                <small id="disp_office_postal" class="text-muted d-block" style="font-size:0.75rem;">{% if own_office and own_office.postal_code %}〒{{ own_office.postal_code }}{% endif %}</small>
+                                                <span id="disp_office_address" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block;">{% if own_office %}{{ own_office.address }}{% endif %}</span>
+                                            </td>
+                                            <td class="align-middle" style="font-size:0.85rem; white-space:nowrap;">
+                                                <i class="fas fa-phone me-1 text-muted" style="font-size:0.75rem;"></i><span id="disp_office_phone">{% if own_office %}{{ own_office.phone|default:"―" }}{% else %}―{% endif %}</span><br>
+                                                <i class="fas fa-fax me-1 text-muted" style="font-size:0.75rem;"></i><span id="disp_office_fax" class="text-muted">{% if own_office %}{{ own_office.fax|default:"―" }}{% else %}―{% endif %}</span>
+                                            </td>
+                                            <td class="align-middle">
+                                                <div id="disp_office_manager" class="text-muted mb-1" style="font-size:0.75rem;">{% if own_office %}{{ own_office.manager_name|default:"―" }}{% else %}―{% endif %}</div>
+                                                <span id="disp_staff_dash" class="text-muted" style="display:none; font-size:0.75rem;">―</span>
+                                                <select name="staff_name_office" id="renewal_staff_name_accordion" class="form-select" style="font-size:0.75rem; padding:2px 6px; height:auto; appearance:none; -webkit-appearance:none; background-image:none;" required>
+                                                    <option value="">----------</option>
+                                                    {% if own_office %}{% for sname in own_office.staff_names %}{% if sname %}
+                                                    <option value="{{ sname }}" data-from-staff="1">{{ sname }}</option>
+                                                    {% endif %}{% endfor %}{% endif %}
+                                                </select>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="mt-1 mb-2">
+                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openRenewalOfficeMasterModal()">
+                                    <i class="fas fa-edit me-1"></i>事業所情報を新規登録・編集
+                                </button>
+                            </div>
+                        </div>
+
+                        <div style="border-top: 1px solid #dee2e6; width: 50%; margin: 1.5rem 0;"></div>
+
+                        <!-- FAX本文 -->
+                        <div id="fax_body_accordion">
+                            <div class="row g-3 mb-2">
+                                <div class="col-12">
+                                    <div class="d-flex align-items-center gap-3 mb-2 flex-wrap">
+                                        <label class="form-label fw-bold mb-0"><i class="fas fa-fax me-1 text-secondary"></i>FAX送付状 本文</label>
+                                        <div style="width:1px; height:1.2em; background:#ced4da;"></div>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <label class="form-label mb-0 text-nowrap" style="font-size:0.85rem; color:#999;">利用者氏名</label>
+                                            <input type="text" id="client_name_input" name="client_name" class="form-control form-control-sm" style="width:130px;" placeholder="例：山田 花子" oninput="onClientNameChange()">
+                                        </div>
                                     </div>
-                                    <div class="col-12">
-                                        <label class="form-label small text-muted mb-1">電話番号</label>
-                                        <input type="text" name="sender_phone" id="sender_phone" class="form-control" placeholder="例：059-000-0000" style="max-width:220px;">
+                                    <div class="d-flex align-items-center gap-3 mb-2 flex-wrap">
+                                        <select id="fax_type_select" class="form-select form-select-sm" style="max-width:240px;" onchange="changeFaxType(this.value)">
+                                            <option value="document_send">書類の送付</option>
+                                            <option value="service_meeting">サービス担当者会議の案内</option>
+                                            <option value="hospitalization">入院時情報提供書の送付</option>
+                                        </select>
+                                        <!-- 書類選択チェックボックス（書類の送付のみ表示） -->
+                                        <div id="doc_send_checks" class="px-3 pt-2 pb-2 rounded" style="display:none!important; border:1px solid #dee2e6; background:#f8f9fa;">
+                                            <small class="text-muted fw-bold d-block mb-2" style="font-size:0.8rem;">送付書類</small>
+                                            <div class="d-flex flex-wrap gap-2">
+                                            <div class="form-check form-check-inline mb-0">
+                                                <input class="form-check-input" type="checkbox" id="doc_careplan" value="ケアプラン" onchange="onDocCheckChange()">
+                                                <label class="form-check-label" for="doc_careplan" style="font-size:0.85rem;">ケアプラン</label>
+                                            </div>
+                                            <div class="form-check form-check-inline mb-0">
+                                                <input class="form-check-input" type="checkbox" id="doc_careplan_yobo" value="ケアプラン（予防）" onchange="onDocCheckChange()">
+                                                <label class="form-check-label" for="doc_careplan_yobo" style="font-size:0.85rem;">ケアプラン（予防）</label>
+                                            </div>
+                                            <div class="form-check form-check-inline mb-0">
+                                                <input class="form-check-input" type="checkbox" id="doc_weekly" value="週間サービス計画表" onchange="onDocCheckChange()">
+                                                <label class="form-check-label" for="doc_weekly" style="font-size:0.85rem;">週間サービス計画表</label>
+                                            </div>
+                                            <div class="form-check form-check-inline mb-0">
+                                                <input class="form-check-input" type="checkbox" id="doc_teikyohyo" value="提供票" onchange="onDocCheckChange()">
+                                                <label class="form-check-label" for="doc_teikyohyo" style="font-size:0.85rem;">提供票</label>
+                                            </div>
+                                            <div class="form-check form-check-inline mb-0">
+                                                <input class="form-check-input" type="checkbox" id="doc_kaigo_hoken" value="介護保険被保険者証" onchange="onDocCheckChange()">
+                                                <label class="form-check-label" for="doc_kaigo_hoken" style="font-size:0.85rem;">介護保険被保険者証</label>
+                                            </div>
+                                            <div class="form-check form-check-inline mb-0">
+                                                <input class="form-check-input" type="checkbox" id="doc_futan_wari" value="介護保険負担割合証" onchange="onDocCheckChange()">
+                                                <label class="form-check-label" for="doc_futan_wari" style="font-size:0.85rem;">介護保険負担割合証</label>
+                                            </div>
+                                            <div class="form-check form-check-inline mb-0">
+                                                <input class="form-check-input" type="checkbox" id="doc_iryo_hoken" value="医療保険証" onchange="onDocCheckChange()">
+                                                <label class="form-check-label" for="doc_iryo_hoken" style="font-size:0.85rem;">医療保険証</label>
+                                            </div>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div class="col-12">
-                                        <label class="form-label small text-muted mb-1">FAX番号</label>
-                                        <input type="text" name="sender_fax" id="sender_fax" class="form-control" placeholder="例：059-000-0001" style="max-width:220px;">
-                                    </div>
-                                    <div class="col-12">
-                                        <label class="form-label small text-muted mb-1">担当者名</label>
-                                        <input type="text" name="staff_name_office" id="staff_name_office" class="form-control" placeholder="例：山田 太郎" style="max-width:300px;">
+                                    <textarea id="fax_message" name="fax_message"
+                                              class="form-control" rows="11"
+                                              data-office-name=""
+                                              data-client-name=""
+                                              style="font-size:0.9rem; font-family:monospace; overflow:hidden; resize:none; width:calc(43em + 1.5rem); max-width:100%; word-break:break-all;"></textarea>
+                                    <div class="d-flex justify-content-start mt-2">
+                                        <button id="fax_reset_normal" type="button" class="btn btn-sm btn-outline-secondary" onclick="resetFaxMessage()">
+                                            <i class="fas fa-undo me-1"></i>リセット
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -527,6 +623,76 @@
     </div>
 </div>
 
+<!-- 居宅介護支援事業所 新規登録・編集モーダル -->
+<div class="modal fade" id="renewalOfficeModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:700px;">
+        <div class="modal-content">
+            <input type="hidden" id="renewal_modal_pk" value="{% if own_office %}{{ own_office.id }}{% endif %}">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-hospital me-2"></i>居宅介護支援事業所 新規登録・編集</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="renewalOfficeModalError" class="alert alert-danger d-none"></div>
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label">会社名</label>
+                        <input type="text" id="renewal_modal_company_name" class="form-control" placeholder="例: 株式会社 アールビーサポート">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">事業所名 <span class="text-danger">*</span></label>
+                        <input type="text" id="renewal_modal_name" class="form-control" placeholder="例: 居宅介護支援事業所 安濃津ろまん" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">フリガナ</label>
+                        <input type="text" id="renewal_modal_furigana" class="form-control" placeholder="例: キョタクカイゴシエンジギョウショ">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">事業所番号 <span class="text-danger">*</span></label>
+                        <input type="text" id="renewal_modal_office_number" class="form-control" placeholder="例: 2470100419" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">管理者名</label>
+                        <input type="text" id="renewal_modal_manager_name" class="form-control" placeholder="例: 山田 太郎">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">担当者名</label>
+                        <div id="renewal_modal_staff_container" class="row g-2 mb-1"></div>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="addRenewalModalStaffRow()">
+                            <i class="fas fa-plus me-1"></i>担当者を追加
+                        </button>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">郵便番号</label>
+                        <div class="input-group">
+                            <span class="input-group-text">〒</span>
+                            <input type="text" id="renewal_modal_postal_code" class="form-control" placeholder="000-0000">
+                        </div>
+                    </div>
+                    <div class="col-md-8">
+                        <label class="form-label">住所</label>
+                        <input type="text" id="renewal_modal_address" class="form-control" placeholder="例: 三重県津市羽所町○○">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">電話番号</label>
+                        <input type="text" id="renewal_modal_phone" class="form-control" placeholder="例: 059-123-4567">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">FAX</label>
+                        <input type="text" id="renewal_modal_fax" class="form-control" placeholder="例: 059-123-4568">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                <button type="button" class="btn btn-primary" id="renewalOfficeSaveBtn">
+                    <i class="fas fa-save me-1"></i>保存して反映
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
@@ -595,6 +761,8 @@ function submitExcel() {
 
 // ---- FAX本文 ----
 var _faxTemplateBody = "{{ fax_template_body|escapejs }}";
+var _faxTemplateHospitalization = "平素より大変お世話になっております。\n{office_name}の{user_name}です。\n\n【利用者氏名】\n　{client_name} 様\n\nこのたび、利用者様が貴院に入院されましたので、入院時情報提供書を送付させていただきます。\nご確認くださいますよう、よろしくお願い申し上げます。";
+var _faxTemplateDocumentSend = "平素より大変お世話になっております。\n{office_name}の{user_name}です。\n\n【利用者氏名】\n　{client_name} 様\n\nこのたび、上記利用者様の{document_list}を送付させていただきます。\nご確認くださいますよう、よろしくお願い申し上げます。";
 var _faxMessageInitialized = false;
 
 function _anySelected() {
@@ -604,27 +772,77 @@ function _anySelected() {
         || Object.keys(_selectedSupportcenter).length > 0;
 }
 function _updateFaxUI() {
-    var has = _anySelected();
-    var faxBody = document.getElementById('fax_body_accordion');
-    if (faxBody) faxBody.style.display = has ? '' : 'none';
-    if (has) _initFaxMessage();
+    _initFaxMessage();
 }
 function _initFaxMessage() {
     if (_faxMessageInitialized) return;
     _faxMessageInitialized = true;
     var ta = document.getElementById('fax_message');
     if (!ta || ta.value.trim()) return;
-    ta.value = _resolveFaxTemplate(_faxTemplateBody);
+    ta.value = _resolveFaxTemplate(_currentTemplate());
 }
 function _resolveFaxTemplate(template) {
+    var officeName = _OFFICE_NAME || '';
+    var staffName  = (document.getElementById('renewal_staff_name_accordion') || {}).value || '';
+    var clientName = (document.getElementById('client_name_input') || {}).value || '';
+    var result = template;
+    if (staffName) {
+        result = result.replace(/\{user_name\}/g, staffName);
+    } else {
+        result = result.replace(/の\{user_name\}/g, '');
+        result = result.replace(/\{user_name\}/g, '');
+    }
+    result = result.replace(/\{office_name\}/g, officeName);
+    result = result.replace(/\{client_name\}/g, clientName);
+    result = result.replace(/\{document_list\}/g, _buildDocumentList());
+    result = result.replace(/\{care_level\}/g, '');
+    return result;
+}
+function onClientNameChange() {
     var ta = document.getElementById('fax_message');
-    var staffName = (document.getElementById('staff_name_office') || {}).value || '';
-    return template.replace(/\{user_name\}/g, staffName).replace(/\{office_name\}/g,'').replace(/\{client_name\}/g,'').replace(/\{care_level\}/g,'');
+    if (!ta) return;
+    ta.value = _resolveFaxTemplate(_currentTemplate());
+    _faxMessageInitialized = true;
+}
+function _buildDocumentList() {
+    var checks = document.querySelectorAll('#doc_send_checks input[type=checkbox]:checked');
+    var docs = Array.from(checks).map(function(c){ return c.value; });
+    if (docs.length === 0) return '書類';
+    if (docs.length === 1) return docs[0];
+    return docs[0] + 'と' + docs.slice(1).join('、');
+}
+function _currentTemplate() {
+    var sel = document.getElementById('fax_type_select');
+    if (!sel) return _faxTemplateBody;
+    if (sel.value === 'hospitalization') return _faxTemplateHospitalization;
+    if (sel.value === 'document_send')   return _faxTemplateDocumentSend;
+    return _faxTemplateBody;
+}
+function changeFaxType(val) {
+    var checks = document.getElementById('doc_send_checks');
+    if (checks) checks.style.display = (val === 'document_send') ? '' : 'none';
+    var ta = document.getElementById('fax_message'); if(!ta)return;
+    ta.value = _resolveFaxTemplate(_currentTemplate());
+}
+function onDocCheckChange() {
+    var ta = document.getElementById('fax_message'); if(!ta)return;
+    ta.value = _resolveFaxTemplate(_currentTemplate());
+    _faxMessageInitialized = true;
 }
 function resetFaxMessage() {
     var ta=document.getElementById('fax_message'); if(!ta)return;
-    ta.value=_resolveFaxTemplate(_faxTemplateBody); _faxMessageInitialized=true;
+    ta.value=_resolveFaxTemplate(_currentTemplate()); _faxMessageInitialized=true;
 }
+document.addEventListener('DOMContentLoaded',function(){
+    var sel = document.getElementById('fax_type_select');
+    if (sel) changeFaxType(sel.value);
+    _initFaxMessage();
+    var staffSel = document.getElementById('renewal_staff_name_accordion');
+    if (staffSel) staffSel.addEventListener('change', function() {
+        var ta = document.getElementById('fax_message');
+        if (ta) { ta.value = _resolveFaxTemplate(_currentTemplate()); _faxMessageInitialized = true; }
+    });
+});
 document.addEventListener('DOMContentLoaded',function(){
     var ta=document.getElementById('fax_message');
     if(ta)ta.addEventListener('input',function(){
@@ -648,18 +866,18 @@ function _renderAllTable() {
     var rows  = '';
 
     Object.values(_selectedOffices).forEach(function(o) {
-        var nameCell = (o.furigana ? '<small class="text-muted d-block" style="font-size:0.75rem;">'+_escHtml(o.furigana)+'</small>' : '') + '<span class="fw-bold">'+_escHtml(o.name)+'</span>';
-        var telCell  = '<i class="fas fa-phone me-1 text-muted" style="font-size:0.75rem;"></i>'+_escHtml(o.phone||'―')+'<br><i class="fas fa-fax me-1 text-muted" style="font-size:0.75rem;"></i><span class="text-muted">'+_escHtml(o.fax||'―')+'</span>';
-        var opts     = '<option value="">ご担当者 様</option>'; o.persons.forEach(function(p){opts+='<option value="'+_escHtml(p)+'"'+(o.person===p?' selected':'')+'>'+_escHtml(p)+' 様</option>';});
-        rows += '<tr><td class="align-middle">'+_svcBadge(o.svc)+'</td><td class="align-middle">'+nameCell+'</td><td class="align-middle"><select class="form-select form-select-sm" onchange="_onOfficePersonChange(\''+o.id+'\',this.value)">'+opts+'</select></td><td class="align-middle" style="font-size:0.8rem;white-space:nowrap;">'+telCell+'</td><td class="text-center align-middle"><button type="button" class="btn btn-sm btn-outline-secondary" style="padding:2px 7px;font-size:0.75rem;" onclick="removeOffice(\''+o.id+'\')" title="削除"><i class="fas fa-times"></i></button></td></tr>';
+        var nameCell   = (o.furigana ? '<small class="text-muted d-block" style="font-size:0.75rem;">'+_escHtml(o.furigana)+'</small>' : '') + '<span class="fw-bold">'+_escHtml(o.name)+'</span>';
+        var telCell    = '<i class="fas fa-phone me-1 text-muted" style="font-size:0.75rem;"></i>'+_escHtml(o.phone||'―')+'<br><i class="fas fa-fax me-1 text-muted" style="font-size:0.75rem;"></i><span class="text-muted">'+_escHtml(o.fax||'―')+'</span>';
+        var personCell = '<input type="text" class="form-control form-control-sm" placeholder="ご担当者" value="'+_escHtml(o.person||'')+'" oninput="_onOfficePersonChange(\''+o.id+'\',this.value)">';
+        rows += '<tr><td class="align-middle">'+_svcBadge(o.svc)+'</td><td class="align-middle">'+nameCell+'</td><td class="align-middle">'+personCell+'</td><td class="align-middle" style="font-size:0.8rem;white-space:nowrap;">'+telCell+'</td><td class="text-center align-middle"><button type="button" class="btn btn-sm btn-outline-secondary" style="padding:2px 7px;font-size:0.75rem;" onclick="removeOffice(\''+o.id+'\')" title="削除"><i class="fas fa-times"></i></button></td></tr>';
     });
 
     Object.values(_selectedMedical).forEach(function(m) {
-        var nameCell = (m.furigana ? '<small class="text-muted d-block" style="font-size:0.75rem;">'+_escHtml(m.furigana)+'</small>' : '') + '<span class="fw-bold">'+_escHtml(m.name)+'</span>';
-        var telCell  = '<i class="fas fa-phone me-1 text-muted" style="font-size:0.75rem;"></i>'+_escHtml(m.phone||'―')+'<br><i class="fas fa-fax me-1 text-muted" style="font-size:0.75rem;"></i><span class="text-muted">'+_escHtml(m.fax||'―')+'</span>';
-        var opts     = '<option value="">医師を選択</option>'; m.doctors.forEach(function(d){opts+='<option value="'+_escHtml(d)+'"'+(m.doctor===d?' selected':'')+'>'+_escHtml(d)+' 先生</option>';});
-        var badge    = '<span class="svc-type-badge" style="background-color:#fde8e8;">医療機関</span>';
-        rows += '<tr><td class="align-middle">'+badge+'</td><td class="align-middle">'+nameCell+'</td><td class="align-middle"><select class="form-select form-select-sm" onchange="_onMedicalDoctorChange(\''+m.id+'\',this.value)">'+opts+'</select></td><td class="align-middle" style="font-size:0.8rem;white-space:nowrap;">'+telCell+'</td><td class="text-center align-middle"><button type="button" class="btn btn-sm btn-outline-secondary" style="padding:2px 7px;font-size:0.75rem;" onclick="removeMedical(\''+m.id+'\')" title="削除"><i class="fas fa-times"></i></button></td></tr>';
+        var nameCell   = (m.furigana ? '<small class="text-muted d-block" style="font-size:0.75rem;">'+_escHtml(m.furigana)+'</small>' : '') + '<span class="fw-bold">'+_escHtml(m.name)+'</span>';
+        var telCell    = '<i class="fas fa-phone me-1 text-muted" style="font-size:0.75rem;"></i>'+_escHtml(m.phone||'―')+'<br><i class="fas fa-fax me-1 text-muted" style="font-size:0.75rem;"></i><span class="text-muted">'+_escHtml(m.fax||'―')+'</span>';
+        var badge      = '<span class="svc-type-badge" style="background-color:#fde8e8;">医療機関</span>';
+        var personCell = '<input type="text" class="form-control form-control-sm" placeholder="ご担当者" value="'+_escHtml(m.doctor||'')+'" oninput="_onMedicalDoctorChange(\''+m.id+'\',this.value)">';
+        rows += '<tr><td class="align-middle">'+badge+'</td><td class="align-middle">'+nameCell+'</td><td class="align-middle">'+personCell+'</td><td class="align-middle" style="font-size:0.8rem;white-space:nowrap;">'+telCell+'</td><td class="text-center align-middle"><button type="button" class="btn btn-sm btn-outline-secondary" style="padding:2px 7px;font-size:0.75rem;" onclick="removeMedical(\''+m.id+'\')" title="削除"><i class="fas fa-times"></i></button></td></tr>';
     });
 
     Object.values(_selectedHomecare).forEach(function(h) {
@@ -892,5 +1110,206 @@ function submitSupportcenterAdd() {
         })
         .catch(function(){ msg.textContent = '通信エラーが発生しました'; msg.style.color = '#dc3545'; });
 }
+
+// ==================== 送付元（_submitter_js.html 相当） ====================
+var _ownOfficeData = {{ own_office_json|safe }};
+var _OFFICE_NAME     = _ownOfficeData ? _ownOfficeData.name         : '';
+var _OFFICE_COMPANY  = _ownOfficeData ? _ownOfficeData.company_name : '';
+var _OFFICE_FURIGANA = _ownOfficeData ? _ownOfficeData.furigana     : '';
+var _OFFICE_NUMBER   = _ownOfficeData ? _ownOfficeData.office_number : '';
+var _OFFICE_POSTAL   = _ownOfficeData ? _ownOfficeData.postal_code   : '';
+var _OFFICE_ADDRESS  = _ownOfficeData ? _ownOfficeData.address       : '';
+var _OFFICE_PHONE    = _ownOfficeData ? _ownOfficeData.phone         : '';
+var _OFFICE_FAX      = _ownOfficeData ? _ownOfficeData.fax           : '';
+var _OFFICE_MANAGER  = _ownOfficeData ? _ownOfficeData.manager_name  : '';
+var _CURRENT_STAFF_NAMES = _ownOfficeData ? (_ownOfficeData.staff_names || []) : [];
+
+function addRenewalModalStaffRow(value) {
+    var c = document.getElementById('renewal_modal_staff_container');
+    if (!c) return;
+    var col = document.createElement('div');
+    col.className = 'col-6 renewal-staff-row';
+    col.innerHTML = '<div class="d-flex align-items-center gap-1">'
+        + '<input type="text" name="staff_names[]" class="form-control form-control-sm" placeholder="例: 山田 太郎" value="' + (value ? value.replace(/"/g,'&quot;') : '') + '">'
+        + '<button type="button" class="btn-close" style="font-size:0.7rem;" onclick="this.closest(\'.renewal-staff-row\').remove()"></button>'
+        + '</div>';
+    c.appendChild(col);
+}
+
+function _updateStaffDropdown(names) {
+    var sel = document.getElementById('renewal_staff_name_accordion');
+    if (!sel) return;
+    var current = sel.value;
+    Array.from(sel.options).forEach(function(o) { if (o.dataset.fromStaff) o.remove(); });
+    names.forEach(function(n) {
+        if (!n) return;
+        var found = Array.from(sel.options).some(function(o) { return o.value === n; });
+        if (!found) {
+            var opt = document.createElement('option');
+            opt.value = n; opt.textContent = n; opt.dataset.fromStaff = '1';
+            sel.appendChild(opt);
+        }
+    });
+    if (current) sel.value = current;
+}
+
+
+function toggleRenewalProvider() {
+    var selectEl = document.getElementById('renewal_provider_select');
+    if (!selectEl) return;
+    var g = function(id) { return document.getElementById(id); };
+    if (selectEl.value === 'other') {
+        ['renewal_office_furigana','renewal_office_name','renewal_office_number',
+         'renewal_postal_code','renewal_office_address','renewal_office_phone',
+         'renewal_office_fax','renewal_office_manager'].forEach(function(id){ if(g(id)) g(id).value=''; });
+        var clr={'disp_office_furigana':'','disp_office_number':'','disp_office_name':'',
+                 'disp_office_postal':'','disp_office_address':'',
+                 'disp_office_phone':'―','disp_office_fax':'―','disp_office_manager':'―'};
+        Object.keys(clr).forEach(function(id){if(g(id))g(id).textContent=clr[id];});
+        var staffSel  = document.getElementById('renewal_staff_name_accordion');
+        var staffDash = document.getElementById('disp_staff_dash');
+        if (staffSel)  { staffSel.style.display = 'none'; staffSel.value = ''; }
+        if (staffDash) staffDash.style.display = '';
+    } else {
+        var d = {
+            'renewal_office_furigana': _OFFICE_FURIGANA,
+            'renewal_office_name':     _OFFICE_NAME,
+            'renewal_office_number':   _OFFICE_NUMBER,
+            'renewal_postal_code':     _OFFICE_POSTAL,
+            'renewal_office_address':  _OFFICE_ADDRESS,
+            'renewal_office_phone':    _OFFICE_PHONE,
+            'renewal_office_fax':      _OFFICE_FAX,
+            'renewal_office_manager':  _OFFICE_MANAGER,
+        };
+        Object.keys(d).forEach(function(id){if(g(id)) g(id).value=d[id];});
+        if(g('disp_office_furigana')) g('disp_office_furigana').textContent=d['renewal_office_furigana'];
+        if(g('disp_office_name'))     g('disp_office_name').textContent=d['renewal_office_name'];
+        if(g('disp_office_number'))   g('disp_office_number').textContent=d['renewal_office_number'];
+        if(g('disp_office_postal'))   g('disp_office_postal').textContent=d['renewal_postal_code']?'〒'+d['renewal_postal_code']:'';
+        if(g('disp_office_address'))  g('disp_office_address').textContent=d['renewal_office_address'];
+        if(g('disp_office_phone'))    g('disp_office_phone').textContent=d['renewal_office_phone']||'―';
+        if(g('disp_office_fax'))      g('disp_office_fax').textContent=d['renewal_office_fax']||'―';
+        if(g('disp_office_manager'))  g('disp_office_manager').textContent=d['renewal_office_manager']||'―';
+        if(selectEl.options[0] && d['renewal_office_name']) selectEl.options[0].text=d['renewal_office_name'];
+        var staffSel2  = document.getElementById('renewal_staff_name_accordion');
+        var staffDash2 = document.getElementById('disp_staff_dash');
+        if (staffSel2)  staffSel2.style.display = '';
+        if (staffDash2) staffDash2.style.display = 'none';
+    }
+}
+
+
+function openRenewalOfficeMasterModal() {
+    var isNew = (document.getElementById('renewal_provider_select') || {}).value === 'other';
+    var errEl = document.getElementById('renewalOfficeModalError');
+    if (errEl) errEl.classList.add('d-none');
+    var container = document.getElementById('renewal_modal_staff_container');
+    if (container) container.innerHTML = '';
+    if (isNew) {
+        ['renewal_modal_company_name','renewal_modal_name','renewal_modal_furigana',
+         'renewal_modal_office_number','renewal_modal_manager_name',
+         'renewal_modal_postal_code','renewal_modal_address',
+         'renewal_modal_phone','renewal_modal_fax'].forEach(function(id) {
+            var el = document.getElementById(id); if (el) el.value = '';
+        });
+        var pkEl = document.getElementById('renewal_modal_pk');
+        if (pkEl) pkEl.value = '';
+    } else {
+        var g = function(id) { return document.getElementById(id); };
+        if(g('renewal_modal_company_name'))   g('renewal_modal_company_name').value   = _OFFICE_COMPANY;
+        if(g('renewal_modal_name'))           g('renewal_modal_name').value           = _OFFICE_NAME;
+        if(g('renewal_modal_furigana'))        g('renewal_modal_furigana').value       = _OFFICE_FURIGANA;
+        if(g('renewal_modal_office_number'))   g('renewal_modal_office_number').value  = _OFFICE_NUMBER;
+        if(g('renewal_modal_manager_name'))    g('renewal_modal_manager_name').value   = _OFFICE_MANAGER;
+        if(g('renewal_modal_postal_code'))    g('renewal_modal_postal_code').value    = _OFFICE_POSTAL;
+        if(g('renewal_modal_address'))        g('renewal_modal_address').value        = _OFFICE_ADDRESS;
+        if(g('renewal_modal_phone'))          g('renewal_modal_phone').value          = _OFFICE_PHONE;
+        if(g('renewal_modal_fax'))            g('renewal_modal_fax').value            = _OFFICE_FAX;
+        _CURRENT_STAFF_NAMES.forEach(function(n) { addRenewalModalStaffRow(n); });
+    }
+    new bootstrap.Modal(document.getElementById('renewalOfficeModal')).show();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    var saveBtn = document.getElementById('renewalOfficeSaveBtn');
+    if (!saveBtn) return;
+    saveBtn.addEventListener('click', function() {
+        var pk = document.getElementById('renewal_modal_pk').value;
+        function _normSp(s) { return s.trim().replace(/[ 　]+/g, ' '); }
+        var errEl = document.getElementById('renewalOfficeModalError');
+        var companyName  = _normSp((document.getElementById('renewal_modal_company_name')||{}).value||'');
+        var name         = _normSp((document.getElementById('renewal_modal_name')||{}).value||'');
+        var furigana     = _normSp((document.getElementById('renewal_modal_furigana')||{}).value||'');
+        var officeNumber = ((document.getElementById('renewal_modal_office_number')||{}).value||'').trim();
+        var managerName  = _normSp((document.getElementById('renewal_modal_manager_name')||{}).value||'');
+        var postalCode   = ((document.getElementById('renewal_modal_postal_code')||{}).value||'').trim();
+        var address      = ((document.getElementById('renewal_modal_address')||{}).value||'').trim();
+        var phone        = ((document.getElementById('renewal_modal_phone')||{}).value||'').trim();
+        var fax          = ((document.getElementById('renewal_modal_fax')||{}).value||'').trim();
+        if (!name || !officeNumber) {
+            errEl.textContent = '事業所名と事業所番号は必須です。';
+            errEl.classList.remove('d-none');
+            return;
+        }
+        var fd = new FormData();
+        fd.append('company_name',companyName); fd.append('name',name); fd.append('furigana',furigana);
+        fd.append('office_number',officeNumber); fd.append('manager_name',managerName);
+        fd.append('postal_code',postalCode); fd.append('address',address);
+        fd.append('phone',phone); fd.append('fax',fax); fd.append('is_active','true');
+        document.querySelectorAll('#renewal_modal_staff_container input[name="staff_names[]"]').forEach(function(inp) {
+            var v = _normSp(inp.value); if (v) fd.append('staff_names[]', v);
+        });
+        fd.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+        var url = pk
+            ? '/public/homecare-offices/' + pk + '/edit/'
+            : '/public/homecare-offices/create/';
+        fetch(url, {method:'POST', body:fd})
+            .then(function(r){return r.json();})
+            .then(function(data) {
+                if (!data.success) {
+                    errEl.textContent = data.error || 'エラーが発生しました。';
+                    errEl.classList.remove('d-none');
+                    return;
+                }
+                var g = function(id){return document.getElementById(id);};
+                if (!pk && data.pk) {
+                    g('renewal_modal_pk').value = data.pk;
+                    var sel = g('renewal_provider_select');
+                    if (sel) {
+                        var nOpt = sel.querySelector('option[data-new="1"]');
+                        if (!nOpt) { nOpt=document.createElement('option'); nOpt.dataset.new='1'; sel.insertBefore(nOpt, sel.querySelector('option[value="other"]')); }
+                        nOpt.value = String(data.pk); nOpt.textContent = data.name;
+                        sel.value = String(data.pk);
+                    }
+                }
+                var sv=function(id,v){var e=g(id);if(e)e.value=v||'';};
+                sv('renewal_office_name',name); sv('renewal_office_furigana',furigana);
+                sv('renewal_office_number',officeNumber); sv('renewal_postal_code',postalCode);
+                sv('renewal_office_address',address); sv('renewal_office_phone',phone);
+                sv('renewal_office_fax',fax); sv('renewal_office_manager',managerName);
+                var st=function(id,v){var e=g(id);if(e)e.textContent=v||'';};
+                st('disp_office_name',name); st('disp_office_furigana',furigana);
+                st('disp_office_number',officeNumber);
+                st('disp_office_postal',postalCode?'〒'+postalCode:'');
+                st('disp_office_address',address);
+                st('disp_office_phone',phone||'―'); st('disp_office_fax',fax||'―');
+                st('disp_office_manager',managerName||'―');
+                _OFFICE_COMPANY=companyName; _OFFICE_NAME=name; _OFFICE_FURIGANA=furigana; _OFFICE_NUMBER=officeNumber;
+                _OFFICE_POSTAL=postalCode; _OFFICE_ADDRESS=address;
+                _OFFICE_PHONE=phone; _OFFICE_FAX=fax; _OFFICE_MANAGER=managerName;
+                if (data.staff_names) { _CURRENT_STAFF_NAMES=data.staff_names; _updateStaffDropdown(data.staff_names); }
+                var staffSel2  = g('renewal_staff_name_accordion');
+                var staffDash2 = g('disp_staff_dash');
+                if (staffSel2)  staffSel2.style.display = '';
+                if (staffDash2) staffDash2.style.display = 'none';
+                bootstrap.Modal.getInstance(document.getElementById('renewalOfficeModal')).hide();
+                updateRenewalStatusIcon();
+            })
+            .catch(function() {
+                errEl.textContent = '通信エラーが発生しました。';
+                errEl.classList.remove('d-none');
+            });
+    });
+});
 </script>
 {% endblock %}

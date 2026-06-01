@@ -95,19 +95,19 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
+                    <tr onclick="rowToggle(event,'ms_toggle',calculate)" style="cursor:pointer;">
                         <td class="ps-3 fw-bold align-middle">食事支援</td>
                         <td class="align-middle"><div class="form-check form-switch mb-0"><input class="form-check-input" type="checkbox" role="switch" id="ms_toggle" onchange="guardBasic(this, calculate)"></div></td>
                         <td class="align-middle text-muted" style="font-size:0.82rem;">165円/日</td>
                         <td class="pe-3 text-muted align-middle" style="font-size:0.8rem; line-height:1.6;">お部屋への声掛け・食堂までのご誘導・配膳・下膳・食器の配置の変更<small class="d-block" style="font-size:0.75rem;">※介護サービスで食事介助を受ける場合は不要</small></td>
                     </tr>
-                    <tr>
+                    <tr onclick="rowToggle(event,'linen_toggle',calculate)" style="cursor:pointer;">
                         <td class="ps-3 fw-bold align-middle">リネンリース</td>
                         <td class="align-middle"><div class="form-check form-switch mb-0"><input class="form-check-input" type="checkbox" role="switch" id="linen_toggle" onchange="guardBasic(this, calculate)"></div></td>
                         <td class="align-middle text-muted" style="font-size:0.82rem;">165円/日</td>
                         <td class="pe-3 text-muted align-middle" style="font-size:0.8rem; line-height:1.6;">掛け布団・ベッドパッド・枕・シーツをリース（週1回交換）。持ち込みの場合、汚れ時の交換はご本人・ご家族様での対応となります。</td>
                     </tr>
-                    <tr>
+                    <tr onclick="rowToggle(event,'exc_toggle',toggleExcretion)" style="cursor:pointer;">
                         <td class="ps-3 fw-bold align-middle">排泄支援</td>
                         <td class="align-middle"><div class="form-check form-switch mb-0"><input class="form-check-input" type="checkbox" role="switch" id="exc_toggle" onchange="guardBasic(this, toggleExcretion)"></div></td>
                         <td class="align-middle text-muted" style="font-size:0.8rem; line-height:1.7;">日中：110円<br>夜間・早朝：220円<br>深夜：275円</td>
@@ -122,19 +122,19 @@
                             </div>
                         </td>
                     </tr>
-                    <tr>
+                    <tr onclick="rowToggle(event,'mince_toggle',calculate)" style="cursor:pointer;">
                         <td class="ps-3 fw-bold align-middle">刻み・ペースト食</td>
                         <td class="align-middle"><div class="form-check form-switch mb-0"><input class="form-check-input" type="checkbox" role="switch" id="mince_toggle" onchange="guardBasic(this, calculate)"></div></td>
                         <td class="align-middle text-muted" style="font-size:0.82rem;">44円/食</td>
                         <td class="pe-3 text-muted align-middle" style="font-size:0.8rem; line-height:1.6;">食事の形態を一口大・キザミ・ペーストへ変更します。<small class="d-block" style="font-size:0.75rem;">※お粥への変更は無料</small></td>
                     </tr>
-                    <tr>
+                    <tr onclick="rowToggle(event,'therapy_toggle',calculate)" style="cursor:pointer;">
                         <td class="ps-3 fw-bold align-middle">療養食</td>
                         <td class="align-middle"><div class="form-check form-switch mb-0"><input class="form-check-input" type="checkbox" role="switch" id="therapy_toggle" onchange="guardBasic(this, calculate)"></div></td>
                         <td class="align-middle text-muted" style="font-size:0.82rem;">77円/食</td>
                         <td class="pe-3 text-muted align-middle" style="font-size:0.8rem; line-height:1.6;">医師の指示に基づく特別食を提供します（糖尿病食・心臓食・腎食・胃潰瘍食・貧血食など）。</td>
                     </tr>
-                    <tr>
+                    <tr onclick="rowToggle(event,'spu_toggle',toggleSputum)" style="cursor:pointer;">
                         <td class="ps-3 fw-bold align-middle">喀痰吸引</td>
                         <td class="align-middle"><div class="form-check form-switch mb-0"><input class="form-check-input" type="checkbox" role="switch" id="spu_toggle" onchange="guardBasic(this, toggleSputum)"></div></td>
                         <td class="align-middle text-muted" style="font-size:0.8rem; line-height:1.7;">日中：110円<br>夜間・早朝：220円<br>深夜：275円</td>
@@ -149,13 +149,13 @@
                             </div>
                         </td>
                     </tr>
-                    <tr>
+                    <tr onclick="rowToggle(event,'parking_toggle',calculate)" style="cursor:pointer;">
                         <td class="ps-3 fw-bold align-middle">駐車場代</td>
                         <td class="align-middle"><div class="form-check form-switch mb-0"><input class="form-check-input" type="checkbox" role="switch" id="parking_toggle" onchange="guardBasic(this, calculate)"></div></td>
                         <td class="align-middle text-muted" style="font-size:0.82rem;">3,300円/月</td>
                         <td class="pe-3 text-muted align-middle" style="font-size:0.8rem; line-height:1.6;"></td>
                     </tr>
-                    <tr id="cleaning_section" style="display:none;">
+                    <tr id="cleaning_section" style="display:none;" onclick="rowToggle(event,'cleaning_toggle',toggleCleaning)" class="cursor-pointer">
                         <td class="ps-3 fw-bold align-middle">居室内清掃</td>
                         <td class="align-middle"><div class="form-check form-switch mb-0"><input class="form-check-input" type="checkbox" role="switch" id="cleaning_toggle" onchange="guardBasic(this, toggleCleaning)"></div></td>
                         <td class="align-middle text-muted" style="font-size:0.8rem; line-height:1.7;">550円/回<br><span style="font-size:0.75rem;">30分以内/人</span></td>
@@ -176,7 +176,7 @@
                         <td class="align-middle"><span class="badge bg-warning text-dark" style="font-size:0.72rem;">詳細確認中</span></td>
                         <td class="pe-3 text-muted align-middle" style="font-size:0.8rem; line-height:1.6;">衣類・タオル類のお洗濯代行。料金・回数など詳細は施設スタッフにご確認ください。</td>
                     </tr>
-                    <tr id="bed_section" style="display:none;">
+                    <tr id="bed_section" style="display:none;" onclick="rowToggle(event,'bd_toggle',calculate)" class="cursor-pointer">
                         <td class="ps-3 fw-bold align-middle">ベッドリース<span class="badge bg-secondary ms-1" style="font-size:0.65rem;">要介護1のみ</span></td>
                         <td class="align-middle"><div class="form-check form-switch mb-0"><input class="form-check-input" type="checkbox" role="switch" id="bd_toggle" onchange="guardBasic(this, calculate)"></div></td>
                         <td class="align-middle text-muted" style="font-size:0.82rem;">3,300円/月</td>
@@ -245,6 +245,15 @@
 var _careLevel = null;
 var _breakdownVisible = false;
 var _warningTimer = null;
+
+function rowToggle(e, toggleId, fn) {
+    if (e.target.closest('input') || e.target.closest('label')) return;
+    var el = document.getElementById(toggleId);
+    if (!el) return;
+    if (!_careLevel) { showBasicWarning(); return; }
+    el.checked = !el.checked;
+    fn();
+}
 
 function showBasicWarning() {
     var toast = document.getElementById('basic-warning-toast');

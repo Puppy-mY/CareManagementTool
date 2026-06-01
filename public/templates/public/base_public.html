@@ -4,22 +4,34 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}安濃津ろまん{% endblock %}</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4" crossorigin="anonymous"></script>
     <style>
         :root {
             --primary-color: #4a5568;
             --secondary-color: #718096;
             --accent-color: #2d3748;
-            --background-color: #f7fafc;
+            --background-color: #ffffff;
             --surface-color: #ffffff;
             --border-color: #e2e8f0;
             --text-primary: #2d3748;
             --text-secondary: #4a5568;
             --table-header-bg: #f8f9fa;
         }
-        body { background: var(--background-color); font-family: 'Helvetica Neue', Arial, sans-serif; }
+        body { background: var(--background-color); display: flex; flex-direction: column; min-height: 100vh; }
+        /* ナビバー */
+        .site-navbar { background: linear-gradient(135deg, #4a5568 0%, #64748b 100%); }
+        #navbarNav { border-top: 1px solid rgba(255,255,255,0.2); margin-top: 0.4rem; padding: 0 0.5rem; }
+        /* フッター */
+        .site-footer {
+            background: linear-gradient(135deg, #4a5568 0%, #64748b 100%);
+            color: rgba(255,255,255,0.6);
+            text-align: center;
+            font-size: 0.75rem;
+            padding: 14px;
+            margin-top: auto;
+        }
         /* ボタン */
         .btn-primary { background-color: var(--primary-color); border-color: var(--primary-color); }
         .btn-primary:hover { background-color: var(--accent-color); border-color: var(--accent-color); }
@@ -27,7 +39,7 @@
         .table th { background-color: var(--table-header-bg); color: var(--text-primary); border-color: var(--border-color); }
         /* カード */
         .card { border-color: var(--border-color); }
-        .card-header { background-color: var(--background-color); border-color: var(--border-color); }
+        .card-header { background-color: #f7fafc; border-color: var(--border-color); }
         /* フォームフォーカス */
         .form-control:focus { border-color: var(--primary-color); box-shadow: 0 0 0 0.2rem rgba(74,85,104,0.25); }
         .form-select:focus { border-color: var(--primary-color); box-shadow: 0 0 0 0.2rem rgba(74,85,104,0.25); }
@@ -44,97 +56,93 @@
             border-color: #198754 !important;
             color: #198754 !important;
         }
-        .pub-navbar {
-            background: linear-gradient(135deg, #4a5568 0%, #64748b 100%);
-            padding: 12px 20px;
+        /* PC画面でもタブレットサイズ（960px）に固定 */
+        @media (min-width: 992px) {
+            .container { max-width: 960px; }
         }
-        .pub-navbar-brand {
-            color: #fff;
-            font-weight: 700;
-            font-size: 1rem;
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .pub-navbar-sub {
-            color: rgba(255,255,255,0.65);
-            font-size: 0.78rem;
-            margin-left: 4px;
-        }
-        .pub-nav-links {
-            display: flex;
-            gap: 4px;
-            flex-wrap: wrap;
-        }
-        .pub-nav-link {
-            color: rgba(255,255,255,0.85);
-            text-decoration: none;
-            font-size: 0.83rem;
-            padding: 5px 12px;
-            border-radius: 6px;
-            transition: background 0.15s;
-        }
-        .pub-nav-link:hover, .pub-nav-link.active {
-            background: rgba(255,255,255,0.15);
-            color: #fff;
-        }
-        .pub-nav-link i { margin-right: 4px; }
-        .pub-footer {
-            background: linear-gradient(135deg, #4a5568 0%, #64748b 100%);
-            color: rgba(255,255,255,0.6);
-            text-align: center;
-            font-size: 0.75rem;
-            padding: 14px;
-            margin-top: auto;
-        }
-        body { display: flex; flex-direction: column; min-height: 100vh; }
-        .pub-main { flex: 1; padding: 1.5rem 0 3rem; }
-        .pub-main .container { max-width: 960px; }
+        /* メインコンテンツ */
+        .pub-main { flex: 1; padding: 2rem 0 3rem; }
+        .cursor-pointer { cursor: pointer; }
         {% block extra_style %}{% endblock %}
     </style>
     {% block extra_head %}{% endblock %}
 </head>
 <body>
 
-<nav class="pub-navbar d-flex align-items-center justify-content-between flex-wrap gap-2">
-    <a class="pub-navbar-brand" href="/public/fee-simulation/">
-        <i class="fas fa-leaf"></i>
-        安濃津ろまん
-        <span class="pub-navbar-sub">サービス付き高齢者向け住宅</span>
-    </a>
-    <div class="pub-nav-links">
-        <a class="pub-nav-link {% block nav_fee %}{% endblock %}" href="/public/fee-simulation/">
-            <i class="fas fa-calculator"></i>料金シミュレーション
+<nav class="navbar navbar-dark site-navbar">
+    <div class="container">
+        <a class="navbar-brand" href="/public/fee-simulation/">
+            <i class="fas fa-leaf"></i> 安濃津ろまん
+            <small style="font-size:0.85rem; font-weight:300; opacity:0.9; letter-spacing:0.05rem; vertical-align:middle; margin-left:0.4rem;">サービス付き高齢者向け住宅</small>
         </a>
-        <a class="pub-nav-link {% block nav_fax %}{% endblock %}" href="/public/fax-cover-sheet/">
-            <i class="fas fa-fax"></i>FAX送付状
-        </a>
-        <a class="pub-nav-link {% block nav_facilities %}{% endblock %}" href="/public/facilities/">
-            <i class="fas fa-search"></i>施設検索
-        </a>
-        <a class="pub-nav-link {% block nav_homecare %}{% endblock %}" href="/public/homecare-offices/">
-            <i class="fas fa-home"></i>居宅介護支援
-        </a>
-        <a class="pub-nav-link {% block nav_support %}{% endblock %}" href="/public/support-centers/">
-            <i class="fas fa-building"></i>包括支援センター
-        </a>
-        <a class="pub-nav-link {% block nav_care_svc %}{% endblock %}" href="/public/care-service-offices/">
-            <i class="fas fa-clinic-medical"></i>介護サービス
-        </a>
-        <a class="pub-nav-link {% block nav_medical %}{% endblock %}" href="/public/medical-institutions/">
-            <i class="fas fa-stethoscope"></i>主治医・医療機関
-        </a>
+        <div class="ms-auto d-flex align-items-center">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" style="border:none; padding:0.25rem 0.5rem;">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+        </div>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <div class="w-100 py-2">
+                <div class="row g-0">
+                    <!-- 左：ページ -->
+                    <div class="col-6 pe-2" style="border-right:1px solid rgba(255,255,255,0.2);">
+                        <p class="text-white-50 mb-1 ps-2" style="font-size:0.72rem; font-weight:600; letter-spacing:0.06em; text-transform:uppercase;">便利ツール</p>
+                        <ul class="navbar-nav flex-column">
+                            <li class="nav-item">
+                                <a class="nav-link py-1 {% block nav_fee %}{% endblock %}" href="/public/fee-simulation/">
+                                    <i class="fas fa-calculator fa-fw"></i> 料金シミュレーション
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link py-1 {% block nav_fax %}{% endblock %}" href="/public/fax-cover-sheet/">
+                                    <i class="fas fa-fax fa-fw"></i> FAX送付状
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link py-1 {% block nav_facilities %}{% endblock %}" href="/public/facilities/">
+                                    <i class="fas fa-search fa-fw"></i> 施設検索
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                    <!-- 右：マスタデータ -->
+                    <div class="col-6 ps-3">
+                        <p class="text-white-50 mb-1 ps-2" style="font-size:0.72rem; font-weight:600; letter-spacing:0.06em; text-transform:uppercase;">マスタデータ</p>
+                        <ul class="navbar-nav flex-column">
+                            <li class="nav-item">
+                                <a class="nav-link py-1 {% block nav_homecare %}{% endblock %}" href="/public/homecare-offices/">
+                                    <i class="fas fa-home fa-fw"></i> 居宅介護支援事業所
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link py-1 {% block nav_support %}{% endblock %}" href="/public/support-centers/">
+                                    <i class="fas fa-building fa-fw"></i> 地域包括支援センター
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link py-1 {% block nav_care_svc %}{% endblock %}" href="/public/care-service-offices/">
+                                    <i class="fas fa-clinic-medical fa-fw"></i> 介護サービス事業所
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link py-1 {% block nav_medical %}{% endblock %}" href="/public/medical-institutions/">
+                                    <i class="fas fa-stethoscope fa-fw"></i> 主治医・医療機関
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </nav>
 
 <div class="pub-main">
-    <div class="container px-3">
+    <div class="container">
         {% block content %}{% endblock %}
     </div>
 </div>
 
-<footer class="pub-footer">
+<footer class="site-footer">
     サービス付き高齢者向け住宅　安濃津ろまん
 </footer>
 

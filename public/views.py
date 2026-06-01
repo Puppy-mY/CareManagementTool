@@ -32,10 +32,17 @@ def fax_cover_sheet(request):
                 self.phone = phone
                 self.fax = fax
 
-        office_name  = request.POST.get('sender_office_name', '').strip()
-        office_phone = request.POST.get('sender_phone', '').strip()
-        office_fax   = request.POST.get('sender_fax', '').strip()
-        sender_name  = request.POST.get('staff_name_office', '').strip()
+        submitter_type = request.POST.get('submitter_type', 'office')
+        if submitter_type == 'person':
+            sender_name  = request.POST.get('staff_name', '').strip()
+            office_name  = sender_name
+            office_phone = request.POST.get('office_phone', '').strip()
+            office_fax   = request.POST.get('relation', '').strip()
+        else:
+            office_name  = request.POST.get('office_name', '').strip()
+            office_phone = request.POST.get('office_phone', '').strip()
+            office_fax   = request.POST.get('office_fax', '').strip()
+            sender_name  = request.POST.get('staff_name_office', '').strip()
 
         mock_office = _MockOffice(office_name, office_phone, office_fax) if office_name else None
         content = _generate_fax_cover_sheet_standalone_bytes(request, mock_office, sender_name)
@@ -55,11 +62,27 @@ def fax_cover_sheet(request):
     homecare_offices = list(HomeCareSupportOffice.objects.filter(is_active=True))
     support_centers  = list(RegionalSupportCenter.objects.filter(is_active=True))
 
+    own_office = HomeCareSupportOffice.objects.filter(
+        is_active=True, name__icontains='安濃津ろまん'
+    ).first()
+
+    own_office_json = json.dumps({
+        'id': own_office.id, 'name': own_office.name, 'furigana': own_office.furigana or '',
+        'company_name': own_office.company_name or '',
+        'office_number': own_office.office_number or '',
+        'postal_code': own_office.postal_code or '', 'address': own_office.address or '',
+        'phone': own_office.phone or '', 'fax': own_office.fax or '',
+        'manager_name': own_office.manager_name or '',
+        'staff_names': [s for s in (own_office.staff_names or []) if s],
+    } if own_office else None, ensure_ascii=False)
+
     return render(request, 'public/fax_cover_sheet.html', {
         'care_offices':     care_offices,
         'medical_insts':    medical_insts,
         'homecare_offices': homecare_offices,
         'support_centers':  support_centers,
+        'own_office':       own_office,
+        'own_office_json':  own_office_json,
         'today':            date.today(),
         'fax_template_body': FaxMessageTemplate.get_body(),
     })
@@ -187,7 +210,14 @@ def pub_homecare_office_create(request):
         staff_names=[s.strip().replace('　', ' ') for s in request.POST.getlist('staff_names[]') if s.strip()],
         is_active=True,
     )
-    return JsonResponse({'success': True, 'id': office.pk})
+    return JsonResponse({
+        'success': True, 'pk': office.pk,
+        'name': office.name, 'furigana': office.furigana or '',
+        'office_number': office.office_number,
+        'postal_code': office.postal_code or '', 'address': office.address or '',
+        'phone': office.phone or '', 'fax': office.fax or '',
+        'staff_names': office.staff_names or [],
+    })
 
 
 @require_POST
@@ -211,7 +241,7 @@ def pub_homecare_office_edit(request, pk):
     office.staff_names = [s.strip().replace('　', ' ') for s in request.POST.getlist('staff_names[]') if s.strip()]
     office.is_active = request.POST.get('is_active') == 'true'
     office.save()
-    return JsonResponse({'success': True})
+    return JsonResponse({'success': True, 'staff_names': office.staff_names or []})
 
 
 @require_POST
