@@ -1,0 +1,444 @@
+{% extends 'public/base_public.html' %}
+
+{% block title %}介護サービスシミュレーター - 安濃津ろまん{% endblock %}
+{% block nav_care_sim %}active{% endblock %}
+
+{% block extra_style %}
+.plan-card { cursor:pointer; border:2px solid #dee2e6; border-radius:12px; transition:all 0.2s; }
+.plan-card:hover { border-color:#6c9bd1; background:#f4f8ff; transform:translateY(-2px); box-shadow:0 4px 12px rgba(0,0,0,0.08); }
+.plan-card.selected { border-color:#1976d2; background:#e8f0fe; }
+.plan-card.selected .plan-name { color:#1565c0; }
+.week-table { border-collapse:collapse; width:100%; font-size:0.78rem; table-layout:fixed; }
+.week-table th, .week-table td { border:1px solid #e0e0e0; padding:0; text-align:center; vertical-align:middle; height:22px; max-height:22px; overflow:hidden; }
+.week-table thead th { background:#f5f5f5; font-weight:600; font-size:0.75rem; padding:5px 2px; height:auto; max-height:none; }
+.week-table .time-label { background:#fafafa; font-weight:500; font-size:0.68rem; color:#999; width:38px; padding:2px; white-space:nowrap; }
+.week-table .empty-cell { background:#fdfdfd; }
+.svc-badge { display:block; text-align:center; border-radius:5px; font-size:0.68rem; font-weight:600; line-height:1.4; padding:2px 3px; }
+.svc-day    { background:#e8f5e9; color:#2e7d32; }
+.svc-daycare{ background:#ffe0b2; color:#e65100; }
+.svc-visit  { background:#fff9c4; color:#f57f17; }
+.svc-nurse  { background:#fce4ec; color:#c62828; }
+.svc-rehab  { background:#fce4ec; color:#c2185b; }
+.svc-welfare{ background:#eceff1; color:#37474f; }
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+    <div class="mb-4 pb-2 border-bottom">
+        <h1 class="h4 mb-0 text-dark fw-bold">
+            <i class="fas fa-calendar-week me-2 text-secondary"></i>介護サービスシミュレーター
+        </h1>
+        <p class="text-muted small mb-0 mt-1">サービス付き高齢者向け住宅　安濃津ろまん</p>
+    </div>
+
+    <!-- 要介護度選択 -->
+    <div class="card mb-3">
+        <div class="card-header">
+            <h6 class="mb-0"><i class="fas fa-sliders-h me-2 text-muted"></i>要介護度を選択</h6>
+        </div>
+        <div class="card-body py-3">
+            <div class="d-flex flex-wrap gap-2">
+                {% for level in care_levels %}
+                <button type="button" class="btn btn-outline-secondary btn-sm care-level-btn" style="min-width:80px;" onclick="selectLevel('{{ level }}')">{{ level }}</button>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- 未選択時 -->
+    <div id="placeholder" class="text-center text-muted py-5">
+        <i class="fas fa-arrow-up fa-lg mb-2 d-block" style="opacity:0.3;"></i>
+        <span style="font-size:0.9rem;">要介護度を選択するとプランが表示されます</span>
+    </div>
+
+    <!-- プラン選択 -->
+    <div id="plan-section" style="display:none;">
+        <div class="card mb-3">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-list-alt me-2 text-muted"></i>プランを選択</h6>
+            </div>
+            <div class="card-body">
+                <div id="plan-cards" class="d-flex flex-wrap gap-3"></div>
+            </div>
+        </div>
+
+        <!-- 週間サービス表 -->
+        <div id="schedule-section" style="display:none;">
+            <div class="card mb-3">
+                <div class="card-header d-flex align-items-center justify-content-between">
+                    <h6 class="mb-0"><i class="fas fa-calendar-week me-2 text-muted"></i>週間サービス表</h6>
+                    <span id="plan-badge" class="badge" style="background:#e8f0fe;color:#1565c0;font-size:0.78rem;"></span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="week-table">
+                            <thead>
+                                <tr>
+                                    <th class="time-label"></th>
+                                    <th>月</th>
+                                    <th>火</th>
+                                    <th>水</th>
+                                    <th>木</th>
+                                    <th>金</th>
+                                    <th>土</th>
+                                    <th>日</th>
+                                </tr>
+                            </thead>
+                            <tbody id="week-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 凡例 -->
+            <div class="card mb-3">
+                <div class="card-body py-2 px-3">
+                    <div class="d-flex flex-wrap gap-2 align-items-center">
+                        <span class="text-muted small me-1">凡例：</span>
+                        <span class="badge svc-day" style="font-size:0.75rem;border-radius:6px;padding:4px 8px;">デイサービス</span>
+                        <span class="badge svc-daycare" style="font-size:0.75rem;border-radius:6px;padding:4px 8px;">通所リハビリ</span>
+                        <span class="badge svc-visit" style="font-size:0.75rem;border-radius:6px;padding:4px 8px;">訪問介護</span>
+                        <span class="badge svc-visit" style="font-size:0.75rem;border-radius:6px;padding:4px 8px;">訪問介護（入浴）</span>
+                        <span class="badge svc-nurse" style="font-size:0.75rem;border-radius:6px;padding:4px 8px;">訪問看護</span>
+                        <span class="badge svc-rehab" style="font-size:0.75rem;border-radius:6px;padding:4px 8px;">訪問リハビリ</span>
+                        <span class="badge svc-welfare" style="font-size:0.75rem;border-radius:6px;padding:4px 8px;">福祉用具</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- プラン説明 -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <p id="plan-desc" class="text-muted mb-0" style="font-size:0.88rem;line-height:1.8;"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ── サービスカラー ──
+var SVC = {
+    'デイサービス':     'svc-day',
+    '通所リハビリ':     'svc-daycare',
+    '訪問介護':         'svc-visit',
+    '訪問介護（入浴）': 'svc-visit',
+    '訪問看護':         'svc-nurse',
+    '訪問リハビリ':     'svc-rehab',
+    '福祉用具':         'svc-welfare',
+};
+
+// ── プランデータ（後で内容を指定・追加してください）──
+// schedule の各エントリ: { day:'月', start:'9:00', end:'17:00', service:'デイサービス' }
+var PLANS = {
+    '要支援1': [
+        {
+            name: '訪問看護・入浴支援プラン',
+            desc: '週1回の訪問看護と週2回の入浴介護（訪問介護）を組み合わせた在宅サービスプランです。医療的な観察・管理と清潔保持を重点的にサポートします。',
+            schedule: [
+                { day:'水', start:'9:00',  end:'10:00', service:'訪問看護' },
+                { day:'月', start:'14:00', end:'15:00', service:'訪問介護（入浴）' },
+                { day:'木', start:'14:00', end:'15:00', service:'訪問介護（入浴）' },
+            ]
+        },
+        {
+            name: 'デイサービス＋訪問看護プラン',
+            desc: '週1回のデイサービスで外出・社会参加の機会を確保しつつ、週1回の訪問看護で医療的な管理を行うプランです。自立した生活を幅広くサポートします。',
+            schedule: [
+                { day:'月', start:'9:00',  end:'16:00', service:'デイサービス' },
+                { day:'水', start:'9:00',  end:'10:00', service:'訪問看護' },
+            ]
+        },
+    ],
+    '要支援2': [
+        {
+            name: 'デイサービス＋訪問看護プラン',
+            desc: '週2回のデイサービスと週1回の訪問看護を組み合わせたプランです。通所による外出・社会参加と、在宅での医療的管理を両立します。',
+            schedule: [
+                { day:'月', start:'9:00',  end:'16:00', service:'デイサービス' },
+                { day:'木', start:'9:00',  end:'16:00', service:'デイサービス' },
+                { day:'水', start:'13:00', end:'14:00', service:'訪問看護' },
+            ]
+        },
+        {
+            name: '在宅訪問ケアプラン',
+            desc: '週3回の入浴介護（訪問介護）と週1回の訪問看護を組み合わせた在宅サービスプランです。清潔保持と医療的管理を中心に、自宅での生活をサポートします。',
+            schedule: [
+                { day:'月', start:'14:00', end:'15:00', service:'訪問介護（入浴）' },
+                { day:'水', start:'14:00', end:'15:00', service:'訪問介護（入浴）' },
+                { day:'金', start:'14:00', end:'15:00', service:'訪問介護（入浴）' },
+                { day:'木', start:'11:00', end:'12:00', service:'訪問看護' },
+            ]
+        },
+        {
+            name: '訪問リハビリ＋入浴・看護プラン',
+            desc: '週2回の入浴介護・週1回の訪問リハビリ・週1回の訪問看護を組み合わせたプランです。機能訓練・清潔保持・医療管理をバランスよく提供します。要支援2の支給限度内で対応可能なプランです。',
+            schedule: [
+                { day:'月', start:'14:00', end:'15:00', service:'訪問介護（入浴）' },
+                { day:'木', start:'14:00', end:'15:00', service:'訪問介護（入浴）' },
+                { day:'水', start:'10:00', end:'11:00', service:'訪問リハビリ' },
+                { day:'金', start:'10:00', end:'11:00', service:'訪問看護' },
+            ]
+        },
+    ],
+    '要介護1': [
+        {
+            name: 'デイサービス多めのプラン',
+            desc: '週3回のデイサービスを中心に、訪問介護と組み合わせたプランです。外出機会と社会参加を重視しながら、在宅での生活をサポートします。',
+            schedule: [
+                { day:'月', start:'9:00',  end:'16:00', service:'デイサービス' },
+                { day:'火', start:'9:00',  end:'10:00', service:'訪問介護' },
+                { day:'水', start:'9:00',  end:'16:00', service:'デイサービス' },
+                { day:'金', start:'9:00',  end:'16:00', service:'デイサービス' },
+            ]
+        },
+        {
+            name: '訪問リハビリ中心プラン',
+            desc: '週2回の訪問リハビリを中心に、訪問介護・訪問看護を組み合わせたプランです。自宅での機能回復・維持を重視します。デイサービスなしの在宅サービスのみで構成します。',
+            schedule: [
+                { day:'月', start:'10:00', end:'12:00', service:'訪問リハビリ' },
+                { day:'火', start:'9:00',  end:'10:00', service:'訪問介護' },
+                { day:'水', start:'10:00', end:'11:00', service:'訪問看護' },
+                { day:'木', start:'10:00', end:'12:00', service:'訪問リハビリ' },
+                { day:'金', start:'9:00',  end:'10:00', service:'訪問介護' },
+            ]
+        },
+    ],
+    '要介護2': [
+        {
+            name: 'デイサービス週4回プラン',
+            desc: '週4回のデイサービスに、週1回の訪問介護を加えたプランです。日中のケアと生活支援をバランスよく提供します。',
+            schedule: [
+                { day:'月', start:'9:00',  end:'16:00', service:'デイサービス' },
+                { day:'火', start:'9:00',  end:'10:00', service:'訪問介護' },
+                { day:'水', start:'9:00',  end:'16:00', service:'デイサービス' },
+                { day:'木', start:'9:00',  end:'16:00', service:'デイサービス' },
+                { day:'金', start:'9:00',  end:'16:00', service:'デイサービス' },
+            ]
+        },
+        {
+            name: '通所リハビリ＋訪問ケアプラン',
+            desc: '週2回の通所リハビリと、訪問介護・訪問看護を組み合わせたプランです。医療的管理と機能訓練を重視します。',
+            schedule: [
+                { day:'月', start:'9:00',  end:'16:00', service:'通所リハビリ' },
+                { day:'火', start:'9:00',  end:'10:00', service:'訪問介護' },
+                { day:'水', start:'10:00', end:'11:00', service:'訪問看護' },
+                { day:'木', start:'9:00',  end:'16:00', service:'通所リハビリ' },
+                { day:'金', start:'9:00',  end:'10:00', service:'訪問介護' },
+            ]
+        },
+    ],
+    '要介護3': [
+        {
+            name: 'デイサービス週5回プラン',
+            desc: '週5回のデイサービスで日中のケアを充実させ、訪問看護で在宅生活を支えるプランです。',
+            schedule: [
+                { day:'月', start:'9:00',  end:'16:00', service:'デイサービス' },
+                { day:'火', start:'9:00',  end:'16:00', service:'デイサービス' },
+                { day:'水', start:'9:00',  end:'16:00', service:'デイサービス' },
+                { day:'木', start:'9:00',  end:'16:00', service:'デイサービス' },
+                { day:'金', start:'9:00',  end:'16:00', service:'デイサービス' },
+                { day:'水', start:'18:00', end:'19:00', service:'訪問看護' },
+            ]
+        },
+        {
+            name: '在宅集中ケアプラン',
+            desc: '訪問介護を週5日、訪問看護・訪問リハビリを週複数回組み合わせた、在宅での集中ケアプランです。',
+            schedule: [
+                { day:'月', start:'9:00',  end:'10:00', service:'訪問介護' },
+                { day:'火', start:'10:00', end:'12:00', service:'訪問リハビリ' },
+                { day:'火', start:'9:00',  end:'10:00', service:'訪問介護' },
+                { day:'水', start:'9:00',  end:'10:00', service:'訪問介護' },
+                { day:'水', start:'10:00', end:'11:00', service:'訪問看護' },
+                { day:'木', start:'9:00',  end:'10:00', service:'訪問介護' },
+                { day:'金', start:'9:00',  end:'10:00', service:'訪問介護' },
+                { day:'金', start:'10:00', end:'12:00', service:'訪問リハビリ' },
+                { day:'土', start:'10:00', end:'11:00', service:'訪問看護' },
+            ]
+        },
+    ],
+    '要介護4': [
+        {
+            name: '手厚いデイサービス＋訪問ケアプラン',
+            desc: '週5回のデイサービスに加え、毎日の訪問介護と週2回の訪問看護を組み合わせた手厚いプランです。',
+            schedule: [
+                { day:'月', start:'9:00',  end:'16:00', service:'デイサービス' },
+                { day:'火', start:'9:00',  end:'16:00', service:'デイサービス' },
+                { day:'水', start:'9:00',  end:'16:00', service:'デイサービス' },
+                { day:'水', start:'17:00', end:'18:00', service:'訪問看護' },
+                { day:'木', start:'9:00',  end:'16:00', service:'デイサービス' },
+                { day:'金', start:'9:00',  end:'16:00', service:'デイサービス' },
+                { day:'金', start:'17:00', end:'18:00', service:'訪問看護' },
+                { day:'土', start:'9:00',  end:'10:00', service:'訪問介護' },
+            ]
+        },
+    ],
+    '要介護5': [
+        {
+            name: '最大限サポートプラン',
+            desc: 'デイサービスと毎日の訪問介護・訪問看護を組み合わせた、最大限の在宅サポートプランです。医療的管理も重視します。',
+            schedule: [
+                { day:'月', start:'9:00',  end:'16:00', service:'デイサービス' },
+                { day:'月', start:'18:00', end:'19:00', service:'訪問介護' },
+                { day:'火', start:'10:00', end:'11:00', service:'訪問看護' },
+                { day:'火', start:'9:00',  end:'10:00', service:'訪問介護' },
+                { day:'水', start:'9:00',  end:'16:00', service:'デイサービス' },
+                { day:'水', start:'18:00', end:'19:00', service:'訪問介護' },
+                { day:'木', start:'10:00', end:'11:00', service:'訪問看護' },
+                { day:'木', start:'9:00',  end:'10:00', service:'訪問介護' },
+                { day:'金', start:'9:00',  end:'16:00', service:'デイサービス' },
+                { day:'金', start:'18:00', end:'19:00', service:'訪問介護' },
+                { day:'土', start:'9:00',  end:'10:00', service:'訪問介護' },
+            ]
+        },
+    ],
+};
+
+var DAYS  = ['月','火','水','木','金','土','日'];
+var MEAL_TIMES = {'7:30':'朝食', '11:30':'昼食', '17:00':'夕食'};
+var ALL_HOURS = [
+    '7:00','7:30','8:00','9:00','10:00','11:00','11:30',
+    '12:00','13:00','14:00','15:00','16:00',
+    '17:00','18:00','19:00','20:00','21:00'
+];
+
+var _currentLevel = null;
+
+function selectLevel(level) {
+    _currentLevel = level;
+    document.querySelectorAll('.care-level-btn').forEach(function(btn) {
+        var active = btn.textContent.trim() === level;
+        btn.className = 'btn btn-sm ' + (active ? 'btn-primary' : 'btn-outline-secondary');
+        btn.style.minWidth = '80px';
+    });
+    document.getElementById('placeholder').style.display = 'none';
+    document.getElementById('plan-section').style.display = '';
+    document.getElementById('schedule-section').style.display = 'none';
+    renderPlanCards(level);
+}
+
+function renderPlanCards(level) {
+    var plans = PLANS[level] || [];
+    var html = plans.length ? '' : '<p class="text-muted small">このレベルのプランは準備中です。</p>';
+    plans.forEach(function(plan, idx) {
+        html += '<div class="plan-card px-3 py-2" style="min-width:160px;max-width:260px;" onclick="selectPlan(' + idx + ')">'
+            + '<div class="plan-name fw-bold" style="font-size:0.88rem;">' + _esc(plan.name) + '</div>'
+            + '</div>';
+    });
+    document.getElementById('plan-cards').innerHTML = html;
+}
+
+function selectPlan(idx) {
+    var plans = PLANS[_currentLevel] || [];
+    var plan = plans[idx];
+    if (!plan) return;
+    document.querySelectorAll('.plan-card').forEach(function(c, i) { c.classList.toggle('selected', i === idx); });
+    document.getElementById('plan-badge').textContent = plan.name;
+    document.getElementById('plan-desc').textContent = plan.desc;
+    renderWeekTable(plan.schedule);
+    document.getElementById('schedule-section').style.display = '';
+}
+
+var ROW_H = 22;
+var SKIP_LUNCH_SVCS = ['デイサービス', '通所リハビリ'];
+var NO_SPLIT_SVCS   = ['デイサービス', '通所リハビリ']; // 食事時間で分割しない
+
+function getSegments(startH, endH, day, service) {
+    var noSplit = NO_SPLIT_SVCS.indexOf(service) >= 0;
+    if (noSplit) {
+        // 食事行を含めて1セグメント
+        var firstRow = null, count = 0;
+        ALL_HOURS.forEach(function(h) {
+            var p = h.split(':'), hMin = parseInt(p[0])*60 + parseInt(p[1]);
+            if (hMin >= startH*60 && hMin < endH*60) { if (!firstRow) firstRow = h; count++; }
+        });
+        return firstRow ? [{startKey:firstRow, count:count, day:day, service:service, noSplit:true}] : [];
+    }
+    // 食事行で分割
+    var segments = [], curStart = null, curCount = 0;
+    ALL_HOURS.forEach(function(h) {
+        var p = h.split(':'), hMin = parseInt(p[0])*60 + parseInt(p[1]);
+        if (hMin >= startH*60 && hMin < endH*60) {
+            if (MEAL_TIMES[h]) {
+                if (curStart !== null) { segments.push({startKey:curStart, count:curCount, day:day, service:service, noSplit:false}); curStart=null; curCount=0; }
+            } else {
+                if (curStart === null) curStart = h; curCount++;
+            }
+        }
+    });
+    if (curStart !== null) segments.push({startKey:curStart, count:curCount, day:day, service:service, noSplit:false});
+    return segments;
+}
+
+function renderWeekTable(schedule) {
+    // デイサービス/通所リハビリのある日は昼食スキップ
+    var skipLunch = {};
+    schedule.forEach(function(item) {
+        var sh = parseInt(item.start), eh = parseInt(item.end);
+        if (SKIP_LUNCH_SVCS.indexOf(item.service) >= 0 && sh <= 11 && eh >= 12) skipLunch[item.day] = true;
+    });
+
+    var startMap = {}, coverMap = {};
+    ALL_HOURS.forEach(function(h) {
+        startMap[h] = {}; coverMap[h] = {};
+        DAYS.forEach(function(d) { startMap[h][d] = null; coverMap[h][d] = false; });
+    });
+    schedule.forEach(function(item) {
+        var sh = parseInt(item.start), eh = parseInt(item.end);
+        getSegments(sh, eh, item.day, item.service).forEach(function(seg) {
+            startMap[seg.startKey][seg.day] = {service: seg.service, count: seg.count};
+            var idx = ALL_HOURS.indexOf(seg.startKey), cnt = 0;
+            for (var i = idx+1; i < ALL_HOURS.length && cnt < seg.count-1; i++) {
+                var h = ALL_HOURS[i];
+                // noSplit は食事行も含めてカバーする
+                if (seg.noSplit || !MEAL_TIMES[h]) { coverMap[h][seg.day] = true; cnt++; }
+            }
+        });
+    });
+
+    var html = '';
+    ALL_HOURS.forEach(function(hour) {
+        var mealLabel = MEAL_TIMES[hour];
+        html += '<tr style="height:' + ROW_H + 'px;"><td class="time-label">' + hour + '</td>';
+        if (mealLabel) {
+            if (mealLabel === '昼食') {
+                DAYS.forEach(function(d) {
+                    html += skipLunch[d]
+                        ? '<td class="empty-cell"></td>'
+                        : '<td style="background:#f0f0f0;color:#888;font-size:0.7rem;font-weight:600;text-align:center;">' + mealLabel + '</td>';
+                });
+            } else {
+                html += '<td colspan="7" style="background:#f0f0f0;color:#888;font-size:0.7rem;font-weight:600;text-align:center;">' + mealLabel + '</td>';
+            }
+        } else {
+            DAYS.forEach(function(day) {
+                var s = startMap[hour][day], covered = coverMap[hour][day];
+                if (s) {
+                    var cls = SVC[s.service] || 'svc-welfare';
+                    var bh = s.count * ROW_H - 2;
+                    var dispInner = s.service.indexOf('（') >= 0
+                        ? s.service.replace('（', '<br>（')
+                        : s.service;
+                    html += '<td style="position:relative;overflow:visible;padding:0;">'
+                        + '<div class="svc-badge ' + cls + '" style="position:absolute;top:1px;left:2px;right:2px;height:' + bh + 'px;z-index:10;display:flex;align-items:center;justify-content:center;">'
+                        + '<span style="text-align:center;line-height:1.4;">' + dispInner + '</span>'
+                        + '</div></td>';
+                } else if (covered) {
+                    html += '<td style="background:transparent;border-top:none;"></td>';
+                } else {
+                    html += '<td class="empty-cell"></td>';
+                }
+            });
+        }
+        html += '</tr>';
+    });
+    document.getElementById('week-tbody').innerHTML = html;
+}
+
+function _esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+</script>
+{% endblock %}

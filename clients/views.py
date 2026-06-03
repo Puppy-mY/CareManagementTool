@@ -4496,7 +4496,44 @@ def fax_cover_sheet_download(request):
 
 @login_required
 def fee_simulation(request):
-    return render(request, 'clients/fee_simulation.html', {})
+    from .models import PaidService
+    services = list(PaidService.objects.all())
+    return render(request, 'clients/fee_simulation.html', {
+        'paid_services_json': json.dumps([s.to_dict() for s in services], ensure_ascii=False),
+    })
+
+
+@login_required
+@user_passes_test(staff_required)
+def paid_services_save(request):
+    """有償サービス設定を一括保存"""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'method'}, status=405)
+    try:
+        from .models import PaidService
+        data = json.loads(request.body)
+        existing_ids = set(PaidService.objects.values_list('id', flat=True))
+        incoming_ids = {d['id'] for d in data if d.get('id')}
+        PaidService.objects.filter(id__in=existing_ids - incoming_ids).delete()
+        for i, svc in enumerate(data):
+            fields = {
+                'name':         svc.get('name', '').strip(),
+                'price_type':   svc.get('price_type', 'per_day'),
+                'price':        int(svc.get('price', 0) or 0),
+                'notes':        svc.get('notes', '').strip(),
+                'order':        i,
+                'is_visible':   bool(svc.get('visible', True)),
+                'item_key':     svc.get('key', ''),
+                'extra_prices': svc.get('extra_prices', []),
+            }
+            svc_id = svc.get('id')
+            if svc_id and svc_id in existing_ids:
+                PaidService.objects.filter(id=svc_id).update(**fields)
+            else:
+                PaidService.objects.create(**fields)
+        return JsonResponse({'ok': True})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
 
 
 

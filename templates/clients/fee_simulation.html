@@ -1,0 +1,839 @@
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+
+{% block title %}利用料金シミュレーション - {{ block.super }}{% endblock %}
+
+{% block extra_style %}
+<style>
+/* ── 編集パネル ── */
+#services-edit-wrap { background:#fffdf5; border-top:2px solid #f59e0b; }
+.edit-row { border-bottom:1px solid #f3e8c8; transition:background .12s; }
+.edit-row:last-child { border-bottom:none; }
+.edit-row:hover { background:#fff8e8; }
+.edit-row-sub { background:#fefaf0; border-bottom:1px solid #f3e8c8; }
+.edit-row-sub:last-child { border-bottom:none; }
+.edit-input-price { width:80px; font-weight:600; text-align:right; }
+.edit-btn-vis { width:22px; height:22px; padding:0; line-height:1; border-radius:4px; background-color:#ffffff; border-color:#6c757d; color:#6c757d; transition:all 0.2s ease; }
+.edit-btn-vis:hover { background-color:#f5f5f5; border-color:#999999; color:#333333; transform:translateY(-1px); box-shadow:0 2px 4px rgba(0,0,0,0.1); }
+.edit-btn-trash { width:22px; height:22px; padding:0; line-height:1; border-radius:4px; background-color:#ffffff; border-color:#6c757d; color:#6c757d; transition:all 0.2s ease; }
+.edit-btn-trash:hover { background-color:#f8d7da; border-color:#dc3545; color:#dc3545; transform:translateY(-1px); box-shadow:0 2px 4px rgba(0,0,0,0.1); }
+.drag-handle { cursor:grab; color:#ccc; font-size:0.85rem; flex-shrink:0; padding:0 2px; user-select:none; }
+.drag-handle:active { cursor:grabbing; }
+.edit-row.drag-over { border-top:3px solid #f59e0b !important; background:#fff8e8; }
+.edit-notes-auto { min-height:1.6em; overflow:hidden; resize:none; border:none; padding:0; margin:0; background:transparent; box-shadow:none; outline:none; width:100%; }
+.edit-notes-auto:focus { background:#fffef0; outline:1px solid #d4a700; border-radius:2px; }
+.edit-type-sel { appearance:none; -webkit-appearance:none; background:transparent; border:1px solid #ced4da; border-radius:4px; padding:2px 4px; font-size:0.78rem; width:44px; cursor:pointer; }
+.btn-edit-pastel { background-color:#ffffff; border-color:#6c757d; color:#6c757d; transition:all 0.2s ease; }
+.btn-edit-pastel:hover { background-color:#ffe5cc; border-color:#fd7e14; color:#fd7e14; transform:translateY(-1px); box-shadow:0 2px 4px rgba(0,0,0,0.1); }
+.btn-cancel-pastel { background-color:#ffffff; border-color:#6c757d; color:#6c757d; transition:all 0.2s ease; }
+.btn-cancel-pastel:hover { background-color:#f5f5f5; border-color:#999999; color:#333333; transform:translateY(-1px); box-shadow:0 2px 4px rgba(0,0,0,0.1); }
+.btn-save-pastel { background-color:#ffffff; border-color:#6c757d; color:#6c757d; transition:all 0.2s ease; }
+.btn-save-pastel:hover { background-color:#f8d7da; border-color:#dc3545; color:#dc3545; transform:translateY(-1px); box-shadow:0 2px 4px rgba(0,0,0,0.1); }
+.edit-row-hidden { opacity:0.45; }
+.add-service-btn { border:2px dashed #d1a84b; color:#a07030; background:transparent; border-radius:8px; font-size:0.85rem; padding:6px 16px; transition:all .15s; }
+.add-service-btn:hover { background:#fff8e0; border-color:#b8832a; color:#7a5010; }
+.edit-type-badge { font-size:0.72rem; padding:2px 7px; border-radius:10px; background:#f0e4c0; color:#7a5020; white-space:nowrap; }
+/* ── ヘッダーボタン領域 ── */
+#svc-header-edit { gap:6px; }
+/* 内訳カード：最終行の下線を除去して小計との余白を統一 */
+#living_detail tr:last-child td,
+#insurance_detail tr:last-child td,
+#paid_detail tr:last-child td { border-bottom-width: 0 !important; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="mb-4 pb-2 border-bottom">
+                <div class="d-flex align-items-start justify-content-between">
+                    <div>
+                        <h1 class="h4 mb-0 text-dark fw-bold">
+                            <i class="fas fa-calculator me-2 text-secondary"></i>利用料金シミュレーション
+                        </h1>
+                        <p class="text-muted small mb-0 mt-1">サービス付き高齢者向け住宅　安濃津ろまん</p>
+                    </div>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="history.back()">
+                        <i class="fas fa-arrow-left"></i> 戻る
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 基本条件 -->
+    <div class="card mb-3">
+        <div class="card-header">
+            <h6 class="mb-0"><i class="fas fa-sliders-h me-2 text-muted"></i>基本条件</h6>
+        </div>
+        <div class="card-body py-3">
+            <div class="d-flex flex-wrap gap-5 align-items-end">
+                <div>
+                    <div class="text-muted mb-1" style="font-size:0.75rem; letter-spacing:0.04em;">要介護度</div>
+                    <select id="care_level_select" class="form-select form-select-sm" style="width:150px; font-weight:600;" onchange="selectCareLevel(this.value)">
+                        <option value="">-- 選択 --</option>
+                        <option value="要支援1">要支援1</option>
+                        <option value="要支援2">要支援2</option>
+                        <option value="要介護1">要介護1</option>
+                        <option value="要介護2">要介護2</option>
+                        <option value="要介護3">要介護3</option>
+                        <option value="要介護4">要介護4</option>
+                        <option value="要介護5">要介護5</option>
+                    </select>
+                </div>
+                <div>
+                    <div class="text-muted mb-1" style="font-size:0.75rem; letter-spacing:0.04em;">介護保険 負担割合</div>
+                    <div class="btn-group btn-group-sm" role="group">
+                        <input type="radio" class="btn-check" name="burden" id="burden1" value="0" onchange="calculate()">
+                        <label class="btn btn-outline-secondary" for="burden1" style="min-width:60px;">1割</label>
+                        <input type="radio" class="btn-check" name="burden" id="burden2" value="1" onchange="calculate()">
+                        <label class="btn btn-outline-secondary" for="burden2" style="min-width:60px;">2割</label>
+                        <input type="radio" class="btn-check" name="burden" id="burden3" value="2" onchange="calculate()">
+                        <label class="btn btn-outline-secondary" for="burden3" style="min-width:60px;">3割</label>
+                    </div>
+                </div>
+                <div class="ms-auto d-flex gap-4 align-items-end">
+                    <div>
+                        <div class="text-muted mb-1" style="font-size:0.75rem; letter-spacing:0.04em;">月の日数</div>
+                        <div class="d-flex align-items-center gap-1">
+                            <input type="number" id="days_input" class="form-control form-control-sm text-center fw-bold" value="30" min="1" max="31" style="width:56px;" onchange="calculate()">
+                            <span class="text-muted" style="font-size:0.85rem;">日</span>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="text-muted mb-1" style="font-size:0.75rem; letter-spacing:0.04em;">消費税</div>
+                        <div class="d-flex align-items-center gap-1">
+                            <input type="number" id="tax_rate_input" class="form-control form-control-sm text-center fw-bold" value="10" min="0" max="100" style="width:56px;" onchange="calculate()">
+                            <span class="text-muted" style="font-size:0.85rem;">%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 食費 -->
+    <div class="card mb-3">
+        <div class="card-header d-flex align-items-center justify-content-between">
+            <h6 class="mb-0"><i class="fas fa-utensils me-2 text-muted"></i>食費</h6>
+            <div id="meal-header-view">
+                <button type="button" class="btn btn-sm btn-edit-pastel" onclick="enterMealEdit()">
+                    <i class="fas fa-edit me-1"></i>編集
+                </button>
+            </div>
+            <div id="meal-header-edit" class="d-none d-flex align-items-center" style="gap:6px;">
+                <small class="text-warning me-2" style="font-size:0.78rem;"><i class="fas fa-pen me-1"></i>編集中</small>
+                <button type="button" class="btn btn-sm btn-cancel-pastel" onclick="cancelMealEdit()">キャンセル</button>
+                <button type="button" class="btn btn-sm btn-save-pastel" id="meal-save-btn" onclick="saveMealEdit()"><i class="fas fa-check me-1"></i>保存</button>
+            </div>
+        </div>
+        <div class="card-body">
+            <!-- 通常表示 -->
+            <div id="meal-view">
+                <p class="text-muted small mb-2">利用する食事を選択してください <span style="font-size:0.75rem;">（税抜）</span></p>
+                <div class="d-flex flex-wrap gap-4">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="meal_morning" checked onchange="guardBasic(this, calculate)">
+                        <label class="form-check-label" for="meal_morning">朝食 <span id="lbl_meal_morning" class="text-muted">486円</span></label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="meal_lunch" checked onchange="guardBasic(this, calculate)">
+                        <label class="form-check-label" for="meal_lunch">昼食 <span id="lbl_meal_lunch" class="text-muted">594円</span></label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="meal_dinner" checked onchange="guardBasic(this, calculate)">
+                        <label class="form-check-label" for="meal_dinner">夕食 <span id="lbl_meal_dinner" class="text-muted">770円</span></label>
+                    </div>
+                </div>
+            </div>
+            <!-- 編集表示 -->
+            <div id="meal-edit" class="d-none">
+                <p class="text-muted small mb-2">各食事の単価を設定してください</p>
+                <div class="d-flex flex-wrap gap-4 align-items-end">
+                    <div>
+                        <div class="text-muted mb-1" style="font-size:0.78rem;">朝食</div>
+                        <div class="d-flex align-items-center gap-1">
+                            <input type="number" id="edit_meal_morning" class="form-control form-control-sm" style="width:72px;text-align:right;font-weight:600;" min="0">
+                            <span class="text-muted" style="font-size:0.85rem;">円</span>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="text-muted mb-1" style="font-size:0.78rem;">昼食</div>
+                        <div class="d-flex align-items-center gap-1">
+                            <input type="number" id="edit_meal_lunch" class="form-control form-control-sm" style="width:72px;text-align:right;font-weight:600;" min="0">
+                            <span class="text-muted" style="font-size:0.85rem;">円</span>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="text-muted mb-1" style="font-size:0.78rem;">夕食</div>
+                        <div class="d-flex align-items-center gap-1">
+                            <input type="number" id="edit_meal_dinner" class="form-control form-control-sm" style="width:72px;text-align:right;font-weight:600;" min="0">
+                            <span class="text-muted" style="font-size:0.85rem;">円</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 有償サービス -->
+    <div class="card mb-4">
+        <div class="card-header d-flex align-items-center justify-content-between">
+            <h6 class="mb-0"><i class="fas fa-plus-circle me-2 text-muted"></i>有償サービス</h6>
+            <div id="svc-header-view">
+                <button type="button" class="btn btn-sm btn-edit-pastel" onclick="enterEditMode()">
+                    <i class="fas fa-edit me-1"></i>編集
+                </button>
+            </div>
+            <div id="svc-header-edit" class="d-none d-flex align-items-center">
+                <small class="text-warning me-3" style="font-size:0.78rem;"><i class="fas fa-pen me-1"></i>編集中</small>
+                <button type="button" class="btn btn-sm btn-cancel-pastel me-1" onclick="cancelEdit()">キャンセル</button>
+                <button type="button" class="btn btn-sm btn-save-pastel" onclick="saveEdit()"><i class="fas fa-check me-1"></i>保存</button>
+            </div>
+        </div>
+        <!-- 表示モード -->
+        <div id="services-view" class="card-body p-0">
+            <!-- JS で描画 -->
+        </div>
+    </div>
+
+    <!-- 要介護度未選択時のプレースホルダー -->
+    <div id="fee_placeholder" class="text-center text-muted py-5">
+        <i class="fas fa-arrow-up fa-lg mb-2 d-block" style="opacity:0.3;"></i>
+        <span style="font-size:0.9rem;">要介護度を選択すると費用の目安が表示されます</span>
+    </div>
+
+    <!-- 基本条件未入力トースト -->
+    <div id="basic-warning-toast" style="display:none; position:fixed; top:72px; left:50%; transform:translateX(-50%); z-index:9999; background:#dc3545; color:#fff; padding:10px 20px; border-radius:8px; font-size:0.88rem; box-shadow:0 4px 16px rgba(0,0,0,0.2); white-space:nowrap; pointer-events:none;">
+        <i class="fas fa-exclamation-circle me-2"></i>まず「基本条件」の要介護度を選択してください
+    </div>
+
+    <div id="footer_spacer" style="height:50px; display:none;"></div>
+</div>
+
+<!-- 固定フッター全体 -->
+<div id="footer_container" style="display:none; position:fixed; bottom:0; left:0; right:0; z-index:1040;">
+    <div id="fee_result_section" style="display:none; background:#f0f8ff; border-top:1px solid #dee2e6; box-shadow:0 -4px 16px rgba(0,0,0,0.1); max-height:55vh; overflow-y:auto;">
+        <div style="max-width:1400px; margin:0 auto; padding:16px 24px;">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-header bg-white border-bottom py-2 px-3">
+                            <span class="fw-bold" style="font-size:0.85rem; color:#1565c0;"><i class="fas fa-home me-1"></i>入居費用</span>
+                        </div>
+                        <div class="card-body p-0"><table class="table table-sm mb-0" style="font-size:0.85rem;border-bottom:0;"><tbody id="living_detail"></tbody></table></div>
+                        <div class="card-footer bg-white border-top py-2 px-3 d-flex justify-content-between align-items-center">
+                            <span class="text-muted" style="font-size:0.78rem;">小計</span>
+                            <span class="fw-bold" id="living_subtotal" style="color:#1565c0;"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-header bg-white border-bottom py-2 px-3">
+                            <span class="fw-bold" style="font-size:0.85rem; color:#1b5e20;"><i class="fas fa-shield-alt me-1"></i>介護保険サービス</span>
+                        </div>
+                        <div class="card-body p-0"><table class="table table-sm mb-0" style="font-size:0.85rem;"><tbody id="insurance_detail"></tbody></table></div>
+                        <div class="card-footer bg-white border-top py-2 px-3 d-flex justify-content-between align-items-center">
+                            <span class="text-muted" style="font-size:0.78rem;">小計</span>
+                            <span class="fw-bold" id="insurance_subtotal" style="color:#1b5e20;"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-header bg-white border-bottom py-2 px-3">
+                            <span class="fw-bold" style="font-size:0.85rem; color:#e65100;"><i class="fas fa-plus-circle me-1"></i>有償サービス</span>
+                        </div>
+                        <div class="card-body p-0"><table class="table table-sm mb-0" style="font-size:0.85rem;"><tbody id="paid_detail"></tbody></table></div>
+                        <div class="card-footer bg-white border-top py-2 px-3 d-flex justify-content-between align-items-center">
+                            <span class="text-muted" style="font-size:0.78rem;">小計</span>
+                            <span class="fw-bold" id="paid_subtotal" style="color:#e65100;"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="total_footer_bar" onclick="toggleBreakdown(event)" style="background:#e3f2fd; color:#000000; padding:10px 24px; border-top:1px solid #999999; box-shadow:0 -2px 8px rgba(0,0,0,0.08); cursor:pointer; user-select:none;">
+        <div class="d-flex align-items-center justify-content-between" style="max-width:1400px; margin:0 auto;">
+            <div class="d-flex align-items-center gap-2">
+                <i id="footer_chevron" class="fas fa-chevron-up" style="font-size:0.78rem; transition:transform 0.2s;"></i>
+                <span class="fw-bold" style="font-size:0.85rem;">月額合計（概算）</span>
+                <span class="ms-1 text-muted" style="font-size:0.72rem;">※実際の金額は諸条件により異なります</span>
+            </div>
+            <div class="fw-bold" id="total_amount" style="font-size:1.6rem; letter-spacing:-0.02em;"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// =====================================================================
+// データ
+// =====================================================================
+var PAID_SERVICES = {{ paid_services_json|safe }};
+var _ps = {};
+var _careLevel = null;
+var _breakdownVisible = false;
+var _warningTimer = null;
+var _editMode = false;
+var _editData = [];
+
+function _isMealKey(key) { return key && key.indexOf('meal_') === 0; }
+
+function _rebuildLookup() {
+    _ps = {};
+    PAID_SERVICES.forEach(function(s) { if (s.key) _ps[s.key] = s; });
+}
+_rebuildLookup();
+
+function _updateMealLabels() {
+    ['morning','lunch','dinner'].forEach(function(m) {
+        var s = _ps['meal_'+m];
+        var el = document.getElementById('lbl_meal_'+m);
+        if (s && el) el.textContent = s.price + '円';
+    });
+}
+
+function enterMealEdit() {
+    document.getElementById('meal-header-view').classList.add('d-none');
+    document.getElementById('meal-header-edit').classList.remove('d-none');
+    document.getElementById('meal-view').classList.add('d-none');
+    document.getElementById('meal-edit').classList.remove('d-none');
+    ['morning','lunch','dinner'].forEach(function(m) {
+        var s = _ps['meal_'+m];
+        document.getElementById('edit_meal_'+m).value = s ? s.price : '';
+    });
+}
+function cancelMealEdit() {
+    document.getElementById('meal-header-view').classList.remove('d-none');
+    document.getElementById('meal-header-edit').classList.add('d-none');
+    document.getElementById('meal-view').classList.remove('d-none');
+    document.getElementById('meal-edit').classList.add('d-none');
+}
+function saveMealEdit() {
+    var btn = document.getElementById('meal-save-btn');
+    btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>保存中...';
+    var updated = PAID_SERVICES.map(function(s) {
+        if (!_isMealKey(s.key)) return s;
+        var suffix = s.key.replace('meal_','');
+        var v = parseInt(document.getElementById('edit_meal_'+suffix).value) || 0;
+        return Object.assign({}, s, {price: v});
+    });
+    fetch('{% url "paid_services_save" %}', {
+        method:'POST',
+        headers:{'X-CSRFToken':'{{ csrf_token }}','Content-Type':'application/json'},
+        body:JSON.stringify(updated)
+    }).then(function(r){return r.json();}).then(function(d){
+        if(d.ok){
+            PAID_SERVICES = updated; _rebuildLookup();
+            _updateMealLabels(); cancelMealEdit();
+            if(_careLevel) calculate();
+        } else { alert('保存に失敗しました: '+(d.error||'')); }
+    }).catch(function(){alert('通信エラーが発生しました。');})
+    .finally(function(){ btn.disabled=false; btn.innerHTML='<i class="fas fa-check me-1"></i>保存'; });
+}
+
+// =====================================================================
+// ユーティリティ
+// =====================================================================
+function _esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function nl2br(s) { return _esc(s||'').replace(/\n/g,'<br>'); }
+function _val(name) { var el=document.querySelector('input[name="'+name+'"]:checked'); return el?parseInt(el.value):0; }
+function _chk(id) { var el=document.getElementById(id); return el?el.checked:false; }
+function _fmt(n) { return n.toLocaleString()+'円'; }
+function _row(label,amount,note) {
+    var noteHtml=note?'<br><small class="text-muted" style="font-size:0.75rem;">'+note+'</small>':'';
+    return '<tr><td class="ps-3 pe-2 py-1 text-muted">'+label+noteHtml+'</td>'
+        +'<td class="text-end pe-3 py-1 fw-bold text-dark" style="white-space:nowrap;">'+_fmt(amount)+'</td></tr>';
+}
+function _ptLabel(pt, price) {
+    if (pt==='per_day')   return price+'円/日';
+    if (pt==='per_month') return price.toLocaleString()+'円/月';
+    if (pt==='per_meal')  return price+'円/食';
+    return '';
+}
+
+// =====================================================================
+// 表示モード：テーブル描画
+// =====================================================================
+function renderViewTable() {
+    var thead = '<table class="table table-sm mb-0" style="font-size:0.88rem;">'
+        +'<thead class="table-light"><tr>'
+        +'<th class="ps-3 fw-semibold text-muted" style="width:18%;font-size:0.78rem;">項目名</th>'
+        +'<th class="fw-semibold text-muted" style="width:7%;font-size:0.78rem;">利用</th>'
+        +'<th class="fw-semibold text-muted" style="width:17%;font-size:0.78rem;">単価（税抜）</th>'
+        +'<th class="pe-3 fw-semibold text-muted" style="font-size:0.78rem;">備考</th>'
+        +'</tr></thead><tbody>';
+    var rows = '';
+    PAID_SERVICES.forEach(function(svc) {
+        if (!svc.visible || _isMealKey(svc.key)) return;
+        rows += _buildViewRow(svc);
+    });
+    document.getElementById('services-view').innerHTML = thead + rows + '</tbody></table>';
+    // 表示条件を再適用
+    _applyCareConditions();
+}
+
+function _buildViewRow(svc) {
+    switch(svc.key) {
+        case 'ms':
+            return _viewSimpleRow(svc, 'ms_toggle', 'guardBasic(this,calculate)', _ptLabel('per_day', svc.price));
+        case 'linen':
+            return _viewSimpleRow(svc, 'linen_toggle', 'guardBasic(this,calculate)', _ptLabel('per_day', svc.price));
+        case 'excretion':
+            return _viewExcSputumRow(svc, 'exc_toggle', 'guardBasic(this,toggleExcretion)', 'exc', 'excretion');
+        case 'mince':
+            return _viewSimpleRow(svc, 'mince_toggle', 'guardBasic(this,calculate)', _ptLabel('per_meal', svc.price));
+        case 'therapy':
+            return _viewSimpleRow(svc, 'therapy_toggle', 'guardBasic(this,calculate)', _ptLabel('per_meal', svc.price));
+        case 'sputum':
+            return _viewExcSputumRow(svc, 'spu_toggle', 'guardBasic(this,toggleSputum)', 'spu', 'sputum');
+        case 'parking':
+            return _viewSimpleRow(svc, 'parking_toggle', 'guardBasic(this,calculate)', _ptLabel('per_month', svc.price));
+        case 'cleaning':
+            return _viewCleaningRow(svc);
+        case 'laundry':
+            return _viewLaundryRow(svc);
+        case 'bed':
+            return _viewBedRow(svc);
+        default:
+            return _viewCustomRow(svc);
+    }
+}
+
+function _viewSimpleRow(svc, tid, onchg, priceLabel) {
+    return '<tr><td class="ps-3 fw-bold align-middle">'+_esc(svc.name)+'</td>'
+        +'<td class="align-middle"><div class="form-check form-switch mb-0">'
+        +'<input class="form-check-input" type="checkbox" role="switch" id="'+tid+'" onchange="'+onchg+'"></div></td>'
+        +'<td class="align-middle text-muted" style="font-size:0.82rem;">'+priceLabel+'</td>'
+        +'<td class="pe-3 text-muted align-middle" style="font-size:0.8rem;line-height:1.6;">'+nl2br(svc.notes)+'</td></tr>';
+}
+
+function _viewExcSputumRow(svc, tid, onchg, prefix, radioName) {
+    var eps = svc.extra_prices || [];
+    // eps = [{日中,100},{夜間・早朝,200},{深夜,250}]
+    var daytime  = eps[0] ? eps[0].value : 100;
+    var evening  = eps[1] ? eps[1].value : 200;
+    var midnight = eps[2] ? eps[2].value : 250;
+    var priceLabel = (eps[0]?eps[0].label:'日中')+'：'+daytime+'円<br>'
+        +(eps[1]?eps[1].label:'夜間・早朝')+'：'+evening+'円<br>'
+        +(eps[2]?eps[2].label:'深夜')+'：'+midnight+'円';
+    // コンボ単価（/日）を算出
+    var combos = [
+        {label: '1回/日（深夜のみ）',              value: midnight},
+        {label: '2回/日（夜間・早朝）',             value: evening * 2},
+        {label: '4回/日（午前・午後・夜間・深夜）', value: daytime * 2 + evening + midnight},
+    ];
+    var subRows = '<tr id="'+prefix+'_options" style="display:none;" class="table-light"><td colspan="4" class="ps-4 pe-3 py-2"><div class="d-flex flex-column gap-2">';
+    combos.forEach(function(c, i) {
+        subRows += '<div class="form-check mb-0">'
+            +'<input class="form-check-input" type="radio" name="'+radioName+'" id="'+prefix+'_'+i+'" value="'+c.value+'"'+(i===0?' checked':'')+' onchange="calculate()">'
+            +'<label class="form-check-label text-muted" for="'+prefix+'_'+i+'" style="font-size:0.82rem;">'+_esc(c.label)+'　'+c.value+'円/日</label>'
+            +'</div>';
+    });
+    subRows += '</div></td></tr>';
+    return '<tr><td class="ps-3 fw-bold align-middle">'+_esc(svc.name)+'</td>'
+        +'<td class="align-middle"><div class="form-check form-switch mb-0">'
+        +'<input class="form-check-input" type="checkbox" role="switch" id="'+tid+'" onchange="'+onchg+'"></div></td>'
+        +'<td class="align-middle text-muted" style="font-size:0.8rem;line-height:1.7;">'+priceLabel+'</td>'
+        +'<td class="pe-3 text-muted align-middle" style="font-size:0.8rem;line-height:1.6;">'+nl2br(svc.notes)+'</td></tr>'
+        + subRows;
+}
+
+function _viewCleaningRow(svc) {
+    return '<tr id="cleaning_section" style="display:none;">'
+        +'<td class="ps-3 fw-bold align-middle">'+_esc(svc.name)+'</td>'
+        +'<td class="align-middle"><div class="form-check form-switch mb-0">'
+        +'<input class="form-check-input" type="checkbox" role="switch" id="cleaning_toggle" onchange="guardBasic(this,toggleCleaning)"></div></td>'
+        +'<td class="align-middle text-muted" style="font-size:0.8rem;line-height:1.7;">'+svc.price+'円/回<br><span style="font-size:0.75rem;">30分以内/人</span></td>'
+        +'<td class="pe-3 text-muted align-middle" style="font-size:0.8rem;line-height:1.6;">'+nl2br(svc.notes)+'</td></tr>'
+        +'<tr id="cleaning_options" style="display:none;" class="table-light">'
+        +'<td colspan="4" class="ps-4 pe-3 py-2"><div class="d-flex align-items-center gap-2">'
+        +'<span class="text-muted" style="font-size:0.82rem;">月の回数</span>'
+        +'<input type="number" id="cleaning_count" class="form-control form-control-sm text-center fw-bold" value="4" min="1" max="31" style="width:56px;" onchange="calculate()">'
+        +'<span class="text-muted" style="font-size:0.82rem;">回/月</span>'
+        +'</div></td></tr>';
+}
+
+function _viewLaundryRow(svc) {
+    return '<tr><td class="ps-3 fw-bold align-middle">'+_esc(svc.name)+'</td>'
+        +'<td class="align-middle"></td>'
+        +'<td class="align-middle"><span class="badge bg-warning text-dark" style="font-size:0.72rem;">詳細確認中</span></td>'
+        +'<td class="pe-3 text-muted align-middle" style="font-size:0.8rem;line-height:1.6;">'+nl2br(svc.notes)+'</td></tr>';
+}
+
+function _viewBedRow(svc) {
+    return '<tr id="bed_section" style="display:none;">'
+        +'<td class="ps-3 fw-bold align-middle">'+_esc(svc.name)
+        +'<span class="badge bg-secondary ms-1" style="font-size:0.65rem;">要介護1のみ</span></td>'
+        +'<td class="align-middle"><div class="form-check form-switch mb-0">'
+        +'<input class="form-check-input" type="checkbox" role="switch" id="bd_toggle" onchange="guardBasic(this,calculate)"></div></td>'
+        +'<td class="align-middle text-muted" style="font-size:0.82rem;">'+_ptLabel('per_month', svc.price)+'</td>'
+        +'<td class="pe-3 text-muted align-middle" style="font-size:0.8rem;line-height:1.6;">'+nl2br(svc.notes)+'</td></tr>';
+}
+
+function _viewCustomRow(svc) {
+    var tid = 'custom_toggle_' + svc.id;
+    var onchg = 'guardBasic(this,calculate)';
+    return '<tr><td class="ps-3 fw-bold align-middle">'+_esc(svc.name)+'<span class="ms-2 badge" style="font-size:0.65rem;background:#e8f0fe;color:#3c5a99;">追加</span></td>'
+        +'<td class="align-middle"><div class="form-check form-switch mb-0">'
+        +'<input class="form-check-input" type="checkbox" role="switch" id="'+tid+'" onchange="'+onchg+'"></div></td>'
+        +'<td class="align-middle text-muted" style="font-size:0.82rem;">'+_ptLabel(svc.price_type, svc.price)+'</td>'
+        +'<td class="pe-3 text-muted align-middle" style="font-size:0.8rem;line-height:1.6;">'+nl2br(svc.notes)+'</td></tr>';
+}
+
+function _applyCareConditions() {
+    var el;
+    el = document.getElementById('cleaning_section');
+    if (el) el.style.display = (_careLevel && ['要介護1','要介護2','要介護3','要介護4','要介護5'].indexOf(_careLevel)>=0) ? '' : 'none';
+    el = document.getElementById('bed_section');
+    if (el) el.style.display = (_careLevel === '要介護1') ? '' : 'none';
+}
+
+// =====================================================================
+// 編集モード：描画
+// =====================================================================
+// 編集モード：テーブル内インライン編集
+// =====================================================================
+function renderEditTable() {
+    var thead = '<table class="table table-sm mb-0" style="font-size:0.88rem;">'
+        +'<thead class="table-light"><tr>'
+        +'<th class="ps-3 fw-semibold text-muted" style="width:18%;font-size:0.78rem;">項目名</th>'
+        +'<th class="fw-semibold text-muted" style="width:17%;font-size:0.78rem;">単価（税抜）</th>'
+        +'<th class="fw-semibold text-muted" style="font-size:0.78rem;">備考</th>'
+        +'<th style="width:7%;"></th>'
+        +'</tr></thead><tbody>';
+    var rows = '';
+    _editData.forEach(function(svc, idx) {
+        if (_isMealKey(svc.key)) return;
+        rows += _buildEditTableRow(svc, idx);
+    });
+    var addBtn = '<tr><td colspan="4" class="px-3 py-2" style="background:#fffdf5;border-top:2px solid #f59e0b;">'
+        +'<button type="button" class="add-service-btn" onclick="addCustomRow()">'
+        +'<i class="fas fa-plus me-1"></i>サービスを追加</button></td></tr>';
+    document.getElementById('services-view').innerHTML = thead + rows + addBtn + '</tbody></table>';
+    requestAnimationFrame(function() {
+        document.querySelectorAll('.edit-notes-auto, .edit-name-auto').forEach(function(ta) {
+            ta.style.height = 'auto';
+            ta.style.height = ta.scrollHeight + 'px';
+        });
+    });
+}
+
+function _buildEditTableRow(svc, idx) {
+    var isBuiltin = !!svc.key;
+    var opacityStyle = svc.visible ? '' : ' opacity-50';
+    var eyeIcon  = svc.visible ? 'fa-eye' : 'fa-eye-slash';
+    var trAttrs = 'ondragover="_dragOver(event)" ondragleave="_dragLeave(event)" ondrop="_dragDrop(event,'+idx+')"';
+
+    // 列1: [⣿drag] 項目名（ハンドルのみdraggable）
+    var nameInner = isBuiltin
+        ? '<span class="fw-bold">'+_esc(svc.name)+'</span>'
+        : '<textarea class="form-control form-control-sm edit-name-auto" rows="1" style="font-size:0.85rem;resize:none;overflow:hidden;line-height:1.5;" oninput="this.style.height=\'auto\';this.style.height=this.scrollHeight+\'px\';_editData['+idx+'].name=this.value" placeholder="項目名">'+_esc(svc.name||'')+'</textarea>';
+    var nameCell = '<div class="d-flex align-items-center gap-1">'
+        +'<div class="drag-handle flex-shrink-0" draggable="true" ondragstart="_dragStart(event,'+idx+')"><i class="fas fa-grip-vertical"></i></div>'
+        +nameInner+'</div>';
+
+    var priceCell = _buildInlinePriceCell(svc, idx);
+
+    var notesCell = '<textarea class="edit-notes-auto" style="font-size:0.8rem;font-family:inherit;line-height:1.6;" oninput="this.style.height=\'auto\';this.style.height=this.scrollHeight+\'px\';_editData['+idx+'].notes=this.value" placeholder="備考（クリックで編集）">'+_esc(svc.notes||'')+'</textarea>';
+
+    var sideControls = '<div class="d-flex flex-column align-items-center gap-1">'
+        +'<button type="button" class="btn btn-sm edit-btn-vis" onclick="toggleRowVisible('+idx+')">'
+        +'<i class="fas '+eyeIcon+'" style="font-size:0.65rem;"></i></button>'
+        +'<button type="button" class="btn btn-sm edit-btn-trash" onclick="deleteRow('+idx+')" ><i class="fas fa-trash" style="font-size:0.6rem;"></i></button>'
+        +'</div>';
+
+    var tr = '<tr '+trAttrs+' class="edit-row'+opacityStyle+'" style="font-size:0.82rem;">'
+        +'<td class="ps-2 fw-bold align-middle py-1">'+nameCell+'</td>'
+        +'<td class="align-middle py-1">'+priceCell+'</td>'
+        +'<td class="pe-3 text-muted align-middle py-1">'+notesCell+'</td>'
+        +'<td class="align-middle text-center px-1 py-1">'+sideControls+'</td>'
+        +'</tr>';
+
+    if (svc.price_type === 'multi' && svc.extra_prices && svc.extra_prices.length) {
+        svc.extra_prices.forEach(function(ep, ei) {
+            tr += '<tr class="table-light edit-row-sub" style="font-size:0.8rem;">'
+                +'<td class="ps-4 text-muted align-middle py-1">└ '+_esc(ep.label)+'</td>'
+                +'<td class="align-middle py-1"><div class="d-flex align-items-center gap-1">'
+                +'<input type="number" class="form-control form-control-sm" style="width:66px;text-align:right;font-weight:600;font-size:0.8rem;" min="0" value="'+ep.value+'" oninput="_editData['+idx+'].extra_prices['+ei+'].value=parseInt(this.value)||0">'
+                +'<span class="text-muted" style="font-size:0.78rem;">円</span>'
+                +'</div></td>'
+                +'<td colspan="2"></td></tr>';
+        });
+    }
+    return tr;
+}
+
+function _buildInlinePriceCell(svc, idx) {
+    if (svc.price_type === 'multi') {
+        return '<span class="text-muted" style="font-size:0.82rem;">▼ 下行で編集</span>';
+    }
+    var unit = svc.key === 'cleaning' ? '円/回'
+        : ({'per_day':'円/日','per_month':'円/月','per_meal':'円/食'}[svc.price_type]||'円');
+    var unitEl = svc.key
+        ? '<span class="text-muted ms-1" style="font-size:0.82rem;">'+unit+'</span>'
+        : '<select class="edit-type-sel ms-1" onchange="_editData['+idx+'].price_type=this.value">'
+          +['per_day','per_month','per_meal'].map(function(v){return '<option value="'+v+'"'+(svc.price_type===v?' selected':'')+'>'+{'per_day':'円/日','per_month':'円/月','per_meal':'円/食'}[v]+'</option>';}).join('')
+          +'</select>';
+    return '<div class="d-flex align-items-center">'
+        +'<input type="number" class="form-control form-control-sm" style="width:66px;text-align:right;font-weight:600;font-size:0.8rem;" min="0" value="'+(svc.price||'')+'" oninput="_editData['+idx+'].price=parseInt(this.value)||0">'
+        +unitEl+'</div>';
+}
+
+function enterEditMode() {
+    _editMode = true;
+    _editData = JSON.parse(JSON.stringify(PAID_SERVICES));
+    document.getElementById('svc-header-view').classList.add('d-none');
+    document.getElementById('svc-header-edit').classList.remove('d-none');
+    renderEditTable();
+}
+
+function cancelEdit() {
+    _editMode = false;
+    document.getElementById('svc-header-view').classList.remove('d-none');
+    document.getElementById('svc-header-edit').classList.add('d-none');
+    renderViewTable();
+    _applyCareConditions();
+}
+
+var _dragIdx = null;
+function _dragStart(e, idx) { _dragIdx = idx; e.dataTransfer.effectAllowed = 'move'; }
+function _dragOver(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; e.currentTarget.classList.add('drag-over'); }
+function _dragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
+function _dragDrop(e, toIdx) {
+    e.preventDefault(); e.currentTarget.classList.remove('drag-over');
+    if (_dragIdx === null || _dragIdx === toIdx) { _dragIdx = null; return; }
+    var item = _editData.splice(_dragIdx, 1)[0];
+    _editData.splice(toIdx, 0, item);
+    _dragIdx = null; renderEditTable();
+}
+
+function toggleRowVisible(idx) { _editData[idx].visible = !_editData[idx].visible; renderEditTable(); }
+function deleteRow(idx) { _editData.splice(idx, 1); renderEditTable(); }
+function addCustomRow() {
+    _editData.push({ id: null, key: '', name: '', price_type: 'per_day', price: 100, notes: '', visible: true, extra_prices: [], order: _editData.length });
+    renderEditTable();
+    var rows = document.querySelectorAll('#services-view tbody tr.edit-row');
+    if (rows.length) rows[rows.length-1].scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+
+function saveEdit() {
+    var btn = document.querySelector('#svc-header-edit .btn-save-pastel');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>保存中...';
+
+    // 名前が空のカスタム項目を除外
+    _editData = _editData.filter(function(s) { return s.key || s.name.trim(); });
+    // 食費アイテムを含めて保存（削除されないよう）
+    var mealItems = PAID_SERVICES.filter(function(s) { return _isMealKey(s.key); });
+    var saveData = _editData.concat(mealItems);
+
+    fetch('{% url "paid_services_save" %}', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': '{{ csrf_token }}', 'Content-Type': 'application/json' },
+        body: JSON.stringify(saveData)
+    }).then(function(r){ return r.json(); }).then(function(d) {
+        if (d.ok) {
+            PAID_SERVICES = JSON.parse(JSON.stringify(_editData));
+            // orderを再設定
+            PAID_SERVICES.forEach(function(s,i){ s.order = i; });
+            _rebuildLookup();
+            cancelEdit();
+            if (_careLevel) calculate();
+        } else {
+            alert('保存に失敗しました: ' + (d.error||''));
+        }
+    }).catch(function() {
+        alert('通信エラーが発生しました。');
+    }).finally(function() {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-check me-1"></i>保存';
+    });
+}
+
+// =====================================================================
+// 計算
+// =====================================================================
+var MANAGEMENT = {
+    '要支援1':60000,'要支援2':60000,
+    '要介護1':40000,'要介護2':40000,
+    '要介護3':10000,'要介護4':10000,'要介護5':10000
+};
+var SUPPORT_SVC = {
+    '要支援1':14300,'要支援2':14300,
+    '要介護1':3300,'要介護2':3300,
+    '要介護3':3300,'要介護4':3300,'要介護5':3300
+};
+var CARE_INS = {
+    '要支援1':[5032,10064,15096],
+    '要支援2':[10531,21062,31593],
+    '要介護1':[16765,33530,50295],
+    '要介護2':[19705,39410,59115],
+    '要介護3':[27048,54096,81144],
+    '要介護4':[30938,61876,92814],
+    '要介護5':[36217,72434,108651]
+};
+
+function showBasicWarning() {
+    var toast=document.getElementById('basic-warning-toast');
+    toast.style.display='block';
+    var card=document.getElementById('care_level_select').closest('.card');
+    card.style.outline='2px solid #dc3545';
+    document.getElementById('care_level_select').scrollIntoView({behavior:'smooth',block:'center'});
+    clearTimeout(_warningTimer);
+    _warningTimer=setTimeout(function(){toast.style.display='none';card.style.outline='';},2500);
+}
+function guardBasic(el,fn){ if(!_careLevel){el.checked=!el.checked;showBasicWarning();return;} fn(); }
+function toggleBreakdown(e){if(e)e.stopPropagation();_breakdownVisible=!_breakdownVisible;document.getElementById('fee_result_section').style.display=_breakdownVisible?'':'none';document.getElementById('footer_chevron').style.transform=_breakdownVisible?'rotate(180deg)':'';}
+function closeBreakdown(){if(!_breakdownVisible)return;_breakdownVisible=false;document.getElementById('fee_result_section').style.display='none';document.getElementById('footer_chevron').style.transform='';}
+document.addEventListener('click',function(e){if(!document.getElementById('footer_container').contains(e.target))closeBreakdown();});
+window.addEventListener('scroll',closeBreakdown,{passive:true});
+
+function toggleExcretion() {
+    var on=_chk('exc_toggle');
+    var el=document.getElementById('exc_options');
+    if(el)el.style.display=on?'':'none';
+    var r=document.getElementById('exc_0');
+    if(on&&r)r.checked=true;
+    calculate();
+}
+function toggleSputum() {
+    var on=_chk('spu_toggle');
+    var el=document.getElementById('spu_options');
+    if(el)el.style.display=on?'':'none';
+    var r=document.getElementById('spu_0');
+    if(on&&r)r.checked=true;
+    calculate();
+}
+function toggleCleaning() {
+    var on=_chk('cleaning_toggle');
+    var el=document.getElementById('cleaning_options');
+    if(el)el.style.display=on?'':'none';
+    calculate();
+}
+
+function selectCareLevel(level) {
+    _careLevel=level||null;
+    if(!level)return;
+    _applyCareConditions();
+    if(level!=='要介護1'){var bd=document.getElementById('bd_toggle');if(bd)bd.checked=false;}
+    var isKaigo=['要介護1','要介護2','要介護3','要介護4','要介護5'].indexOf(level)>=0;
+    if(!isKaigo){
+        var ct=document.getElementById('cleaning_toggle');if(ct)ct.checked=false;
+        var co=document.getElementById('cleaning_options');if(co)co.style.display='none';
+    }
+    calculate();
+}
+
+function calculate() {
+    if(!_careLevel)return;
+    var days=Math.max(1,parseInt(document.getElementById('days_input').value)||30);
+    var taxPct=Math.max(0,parseInt(document.getElementById('tax_rate_input').value)||0);
+    var bdIdx=_val('burden');
+    var burdenChecked=!!document.querySelector('input[name="burden"]:checked');
+
+    // 入居費用
+    var rent=40000, mgmt=MANAGEMENT[_careLevel], svcFee=SUPPORT_SVC[_careLevel];
+    var _mp=function(k){return _ps[k]?_ps[k].price:0;};
+    var mealDay=(_chk('meal_morning')?_mp('meal_morning'):0)+(_chk('meal_lunch')?_mp('meal_lunch'):0)+(_chk('meal_dinner')?_mp('meal_dinner'):0);
+    var mealMon=mealDay*days;
+    var mealTax=Math.floor(mealMon*taxPct/100);
+    var mealTotal=mealMon+mealTax;
+    var residencyTotal=rent+mgmt+svcFee+mealTotal;
+
+    // 介護保険
+    var careIns=burdenChecked?CARE_INS[_careLevel][bdIdx]:null;
+
+    // 有償サービス（DBデータから計算）
+    var paidMon=0;
+    var pHtml=''; var hasPaid=false;
+    var mealCnt=(_chk('meal_morning')?1:0)+(_chk('meal_lunch')?1:0)+(_chk('meal_dinner')?1:0);
+
+    PAID_SERVICES.forEach(function(svc) {
+        if(!svc.visible) return;
+        var key=svc.key;
+        var amt=0;
+        if(key==='ms'&&_chk('ms_toggle')){
+            amt=svc.price*days; if(amt){pHtml+=_row(svc.name,amt,svc.price+'円/日 × '+days+'日');hasPaid=true;}
+        } else if(key==='linen'&&_chk('linen_toggle')){
+            amt=svc.price*days; if(amt){pHtml+=_row(svc.name,amt,svc.price+'円/日 × '+days+'日');hasPaid=true;}
+        } else if(key==='excretion'&&_chk('exc_toggle')){
+            var excVal=_val('excretion');
+            amt=excVal*days; if(amt){pHtml+=_row(svc.name,amt,excVal+'円/日 × '+days+'日');hasPaid=true;}
+        } else if(key==='mince'&&_chk('mince_toggle')){
+            amt=svc.price*mealCnt*days; if(amt){pHtml+=_row(svc.name,amt,svc.price+'円/食 × '+mealCnt+'食 × '+days+'日');hasPaid=true;}
+        } else if(key==='therapy'&&_chk('therapy_toggle')){
+            amt=svc.price*mealCnt*days; if(amt){pHtml+=_row(svc.name,amt,svc.price+'円/食 × '+mealCnt+'食 × '+days+'日');hasPaid=true;}
+        } else if(key==='sputum'&&_chk('spu_toggle')){
+            var spuVal=_val('sputum');
+            amt=spuVal*days; if(amt){pHtml+=_row(svc.name,amt,spuVal+'円/日 × '+days+'日');hasPaid=true;}
+        } else if(key==='parking'&&_chk('parking_toggle')){
+            amt=svc.price; if(amt){pHtml+=_row(svc.name,amt,svc.price.toLocaleString()+'円/月');hasPaid=true;}
+        } else if(key==='cleaning'&&_chk('cleaning_toggle')){
+            var cnt=parseInt(document.getElementById('cleaning_count')?.value)||0;
+            amt=svc.price*cnt; if(amt){pHtml+=_row(svc.name,amt,svc.price+'円/回 × '+cnt+'回');hasPaid=true;}
+        } else if(key==='bed'&&_careLevel==='要介護1'&&_chk('bd_toggle')){
+            amt=svc.price; if(amt){pHtml+=_row(svc.name,amt,svc.price.toLocaleString()+'円/月');hasPaid=true;}
+        } else if(!key&&_chk('custom_toggle_'+svc.id)){
+            // カスタムサービス
+            if(svc.price_type==='per_day') amt=svc.price*days;
+            else if(svc.price_type==='per_month') amt=svc.price;
+            else if(svc.price_type==='per_meal') amt=svc.price*mealCnt*days;
+            if(amt){pHtml+=_row(svc.name,amt,'');hasPaid=true;}
+        }
+        paidMon+=amt;
+    });
+
+    // カード更新
+    var lHtml='';
+    lHtml+=_row('家賃',rent);
+    lHtml+=_row('管理費',mgmt);
+    lHtml+=_row('生活支援サービス費',svcFee);
+    lHtml+=_row('食費',mealMon,mealDay>0?mealDay+'円/日 × '+days+'日':null);
+    if(mealTax>0)lHtml+='<tr><td class="ps-4 pe-2 py-1 text-muted">└ 消費税（'+taxPct+'%）<br><small style="font-size:0.65rem;">※一部軽減税率8％が適用になります。</small></td><td class="text-end pe-3 py-1 fw-bold text-dark" style="white-space:nowrap;">'+_fmt(mealTax)+'</td></tr>';
+    document.getElementById('living_detail').innerHTML=lHtml;
+    document.getElementById('living_subtotal').textContent=_fmt(residencyTotal);
+
+    var iHtml='';
+    if(careIns!==null){
+        iHtml+=_row(_careLevel+'（'+['1割','2割','3割'][bdIdx]+'負担）',careIns);
+        document.getElementById('insurance_subtotal').textContent=_fmt(careIns);
+    } else {
+        iHtml+='<tr><td colspan="2" class="px-3 py-2 text-muted fst-italic" style="font-size:0.82rem;">← 負担割合を選択してください</td></tr>';
+        document.getElementById('insurance_subtotal').textContent='―';
+    }
+    document.getElementById('insurance_detail').innerHTML=iHtml;
+
+    var paidTax=Math.floor(paidMon*taxPct/100);
+    var paidTotal=paidMon+paidTax;
+    if(!hasPaid){pHtml+='<tr><td colspan="2" class="px-3 py-2 text-muted fst-italic" style="font-size:0.82rem;">なし</td></tr>';}
+    else{pHtml+='<tr><td class="ps-3 pe-2 py-1 text-muted">消費税（'+taxPct+'%）</td><td class="text-end pe-3 py-1 fw-bold text-dark" style="white-space:nowrap;">'+_fmt(paidTax)+'</td></tr>';}
+    document.getElementById('paid_detail').innerHTML=pHtml;
+    document.getElementById('paid_subtotal').textContent=_fmt(paidTotal);
+
+    var totalEl=document.getElementById('total_amount');
+    if(careIns!==null){
+        totalEl.textContent=_fmt(residencyTotal+careIns+paidTotal);
+    } else {
+        totalEl.textContent=_fmt(residencyTotal+paidTotal)+'〜';
+    }
+    document.getElementById('fee_placeholder').style.display='none';
+    document.getElementById('fee_result_section').style.display=_breakdownVisible?'':'none';
+    document.getElementById('footer_container').style.display='';
+    document.getElementById('footer_spacer').style.display='';
+}
+
+// =====================================================================
+// 初期化
+// =====================================================================
+document.addEventListener('DOMContentLoaded', function() {
+    renderViewTable();
+    _updateMealLabels();
+});
+</script>
+{% endblock %}

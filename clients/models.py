@@ -969,6 +969,47 @@ _FAX_DEFAULT_BODY = (
 )
 
 
+class PaidService(models.Model):
+    """有償サービス設定（料金シミュレーション用）"""
+
+    PRICE_TYPE_CHOICES = [
+        ('per_day',   '円/日'),
+        ('per_month', '円/月'),
+        ('per_meal',  '円/食'),
+        ('multi',     '複数単価'),
+    ]
+
+    name         = models.CharField('項目名', max_length=100)
+    price_type   = models.CharField('単価種別', max_length=20, choices=PRICE_TYPE_CHOICES, default='per_day')
+    price        = models.IntegerField('単価', default=0)
+    notes        = models.TextField('備考', blank=True)
+    order        = models.PositiveIntegerField('並び順', default=0)
+    is_visible   = models.BooleanField('表示', default=True)
+    item_key     = models.CharField('内部キー', max_length=50, blank=True)
+    extra_prices = models.JSONField('追加単価', default=list, blank=True)
+
+    class Meta:
+        verbose_name = '有償サービス'
+        verbose_name_plural = '有償サービス'
+        ordering = ['order', 'id']
+
+    def __str__(self):
+        return self.name
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'key': self.item_key,
+            'name': self.name,
+            'price_type': self.price_type,
+            'price': self.price,
+            'notes': self.notes,
+            'order': self.order,
+            'visible': self.is_visible,
+            'extra_prices': self.extra_prices,
+        }
+
+
 class FaxMessageTemplate(models.Model):
     """FAX送付状 本文テンプレート（シングルトン）"""
     body       = models.TextField('本文テンプレート', default=_FAX_DEFAULT_BODY)

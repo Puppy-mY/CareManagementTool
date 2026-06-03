@@ -17,8 +17,20 @@ from clients.views import _generate_fax_cover_sheet_standalone_bytes
 from facilities.models import Facility
 
 
+def care_simulator(request):
+    care_levels = ['要支援1','要支援2','要介護1','要介護2','要介護3','要介護4','要介護5']
+    return render(request, 'public/care_simulator.html', {'care_levels': care_levels})
+
+
 def fee_simulation(request):
-    return render(request, 'public/fee_simulation.html', {})
+    import json as _json
+    from clients.models import PaidService
+    services = list(PaidService.objects.all())
+    can_edit = request.user.is_authenticated and (request.user.is_staff or request.user.is_superuser)
+    return render(request, 'public/fee_simulation.html', {
+        'paid_services_json': _json.dumps([s.to_dict() for s in services], ensure_ascii=False),
+        'can_edit': can_edit,
+    })
 
 
 def fax_cover_sheet(request):

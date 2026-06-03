@@ -44,11 +44,20 @@
                         <label class="btn btn-outline-secondary" for="burden3" style="min-width:60px;">3割</label>
                     </div>
                 </div>
-                <div class="ms-auto">
-                    <div class="text-muted mb-1" style="font-size:0.75rem; letter-spacing:0.04em;">月の日数</div>
-                    <div class="d-flex align-items-center gap-1">
-                        <input type="number" id="days_input" class="form-control form-control-sm text-center fw-bold" value="30" min="1" max="31" style="width:56px;" onchange="calculate()">
-                        <span class="text-muted" style="font-size:0.85rem;">日</span>
+                <div class="ms-auto d-flex gap-4 align-items-end">
+                    <div>
+                        <div class="text-muted mb-1" style="font-size:0.75rem; letter-spacing:0.04em;">月の日数</div>
+                        <div class="d-flex align-items-center gap-1">
+                            <input type="number" id="days_input" class="form-control form-control-sm text-center fw-bold" value="30" min="1" max="31" style="width:56px;" onchange="calculate()">
+                            <span class="text-muted" style="font-size:0.85rem;">日</span>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="text-muted mb-1" style="font-size:0.75rem; letter-spacing:0.04em;">消費税</div>
+                        <div class="d-flex align-items-center gap-1">
+                            <input type="number" id="tax_rate_input" class="form-control form-control-sm text-center fw-bold" value="10" min="0" max="100" style="width:56px;" onchange="calculate()">
+                            <span class="text-muted" style="font-size:0.85rem;">%</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -57,23 +66,61 @@
 
     <!-- 食費 -->
     <div class="card mb-3">
-        <div class="card-header">
+        <div class="card-header d-flex align-items-center justify-content-between">
             <h6 class="mb-0"><i class="fas fa-utensils me-2 text-muted"></i>食費</h6>
+            <div id="meal-header-view">
+                <button type="button" class="btn btn-sm btn-edit-pastel" onclick="enterMealEdit()">
+                    <i class="fas fa-edit me-1"></i>編集
+                </button>
+            </div>
+            <div id="meal-header-edit" class="d-none d-flex align-items-center" style="gap:6px;">
+                <small class="text-warning me-2" style="font-size:0.78rem;"><i class="fas fa-pen me-1"></i>編集中</small>
+                <button type="button" class="btn btn-sm btn-cancel-pastel" onclick="cancelMealEdit()">キャンセル</button>
+                <button type="button" class="btn btn-sm btn-save-pastel" id="meal-save-btn" onclick="saveMealEdit()"><i class="fas fa-check me-1"></i>保存</button>
+            </div>
         </div>
         <div class="card-body">
-            <p class="text-muted small mb-2">利用する食事を選択してください</p>
-            <div class="d-flex flex-wrap gap-4">
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="meal_morning" checked onchange="guardBasic(this, calculate)">
-                    <label class="form-check-label" for="meal_morning">朝食 <span class="text-muted">486円</span></label>
+            <div id="meal-view">
+                <p class="text-muted small mb-2">利用する食事を選択してください <span style="font-size:0.75rem;">（税抜）</span></p>
+                <div class="d-flex flex-wrap gap-4">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="meal_morning" checked onchange="guardBasic(this, calculate)">
+                        <label class="form-check-label" for="meal_morning">朝食 <span id="lbl_meal_morning" class="text-muted">486円</span></label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="meal_lunch" checked onchange="guardBasic(this, calculate)">
+                        <label class="form-check-label" for="meal_lunch">昼食 <span id="lbl_meal_lunch" class="text-muted">594円</span></label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="meal_dinner" checked onchange="guardBasic(this, calculate)">
+                        <label class="form-check-label" for="meal_dinner">夕食 <span id="lbl_meal_dinner" class="text-muted">770円</span></label>
+                    </div>
                 </div>
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="meal_lunch" checked onchange="guardBasic(this, calculate)">
-                    <label class="form-check-label" for="meal_lunch">昼食 <span class="text-muted">594円</span></label>
-                </div>
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="meal_dinner" checked onchange="guardBasic(this, calculate)">
-                    <label class="form-check-label" for="meal_dinner">夕食 <span class="text-muted">770円</span></label>
+            </div>
+            <div id="meal-edit" class="d-none">
+                <p class="text-muted small mb-2">各食事の単価を設定してください</p>
+                <div class="d-flex flex-wrap gap-4 align-items-end">
+                    <div>
+                        <div class="text-muted mb-1" style="font-size:0.78rem;">朝食</div>
+                        <div class="d-flex align-items-center gap-1">
+                            <input type="number" id="edit_meal_morning" class="form-control form-control-sm" style="width:72px;text-align:right;font-weight:600;" min="0">
+                            <span class="text-muted" style="font-size:0.85rem;">円</span>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="text-muted mb-1" style="font-size:0.78rem;">昼食</div>
+                        <div class="d-flex align-items-center gap-1">
+                            <input type="number" id="edit_meal_lunch" class="form-control form-control-sm" style="width:72px;text-align:right;font-weight:600;" min="0">
+                            <span class="text-muted" style="font-size:0.85rem;">円</span>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="text-muted mb-1" style="font-size:0.78rem;">夕食</div>
+                        <div class="d-flex align-items-center gap-1">
+                            <input type="number" id="edit_meal_dinner" class="form-control form-control-sm" style="width:72px;text-align:right;font-weight:600;" min="0">
+                            <span class="text-muted" style="font-size:0.85rem;">円</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -81,110 +128,20 @@
 
     <!-- 有償サービス -->
     <div class="card mb-4">
-        <div class="card-header">
+        <div class="card-header d-flex align-items-center justify-content-between">
             <h6 class="mb-0"><i class="fas fa-plus-circle me-2 text-muted"></i>有償サービス</h6>
+            <div id="svc-header-view">
+                <button type="button" class="btn btn-sm btn-edit-pastel" onclick="enterEditMode()">
+                    <i class="fas fa-edit me-1"></i>編集
+                </button>
+            </div>
+            <div id="svc-header-edit" class="d-none d-flex align-items-center" style="gap:6px;">
+                <small class="text-warning me-2" style="font-size:0.78rem;"><i class="fas fa-pen me-1"></i>編集中</small>
+                <button type="button" class="btn btn-sm btn-cancel-pastel" onclick="cancelEdit()">キャンセル</button>
+                <button type="button" class="btn btn-sm btn-save-pastel" onclick="saveEdit()"><i class="fas fa-check me-1"></i>保存</button>
+            </div>
         </div>
-        <div class="card-body p-0">
-            <table class="table table-sm mb-0" style="font-size:0.88rem;">
-                <thead class="table-light">
-                    <tr>
-                        <th class="ps-3 fw-semibold text-muted" style="width:18%; font-size:0.78rem;">項目名</th>
-                        <th class="fw-semibold text-muted" style="width:7%; font-size:0.78rem;">利用</th>
-                        <th class="fw-semibold text-muted" style="width:17%; font-size:0.78rem;">単価（税込）</th>
-                        <th class="pe-3 fw-semibold text-muted" style="font-size:0.78rem;">備考</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr onclick="rowToggle(event,'ms_toggle',calculate)" style="cursor:pointer;">
-                        <td class="ps-3 fw-bold align-middle">食事支援</td>
-                        <td class="align-middle"><div class="form-check form-switch mb-0"><input class="form-check-input" type="checkbox" role="switch" id="ms_toggle" onchange="guardBasic(this, calculate)"></div></td>
-                        <td class="align-middle text-muted" style="font-size:0.82rem;">165円/日</td>
-                        <td class="pe-3 text-muted align-middle" style="font-size:0.8rem; line-height:1.6;">お部屋への声掛け・食堂までのご誘導・配膳・下膳・食器の配置の変更<small class="d-block" style="font-size:0.75rem;">※介護サービスで食事介助を受ける場合は不要</small></td>
-                    </tr>
-                    <tr onclick="rowToggle(event,'linen_toggle',calculate)" style="cursor:pointer;">
-                        <td class="ps-3 fw-bold align-middle">リネンリース</td>
-                        <td class="align-middle"><div class="form-check form-switch mb-0"><input class="form-check-input" type="checkbox" role="switch" id="linen_toggle" onchange="guardBasic(this, calculate)"></div></td>
-                        <td class="align-middle text-muted" style="font-size:0.82rem;">165円/日</td>
-                        <td class="pe-3 text-muted align-middle" style="font-size:0.8rem; line-height:1.6;">掛け布団・ベッドパッド・枕・シーツをリース（週1回交換）。持ち込みの場合、汚れ時の交換はご本人・ご家族様での対応となります。</td>
-                    </tr>
-                    <tr onclick="rowToggle(event,'exc_toggle',toggleExcretion)" style="cursor:pointer;">
-                        <td class="ps-3 fw-bold align-middle">排泄支援</td>
-                        <td class="align-middle"><div class="form-check form-switch mb-0"><input class="form-check-input" type="checkbox" role="switch" id="exc_toggle" onchange="guardBasic(this, toggleExcretion)"></div></td>
-                        <td class="align-middle text-muted" style="font-size:0.8rem; line-height:1.7;">日中：110円<br>夜間・早朝：220円<br>深夜：275円</td>
-                        <td class="pe-3 text-muted align-middle" style="font-size:0.8rem; line-height:1.6;">介護保険サービス外の自費の排泄支援。毎日の排泄でお手伝いが必要な場合は、介護保険サービスだけでは賄いきれないため、有償の排泄支援が必要。</td>
-                    </tr>
-                    <tr id="exc_options" style="display:none;" class="table-light">
-                        <td colspan="4" class="ps-4 pe-3 py-2">
-                            <div class="d-flex flex-column gap-2">
-                                <div class="form-check mb-0"><input class="form-check-input" type="radio" name="excretion" id="exc_1" value="275" checked onchange="calculate()"><label class="form-check-label text-muted" for="exc_1" style="font-size:0.82rem;">1回/日（深夜帯のみ）　275円/日</label></div>
-                                <div class="form-check mb-0"><input class="form-check-input" type="radio" name="excretion" id="exc_2" value="440" onchange="calculate()"><label class="form-check-label text-muted" for="exc_2" style="font-size:0.82rem;">2回/日（深夜帯・早朝帯）　440円/日</label></div>
-                                <div class="form-check mb-0"><input class="form-check-input" type="radio" name="excretion" id="exc_4" value="715" onchange="calculate()"><label class="form-check-label text-muted" for="exc_4" style="font-size:0.82rem;">4回/日（深夜・早朝・午前・午後）　715円/日</label></div>
-                            </div>
-                        </td>
-                    </tr>
-                    <tr onclick="rowToggle(event,'mince_toggle',calculate)" style="cursor:pointer;">
-                        <td class="ps-3 fw-bold align-middle">刻み・ペースト食</td>
-                        <td class="align-middle"><div class="form-check form-switch mb-0"><input class="form-check-input" type="checkbox" role="switch" id="mince_toggle" onchange="guardBasic(this, calculate)"></div></td>
-                        <td class="align-middle text-muted" style="font-size:0.82rem;">44円/食</td>
-                        <td class="pe-3 text-muted align-middle" style="font-size:0.8rem; line-height:1.6;">食事の形態を一口大・キザミ・ペーストへ変更します。<small class="d-block" style="font-size:0.75rem;">※お粥への変更は無料</small></td>
-                    </tr>
-                    <tr onclick="rowToggle(event,'therapy_toggle',calculate)" style="cursor:pointer;">
-                        <td class="ps-3 fw-bold align-middle">療養食</td>
-                        <td class="align-middle"><div class="form-check form-switch mb-0"><input class="form-check-input" type="checkbox" role="switch" id="therapy_toggle" onchange="guardBasic(this, calculate)"></div></td>
-                        <td class="align-middle text-muted" style="font-size:0.82rem;">77円/食</td>
-                        <td class="pe-3 text-muted align-middle" style="font-size:0.8rem; line-height:1.6;">医師の指示に基づく特別食を提供します（糖尿病食・心臓食・腎食・胃潰瘍食・貧血食など）。</td>
-                    </tr>
-                    <tr onclick="rowToggle(event,'spu_toggle',toggleSputum)" style="cursor:pointer;">
-                        <td class="ps-3 fw-bold align-middle">喀痰吸引</td>
-                        <td class="align-middle"><div class="form-check form-switch mb-0"><input class="form-check-input" type="checkbox" role="switch" id="spu_toggle" onchange="guardBasic(this, toggleSputum)"></div></td>
-                        <td class="align-middle text-muted" style="font-size:0.8rem; line-height:1.7;">日中：110円<br>夜間・早朝：220円<br>深夜：275円</td>
-                        <td class="pe-3 text-muted align-middle" style="font-size:0.8rem; line-height:1.6;">介護保険サービス外の自費の喀痰吸引。毎日の喀痰吸引が必要な場合は、介護保険サービスだけでは賄いきれないため、有償の喀痰吸引が必要。</td>
-                    </tr>
-                    <tr id="spu_options" style="display:none;" class="table-light">
-                        <td colspan="4" class="ps-4 pe-3 py-2">
-                            <div class="d-flex flex-column gap-2">
-                                <div class="form-check mb-0"><input class="form-check-input" type="radio" name="sputum" id="spu_1" value="275" checked onchange="calculate()"><label class="form-check-label text-muted" for="spu_1" style="font-size:0.82rem;">1回/日（深夜帯）　275円/日</label></div>
-                                <div class="form-check mb-0"><input class="form-check-input" type="radio" name="sputum" id="spu_2" value="440" onchange="calculate()"><label class="form-check-label text-muted" for="spu_2" style="font-size:0.82rem;">2回/日（深夜帯・早朝帯）　440円/日</label></div>
-                                <div class="form-check mb-0"><input class="form-check-input" type="radio" name="sputum" id="spu_4" value="715" onchange="calculate()"><label class="form-check-label text-muted" for="spu_4" style="font-size:0.82rem;">4回/日（深夜・早朝・午前・午後）　715円/日</label></div>
-                            </div>
-                        </td>
-                    </tr>
-                    <tr onclick="rowToggle(event,'parking_toggle',calculate)" style="cursor:pointer;">
-                        <td class="ps-3 fw-bold align-middle">駐車場代</td>
-                        <td class="align-middle"><div class="form-check form-switch mb-0"><input class="form-check-input" type="checkbox" role="switch" id="parking_toggle" onchange="guardBasic(this, calculate)"></div></td>
-                        <td class="align-middle text-muted" style="font-size:0.82rem;">3,300円/月</td>
-                        <td class="pe-3 text-muted align-middle" style="font-size:0.8rem; line-height:1.6;"></td>
-                    </tr>
-                    <tr id="cleaning_section" style="display:none;" onclick="rowToggle(event,'cleaning_toggle',toggleCleaning)" class="cursor-pointer">
-                        <td class="ps-3 fw-bold align-middle">居室内清掃</td>
-                        <td class="align-middle"><div class="form-check form-switch mb-0"><input class="form-check-input" type="checkbox" role="switch" id="cleaning_toggle" onchange="guardBasic(this, toggleCleaning)"></div></td>
-                        <td class="align-middle text-muted" style="font-size:0.8rem; line-height:1.7;">550円/回<br><span style="font-size:0.75rem;">30分以内/人</span></td>
-                        <td class="pe-3 text-muted align-middle" style="font-size:0.8rem; line-height:1.6;">クリーンスタッフによる居室清掃。介護保険サービスで居室清掃も可能です。</td>
-                    </tr>
-                    <tr id="cleaning_options" style="display:none;" class="table-light">
-                        <td colspan="4" class="ps-4 pe-3 py-2">
-                            <div class="d-flex align-items-center gap-2">
-                                <span class="text-muted" style="font-size:0.82rem;">月の回数</span>
-                                <input type="number" id="cleaning_count" class="form-control form-control-sm text-center fw-bold" value="4" min="1" max="31" style="width:56px;" onchange="calculate()">
-                                <span class="text-muted" style="font-size:0.82rem;">回/月</span>
-                            </div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td class="ps-3 fw-bold align-middle">衣類洗濯</td>
-                        <td class="align-middle"></td>
-                        <td class="align-middle"><span class="badge bg-warning text-dark" style="font-size:0.72rem;">詳細確認中</span></td>
-                        <td class="pe-3 text-muted align-middle" style="font-size:0.8rem; line-height:1.6;">衣類・タオル類のお洗濯代行。料金・回数など詳細は施設スタッフにご確認ください。</td>
-                    </tr>
-                    <tr id="bed_section" style="display:none;" onclick="rowToggle(event,'bd_toggle',calculate)" class="cursor-pointer">
-                        <td class="ps-3 fw-bold align-middle">ベッドリース<span class="badge bg-secondary ms-1" style="font-size:0.65rem;">要介護1のみ</span></td>
-                        <td class="align-middle"><div class="form-check form-switch mb-0"><input class="form-check-input" type="checkbox" role="switch" id="bd_toggle" onchange="guardBasic(this, calculate)"></div></td>
-                        <td class="align-middle text-muted" style="font-size:0.82rem;">3,300円/月</td>
-                        <td class="pe-3 text-muted align-middle" style="font-size:0.8rem; line-height:1.6;">介護用ベッドのリース。自前でご用意いただく場合は不要です。</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+        <div id="services-view" class="card-body p-0"><!-- JS で描画 --></div>
     </div>
 
     <div id="fee_placeholder" class="text-center text-muted py-5">
@@ -199,6 +156,7 @@
     <div id="footer_spacer" style="height:50px; display:none;"></div>
 </div>
 
+<!-- 固定フッター -->
 <div id="footer_container" style="display:none; position:fixed; bottom:0; left:0; right:0; z-index:1040;">
     <div id="fee_result_section" style="display:none; background:#f0f8ff; border-top:1px solid #dee2e6; box-shadow:0 -4px 16px rgba(0,0,0,0.1); max-height:55vh; overflow-y:auto;">
         <div style="max-width:1400px; margin:0 auto; padding:16px 24px;">
@@ -240,12 +198,118 @@
 </div>
 {% endblock %}
 
+{% block extra_style %}
+.edit-row { border-bottom:1px solid #f3e8c8; transition:background .12s; }
+.edit-row:last-child { border-bottom:none; }
+.edit-row:hover { background:#fff8e8; }
+.edit-row-sub { background:#fefaf0; border-bottom:1px solid #f3e8c8; }
+.edit-row-sub:last-child { border-bottom:none; }
+.edit-input-price { width:80px; font-weight:600; text-align:right; }
+.edit-btn-vis { width:22px; height:22px; padding:0; line-height:1; border-radius:4px; background-color:#ffffff; border-color:#6c757d; color:#6c757d; transition:all 0.2s ease; }
+.edit-btn-vis:hover { background-color:#f5f5f5; border-color:#999999; color:#333333; transform:translateY(-1px); box-shadow:0 2px 4px rgba(0,0,0,0.1); }
+.edit-btn-trash { width:22px; height:22px; padding:0; line-height:1; border-radius:4px; background-color:#ffffff; border-color:#6c757d; color:#6c757d; transition:all 0.2s ease; }
+.edit-btn-trash:hover { background-color:#f8d7da; border-color:#dc3545; color:#dc3545; transform:translateY(-1px); box-shadow:0 2px 4px rgba(0,0,0,0.1); }
+.drag-handle { cursor:grab; color:#ccc; font-size:0.85rem; flex-shrink:0; padding:0 2px; user-select:none; }
+.drag-handle:active { cursor:grabbing; }
+.edit-row.drag-over { border-top:3px solid #f59e0b !important; background:#fff8e8; }
+.edit-notes-auto { min-height:1.6em; overflow:hidden; resize:none; border:none; padding:0; margin:0; background:transparent; box-shadow:none; outline:none; width:100%; }
+.edit-notes-auto:focus { background:#fffef0; outline:1px solid #d4a700; border-radius:2px; }
+.edit-type-sel { appearance:none; -webkit-appearance:none; background:transparent; border:1px solid #ced4da; border-radius:4px; padding:2px 4px; font-size:0.78rem; width:44px; cursor:pointer; }
+.btn-edit-pastel { background-color:#ffffff; border-color:#6c757d; color:#6c757d; transition:all 0.2s ease; }
+.btn-edit-pastel:hover { background-color:#ffe5cc; border-color:#fd7e14; color:#fd7e14; transform:translateY(-1px); box-shadow:0 2px 4px rgba(0,0,0,0.1); }
+.btn-cancel-pastel { background-color:#ffffff; border-color:#6c757d; color:#6c757d; transition:all 0.2s ease; }
+.btn-cancel-pastel:hover { background-color:#f5f5f5; border-color:#999999; color:#333333; transform:translateY(-1px); box-shadow:0 2px 4px rgba(0,0,0,0.1); }
+.btn-save-pastel { background-color:#ffffff; border-color:#6c757d; color:#6c757d; transition:all 0.2s ease; }
+.btn-save-pastel:hover { background-color:#f8d7da; border-color:#dc3545; color:#dc3545; transform:translateY(-1px); box-shadow:0 2px 4px rgba(0,0,0,0.1); }
+.edit-row-hidden { opacity:0.45; }
+.add-service-btn { border:2px dashed #d1a84b; color:#a07030; background:transparent; border-radius:8px; font-size:0.85rem; padding:6px 16px; transition:all .15s; }
+.add-service-btn:hover { background:#fff8e0; border-color:#b8832a; color:#7a5010; }
+.edit-type-badge { font-size:0.72rem; padding:2px 7px; border-radius:10px; background:#f0e4c0; color:#7a5020; white-space:nowrap; }
+#living_detail tr:last-child td,
+#insurance_detail tr:last-child td,
+#paid_detail tr:last-child td { border-bottom-width: 0 !important; }
+{% endblock %}
+
 {% block extra_js %}
 <script>
+var PAID_SERVICES = {{ paid_services_json|safe }};
+var _ps = {};
 var _careLevel = null;
 var _breakdownVisible = false;
 var _warningTimer = null;
+var _editMode = false;
+var _editData = [];
 
+function _isMealKey(key) { return key && key.indexOf('meal_') === 0; }
+
+function _rebuildLookup() {
+    _ps = {};
+    PAID_SERVICES.forEach(function(s) { if (s.key) _ps[s.key] = s; });
+}
+_rebuildLookup();
+
+function _updateMealLabels() {
+    ['morning','lunch','dinner'].forEach(function(m) {
+        var s = _ps['meal_'+m];
+        var el = document.getElementById('lbl_meal_'+m);
+        if (s && el) el.textContent = s.price + '円';
+    });
+}
+function enterMealEdit() {
+    document.getElementById('meal-header-view').classList.add('d-none');
+    document.getElementById('meal-header-edit').classList.remove('d-none');
+    document.getElementById('meal-view').classList.add('d-none');
+    document.getElementById('meal-edit').classList.remove('d-none');
+    ['morning','lunch','dinner'].forEach(function(m) {
+        var s = _ps['meal_'+m];
+        document.getElementById('edit_meal_'+m).value = s ? s.price : '';
+    });
+}
+function cancelMealEdit() {
+    document.getElementById('meal-header-view').classList.remove('d-none');
+    document.getElementById('meal-header-edit').classList.add('d-none');
+    document.getElementById('meal-view').classList.remove('d-none');
+    document.getElementById('meal-edit').classList.add('d-none');
+}
+function saveMealEdit() {
+    var btn = document.getElementById('meal-save-btn');
+    btn.disabled=true; btn.innerHTML='<i class="fas fa-spinner fa-spin me-1"></i>保存中...';
+    var updated = PAID_SERVICES.map(function(s) {
+        if (!_isMealKey(s.key)) return s;
+        var suffix = s.key.replace('meal_','');
+        var v = parseInt(document.getElementById('edit_meal_'+suffix).value)||0;
+        return Object.assign({},s,{price:v});
+    });
+    fetch('{% url "paid_services_save" %}',{
+        method:'POST',
+        headers:{'X-CSRFToken':'{{ csrf_token }}','Content-Type':'application/json'},
+        body:JSON.stringify(updated)
+    }).then(function(r){return r.json();}).then(function(d){
+        if(d.ok){PAID_SERVICES=updated;_rebuildLookup();_updateMealLabels();cancelMealEdit();if(_careLevel)calculate();}
+        else{alert('保存に失敗しました: '+(d.error||''));}
+    }).catch(function(){alert('通信エラーが発生しました。');})
+    .finally(function(){btn.disabled=false;btn.innerHTML='<i class="fas fa-check me-1"></i>保存';});
+}
+
+// ── ユーティリティ ──
+function _esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function nl2br(s) { return _esc(s||'').replace(/\n/g,'<br>'); }
+function _val(name) { var el=document.querySelector('input[name="'+name+'"]:checked'); return el?parseInt(el.value):0; }
+function _chk(id) { var el=document.getElementById(id); return el?el.checked:false; }
+function _fmt(n) { return n.toLocaleString()+'円'; }
+function _ptLabel(pt, price) {
+    if (pt==='per_day')   return price+'円/日';
+    if (pt==='per_month') return price.toLocaleString()+'円/月';
+    if (pt==='per_meal')  return price+'円/食';
+    return '';
+}
+function _row(label, amount, note) {
+    var n = note ? '<br><small class="text-muted" style="font-size:0.75rem;">'+note+'</small>' : '';
+    return '<tr><td class="ps-3 pe-2 py-1 text-muted">'+label+n+'</td>'
+        +'<td class="text-end pe-3 py-1 fw-bold text-dark" style="white-space:nowrap;">'+_fmt(amount)+'</td></tr>';
+}
+
+// ── 行クリックでトグル（公開版の特徴）──
 function rowToggle(e, toggleId, fn) {
     if (e.target.closest('input') || e.target.closest('label')) return;
     var el = document.getElementById(toggleId);
@@ -255,34 +319,167 @@ function rowToggle(e, toggleId, fn) {
     fn();
 }
 
+// ── 警告 ──
 function showBasicWarning() {
     var toast = document.getElementById('basic-warning-toast');
     toast.style.display = 'block';
     var card = document.getElementById('care_level_select').closest('.card');
     card.style.outline = '2px solid #dc3545';
-    document.getElementById('care_level_select').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    document.getElementById('care_level_select').scrollIntoView({behavior:'smooth',block:'center'});
     clearTimeout(_warningTimer);
-    _warningTimer = setTimeout(function() { toast.style.display = 'none'; card.style.outline = ''; }, 2500);
+    _warningTimer = setTimeout(function(){ toast.style.display='none'; card.style.outline=''; }, 2500);
 }
-function guardBasic(el, fn) {
-    if (!_careLevel) { el.checked = !el.checked; showBasicWarning(); return; }
-    fn();
-}
-function toggleBreakdown(e) {
-    if (e) e.stopPropagation();
-    _breakdownVisible = !_breakdownVisible;
-    document.getElementById('fee_result_section').style.display = _breakdownVisible ? '' : 'none';
-    document.getElementById('footer_chevron').style.transform = _breakdownVisible ? 'rotate(180deg)' : '';
-}
-function closeBreakdown() {
-    if (!_breakdownVisible) return;
-    _breakdownVisible = false;
-    document.getElementById('fee_result_section').style.display = 'none';
-    document.getElementById('footer_chevron').style.transform = '';
-}
-document.addEventListener('click', function(e) { if (!document.getElementById('footer_container').contains(e.target)) closeBreakdown(); });
-window.addEventListener('scroll', closeBreakdown, { passive: true });
+function guardBasic(el, fn) { if(!_careLevel){el.checked=!el.checked;showBasicWarning();return;} fn(); }
 
+// ── フッター ──
+function toggleBreakdown(e) { if(e)e.stopPropagation(); _breakdownVisible=!_breakdownVisible; document.getElementById('fee_result_section').style.display=_breakdownVisible?'':'none'; document.getElementById('footer_chevron').style.transform=_breakdownVisible?'rotate(180deg)':''; }
+function closeBreakdown() { if(!_breakdownVisible)return; _breakdownVisible=false; document.getElementById('fee_result_section').style.display='none'; document.getElementById('footer_chevron').style.transform=''; }
+document.addEventListener('click',function(e){if(!document.getElementById('footer_container').contains(e.target))closeBreakdown();});
+window.addEventListener('scroll',closeBreakdown,{passive:true});
+
+// ── テーブル描画 ──
+function renderViewTable() {
+    var html = '<table class="table table-sm mb-0" style="font-size:0.88rem;">'
+        +'<thead class="table-light"><tr>'
+        +'<th class="ps-3 fw-semibold text-muted" style="width:18%;font-size:0.78rem;">項目名</th>'
+        +'<th class="fw-semibold text-muted" style="width:7%;font-size:0.78rem;">利用</th>'
+        +'<th class="fw-semibold text-muted" style="width:17%;font-size:0.78rem;">単価（税抜）</th>'
+        +'<th class="pe-3 fw-semibold text-muted" style="font-size:0.78rem;">備考</th>'
+        +'</tr></thead><tbody>';
+    PAID_SERVICES.forEach(function(svc) {
+        if (!svc.visible || _isMealKey(svc.key)) return;
+        html += _buildRow(svc);
+    });
+    document.getElementById('services-view').innerHTML = html + '</tbody></table>';
+    _applyCareConditions();
+}
+
+function _buildRow(svc) {
+    switch(svc.key) {
+        case 'ms':
+            return _simpleRow(svc,'ms_toggle','guardBasic(this,calculate)','guardBasic(this,calculate)',_ptLabel('per_day',svc.price));
+        case 'linen':
+            return _simpleRow(svc,'linen_toggle','guardBasic(this,calculate)','guardBasic(this,calculate)',_ptLabel('per_day',svc.price));
+        case 'excretion':
+            return _excSputumRow(svc,'exc_toggle','guardBasic(this,toggleExcretion)','toggleExcretion','exc','excretion');
+        case 'mince':
+            return _simpleRow(svc,'mince_toggle','guardBasic(this,calculate)','guardBasic(this,calculate)',_ptLabel('per_meal',svc.price));
+        case 'therapy':
+            return _simpleRow(svc,'therapy_toggle','guardBasic(this,calculate)','guardBasic(this,calculate)',_ptLabel('per_meal',svc.price));
+        case 'sputum':
+            return _excSputumRow(svc,'spu_toggle','guardBasic(this,toggleSputum)','toggleSputum','spu','sputum');
+        case 'parking':
+            return _simpleRow(svc,'parking_toggle','guardBasic(this,calculate)','guardBasic(this,calculate)',_ptLabel('per_month',svc.price));
+        case 'cleaning':
+            return _cleaningRow(svc);
+        case 'laundry':
+            return _laundryRow(svc);
+        case 'bed':
+            return _bedRow(svc);
+        default:
+            return _customRow(svc);
+    }
+}
+
+function _simpleRow(svc, tid, onchg, rowFn, priceLabel) {
+    return '<tr onclick="rowToggle(event,\''+tid+'\',calculate)" style="cursor:pointer;">'
+        +'<td class="ps-3 fw-bold align-middle">'+_esc(svc.name)+'</td>'
+        +'<td class="align-middle"><div class="form-check form-switch mb-0"><input class="form-check-input" type="checkbox" role="switch" id="'+tid+'" onchange="'+onchg+'"></div></td>'
+        +'<td class="align-middle text-muted" style="font-size:0.82rem;">'+priceLabel+'</td>'
+        +'<td class="pe-3 text-muted align-middle" style="font-size:0.8rem;line-height:1.6;">'+nl2br(svc.notes)+'</td></tr>';
+}
+
+function _excSputumRow(svc, tid, onchg, rowFn, prefix, radioName) {
+    var eps = svc.extra_prices || [];
+    var daytime  = eps[0] ? eps[0].value : 100;
+    var evening  = eps[1] ? eps[1].value : 200;
+    var midnight = eps[2] ? eps[2].value : 250;
+    var priceLabel = (eps[0]?eps[0].label:'日中')+'：'+daytime+'円<br>'
+        +(eps[1]?eps[1].label:'夜間・早朝')+'：'+evening+'円<br>'
+        +(eps[2]?eps[2].label:'深夜')+'：'+midnight+'円';
+    var combos = [
+        {label:'1回/日（深夜のみ）',              value:midnight},
+        {label:'2回/日（夜間・早朝）',             value:evening*2},
+        {label:'4回/日（午前・午後・夜間・深夜）', value:daytime*2+evening+midnight},
+    ];
+    var subRows = '<tr id="'+prefix+'_options" style="display:none;" class="table-light"><td colspan="4" class="ps-4 pe-3 py-2"><div class="d-flex flex-column gap-2">';
+    combos.forEach(function(c, i) {
+        subRows += '<div class="form-check mb-0">'
+            +'<input class="form-check-input" type="radio" name="'+radioName+'" id="'+prefix+'_'+i+'" value="'+c.value+'"'+(i===0?' checked':'')+' onchange="calculate()">'
+            +'<label class="form-check-label text-muted" for="'+prefix+'_'+i+'" style="font-size:0.82rem;">'+_esc(c.label)+'　'+c.value+'円/日</label>'
+            +'</div>';
+    });
+    subRows += '</div></td></tr>';
+    return '<tr onclick="rowToggle(event,\''+tid+'\','+rowFn+')" style="cursor:pointer;">'
+        +'<td class="ps-3 fw-bold align-middle">'+_esc(svc.name)+'</td>'
+        +'<td class="align-middle"><div class="form-check form-switch mb-0"><input class="form-check-input" type="checkbox" role="switch" id="'+tid+'" onchange="'+onchg+'"></div></td>'
+        +'<td class="align-middle text-muted" style="font-size:0.8rem;line-height:1.7;">'+priceLabel+'</td>'
+        +'<td class="pe-3 text-muted align-middle" style="font-size:0.8rem;line-height:1.6;">'+nl2br(svc.notes)+'</td></tr>'
+        + subRows;
+}
+
+function _cleaningRow(svc) {
+    return '<tr id="cleaning_section" style="display:none;" onclick="rowToggle(event,\'cleaning_toggle\',toggleCleaning)" style="cursor:pointer;">'
+        +'<td class="ps-3 fw-bold align-middle">'+_esc(svc.name)+'</td>'
+        +'<td class="align-middle"><div class="form-check form-switch mb-0"><input class="form-check-input" type="checkbox" role="switch" id="cleaning_toggle" onchange="guardBasic(this,toggleCleaning)"></div></td>'
+        +'<td class="align-middle text-muted" style="font-size:0.8rem;line-height:1.7;">'+svc.price+'円/回<br><span style="font-size:0.75rem;">30分以内/人</span></td>'
+        +'<td class="pe-3 text-muted align-middle" style="font-size:0.8rem;line-height:1.6;">'+nl2br(svc.notes)+'</td></tr>'
+        +'<tr id="cleaning_options" style="display:none;" class="table-light">'
+        +'<td colspan="4" class="ps-4 pe-3 py-2"><div class="d-flex align-items-center gap-2">'
+        +'<span class="text-muted" style="font-size:0.82rem;">月の回数</span>'
+        +'<input type="number" id="cleaning_count" class="form-control form-control-sm text-center fw-bold" value="4" min="1" max="31" style="width:56px;" onchange="calculate()">'
+        +'<span class="text-muted" style="font-size:0.82rem;">回/月</span>'
+        +'</div></td></tr>';
+}
+
+function _laundryRow(svc) {
+    return '<tr><td class="ps-3 fw-bold align-middle">'+_esc(svc.name)+'</td>'
+        +'<td class="align-middle"></td>'
+        +'<td class="align-middle"><span class="badge bg-warning text-dark" style="font-size:0.72rem;">詳細確認中</span></td>'
+        +'<td class="pe-3 text-muted align-middle" style="font-size:0.8rem;line-height:1.6;">'+nl2br(svc.notes)+'</td></tr>';
+}
+
+function _bedRow(svc) {
+    return '<tr id="bed_section" style="display:none;" onclick="rowToggle(event,\'bd_toggle\',calculate)" style="cursor:pointer;">'
+        +'<td class="ps-3 fw-bold align-middle">'+_esc(svc.name)+'<span class="badge bg-secondary ms-1" style="font-size:0.65rem;">要介護1のみ</span></td>'
+        +'<td class="align-middle"><div class="form-check form-switch mb-0"><input class="form-check-input" type="checkbox" role="switch" id="bd_toggle" onchange="guardBasic(this,calculate)"></div></td>'
+        +'<td class="align-middle text-muted" style="font-size:0.82rem;">'+_ptLabel('per_month',svc.price)+'</td>'
+        +'<td class="pe-3 text-muted align-middle" style="font-size:0.8rem;line-height:1.6;">'+nl2br(svc.notes)+'</td></tr>';
+}
+
+function _customRow(svc) {
+    var tid = 'custom_toggle_' + svc.id;
+    return '<tr onclick="rowToggle(event,\''+tid+'\',calculate)" style="cursor:pointer;">'
+        +'<td class="ps-3 fw-bold align-middle">'+_esc(svc.name)+'</td>'
+        +'<td class="align-middle"><div class="form-check form-switch mb-0"><input class="form-check-input" type="checkbox" role="switch" id="'+tid+'" onchange="guardBasic(this,calculate)"></div></td>'
+        +'<td class="align-middle text-muted" style="font-size:0.82rem;">'+_ptLabel(svc.price_type,svc.price)+'</td>'
+        +'<td class="pe-3 text-muted align-middle" style="font-size:0.8rem;line-height:1.6;">'+nl2br(svc.notes)+'</td></tr>';
+}
+
+function _applyCareConditions() {
+    var el;
+    el = document.getElementById('cleaning_section');
+    if (el) el.style.display = (_careLevel&&['要介護1','要介護2','要介護3','要介護4','要介護5'].indexOf(_careLevel)>=0) ? '' : 'none';
+    el = document.getElementById('bed_section');
+    if (el) el.style.display = (_careLevel==='要介護1') ? '' : 'none';
+}
+
+// ── 介護度・トグル ──
+function toggleExcretion() { var on=_chk('exc_toggle'); var el=document.getElementById('exc_options'); if(el)el.style.display=on?'':'none'; var r=document.getElementById('exc_0'); if(on&&r)r.checked=true; calculate(); }
+function toggleSputum()    { var on=_chk('spu_toggle');  var el=document.getElementById('spu_options'); if(el)el.style.display=on?'':'none'; var r=document.getElementById('spu_0'); if(on&&r)r.checked=true; calculate(); }
+function toggleCleaning()  { var on=_chk('cleaning_toggle'); var el=document.getElementById('cleaning_options'); if(el)el.style.display=on?'':'none'; calculate(); }
+
+function selectCareLevel(level) {
+    _careLevel = level || null;
+    if (!level) return;
+    _applyCareConditions();
+    if (level!=='要介護1') { var bd=document.getElementById('bd_toggle'); if(bd)bd.checked=false; }
+    var isKaigo = ['要介護1','要介護2','要介護3','要介護4','要介護5'].indexOf(level)>=0;
+    if (!isKaigo) { var ct=document.getElementById('cleaning_toggle'); if(ct)ct.checked=false; var co=document.getElementById('cleaning_options'); if(co)co.style.display='none'; }
+    calculate();
+}
+
+// ── 定数 ──
 var MANAGEMENT = {'要支援1':60000,'要支援2':60000,'要介護1':40000,'要介護2':40000,'要介護3':10000,'要介護4':10000,'要介護5':10000};
 var SUPPORT_SVC = {'要支援1':14300,'要支援2':14300,'要介護1':3300,'要介護2':3300,'要介護3':3300,'要介護4':3300,'要介護5':3300};
 var CARE_INS = {
@@ -291,52 +488,49 @@ var CARE_INS = {
     '要介護3':[27048,54096,81144],'要介護4':[30938,61876,92814],'要介護5':[36217,72434,108651]
 };
 
-function toggleExcretion() { var on=_chk('exc_toggle'); document.getElementById('exc_options').style.display=on?'':'none'; if(on) document.getElementById('exc_1').checked=true; calculate(); }
-function toggleSputum()    { var on=_chk('spu_toggle'); document.getElementById('spu_options').style.display=on?'':'none'; if(on) document.getElementById('spu_1').checked=true; calculate(); }
-function toggleCleaning()  { var on=_chk('cleaning_toggle'); document.getElementById('cleaning_options').style.display=on?'':'none'; calculate(); }
-
-function selectCareLevel(level) {
-    _careLevel = level || null;
-    if (!level) return;
-    document.getElementById('bed_section').style.display = level==='要介護1' ? '' : 'none';
-    var isKaigo = ['要介護1','要介護2','要介護3','要介護4','要介護5'].indexOf(level) >= 0;
-    document.getElementById('cleaning_section').style.display = isKaigo ? '' : 'none';
-    if (!isKaigo) { document.getElementById('cleaning_toggle').checked=false; document.getElementById('cleaning_options').style.display='none'; }
-    if (level !== '要介護1') document.getElementById('bd_toggle').checked = false;
-    calculate();
-}
-
-function _val(name) { var el=document.querySelector('input[name="'+name+'"]:checked'); return el?parseInt(el.value):0; }
-function _chk(id) { return document.getElementById(id).checked; }
-function _fmt(n) { return n.toLocaleString()+'円'; }
-function _row(label, amount, note) {
-    var n = note ? '<br><small class="text-muted" style="font-size:0.75rem;">'+note+'</small>' : '';
-    return '<tr><td class="ps-3 pe-2 py-1 text-muted">'+label+n+'</td><td class="text-end pe-3 py-1 fw-bold text-dark" style="white-space:nowrap;">'+_fmt(amount)+'</td></tr>';
-}
-
+// ── 計算 ──
 function calculate() {
     if (!_careLevel) return;
     var days = Math.max(1, parseInt(document.getElementById('days_input').value)||30);
+    var taxPct = Math.max(0, parseInt(document.getElementById('tax_rate_input').value)||0);
     var bdIdx = _val('burden');
     var burdenChecked = !!document.querySelector('input[name="burden"]:checked');
     var rent=40000, mgmt=MANAGEMENT[_careLevel], svcFee=SUPPORT_SVC[_careLevel];
-    var mealDay=(_chk('meal_morning')?486:0)+(_chk('meal_lunch')?594:0)+(_chk('meal_dinner')?770:0);
+    var _mp=function(k){return _ps[k]?_ps[k].price:0;};
+    var mealDay=(_chk('meal_morning')?_mp('meal_morning'):0)+(_chk('meal_lunch')?_mp('meal_lunch'):0)+(_chk('meal_dinner')?_mp('meal_dinner'):0);
     var mealMon=mealDay*days;
-    var residencyTotal=rent+mgmt+svcFee+mealMon;
+    var mealTax=Math.floor(mealMon*taxPct/100);
+    var mealTotal=mealMon+mealTax;
+    var residencyTotal=rent+mgmt+svcFee+mealTotal;
     var careIns=burdenChecked?CARE_INS[_careLevel][bdIdx]:null;
-    var mealSup=_chk('ms_toggle')?165:0, linen=_chk('linen_toggle')?165:0;
-    var bedLease=(_careLevel==='要介護1'&&_chk('bd_toggle'));
-    var excDay=_chk('exc_toggle')?_val('excretion'):0, spurDay=_chk('spu_toggle')?_val('sputum'):0;
     var mealCnt=(_chk('meal_morning')?1:0)+(_chk('meal_lunch')?1:0)+(_chk('meal_dinner')?1:0);
-    var minceDay=_chk('mince_toggle')?mealCnt*44:0, therapyDay=_chk('therapy_toggle')?mealCnt*77:0;
-    var parking=_chk('parking_toggle')?3300:0;
-    var cleaningCount=_chk('cleaning_toggle')?(parseInt(document.getElementById('cleaning_count').value)||0):0;
-    var cleaningMon=cleaningCount*550;
-    var paidMon=(mealSup+linen+excDay+spurDay+minceDay+therapyDay)*days+(bedLease?3300:0)+parking+cleaningMon;
+
+    var paidMon=0, pHtml='', hasPaid=false;
+    PAID_SERVICES.forEach(function(svc) {
+        if (!svc.visible) return;
+        var key=svc.key, amt=0;
+        if      (key==='ms'         && _chk('ms_toggle'))        { amt=svc.price*days; }
+        else if (key==='linen'      && _chk('linen_toggle'))     { amt=svc.price*days; }
+        else if (key==='excretion'  && _chk('exc_toggle'))       { amt=_val('excretion')*days; }
+        else if (key==='mince'      && _chk('mince_toggle'))     { amt=svc.price*mealCnt*days; }
+        else if (key==='therapy'    && _chk('therapy_toggle'))   { amt=svc.price*mealCnt*days; }
+        else if (key==='sputum'     && _chk('spu_toggle'))       { amt=_val('sputum')*days; }
+        else if (key==='parking'    && _chk('parking_toggle'))   { amt=svc.price; }
+        else if (key==='cleaning'   && _chk('cleaning_toggle'))  { var cnt=parseInt(document.getElementById('cleaning_count')?.value)||0; amt=svc.price*cnt; }
+        else if (key==='bed'        && _careLevel==='要介護1' && _chk('bd_toggle')) { amt=svc.price; }
+        else if (!key               && _chk('custom_toggle_'+svc.id)) {
+            if      (svc.price_type==='per_day')   amt=svc.price*days;
+            else if (svc.price_type==='per_month') amt=svc.price;
+            else if (svc.price_type==='per_meal')  amt=svc.price*mealCnt*days;
+        }
+        if (amt) { pHtml+=_row(svc.name,amt,''); hasPaid=true; }
+        paidMon+=amt;
+    });
 
     var lHtml='';
     lHtml+=_row('家賃',rent); lHtml+=_row('管理費',mgmt); lHtml+=_row('生活支援サービス費',svcFee);
     lHtml+=_row('食費',mealMon,mealDay>0?mealDay+'円/日 × '+days+'日':null);
+    if(mealTax>0)lHtml+='<tr><td class="ps-4 pe-2 py-1 text-muted">└ 消費税（'+taxPct+'%）<br><small style="font-size:0.65rem;">※一部軽減税率8％が適用になります。</small></td><td class="text-end pe-3 py-1 fw-bold text-dark" style="white-space:nowrap;">'+_fmt(mealTax)+'</td></tr>';
     document.getElementById('living_detail').innerHTML=lHtml;
     document.getElementById('living_subtotal').textContent=_fmt(residencyTotal);
 
@@ -345,27 +539,149 @@ function calculate() {
     else { iHtml+='<tr><td colspan="2" class="px-3 py-2 text-muted fst-italic" style="font-size:0.82rem;">← 負担割合を選択してください</td></tr>'; document.getElementById('insurance_subtotal').textContent='―'; }
     document.getElementById('insurance_detail').innerHTML=iHtml;
 
-    var pHtml='', hasPaid=false;
-    if(mealSup>0)    {pHtml+=_row('食事支援',mealSup*days,mealSup+'円/日 × '+days+'日');hasPaid=true;}
-    if(linen>0)      {pHtml+=_row('リネンリース',linen*days,linen+'円/日 × '+days+'日');hasPaid=true;}
-    if(bedLease)     {pHtml+=_row('ベッドリース',3300,'3,300円/月');hasPaid=true;}
-    if(parking>0)    {pHtml+=_row('駐車場代',3300,'3,300円/月');hasPaid=true;}
-    if(cleaningMon>0){pHtml+=_row('居室内清掃',cleaningMon,'550円/回 × '+cleaningCount+'回');hasPaid=true;}
-    if(excDay>0)     {pHtml+=_row('排泄支援',excDay*days,excDay+'円/日 × '+days+'日');hasPaid=true;}
-    if(spurDay>0)    {pHtml+=_row('喀痰吸引',spurDay*days,spurDay+'円/日 × '+days+'日');hasPaid=true;}
-    if(minceDay>0)   {pHtml+=_row('刻み・ペースト食',minceDay*days,minceDay+'円/日 × '+days+'日');hasPaid=true;}
-    if(therapyDay>0) {pHtml+=_row('療養食',therapyDay*days,therapyDay+'円/日 × '+days+'日');hasPaid=true;}
-    if(!hasPaid) pHtml+='<tr><td colspan="2" class="px-3 py-2 text-muted fst-italic" style="font-size:0.82rem;">なし</td></tr>';
+    var paidTax=Math.floor(paidMon*taxPct/100);
+    var paidTotal=paidMon+paidTax;
+    if(!hasPaid){pHtml+='<tr><td colspan="2" class="px-3 py-2 text-muted fst-italic" style="font-size:0.82rem;">なし</td></tr>';}
+    else{pHtml+='<tr><td class="ps-3 pe-2 py-1 text-muted">消費税（'+taxPct+'%）</td><td class="text-end pe-3 py-1 fw-bold text-dark" style="white-space:nowrap;">'+_fmt(paidTax)+'</td></tr>';}
     document.getElementById('paid_detail').innerHTML=pHtml;
-    document.getElementById('paid_subtotal').textContent=_fmt(paidMon);
+    document.getElementById('paid_subtotal').textContent=_fmt(paidTotal);
 
-    var totalEl=document.getElementById('total_amount');
-    totalEl.textContent = careIns!==null ? _fmt(residencyTotal+careIns+paidMon) : _fmt(residencyTotal+paidMon)+'〜';
-
+    document.getElementById('total_amount').textContent = careIns!==null ? _fmt(residencyTotal+careIns+paidTotal) : _fmt(residencyTotal+paidTotal)+'〜';
     document.getElementById('fee_placeholder').style.display='none';
     document.getElementById('fee_result_section').style.display=_breakdownVisible?'':'none';
     document.getElementById('footer_container').style.display='';
     document.getElementById('footer_spacer').style.display='';
 }
+
+// ── 編集モード（テーブルインライン） ──
+function renderEditTable() {
+    var thead = '<table class="table table-sm mb-0" style="font-size:0.88rem;">'
+        +'<thead class="table-light"><tr>'
+        +'<th class="ps-3 fw-semibold text-muted" style="width:18%;font-size:0.78rem;">項目名</th>'
+        +'<th class="fw-semibold text-muted" style="width:17%;font-size:0.78rem;">単価（税抜）</th>'
+        +'<th class="fw-semibold text-muted" style="font-size:0.78rem;">備考</th>'
+        +'<th style="width:7%;"></th>'
+        +'</tr></thead><tbody>';
+    var rows = '';
+    _editData.forEach(function(svc, idx) { rows += _buildEditTableRow(svc, idx); });
+    var addBtn = '<tr><td colspan="4" class="px-3 py-2" style="background:#fffdf5;border-top:2px solid #f59e0b;">'
+        +'<button type="button" class="add-service-btn" onclick="addCustomRow()">'
+        +'<i class="fas fa-plus me-1"></i>サービスを追加</button></td></tr>';
+    document.getElementById('services-view').innerHTML = thead + rows + addBtn + '</tbody></table>';
+    requestAnimationFrame(function() {
+        document.querySelectorAll('.edit-notes-auto, .edit-name-auto').forEach(function(ta) {
+            ta.style.height = 'auto';
+            ta.style.height = ta.scrollHeight + 'px';
+        });
+    });
+}
+
+function _buildEditTableRow(svc, idx) {
+    var isBuiltin = !!svc.key;
+    var opacityStyle = svc.visible ? '' : ' opacity-50';
+    var eyeIcon  = svc.visible ? 'fa-eye' : 'fa-eye-slash';
+    var trAttrs = 'ondragover="_dragOver(event)" ondragleave="_dragLeave(event)" ondrop="_dragDrop(event,'+idx+')"';
+    var nameInner = isBuiltin
+        ? '<span class="fw-bold">'+_esc(svc.name)+'</span>'
+        : '<textarea class="form-control form-control-sm edit-name-auto" rows="1" style="font-size:0.85rem;resize:none;overflow:hidden;line-height:1.5;" oninput="this.style.height=\'auto\';this.style.height=this.scrollHeight+\'px\';_editData['+idx+'].name=this.value" placeholder="項目名">'+_esc(svc.name||'')+'</textarea>';
+    var nameCell = '<div class="d-flex align-items-center gap-1">'
+        +'<div class="drag-handle flex-shrink-0" draggable="true" ondragstart="_dragStart(event,'+idx+')"><i class="fas fa-grip-vertical"></i></div>'
+        +nameInner+'</div>';
+    var priceCell = _buildInlinePriceCell(svc, idx);
+    var notesCell = '<textarea class="edit-notes-auto" style="font-size:0.8rem;font-family:inherit;line-height:1.6;" oninput="this.style.height=\'auto\';this.style.height=this.scrollHeight+\'px\';_editData['+idx+'].notes=this.value" placeholder="備考（クリックで編集）">'+_esc(svc.notes||'')+'</textarea>';
+    var sideControls = '<div class="d-flex flex-column align-items-center gap-1">'
+        +'<button type="button" class="btn btn-sm edit-btn-vis" onclick="toggleRowVisible('+idx+')">'
+        +'<i class="fas '+eyeIcon+'" style="font-size:0.65rem;"></i></button>'
+        +'<button type="button" class="btn btn-sm edit-btn-trash" onclick="deleteRow('+idx+')"><i class="fas fa-trash" style="font-size:0.6rem;"></i></button>'
+        +'</div>';
+    var tr = '<tr '+trAttrs+' class="edit-row'+opacityStyle+'" style="font-size:0.82rem;">'
+        +'<td class="ps-2 fw-bold align-middle py-1">'+nameCell+'</td>'
+        +'<td class="align-middle py-1">'+priceCell+'</td>'
+        +'<td class="pe-3 text-muted align-middle py-1">'+notesCell+'</td>'
+        +'<td class="align-middle text-center px-1 py-1">'+sideControls+'</td>'
+        +'</tr>';
+    if (svc.price_type==='multi' && svc.extra_prices && svc.extra_prices.length) {
+        svc.extra_prices.forEach(function(ep, ei) {
+            tr += '<tr class="table-light edit-row-sub" style="font-size:0.8rem;">'
+                +'<td class="ps-4 text-muted align-middle py-1">└ '+_esc(ep.label)+'</td>'
+                +'<td class="align-middle py-1"><div class="d-flex align-items-center gap-1">'
+                +'<input type="number" class="form-control form-control-sm" style="width:66px;text-align:right;font-weight:600;font-size:0.8rem;" min="0" value="'+ep.value+'" oninput="_editData['+idx+'].extra_prices['+ei+'].value=parseInt(this.value)||0">'
+                +'<span class="text-muted" style="font-size:0.78rem;">円</span></div></td>'
+                +'<td colspan="2"></td></tr>';
+        });
+    }
+    return tr;
+}
+
+function _buildInlinePriceCell(svc, idx) {
+    if (svc.price_type === 'multi') {
+        return '<span class="text-muted" style="font-size:0.82rem;">▼ 下行で編集</span>';
+    }
+    var unit = svc.key === 'cleaning' ? '円/回'
+        : ({'per_day':'円/日','per_month':'円/月','per_meal':'円/食'}[svc.price_type]||'円');
+    var unitEl = svc.key
+        ? '<span class="text-muted ms-1" style="font-size:0.82rem;">'+unit+'</span>'
+        : '<select class="edit-type-sel ms-1" onchange="_editData['+idx+'].price_type=this.value">'
+          +['per_day','per_month','per_meal'].map(function(v){return '<option value="'+v+'"'+(svc.price_type===v?' selected':'')+'>'+{'per_day':'円/日','per_month':'円/月','per_meal':'円/食'}[v]+'</option>';}).join('')
+          +'</select>';
+    return '<div class="d-flex align-items-center">'
+        +'<input type="number" class="form-control form-control-sm" style="width:66px;text-align:right;font-weight:600;font-size:0.8rem;" min="0" value="'+(svc.price||'')+'" oninput="_editData['+idx+'].price=parseInt(this.value)||0">'
+        +unitEl+'</div>';
+}
+
+function enterEditMode() {
+    _editData = JSON.parse(JSON.stringify(PAID_SERVICES));
+    document.getElementById('svc-header-view').classList.add('d-none');
+    document.getElementById('svc-header-edit').classList.remove('d-none');
+    renderEditTable();
+}
+function cancelEdit() {
+    document.getElementById('svc-header-view').classList.remove('d-none');
+    document.getElementById('svc-header-edit').classList.add('d-none');
+    renderViewTable(); _applyCareConditions();
+}
+var _dragIdx = null;
+function _dragStart(e,idx){_dragIdx=idx;e.dataTransfer.effectAllowed='move';}
+function _dragOver(e){e.preventDefault();e.dataTransfer.dropEffect='move';e.currentTarget.classList.add('drag-over');}
+function _dragLeave(e){e.currentTarget.classList.remove('drag-over');}
+function _dragDrop(e,toIdx){
+    e.preventDefault();e.currentTarget.classList.remove('drag-over');
+    if(_dragIdx===null||_dragIdx===toIdx){_dragIdx=null;return;}
+    var item=_editData.splice(_dragIdx,1)[0];_editData.splice(toIdx,0,item);
+    _dragIdx=null; renderEditTable();
+}
+function toggleRowVisible(idx) { _editData[idx].visible=!_editData[idx].visible; renderEditTable(); }
+function deleteRow(idx) { _editData.splice(idx,1); renderEditTable(); }
+function addCustomRow() {
+    _editData.push({id:null,key:'',name:'',price_type:'per_day',price:100,notes:'',visible:true,extra_prices:[],order:_editData.length});
+    renderEditTable();
+    var rows=document.querySelectorAll('#services-view tbody tr.edit-row');
+    if(rows.length) rows[rows.length-1].scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function saveEdit() {
+    var btn=document.querySelector('#svc-header-edit .btn-save-pastel');
+    btn.disabled=true; btn.innerHTML='<i class="fas fa-spinner fa-spin me-1"></i>保存中...';
+
+    // 名前が空のカスタム項目を除外
+    _editData = _editData.filter(function(s) { return s.key || s.name.trim(); });
+    var mealItems = PAID_SERVICES.filter(function(s) { return _isMealKey(s.key); });
+    var saveData = _editData.concat(mealItems);
+
+    fetch('{% url "paid_services_save" %}',{
+        method:'POST',
+        headers:{'X-CSRFToken':'{{ csrf_token }}','Content-Type':'application/json'},
+        body:JSON.stringify(saveData)
+    }).then(function(r){return r.json();}).then(function(d){
+        if(d.ok){
+            PAID_SERVICES=JSON.parse(JSON.stringify(_editData));
+            PAID_SERVICES.forEach(function(s,i){s.order=i;});
+            _rebuildLookup(); cancelEdit();
+            if(_careLevel) calculate();
+        } else { alert('保存に失敗しました: '+(d.error||'')); }
+    }).catch(function(){alert('通信エラーが発生しました。');})
+    .finally(function(){btn.disabled=false;btn.innerHTML='<i class="fas fa-check me-1"></i>保存';});
+}
+
+document.addEventListener('DOMContentLoaded', function() { renderViewTable(); _updateMealLabels(); });
 </script>
 {% endblock %}

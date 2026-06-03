@@ -23,6 +23,7 @@ urlpatterns = [
     path('documents/fax-cover-sheet/', views.fax_cover_sheet_download, name='fax_cover_sheet_download'),
     path('documents/fax-cover-sheet-create/', views.document_create_fax_cover_sheet, name='document_create_fax_cover_sheet'),
     path('fee-simulation/', views.fee_simulation, name='fee_simulation'),
+    path('fee-simulation/services/save/', views.paid_services_save, name='paid_services_save'),
     path('medical-institutions/', views.medical_institution_list, name='medical_institution_list'),
     path('medical-institutions/api/', views.medical_institution_api, name='medical_institution_api'),
     path('medical-institutions/create/', views.medical_institution_create, name='medical_institution_create'),
