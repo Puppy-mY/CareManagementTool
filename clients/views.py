@@ -3736,9 +3736,6 @@ def _generate_medical_care_coordination_excel_bytes(client, form_data):
                 else:
                     c.value = val
             _wc('I4',  title)
-            _wc('T11', form_data.get('user_full_name', ''))
-            _wc('T12', form_data.get('fax_pages', ''))
-            _wc('J29', form_data.get('office_name', ''))
             _wc('F11', form_data.get('doctor_hospital', ''))
             _wc('F12', form_data.get('doctor_name', ''))
             _wc('V10', to_wareki(form_data.get('application_date', '')))
@@ -3754,15 +3751,15 @@ def _generate_medical_care_coordination_excel_bytes(client, form_data):
                 .replace('{office_name}', form_data.get('office_name', ''))
                 .replace('{client_name}', (form_data.get('client_name', '') or '').replace(' ', '').replace('　', ''))
                 .replace('{care_level}',  care_level))
-            lines = []
-            for para in body.splitlines():
-                if not para.strip():
-                    lines.append('')
-                else:
+            def _wrap86(text):
+                out = []
+                for para in text.splitlines():
+                    if not para.strip():
+                        out.append(''); continue
                     while para:
-                        lines.append(para[:43])
-                        para = para[43:]
-            lines = (lines + [''] * 11)[:11]
+                        out.append(para[:42]); para = para[42:]
+                return out
+            lines = (_wrap86(body) + [''] * 11)[:11]
             for i, line in enumerate(lines):
                 _wc(f'C{17 + i}', line)
 
@@ -4318,7 +4315,7 @@ def _document_create_ltc_base(request, client_id, doc_type, doc_name, template_n
         'client': client,
         'initial': initial,
         'current_office_name':     (office.name          if office else '') or '',
-        'current_office_furigana': (office.furigana       if office else '') or '',
+        'current_office_company':  (office.company_name   if office else '') or '',
         'current_office_number':   (office.office_number  if office else '') or '',
         'current_office_postal':   (office.postal_code    if office else '') or '',
         'current_office_address':  (office.address        if office else '') or '',
@@ -4556,7 +4553,7 @@ def document_create_fax_cover_sheet(request):
         'initial':                 initial,
         'fax_template_body':       FaxMessageTemplate.get_body(),
         'current_office_name':     (office.name         if office else '') or '',
-        'current_office_furigana': (office.furigana      if office else '') or '',
+        'current_office_company':  (office.company_name  if office else '') or '',
         'current_office_number':   (office.office_number if office else '') or '',
         'current_office_postal':   (office.postal_code   if office else '') or '',
         'current_office_address':  (office.address       if office else '') or '',
@@ -4646,17 +4643,20 @@ def _generate_fax_cover_sheet_standalone_bytes(request, home_office, user_full_n
     fax_raw = (post.get('fax_message', '')
                .replace('{user_name}',   creator)
                .replace('{office_name}', home_office.name if home_office else ''))
-    fax_lines = []
-    for para in fax_raw.splitlines():
-        if not para.strip():
-            fax_lines.append('')
-        else:
+    def _wrap_fax(text):
+        lines = []
+        for para in text.splitlines():
+            if not para.strip():
+                lines.append('')
+                continue
             while para:
-                fax_lines.append(para[:43])
-                para = para[43:]
-    fax_lines = (fax_lines + [''] * 11)[:11]
+                lines.append(para[:42])
+                para = para[42:]
+        return lines
 
-    # ---- 全送付先を (recipient_name, person_name) のリストに統合 ----
+    fax_lines = (_wrap_fax(fax_raw) + [''] * 11)[:11]
+
+    # ---- 全送付先を (company, name, person, phone, fax) のリストに統合 ----
     recipients = []
 
     # 介護サービス事業所
@@ -4664,7 +4664,7 @@ def _generate_fax_cover_sheet_standalone_bytes(request, home_office, user_full_n
         try:
             o = CareServiceOffice.objects.get(pk=pk, office_type='external')
             person = post.get(f'selected_office_person_{pk}', '')
-            recipients.append((o.name or '', person))
+            recipients.append((o.company_name or '', o.name or '', person, o.phone or '', o.fax or ''))
         except CareServiceOffice.DoesNotExist:
             pass
 
@@ -4673,7 +4673,7 @@ def _generate_fax_cover_sheet_standalone_bytes(request, home_office, user_full_n
         try:
             m = MedicalInstitution.objects.get(pk=pk)
             doctor = post.get(f'selected_medical_doctor_{pk}', '')
-            recipients.append((m.hospital_name or '', doctor))
+            recipients.append((m.corp_name or '', m.hospital_name or '', doctor, m.phone or '', m.fax or ''))
         except MedicalInstitution.DoesNotExist:
             pass
 
@@ -4681,7 +4681,7 @@ def _generate_fax_cover_sheet_standalone_bytes(request, home_office, user_full_n
     for pk in post.getlist('selected_homecare'):
         try:
             h = HomeCareSupportOffice.objects.get(pk=pk)
-            recipients.append((h.name or '', ''))
+            recipients.append((h.company_name or '', h.name or '', '', h.phone or '', h.fax or ''))
         except HomeCareSupportOffice.DoesNotExist:
             pass
 
@@ -4689,7 +4689,7 @@ def _generate_fax_cover_sheet_standalone_bytes(request, home_office, user_full_n
     for pk in post.getlist('selected_supportcenter'):
         try:
             s = RegionalSupportCenter.objects.get(pk=pk)
-            recipients.append((s.name or '', ''))
+            recipients.append(('', s.name or '', '', s.phone or '', s.fax or ''))
         except RegionalSupportCenter.DoesNotExist:
             pass
 
@@ -4727,16 +4727,18 @@ def _generate_fax_cover_sheet_standalone_bytes(request, home_office, user_full_n
         sheet_names_used.append(name)
         return name
 
-    def _fill(ws, recipient_name, person):
+    def _fill(ws, company, recipient_name, person, phone, fax):
+        _w(ws, 'E10', company)
         _w(ws, 'I4',  'FAX送付状')
         _w(ws, 'F11', recipient_name)
-        _w(ws, 'F12', person)
-        _w(ws, 'T11', creator)
-        _w(ws, 'T12', '')
+        _w(ws, 'F12', person or 'ご担当者')
+        _w(ws, 'H13', phone)
+        _w(ws, 'H14', fax)
+        _w(ws, 'W11', creator)
         _w(ws, 'V10', _to_wareki(created_date))
         if home_office:
-            _w(ws, 'J29', home_office.name or '')
             _w(ws, 'J30', getattr(home_office, 'company_name', '') or '')
+            _w(ws, 'J31', home_office.name or '')
             _w(ws, 'K32', getattr(home_office, 'postal_code',  '') or '')
             _w(ws, 'O32', getattr(home_office, 'address',       '') or '')
             _w(ws, 'M33', getattr(home_office, 'phone',         '') or '')
@@ -4744,15 +4746,15 @@ def _generate_fax_cover_sheet_standalone_bytes(request, home_office, user_full_n
         for j, line in enumerate(fax_lines):
             _w(ws, f'C{17 + j}', line)
 
-    first_name, first_person = recipients[0]
+    first_company, first_name, first_person, first_phone, first_fax = recipients[0]
     base_ws = wb.active
     base_ws.title = _unique_name(first_name)
-    _fill(base_ws, first_name, first_person)
+    _fill(base_ws, first_company, first_name, first_person, first_phone, first_fax)
 
-    for rec_name, rec_person in recipients[1:]:
+    for rec_company, rec_name, rec_person, rec_phone, rec_fax in recipients[1:]:
         new_ws = wb.copy_worksheet(base_ws)
         new_ws.title = _unique_name(rec_name)
-        _fill(new_ws, rec_name, rec_person)
+        _fill(new_ws, rec_company, rec_name, rec_person, rec_phone, rec_fax)
 
     buf = io.BytesIO()
     wb.save(buf)
@@ -4948,15 +4950,21 @@ def _generate_care_service_meeting_notice_excel_bytes(client, form_data, request
                         .replace('{user_name}', creator)
                         .replace('{office_name}', office_name)
                         .replace('{client_name}', (client.name or '').replace(' ', '').replace('　', '') + ('様' if client.name else '')))
-            _fax_lines = []
-            for _para in _fax_raw.splitlines():
-                if not _para.strip():
-                    _fax_lines.append('')
-                else:
-                    while _para:
-                        _fax_lines.append(_para[:43])
-                        _para = _para[43:]
-            _fax_lines = (_fax_lines + [''] * 11)[:11]
+            import unicodedata as _ud3
+            def _wrap86b(text):
+                out = []
+                for para in text.splitlines():
+                    if not para.strip():
+                        out.append(''); continue
+                    while para:
+                        w, cut = 0, 0
+                        for ch in para:
+                            cw = 2 if _ud3.east_asian_width(ch) in ('W', 'F') else 1
+                            if w + cw > 87: break
+                            w += cw; cut += 1
+                        out.append(para[:cut or 1]); para = para[cut or 1:]
+                return out
+            _fax_lines = (_wrap86b(_fax_raw) + [''] * 11)[:11]
 
             offset = 0
             for notice_idx, fax_title, ext_office in external_indices:
@@ -4975,15 +4983,26 @@ def _generate_care_service_meeting_notice_excel_bytes(client, form_data, request
                     else:
                         c.value = val
 
+                def _to_wareki_notice(d):
+                    if not d:
+                        return ''
+                    if d >= _date_cls(2019, 5, 1):
+                        return f'令和{d.year - 2018}年{d.month}月{d.day}日'
+                    elif d >= _date_cls(1989, 1, 8):
+                        return f'平成{d.year - 1988}年{d.month}月{d.day}日'
+                    elif d >= _date_cls(1926, 12, 25):
+                        return f'昭和{d.year - 1925}年{d.month}月{d.day}日'
+                    return f'{d.year}年{d.month}月{d.day}日'
+
                 person = post.get(f'selected_office_person_{ext_office.pk}', '')
                 _wf('I4',  'FAX送付状')
-                _wf('T11', creator)
-                _wf('T12', '')
-                _wf('J29', _home_office.name if _home_office else '')
+                _wf('E10', ext_office.company_name or '')
                 _wf('F11', ext_office.name or '')
-                _wf('F12', person)
-                _wf('V10', created_date)
+                _wf('F12', person or 'ご担当者')
+                _wf('H13', ext_office.phone or '')
+                _wf('H14', ext_office.fax or '')
                 _wf('W11', creator)
+                _wf('V10', _to_wareki_notice(created_date))
                 if _home_office:
                     _wf('J30', _home_office.company_name or '')
                     _wf('J31', _home_office.name or '')

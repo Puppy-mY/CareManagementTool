@@ -1,0 +1,775 @@
+{% extends 'base.html' %}
+{% load django_bootstrap5 custom_filters %}
+
+{% block title %}FAX送付状 - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="mb-4 pb-2 border-bottom">
+                <h1 class="h4 mb-1 text-dark fw-bold">
+                    <i class="fas fa-fax me-2 text-secondary"></i>FAX送付状
+                </h1>
+                <div class="d-flex justify-content-end align-items-center">
+                    <button type="button" class="btn btn-outline-secondary btn-back" onclick="history.back()">
+                        <i class="fas fa-arrow-left"></i> 戻る
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <form method="post" id="documentForm">
+                {% csrf_token %}
+
+                <div class="card mb-4">
+                    <div class="card-header d-flex align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-edit me-2"></i>入力項目</h5>
+                        <small class="text-muted ms-2">※以下の項目をご入力ください</small>
+                    </div>
+                    <div class="card-body">
+
+                        <!-- 送付先 -->
+                        <div class="row g-3 mb-2">
+                            <div class="col-12">
+                                <label class="form-label fw-bold mb-2">送付先 <span class="text-danger">*</span></label>
+
+                                <!-- 選択ボタン群 -->
+                                <div class="d-flex flex-wrap gap-2 mb-3">
+                                    <button type="button" class="btn btn-dest-pastel btn-sm" onclick="openOfficeSelectModal()">
+                                        <i class="fas fa-building me-1"></i>介護サービス事業所
+                                    </button>
+                                    <button type="button" class="btn btn-dest-pastel btn-sm" onclick="openMedicalSelectModal()">
+                                        <i class="fas fa-hospital me-1"></i>主治医・医療機関
+                                    </button>
+                                    <button type="button" class="btn btn-dest-pastel btn-sm" onclick="openHomecareSelectModal()">
+                                        <i class="fas fa-home me-1"></i>居宅介護支援事業所
+                                    </button>
+                                    <button type="button" class="btn btn-dest-pastel btn-sm" onclick="openSupportcenterSelectModal()">
+                                        <i class="fas fa-map-marker-alt me-1"></i>地域包括支援センター
+                                    </button>
+                                </div>
+
+                                <!-- 統合選択済みテーブル -->
+                                <div id="selected_all_empty" class="text-muted small mb-2">未選択</div>
+                                <div id="selected_all_table_wrap" class="mb-2" style="display:none;">
+                                    <div class="table-responsive">
+                                        <table class="table table-hover table-bordered mb-0" style="font-size:0.9rem;">
+                                            <thead>
+                                                <tr>
+                                                    <th style="width:90px; background-color:#f5f5f5;">種別</th>
+                                                    <th style="background-color:#f5f5f5;">送付先名</th>
+                                                    <th style="width:140px; background-color:#f5f5f5;">宛先<small style="font-size:0.7rem; color:#6c757d;">（担当者/医師）</small></th>
+                                                    <th style="width:115px; background-color:#f5f5f5;">電話 / FAX</th>
+                                                    <th style="width:40px; background-color:#f5f5f5;"></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="selected_all_tbody"></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <!-- hidden inputs -->
+                                <div id="selected_offices_inputs"></div>
+                                <div id="selected_medical_inputs"></div>
+                                <div id="selected_homecare_inputs"></div>
+                                <div id="selected_supportcenter_inputs"></div>
+
+                                <!-- FAX本文（いずれかを選択したとき表示） -->
+                                <div id="fax_body_accordion" class="mt-3" style="display:none;">
+                                    <div class="accordion">
+                                        <div class="accordion-item" style="border: none; background-color: #f8f9fa; border-radius: 0.5rem;">
+                                            <h2 class="accordion-header">
+                                                <button class="accordion-button collapsed"
+                                                        type="button" style="background-color: #f8f9fa; padding: 0.5rem 1rem; color: #333;"
+                                                        data-bs-toggle="collapse" data-bs-target="#faxBodyCollapse">
+                                                    <i class="fas fa-fax me-1"></i> FAX送付状 本文
+                                                </button>
+                                            </h2>
+                                            <div id="faxBodyCollapse" class="accordion-collapse collapse">
+                                                <div class="accordion-body py-2 px-3">
+                                                    <textarea id="fax_message" name="fax_message"
+                                                              class="form-control" rows="11"
+                                                              data-office-name="{{ request.user.profile.home_care_office.name|default:''|escapejs }}"
+                                                              data-client-name=""
+                                                              style="font-size:0.9rem; font-family:monospace; overflow:hidden; resize:none; width:calc(44em + 1.5rem); max-width:100%; word-break:break-all; display:block; margin:0 auto;"></textarea>
+                                                    <div id="fax_mode_normal" class="d-flex justify-content-between align-items-start mt-2">
+                                                        <button id="fax_reset_normal" type="button" class="btn btn-sm btn-outline-secondary" onclick="resetFaxMessage()">
+                                                            <i class="fas fa-undo me-1"></i>リセット
+                                                        </button>
+                                                        <div id="fax_btn_normal">
+                                                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="enterFaxTemplateEdit()">
+                                                                <i class="fas fa-edit me-1"></i>初期値を編集
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                    <div id="fax_btn_edit" class="mt-2" style="display:none;">
+                                                        <small class="text-muted d-block mb-1 text-end" style="white-space:nowrap;">{user_name}＝作成者　{office_name}＝事業所名</small>
+                                                        <div class="d-flex gap-1 justify-content-end mb-1">
+                                                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="insertFaxPlaceholder('{user_name}')">作成者</button>
+                                                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="insertFaxPlaceholder('{office_name}')">事業所名</button>
+                                                        </div>
+                                                        <div class="d-flex justify-content-between">
+                                                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="resetFaxMessage()">
+                                                                <i class="fas fa-undo me-1"></i>デフォルトに戻す
+                                                            </button>
+                                                            <div class="d-flex gap-2">
+                                                                <button type="button" class="btn btn-sm btn-success" onclick="saveFaxTemplate()"><i class="fas fa-check"></i></button>
+                                                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="cancelFaxTemplateEdit()"><i class="fas fa-times"></i></button>
+                                                            </div>
+                                                        </div>
+                                                        <span id="faxTemplateError" class="text-danger small d-block mt-1" style="display:none;"></span>
+                                                    </div>
+
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <div style="border-top: 1px solid #dee2e6; width: 50%; margin: 1.5rem 0;"></div>
+
+                        <!-- 送付状作成日 -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-12">
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    <label class="form-label fw-bold mb-0">送付状作成日 <span class="text-danger">*</span></label>
+                                    <div class="birth-era-toggle" title="和暦 / 西暦を切り替え">
+                                        <button type="button" class="era-btn active" id="created_date_era_japanese" onclick="switchCreatedDateEra('japanese')">和暦</button>
+                                        <button type="button" class="era-btn" id="created_date_era_western" onclick="switchCreatedDateEra('western')">西暦</button>
+                                    </div>
+                                </div>
+                                <div style="width:220px;">
+                                    <input type="hidden" id="created_date" name="created_date" value="{{ today|date:'Y-m-d' }}">
+                                    <div id="created_date_western_div" style="display:none;">
+                                        <input type="date" id="created_date_western_input" class="form-control"
+                                               value="{{ today|date:'Y-m-d' }}"
+                                               oninput="document.getElementById('created_date').value = this.value">
+                                    </div>
+                                    <div id="created_date_japanese_div">
+                                        <input type="text" id="created_date_wareki" class="form-control"
+                                               value="{{ today|wareki }}"
+                                               placeholder="例: 令和7年5月6日" autocomplete="off"
+                                               oninput="syncCreatedDateFromWareki()">
+                                        <small id="created_date_preview" style="font-size:0.78em; display:block; margin-top:2px;"></small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {% include 'clients/_submitter_section.html' with label_text="送付元" show_toggle=False %}
+
+                    </div>
+                </div>
+
+                <!-- アクションボタン -->
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="d-flex justify-content-between">
+                            <button type="button" class="btn btn-outline-secondary btn-back px-4 py-2" onclick="history.back()">
+                                <i class="fas fa-arrow-left me-1"></i> 戻る
+                            </button>
+                            <button type="button" onclick="submitExcel()" class="btn btn-outline-secondary excel-btn px-4 py-2">
+                                <i class="fas fa-file-excel me-1"></i> Excel出力
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ① 介護サービス事業所 選択モーダル -->
+<div class="modal fade" id="officeSelectModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-scrollable" style="max-width:700px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-list me-2"></i>介護サービス事業所を選択</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-2">
+                    <input type="text" id="office_modal_search" class="form-control" placeholder="事業所名・業種で検索..." oninput="applyOfficeFilter()">
+                </div>
+                <div class="d-flex flex-wrap gap-1 mb-3 align-items-center" id="svc_filter_btns">
+                    <button type="button" class="btn btn-sm btn-secondary svc-filter-btn active" data-svc="" data-color="#f5f5f5">すべて</button>
+                    {% regroup care_offices by service_type as grouped_for_filter %}
+                    {% for group in grouped_for_filter %}{% if group.grouper %}
+                    <button type="button" class="btn btn-sm btn-outline-secondary svc-filter-btn"
+                        data-svc="{{ group.grouper }}"
+                        data-color="{% if group.grouper == '訪問介護' %}#fff9c4{% elif group.grouper == '訪問看護' %}#ffd5d5{% elif group.grouper == '訪問入浴介護' %}#d5eaf9{% elif group.grouper == '訪問リハビリテーション' %}#ffebee{% elif group.grouper == '通所介護' or group.grouper == '地域密着型通所介護' %}#e8f5e8{% elif group.grouper == '通所リハビリテーション' %}#fff3e0{% elif group.grouper == '福祉用具貸与' or group.grouper == '特定福祉用具販売' %}#f3e5f5{% elif group.grouper == '短期入所生活介護' or group.grouper == '短期入所療養介護' or group.grouper == '小規模多機能型居宅介護' %}#f5f0e8{% else %}#f5f5f5{% endif %}">{{ group.grouper }}</button>
+                    {% endif %}{% endfor %}
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover table-bordered mb-0" style="font-size:0.9rem;">
+                        <thead><tr>
+                            <th style="width:40px;background-color:#f5f5f5;"></th>
+                            <th style="background-color:#f5f5f5;">事業所名</th>
+                            <th style="width:110px;background-color:#f5f5f5;">業種</th>
+                            <th style="width:130px;background-color:#f5f5f5;">電話 / FAX</th>
+                            <th style="width:100px;background-color:#f5f5f5;">担当者</th>
+                        </tr></thead>
+                        <tbody id="office_modal_list">
+                            {% for o in care_offices %}
+                            <tr class="office-modal-item" style="cursor:pointer;" data-name="{{ o.name }}" data-svc="{{ o.service_type }}" onclick="toggleOfficeRow(this)">
+                                <td class="text-center align-middle">
+                                    <input class="form-check-input office-modal-check" type="checkbox"
+                                           id="modal_office_{{ o.id }}" value="{{ o.id }}"
+                                           data-id="{{ o.id }}" data-name="{{ o.name }}" data-company="{{ o.company_name }}"
+                                           data-svc="{{ o.service_type }}" data-phone="{{ o.phone }}" data-fax="{{ o.fax }}"
+                                           data-persons="{{ o.persons|join:',' }}" onclick="event.stopPropagation()">
+                                </td>
+                                <td class="align-middle">
+                                    <label for="modal_office_{{ o.id }}" style="cursor:pointer;margin:0;" onclick="event.stopPropagation()">
+                                        {% if o.company_name %}<small class="text-muted d-block" style="font-size:0.75rem;">{{ o.company_name }}</small>{% endif %}
+                                        <span class="fw-bold">{{ o.name }}</span>
+                                    </label>
+                                </td>
+                                <td class="align-middle">
+                                    {% if o.service_type %}
+                                    <span class="svc-type-badge" {% if o.service_type == '訪問介護' %}style="background-color:#fff9c4;"{% elif o.service_type == '訪問看護' %}style="background-color:#ffd5d5;"{% elif o.service_type == '通所介護' or o.service_type == '地域密着型通所介護' %}style="background-color:#e8f5e8;"{% elif o.service_type == '福祉用具貸与' %}style="background-color:#f3e5f5;"{% elif o.service_type == '訪問リハビリテーション' %}style="background-color:#ffebee;"{% else %}style="background-color:#f5f5f5;"{% endif %}>{{ o.service_type|svc_label }}</span>
+                                    {% else %}<span class="text-muted">―</span>{% endif %}
+                                </td>
+                                <td class="align-middle" style="font-size:0.85rem;white-space:nowrap;">
+                                    <i class="fas fa-phone me-1 text-muted" style="font-size:0.75rem;"></i>{{ o.phone|default:"―" }}<br>
+                                    <i class="fas fa-fax me-1 text-muted" style="font-size:0.75rem;"></i><span class="text-muted">{{ o.fax|default:"―" }}</span>
+                                </td>
+                                <td class="align-middle" style="font-size:0.85rem;">
+                                    {% if o.persons %}{% for p in o.persons|slice:":2" %}{% if not forloop.first %}<br>{% endif %}{{ p }} 様{% endfor %}{% else %}<span class="text-muted">―</span>{% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}<tr><td colspan="5" class="text-center text-muted py-3">登録されていません</td></tr>{% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer justify-content-between">
+                <span id="office_select_count" class="text-muted small"></span>
+                <div>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                    <button type="button" class="btn btn-primary" onclick="confirmOfficeSelection()"><i class="fas fa-check me-1"></i>確定</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ② 主治医・医療機関 選択モーダル -->
+<div class="modal fade" id="medicalSelectModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-scrollable" style="max-width:700px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-hospital me-2"></i>主治医・医療機関を選択</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-2">
+                    <input type="text" id="medical_modal_search" class="form-control" placeholder="医療機関名・医師名で検索..." oninput="applyMedicalFilter()">
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover table-bordered mb-0" style="font-size:0.9rem;">
+                        <thead><tr>
+                            <th style="width:40px;background-color:#f5f5f5;"></th>
+                            <th style="background-color:#f5f5f5;">医療機関名</th>
+                            <th style="width:80px;background-color:#f5f5f5;">種別</th>
+                            <th style="width:130px;background-color:#f5f5f5;">電話 / FAX</th>
+                            <th style="width:100px;background-color:#f5f5f5;">医師名</th>
+                        </tr></thead>
+                        <tbody id="medical_modal_list">
+                            {% for m in medical_insts %}
+                            <tr class="medical-modal-item" style="cursor:pointer;"
+                                data-name="{{ m.hospital_name }}" data-type="{{ m.doctor_type }}"
+                                onclick="toggleMedicalRow(this)">
+                                <td class="text-center align-middle">
+                                    <input class="form-check-input medical-modal-check" type="checkbox"
+                                           id="modal_medical_{{ m.id }}" value="{{ m.id }}"
+                                           data-id="{{ m.id }}" data-name="{{ m.hospital_name }}"
+                                           data-company="{{ m.corp_name }}"
+                                           data-type="{{ m.doctor_type }}"
+                                           data-phone="{{ m.phone }}" data-fax="{{ m.fax }}"
+                                           data-doctors="{{ m.doctors|join:',' }}"
+                                           onclick="event.stopPropagation()">
+                                </td>
+                                <td class="align-middle">
+                                    <label for="modal_medical_{{ m.id }}" style="cursor:pointer;margin:0;" onclick="event.stopPropagation()">
+                                        {% if m.corp_name %}<small class="text-muted d-block" style="font-size:0.75rem;">{{ m.corp_name }}</small>{% endif %}
+                                        <span class="fw-bold">{{ m.hospital_name }}</span>
+                                    </label>
+                                </td>
+                                <td class="align-middle"><span class="text-muted" style="font-size:0.85rem;">{{ m.doctor_type|default:"―" }}</span></td>
+                                <td class="align-middle" style="font-size:0.85rem;white-space:nowrap;">
+                                    <i class="fas fa-phone me-1 text-muted" style="font-size:0.75rem;"></i>{{ m.phone|default:"―" }}<br>
+                                    <i class="fas fa-fax me-1 text-muted" style="font-size:0.75rem;"></i><span class="text-muted">{{ m.fax|default:"―" }}</span>
+                                </td>
+                                <td class="align-middle" style="font-size:0.85rem;">
+                                    {% if m.doctors %}{% for d in m.doctors|slice:":2" %}{% if not forloop.first %}<br>{% endif %}{{ d }} 先生{% endfor %}{% else %}<span class="text-muted">―</span>{% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}<tr><td colspan="5" class="text-center text-muted py-3">登録されていません</td></tr>{% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer justify-content-between">
+                <span id="medical_select_count" class="text-muted small"></span>
+                <div>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                    <button type="button" class="btn btn-primary" onclick="confirmMedicalSelection()"><i class="fas fa-check me-1"></i>確定</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ③ 居宅介護支援事業所 選択モーダル -->
+<div class="modal fade" id="homecareSelectModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-scrollable" style="max-width:700px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-home me-2"></i>居宅介護支援事業所を選択</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-2">
+                    <input type="text" id="homecare_modal_search" class="form-control" placeholder="事業所名で検索..." oninput="applyHomecareFilter()">
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover table-bordered mb-0" style="font-size:0.9rem;">
+                        <thead><tr>
+                            <th style="width:40px;background-color:#f5f5f5;"></th>
+                            <th style="background-color:#f5f5f5;">事業所名</th>
+                            <th style="width:130px;background-color:#f5f5f5;">電話 / FAX</th>
+                        </tr></thead>
+                        <tbody id="homecare_modal_list">
+                            {% for h in homecare_offices %}
+                            <tr class="homecare-modal-item" style="cursor:pointer;"
+                                data-name="{{ h.name }}" onclick="toggleHomecareRow(this)">
+                                <td class="text-center align-middle">
+                                    <input class="form-check-input homecare-modal-check" type="checkbox"
+                                           id="modal_homecare_{{ h.id }}" value="{{ h.id }}"
+                                           data-id="{{ h.id }}" data-name="{{ h.name }}"
+                                           data-company="{{ h.company_name }}"
+                                           data-phone="{{ h.phone }}" data-fax="{{ h.fax }}"
+                                           onclick="event.stopPropagation()">
+                                </td>
+                                <td class="align-middle">
+                                    <label for="modal_homecare_{{ h.id }}" style="cursor:pointer;margin:0;" onclick="event.stopPropagation()">
+                                        {% if h.company_name %}<small class="text-muted d-block" style="font-size:0.75rem;">{{ h.company_name }}</small>{% endif %}
+                                        <span class="fw-bold">{{ h.name }}</span>
+                                    </label>
+                                </td>
+                                <td class="align-middle" style="font-size:0.85rem;white-space:nowrap;">
+                                    <i class="fas fa-phone me-1 text-muted" style="font-size:0.75rem;"></i>{{ h.phone|default:"―" }}<br>
+                                    <i class="fas fa-fax me-1 text-muted" style="font-size:0.75rem;"></i><span class="text-muted">{{ h.fax|default:"―" }}</span>
+                                </td>
+                            </tr>
+                            {% empty %}<tr><td colspan="3" class="text-center text-muted py-3">登録されていません</td></tr>{% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer justify-content-between">
+                <span id="homecare_select_count" class="text-muted small"></span>
+                <div>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                    <button type="button" class="btn btn-primary" onclick="confirmHomecareSelection()"><i class="fas fa-check me-1"></i>確定</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ④ 地域包括支援センター 選択モーダル -->
+<div class="modal fade" id="supportcenterSelectModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-scrollable" style="max-width:700px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-map-marker-alt me-2"></i>地域包括支援センターを選択</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-2">
+                    <input type="text" id="supportcenter_modal_search" class="form-control" placeholder="センター名で検索..." oninput="applySupportcenterFilter()">
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover table-bordered mb-0" style="font-size:0.9rem;">
+                        <thead><tr>
+                            <th style="width:40px;background-color:#f5f5f5;"></th>
+                            <th style="background-color:#f5f5f5;">センター名</th>
+                            <th style="width:130px;background-color:#f5f5f5;">電話</th>
+                        </tr></thead>
+                        <tbody id="supportcenter_modal_list">
+                            {% for s in support_centers %}
+                            <tr class="supportcenter-modal-item" style="cursor:pointer;"
+                                data-name="{{ s.name }}" onclick="toggleSupportcenterRow(this)">
+                                <td class="text-center align-middle">
+                                    <input class="form-check-input supportcenter-modal-check" type="checkbox"
+                                           id="modal_supportcenter_{{ s.id }}" value="{{ s.id }}"
+                                           data-id="{{ s.id }}" data-name="{{ s.name }}"
+                                           data-phone="{{ s.phone }}"
+                                           onclick="event.stopPropagation()">
+                                </td>
+                                <td class="align-middle">
+                                    <label for="modal_supportcenter_{{ s.id }}" style="cursor:pointer;margin:0;" onclick="event.stopPropagation()">
+                                        <span class="fw-bold">{{ s.name }}</span>
+                                        <small class="text-muted ms-1">({{ s.get_area_display }})</small>
+                                    </label>
+                                </td>
+                                <td class="align-middle" style="font-size:0.85rem;white-space:nowrap;">
+                                    <i class="fas fa-phone me-1 text-muted" style="font-size:0.75rem;"></i>{{ s.phone|default:"―" }}
+                                </td>
+                            </tr>
+                            {% empty %}<tr><td colspan="3" class="text-center text-muted py-3">登録されていません</td></tr>{% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer justify-content-between">
+                <span id="supportcenter_select_count" class="text-muted small"></span>
+                <div>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                    <button type="button" class="btn btn-primary" onclick="confirmSupportcenterSelection()"><i class="fas fa-check me-1"></i>確定</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="faxEditOverlay"></div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ---- Excel出力 ----
+function submitExcel() {
+    var hasSel = Object.keys(_selectedOffices).length > 0
+              || Object.keys(_selectedMedical).length > 0
+              || Object.keys(_selectedHomecare).length > 0
+              || Object.keys(_selectedSupportcenter).length > 0;
+    var errors = [];
+    if (!hasSel) errors.push('送付先（いずれか1件以上）');
+    if (!document.getElementById('created_date').value) errors.push('送付状作成日');
+    if (errors.length > 0) {
+        alert('以下の必須項目を入力してください。\n\n・' + errors.join('\n・'));
+        return;
+    }
+    var form = document.getElementById('documentForm');
+    var btn  = document.createElement('input');
+    btn.type = 'hidden'; btn.name = 'action'; btn.value = 'excel';
+    form.appendChild(btn);
+    form.submit();
+    form.removeChild(btn);
+}
+
+// ---- 書類作成事業所 ----
+var _OFFICE_NAME     = '{{ current_office_name }}';
+var _OFFICE_COMPANY  = '{{ current_office_company }}';
+var _OFFICE_NUMBER   = '{{ current_office_number }}';
+var _OFFICE_POSTAL   = '{{ current_office_postal }}';
+var _OFFICE_ADDRESS  = '{{ current_office_address }}';
+var _OFFICE_PHONE    = '{{ current_office_phone }}';
+var _OFFICE_FAX      = '{{ initial.office_fax|escapejs }}';
+var _OFFICE_MANAGER  = '{{ initial.office_manager_name|escapejs }}';
+var _CURRENT_STAFF_NAMES = {{ office_staff_options_json|safe }};
+{% include 'clients/_submitter_js.html' %}
+
+// ---- 送付状作成日（和暦/西暦） ----
+(function() {
+    var ERAS = [
+        {name:'令和',start:2019,month:5,day:1},{name:'平成',start:1989,month:1,day:8},
+        {name:'昭和',start:1926,month:12,day:25},{name:'大正',start:1912,month:7,day:30},
+        {name:'明治',start:1868,month:1,day:25},
+    ];
+    var ERA_KEYS=['令和','平成','昭和','大正','明治','令','平','昭','大','明','R','H','S','T','M'];
+    var ERA_MAP={'令和':'令和','平成':'平成','昭和':'昭和','大正':'大正','明治':'明治','令':'令和','平':'平成','昭':'昭和','大':'大正','明':'明治','R':'令和','H':'平成','S':'昭和','T':'大正','M':'明治'};
+    function _isoStr(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+    function _toWareki(d){if(!d)return'';var y=d.getFullYear(),m=d.getMonth()+1,day=d.getDate();for(var i=0;i<ERAS.length;i++){var e=ERAS[i];if(d>=new Date(e.start,e.month-1,e.day))return e.name+(y-e.start+1)+'年'+m+'月'+day+'日';}return y+'年'+m+'月'+day+'日';}
+    window.parseWarekiLocal = window.parseWarekiLocal || function(text) {
+        if (!text) return null;
+        text = text.trim().replace(/\s+/g,'');
+        for (var ki=0;ki<ERA_KEYS.length;ki++) {
+            var key=ERA_KEYS[ki]; if(!text.startsWith(key))continue;
+            var rest=text.slice(key.length); var era=ERA_MAP[key];
+            var eraInfo=ERAS.find(function(e){return e.name===era;}); if(!eraInfo)continue;
+            var mm=rest.match(/^(\d+)[年Yy](\d+)[月Mm](\d+)[日Dd]?$/); if(!mm)continue;
+            var nen=parseInt(mm[1]),mon=parseInt(mm[2]),day=parseInt(mm[3]);
+            var year=eraInfo.start+nen-1; var d=new Date(year,mon-1,day);
+            if(d.getFullYear()===year&&d.getMonth()===mon-1&&d.getDate()===day)return d;
+        }
+        return null;
+    };
+    window.switchCreatedDateEra=function(era){
+        var jpDiv=document.getElementById('created_date_japanese_div'),weDiv=document.getElementById('created_date_western_div');
+        var jpBtn=document.getElementById('created_date_era_japanese'),weBtn=document.getElementById('created_date_era_western');
+        var hid=document.getElementById('created_date').value;
+        if(era==='western'){jpDiv.style.display='none';weDiv.style.display='';jpBtn.classList.remove('active');weBtn.classList.add('active');if(hid)document.getElementById('created_date_western_input').value=hid;}
+        else{jpDiv.style.display='';weDiv.style.display='none';jpBtn.classList.add('active');weBtn.classList.remove('active');if(hid){var d=new Date(hid);document.getElementById('created_date_wareki').value=_toWareki(d);}}
+    };
+    window.syncCreatedDateFromWareki=function(){
+        var text=document.getElementById('created_date_wareki').value;
+        var prev=document.getElementById('created_date_preview');
+        var d=window.parseWarekiLocal(text);
+        if(d){document.getElementById('created_date').value=_isoStr(d);var y=d.getFullYear(),m=d.getMonth()+1,day=d.getDate();prev.textContent=y+'年'+m+'月'+day+'日';prev.style.color='#198754';}
+        else{document.getElementById('created_date').value='';prev.textContent=text.trim()?'※認識できない形式です':'';prev.style.color='#dc3545';}
+    };
+})();
+
+// ---- FAX本文 ----
+var _faxTemplateBody = "{{ fax_template_body|escapejs }}";
+var _faxTemplateDefault = _faxTemplateBody;
+var _faxMessageInitialized = false;
+
+function _anySelected() {
+    return Object.keys(_selectedOffices).length > 0
+        || Object.keys(_selectedMedical).length > 0
+        || Object.keys(_selectedHomecare).length > 0
+        || Object.keys(_selectedSupportcenter).length > 0;
+}
+function _updateFaxUI() {
+    var has = _anySelected();
+    var faxBody = document.getElementById('fax_body_accordion');
+    if (faxBody) faxBody.style.display = has ? '' : 'none';
+    if (has) _initFaxMessage();
+}
+function _initFaxMessage() {
+    if (_faxMessageInitialized) return;
+    _faxMessageInitialized = true;
+    var ta = document.getElementById('fax_message');
+    if (!ta || ta.value.trim()) return;
+    ta.value = _resolveFaxTemplate(_faxTemplateBody);
+}
+function _resolveFaxTemplate(template) {
+    var ta = document.getElementById('fax_message');
+    var staffSel = document.getElementById('renewal_staff_name_accordion');
+    var name = staffSel ? (staffSel.value||'').replace(/\s+/g,'') : '';
+    var officeName = ta ? (ta.getAttribute('data-office-name')||'') : '';
+    return template.replace(/\{user_name\}/g,name).replace(/\{office_name\}/g,officeName).replace(/\{client_name\}/g,'').replace(/\{care_level\}/g,'');
+}
+function resetFaxMessage() {
+    var ta=document.getElementById('fax_message'); if(!ta)return;
+    var editBtn=document.getElementById('fax_btn_edit'); var inEdit=editBtn&&editBtn.style.display!=='none';
+    ta.value=inEdit?_faxTemplateDefault:_resolveFaxTemplate(_faxTemplateBody); _faxMessageInitialized=true;
+}
+function insertFaxPlaceholder(p){var ta=document.getElementById('fax_message');if(!ta)return;var s=ta.selectionStart,e=ta.selectionEnd;ta.value=ta.value.slice(0,s)+p+ta.value.slice(e);ta.selectionStart=ta.selectionEnd=s+p.length;ta.focus();}
+function _setFaxEditMode(on){
+    var mn=document.getElementById('fax_mode_normal');if(mn)mn.style.display=on?'none':'';
+    document.getElementById('fax_btn_normal').style.display=on?'none':'';
+    document.getElementById('fax_btn_edit').style.display=on?'':'none';
+    document.getElementById('fax_reset_normal').style.display=on?'none':'';
+    document.getElementById('faxEditOverlay').classList.toggle('show',on);
+    var tb=document.querySelector('[data-bs-target="#faxBodyCollapse"]');
+    if(tb){tb.style.pointerEvents=on?'none':'';tb.setAttribute('data-bs-toggle',on?'':'collapse');}
+}
+function enterFaxTemplateEdit(){document.getElementById('fax_message').value=_faxTemplateBody;document.getElementById('faxTemplateError').style.display='none';bootstrap.Collapse.getOrCreateInstance(document.getElementById('faxBodyCollapse'),{toggle:false}).show();_setFaxEditMode(true);document.getElementById('fax_message').focus();}
+function cancelFaxTemplateEdit(){_setFaxEditMode(false);_faxMessageInitialized=false;resetFaxMessage();}
+function saveFaxTemplate(){
+    var body=document.getElementById('fax_message').value;var errEl=document.getElementById('faxTemplateError');
+    fetch('{% url "fax_template_save" %}',{method:'POST',headers:{'X-CSRFToken':'{{ csrf_token }}'},body:new URLSearchParams({body:body})})
+    .then(function(r){return r.json();}).then(function(data){if(data.success){_faxTemplateBody=body;_setFaxEditMode(false);_faxMessageInitialized=false;resetFaxMessage();}else{errEl.textContent=data.error||'エラー';errEl.style.display='';}})
+    .catch(function(){errEl.textContent='通信エラー';errEl.style.display='';});
+}
+document.addEventListener('DOMContentLoaded',function(){
+    var ta=document.getElementById('fax_message');
+    if(ta)ta.addEventListener('input',function(){
+        var lines=0,result=[];
+        this.value.split('\n').forEach(function(p){if(!p.trim()){result.push('');lines++;}else{var s=p;while(s.length>0&&lines<11){result.push(s.slice(0,42));s=s.slice(42);lines++;}}});
+        if(lines>11){var pos=this.selectionStart;this.value=result.join('\n');this.setSelectionRange(Math.min(pos,this.value.length),Math.min(pos,this.value.length));}
+    });
+});
+
+// ---- 共通ユーティリティ ----
+function _escHtml(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+var _SVC_COLORS={'訪問介護':'#fff9c4','訪問看護':'#ffd5d5','訪問入浴介護':'#d5eaf9','訪問リハビリテーション':'#ffebee','通所介護':'#e8f5e8','地域密着型通所介護':'#e8f5e8','通所リハビリテーション':'#fff3e0','福祉用具貸与':'#f3e5f5','特定福祉用具販売':'#f3e5f5','短期入所生活介護':'#f5f0e8','短期入所療養介護':'#f5f0e8','小規模多機能型居宅介護':'#f5f0e8'};
+var _SVC_LABELS={'訪問リハビリテーション':'訪問リハ','福祉用具貸与':'福祉用具'};
+function _svcBadge(svc){if(!svc)return'<span class="text-muted">―</span>';var bg=_SVC_COLORS[svc]||'#f5f5f5';var lbl=_SVC_LABELS[svc]||svc;return'<span class="svc-type-badge" style="background-color:'+bg+';">'+_escHtml(lbl)+'</span>';}
+
+// ==================== 統合テーブル描画 ====================
+function _renderAllTable() {
+    var wrap  = document.getElementById('selected_all_table_wrap');
+    var empty = document.getElementById('selected_all_empty');
+    var tbody = document.getElementById('selected_all_tbody');
+    var rows  = '';
+
+    Object.values(_selectedOffices).forEach(function(o) {
+        var nameCell = (o.company ? '<small class="text-muted d-block" style="font-size:0.75rem;">'+_escHtml(o.company)+'</small>' : '') + '<span class="fw-bold">'+_escHtml(o.name)+'</span>';
+        var telCell  = '<i class="fas fa-phone me-1 text-muted" style="font-size:0.75rem;"></i>'+_escHtml(o.phone||'―')+'<br><i class="fas fa-fax me-1 text-muted" style="font-size:0.75rem;"></i><span class="text-muted">'+_escHtml(o.fax||'―')+'</span>';
+        var opts     = '<option value="">ご担当者 様</option>'; o.persons.forEach(function(p){opts+='<option value="'+_escHtml(p)+'"'+(o.person===p?' selected':'')+'>'+_escHtml(p)+' 様</option>';});
+        rows += '<tr><td class="align-middle">'+_svcBadge(o.svc)+'</td><td class="align-middle">'+nameCell+'</td><td class="align-middle"><select class="form-select form-select-sm" onchange="_onOfficePersonChange(\''+o.id+'\',this.value)">'+opts+'</select></td><td class="align-middle" style="font-size:0.8rem;white-space:nowrap;">'+telCell+'</td><td class="text-center align-middle"><button type="button" class="btn btn-sm btn-outline-secondary" style="padding:2px 7px;font-size:0.75rem;" onclick="removeOffice(\''+o.id+'\')" title="削除"><i class="fas fa-times"></i></button></td></tr>';
+    });
+
+    Object.values(_selectedMedical).forEach(function(m) {
+        var nameCell = (m.company ? '<small class="text-muted d-block" style="font-size:0.75rem;">'+_escHtml(m.company)+'</small>' : '') + '<span class="fw-bold">'+_escHtml(m.name)+'</span>';
+        var telCell  = '<i class="fas fa-phone me-1 text-muted" style="font-size:0.75rem;"></i>'+_escHtml(m.phone||'―')+'<br><i class="fas fa-fax me-1 text-muted" style="font-size:0.75rem;"></i><span class="text-muted">'+_escHtml(m.fax||'―')+'</span>';
+        var opts     = '<option value="">医師を選択</option>'; m.doctors.forEach(function(d){opts+='<option value="'+_escHtml(d)+'"'+(m.doctor===d?' selected':'')+'>'+_escHtml(d)+' 先生</option>';});
+        var badge    = '<span class="svc-type-badge" style="background-color:#fde8e8;">医療機関</span>';
+        rows += '<tr><td class="align-middle">'+badge+'</td><td class="align-middle">'+nameCell+'</td><td class="align-middle"><select class="form-select form-select-sm" onchange="_onMedicalDoctorChange(\''+m.id+'\',this.value)">'+opts+'</select></td><td class="align-middle" style="font-size:0.8rem;white-space:nowrap;">'+telCell+'</td><td class="text-center align-middle"><button type="button" class="btn btn-sm btn-outline-secondary" style="padding:2px 7px;font-size:0.75rem;" onclick="removeMedical(\''+m.id+'\')" title="削除"><i class="fas fa-times"></i></button></td></tr>';
+    });
+
+    Object.values(_selectedHomecare).forEach(function(h) {
+        var nameCell = (h.company ? '<small class="text-muted d-block" style="font-size:0.75rem;">'+_escHtml(h.company)+'</small>' : '') + '<span class="fw-bold">'+_escHtml(h.name)+'</span>';
+        var telCell  = '<i class="fas fa-phone me-1 text-muted" style="font-size:0.75rem;"></i>'+_escHtml(h.phone||'―')+'<br><i class="fas fa-fax me-1 text-muted" style="font-size:0.75rem;"></i><span class="text-muted">'+_escHtml(h.fax||'―')+'</span>';
+        var badge    = '<span class="svc-type-badge" style="background-color:#dde8f8;">居宅支援</span>';
+        rows += '<tr><td class="align-middle">'+badge+'</td><td class="align-middle">'+nameCell+'</td><td class="align-middle"><span class="text-muted small">―</span></td><td class="align-middle" style="font-size:0.8rem;white-space:nowrap;">'+telCell+'</td><td class="text-center align-middle"><button type="button" class="btn btn-sm btn-outline-secondary" style="padding:2px 7px;font-size:0.75rem;" onclick="removeHomecare(\''+h.id+'\')" title="削除"><i class="fas fa-times"></i></button></td></tr>';
+    });
+
+    Object.values(_selectedSupportcenter).forEach(function(s) {
+        var nameCell = '<span class="fw-bold">'+_escHtml(s.name)+'</span>';
+        var telCell  = '<i class="fas fa-phone me-1 text-muted" style="font-size:0.75rem;"></i>'+_escHtml(s.phone||'―');
+        var badge    = '<span class="svc-type-badge" style="background-color:#e8f5e8;">地域包括</span>';
+        rows += '<tr><td class="align-middle">'+badge+'</td><td class="align-middle">'+nameCell+'</td><td class="align-middle"><span class="text-muted small">―</span></td><td class="align-middle" style="font-size:0.8rem;white-space:nowrap;">'+telCell+'</td><td class="text-center align-middle"><button type="button" class="btn btn-sm btn-outline-secondary" style="padding:2px 7px;font-size:0.75rem;" onclick="removeSupportcenter(\''+s.id+'\')" title="削除"><i class="fas fa-times"></i></button></td></tr>';
+    });
+
+    tbody.innerHTML = rows;
+    var hasAny = !!rows;
+    wrap.style.display  = hasAny ? '' : 'none';
+    empty.style.display = hasAny ? 'none' : '';
+    _updateFaxUI();
+}
+
+// ==================== ① 介護サービス事業所 ====================
+var _selectedOffices = {};
+
+function openOfficeSelectModal(){
+    document.querySelectorAll('.office-modal-check').forEach(function(c){c.checked=!!_selectedOffices[c.dataset.id];});
+    document.getElementById('office_modal_search').value='';_activeSvcFilter='';
+    document.querySelectorAll('.svc-filter-btn').forEach(function(b){_applySvcFilterBtnStyle(b,b.dataset.svc==='');});
+    applyOfficeFilter();_updateOfficeModalCount();
+    new bootstrap.Modal(document.getElementById('officeSelectModal')).show();
+}
+var _activeSvcFilter='';
+function applyOfficeFilter(){var q=(document.getElementById('office_modal_search').value||'').toLowerCase();var svc=_activeSvcFilter;document.querySelectorAll('.office-modal-item').forEach(function(it){var n=(it.dataset.name||'').toLowerCase();var s=(it.dataset.svc||'').toLowerCase();it.style.display=(!q||n.includes(q)||s.includes(q))&&(!svc||it.dataset.svc===svc)?'':'none';});}
+function toggleOfficeRow(tr){var c=tr.querySelector('.office-modal-check');if(c){c.checked=!c.checked;_updateOfficeModalCount();}}
+function _applySvcFilterBtnStyle(btn,isActive){var color=btn.dataset.color||'#f5f5f5';if(isActive){btn.style.backgroundColor=color;btn.style.borderColor='#999999';btn.style.color='#000000';btn.classList.add('active');btn.classList.remove('btn-outline-secondary');btn.classList.add('btn-secondary');}else{btn.style.backgroundColor='';btn.style.borderColor='';btn.style.color='';btn.classList.remove('active','btn-secondary');btn.classList.add('btn-outline-secondary');}}
+function _updateOfficeModalCount(){var n=document.querySelectorAll('.office-modal-check:checked').length;var el=document.getElementById('office_select_count');if(el)el.textContent=n>0?n+'件選択中':'';}
+function confirmOfficeSelection(){
+    _selectedOffices={};
+    document.querySelectorAll('.office-modal-check:checked').forEach(function(c){var d=c.dataset;_selectedOffices[d.id]={id:d.id,name:d.name,company:d.company||'',svc:d.svc||'',phone:d.phone||'',fax:d.fax||'',persons:d.persons?d.persons.split(',').filter(Boolean):[],person:_selectedOffices[d.id]?_selectedOffices[d.id].person:''};});
+    _updateOfficeInputs();_renderAllTable();bootstrap.Modal.getInstance(document.getElementById('officeSelectModal')).hide();
+}
+function removeOffice(id){delete _selectedOffices[id];var c=document.getElementById('modal_office_'+id);if(c)c.checked=false;_updateOfficeInputs();_renderAllTable();}
+function _onOfficePersonChange(id,val){if(_selectedOffices[id])_selectedOffices[id].person=val;_updateOfficeInputs();}
+function _updateOfficeInputs(){
+    var h='';Object.values(_selectedOffices).forEach(function(o){h+='<input type="hidden" name="selected_office" value="'+_escHtml(o.id)+'"><input type="hidden" name="selected_office_person_'+_escHtml(o.id)+'" value="'+_escHtml(o.person||'')+'">';});
+    document.getElementById('selected_offices_inputs').innerHTML=h;
+}
+document.addEventListener('DOMContentLoaded',function(){
+    var allBtn=document.querySelector('.svc-filter-btn[data-svc=""]');if(allBtn)_applySvcFilterBtnStyle(allBtn,true);
+    document.querySelectorAll('.svc-filter-btn').forEach(function(btn){btn.addEventListener('click',function(){document.querySelectorAll('.svc-filter-btn').forEach(function(b){_applySvcFilterBtnStyle(b,false);});_applySvcFilterBtnStyle(this,true);_activeSvcFilter=this.dataset.svc;applyOfficeFilter();});});
+    document.querySelectorAll('.office-modal-check').forEach(function(c){c.addEventListener('change',_updateOfficeModalCount);});
+});
+
+// ==================== ② 主治医・医療機関 ====================
+var _selectedMedical = {};
+
+function openMedicalSelectModal(){
+    document.querySelectorAll('.medical-modal-check').forEach(function(c){c.checked=!!_selectedMedical[c.dataset.id];});
+    document.getElementById('medical_modal_search').value='';applyMedicalFilter();_updateMedicalModalCount();
+    new bootstrap.Modal(document.getElementById('medicalSelectModal')).show();
+}
+function applyMedicalFilter(){var q=(document.getElementById('medical_modal_search').value||'').toLowerCase();document.querySelectorAll('.medical-modal-item').forEach(function(it){var n=(it.dataset.name||'').toLowerCase();it.style.display=(!q||n.includes(q))?'':'none';});}
+function toggleMedicalRow(tr){var c=tr.querySelector('.medical-modal-check');if(c){c.checked=!c.checked;_updateMedicalModalCount();}}
+function _updateMedicalModalCount(){var n=document.querySelectorAll('.medical-modal-check:checked').length;var el=document.getElementById('medical_select_count');if(el)el.textContent=n>0?n+'件選択中':'';}
+function confirmMedicalSelection(){
+    _selectedMedical={};
+    document.querySelectorAll('.medical-modal-check:checked').forEach(function(c){var d=c.dataset;_selectedMedical[d.id]={id:d.id,name:d.name,company:d.company||'',type:d.type||'',phone:d.phone||'',fax:d.fax||'',doctors:d.doctors?d.doctors.split(',').filter(Boolean):[],doctor:_selectedMedical[d.id]?_selectedMedical[d.id].doctor:''};});
+    _updateMedicalInputs();_renderAllTable();bootstrap.Modal.getInstance(document.getElementById('medicalSelectModal')).hide();
+}
+function removeMedical(id){delete _selectedMedical[id];var c=document.getElementById('modal_medical_'+id);if(c)c.checked=false;_updateMedicalInputs();_renderAllTable();}
+function _onMedicalDoctorChange(id,val){if(_selectedMedical[id])_selectedMedical[id].doctor=val;_updateMedicalInputs();}
+function _updateMedicalInputs(){
+    var h='';Object.values(_selectedMedical).forEach(function(m){h+='<input type="hidden" name="selected_medical" value="'+_escHtml(m.id)+'"><input type="hidden" name="selected_medical_doctor_'+_escHtml(m.id)+'" value="'+_escHtml(m.doctor||'')+'">';});
+    document.getElementById('selected_medical_inputs').innerHTML=h;
+}
+document.addEventListener('DOMContentLoaded',function(){
+    document.querySelectorAll('.medical-modal-check').forEach(function(c){c.addEventListener('change',_updateMedicalModalCount);});
+});
+
+// ==================== ③ 居宅介護支援事業所 ====================
+var _selectedHomecare = {};
+
+function openHomecareSelectModal(){
+    document.querySelectorAll('.homecare-modal-check').forEach(function(c){c.checked=!!_selectedHomecare[c.dataset.id];});
+    document.getElementById('homecare_modal_search').value='';applyHomecareFilter();_updateHomecareModalCount();
+    new bootstrap.Modal(document.getElementById('homecareSelectModal')).show();
+}
+function applyHomecareFilter(){var q=(document.getElementById('homecare_modal_search').value||'').toLowerCase();document.querySelectorAll('.homecare-modal-item').forEach(function(it){var n=(it.dataset.name||'').toLowerCase();it.style.display=(!q||n.includes(q))?'':'none';});}
+function toggleHomecareRow(tr){var c=tr.querySelector('.homecare-modal-check');if(c){c.checked=!c.checked;_updateHomecareModalCount();}}
+function _updateHomecareModalCount(){var n=document.querySelectorAll('.homecare-modal-check:checked').length;var el=document.getElementById('homecare_select_count');if(el)el.textContent=n>0?n+'件選択中':'';}
+function confirmHomecareSelection(){
+    _selectedHomecare={};
+    document.querySelectorAll('.homecare-modal-check:checked').forEach(function(c){var d=c.dataset;_selectedHomecare[d.id]={id:d.id,name:d.name,company:d.company||'',phone:d.phone||'',fax:d.fax||''};});
+    _updateHomecareInputs();_renderAllTable();bootstrap.Modal.getInstance(document.getElementById('homecareSelectModal')).hide();
+}
+function removeHomecare(id){delete _selectedHomecare[id];var c=document.getElementById('modal_homecare_'+id);if(c)c.checked=false;_updateHomecareInputs();_renderAllTable();}
+function _updateHomecareInputs(){
+    var h='';Object.values(_selectedHomecare).forEach(function(item){h+='<input type="hidden" name="selected_homecare" value="'+_escHtml(item.id)+'">';});
+    document.getElementById('selected_homecare_inputs').innerHTML=h;
+}
+document.addEventListener('DOMContentLoaded',function(){
+    document.querySelectorAll('.homecare-modal-check').forEach(function(c){c.addEventListener('change',_updateHomecareModalCount);});
+});
+
+// ==================== ④ 地域包括支援センター ====================
+var _selectedSupportcenter = {};
+
+function openSupportcenterSelectModal(){
+    document.querySelectorAll('.supportcenter-modal-check').forEach(function(c){c.checked=!!_selectedSupportcenter[c.dataset.id];});
+    document.getElementById('supportcenter_modal_search').value='';applySupportcenterFilter();_updateSupportcenterModalCount();
+    new bootstrap.Modal(document.getElementById('supportcenterSelectModal')).show();
+}
+function applySupportcenterFilter(){var q=(document.getElementById('supportcenter_modal_search').value||'').toLowerCase();document.querySelectorAll('.supportcenter-modal-item').forEach(function(it){var n=(it.dataset.name||'').toLowerCase();it.style.display=(!q||n.includes(q))?'':'none';});}
+function toggleSupportcenterRow(tr){var c=tr.querySelector('.supportcenter-modal-check');if(c){c.checked=!c.checked;_updateSupportcenterModalCount();}}
+function _updateSupportcenterModalCount(){var n=document.querySelectorAll('.supportcenter-modal-check:checked').length;var el=document.getElementById('supportcenter_select_count');if(el)el.textContent=n>0?n+'件選択中':'';}
+function confirmSupportcenterSelection(){
+    _selectedSupportcenter={};
+    document.querySelectorAll('.supportcenter-modal-check:checked').forEach(function(c){var d=c.dataset;_selectedSupportcenter[d.id]={id:d.id,name:d.name,phone:d.phone||''};});
+    _updateSupportcenterInputs();_renderAllTable();bootstrap.Modal.getInstance(document.getElementById('supportcenterSelectModal')).hide();
+}
+function removeSupportcenter(id){delete _selectedSupportcenter[id];var c=document.getElementById('modal_supportcenter_'+id);if(c)c.checked=false;_updateSupportcenterInputs();_renderAllTable();}
+function _updateSupportcenterInputs(){
+    var h='';Object.values(_selectedSupportcenter).forEach(function(item){h+='<input type="hidden" name="selected_supportcenter" value="'+_escHtml(item.id)+'">';});
+    document.getElementById('selected_supportcenter_inputs').innerHTML=h;
+}
+document.addEventListener('DOMContentLoaded',function(){
+    document.querySelectorAll('.supportcenter-modal-check').forEach(function(c){c.addEventListener('change',_updateSupportcenterModalCount);});
+});
+</script>
+
+<style>
+.svc-type-badge { display:inline-block;padding:3px 7px;border:1px solid #999999;border-radius:4px;font-size:12px;color:#000000;white-space:nowrap; }
+#selected_all_table_wrap .svc-type-badge { padding:2px 5px;font-size:11px; }
+#officeSelectModal .table-bordered th, #officeSelectModal .table-bordered td,
+#medicalSelectModal .table-bordered th, #medicalSelectModal .table-bordered td,
+#homecareSelectModal .table-bordered th, #homecareSelectModal .table-bordered td,
+#supportcenterSelectModal .table-bordered th, #supportcenterSelectModal .table-bordered td,
+#selected_all_table_wrap .table-bordered th, #selected_all_table_wrap .table-bordered td { border-left:none!important;border-right:none!important; }
+#officeSelectModal .table td, #officeSelectModal .table th,
+#medicalSelectModal .table td, #medicalSelectModal .table th,
+#homecareSelectModal .table td, #homecareSelectModal .table th,
+#supportcenterSelectModal .table td, #supportcenterSelectModal .table th,
+#selected_all_table_wrap .table td, #selected_all_table_wrap .table th { vertical-align:middle; }
+.birth-era-toggle { display:inline-flex;border:1px solid #ced4da;border-radius:0.375rem;overflow:hidden;font-size:0.72rem;flex-shrink:0; }
+.birth-era-toggle .era-btn { background:#fff;border:none;padding:2px 7px;cursor:pointer;color:#6c757d;font-size:0.72rem;line-height:1.5;transition:background 0.15s,color 0.15s; }
+.birth-era-toggle .era-btn:not(:last-child) { border-right:1px solid #ced4da; }
+.birth-era-toggle .era-btn.active { background:#6c757d;color:#fff; }
+.birth-era-toggle .era-btn:hover:not(.active) { background:#f0f0f0; }
+.btn { transition:all 0.2s ease; }
+.btn:hover { transform:translateY(-1px);box-shadow:0 2px 4px rgba(0,0,0,0.1); }
+.btn.btn-outline-secondary.btn-back:hover { background-color:#f5f5f5!important;border-color:#999!important;color:#333!important; }
+.btn.btn-outline-secondary.excel-btn:hover { background-color:#d1f2d1!important;border-color:#198754!important;color:#198754!important; }
+.btn-dest-pastel { background-color:#ffffff; border:1px solid #6c757d; color:#6c757d; }
+.btn-dest-pastel:hover,.btn-dest-pastel:focus { background-color:#ffffff; border:1px solid #6c757d; color:#6c757d; }
+.card-header { border-bottom:2px solid #dee2e6; }
+#faxEditOverlay { position:fixed;top:0;left:0;width:100%;height:100vh;background:rgba(0,0,0,0.35);z-index:1030;display:none; }
+#faxEditOverlay.show { display:block; }
+#fax_body_accordion { position:relative;z-index:1031; }
+</style>
+{% endblock %}

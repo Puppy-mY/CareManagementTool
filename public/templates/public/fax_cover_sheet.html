@@ -23,10 +23,12 @@
 .btn-new-pastel:hover,.btn-new-pastel:focus { background-color:#e3f2fd; border:1px solid #0d6efd; color:#0d6efd; }
 .btn-save-pastel { background-color:#ffffff; border:1px solid #6c757d; color:#6c757d; }
 .btn-save-pastel:hover,.btn-save-pastel:focus { background-color:#f8d7da; border:1px solid #dc3545; color:#dc3545; }
-.btn-back-pastel { background-color:#ffffff; border:1px solid #6c757d; color:#6c757d; }
-.btn-back-pastel:hover,.btn-back-pastel:focus { background-color:#f5f5f5; border:1px solid #999999; color:#333333; }
+.btn-back-pastel { background-color:#f5f5f5; border:1px solid #999999; color:#333333; }
+.btn-back-pastel:hover,.btn-back-pastel:focus { background-color:#e9ecef; border:1px solid #6c757d; color:#212529; }
 .btn-confirm-pastel { background-color:#ffffff; border:1px solid #6c757d; color:#6c757d; }
 .btn-confirm-pastel:hover,.btn-confirm-pastel:focus { background-color:#e3f2fd; border:1px solid #0d6efd; color:#0d6efd; }
+.btn-dest-pastel { background-color:#ffffff; border:1px solid #6c757d; color:#6c757d; }
+.btn-dest-pastel:hover,.btn-dest-pastel:focus { background-color:#ffffff; border:1px solid #6c757d; color:#6c757d; }
 .card-header { border-bottom:2px solid #dee2e6; }
 #renewal_office_inst_table th, #renewal_office_inst_table td { border-left:none!important; border-right:none!important; }
 {% endblock %}
@@ -62,22 +64,22 @@
 
                                 <div class="row g-1 mb-3">
                                     <div class="col-3">
-                                        <button type="button" class="btn btn-outline-secondary w-100" style="font-size:0.78rem; padding:0.3rem 0.4rem;" onclick="openOfficeSelectModal()">
+                                        <button type="button" class="btn btn-dest-pastel w-100" style="font-size:0.78rem; padding:0.3rem 0.4rem;" onclick="openOfficeSelectModal()">
                                             <i class="fas fa-building me-1"></i>介護サービス事業所
                                         </button>
                                     </div>
                                     <div class="col-3">
-                                        <button type="button" class="btn btn-outline-secondary w-100" style="font-size:0.78rem; padding:0.3rem 0.4rem;" onclick="openMedicalSelectModal()">
+                                        <button type="button" class="btn btn-dest-pastel w-100" style="font-size:0.78rem; padding:0.3rem 0.4rem;" onclick="openMedicalSelectModal()">
                                             <i class="fas fa-hospital me-1"></i>主治医・医療機関
                                         </button>
                                     </div>
                                     <div class="col-3">
-                                        <button type="button" class="btn btn-outline-secondary w-100" style="font-size:0.78rem; padding:0.3rem 0.4rem;" onclick="openHomecareSelectModal()">
+                                        <button type="button" class="btn btn-dest-pastel w-100" style="font-size:0.78rem; padding:0.3rem 0.4rem;" onclick="openHomecareSelectModal()">
                                             <i class="fas fa-home me-1"></i>居宅介護支援事業所
                                         </button>
                                     </div>
                                     <div class="col-3">
-                                        <button type="button" class="btn btn-outline-secondary w-100" style="font-size:0.78rem; padding:0.3rem 0.4rem;" onclick="openSupportcenterSelectModal()">
+                                        <button type="button" class="btn btn-dest-pastel w-100" style="font-size:0.78rem; padding:0.3rem 0.4rem;" onclick="openSupportcenterSelectModal()">
                                             <i class="fas fa-map-marker-alt me-1"></i>地域包括支援センター
                                         </button>
                                     </div>
@@ -157,6 +159,7 @@
                         </div>
 
                         <input type="hidden" name="office_furigana"     id="renewal_office_furigana" value="{% if own_office %}{{ own_office.furigana }}{% endif %}">
+                        <input type="hidden" name="office_company_name" id="renewal_office_company"  value="{% if own_office %}{{ own_office.company_name }}{% endif %}">
                         <input type="hidden" name="office_name"         id="renewal_office_name"     value="{% if own_office %}{{ own_office.name }}{% endif %}">
                         <input type="hidden" name="office_number"       id="renewal_office_number"   value="{% if own_office %}{{ own_office.office_number }}{% endif %}">
                         <input type="hidden" name="office_postal_code"  id="renewal_postal_code"     value="{% if own_office %}{{ own_office.postal_code }}{% endif %}">
@@ -180,7 +183,7 @@
                                         <tr>
                                             <td class="align-middle">
                                                 <small id="disp_office_number" style="display:none;">{% if own_office %}{{ own_office.office_number }}{% endif %}</small>
-                                                <small id="disp_office_furigana" class="text-muted d-block" style="font-size:0.75rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{% if own_office %}{{ own_office.furigana }}{% endif %}</small>
+                                                <small id="disp_office_company" class="text-muted d-block" style="font-size:0.75rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{% if own_office %}{{ own_office.company_name }}{% endif %}</small>
                                                 <span id="disp_office_name" class="fw-bold d-block" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:clamp(0.7rem,1.5vw,0.9rem);">{% if own_office %}{{ own_office.name }}{% endif %}</span>
                                             </td>
                                             <td class="align-middle" style="font-size:0.85rem;">
@@ -206,7 +209,7 @@
                                 </table>
                             </div>
                             <div class="mt-1 mb-2">
-                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openRenewalOfficeMasterModal()">
+                                <button type="button" class="btn btn-dest-pastel btn-sm" onclick="openRenewalOfficeMasterModal()">
                                     <i class="fas fa-edit me-1"></i>事業所情報を新規登録・編集
                                 </button>
                             </div>
@@ -271,7 +274,7 @@
                                               class="form-control" rows="11"
                                               data-office-name=""
                                               data-client-name=""
-                                              style="font-size:0.9rem; font-family:monospace; overflow:hidden; resize:none; width:calc(43em + 1.5rem); max-width:100%; word-break:break-all;"></textarea>
+                                              style="font-size:0.9rem; font-family:monospace; overflow:hidden; resize:none; width:calc(44em + 1.5rem); max-width:100%; word-break:break-all; display:block; margin:0 auto;"></textarea>
                                     <div class="d-flex justify-content-start mt-2">
                                         <button id="fax_reset_normal" type="button" class="btn btn-sm btn-outline-secondary" onclick="resetFaxMessage()">
                                             <i class="fas fa-undo me-1"></i>リセット
@@ -398,7 +401,7 @@
                                 <td class="text-center align-middle">
                                     <input class="form-check-input office-modal-check" type="checkbox"
                                            id="modal_office_{{ o.id }}" value="{{ o.id }}"
-                                           data-id="{{ o.id }}" data-name="{{ o.name }}" data-furigana="{{ o.furigana }}"
+                                           data-id="{{ o.id }}" data-name="{{ o.name }}" data-company="{{ o.company_name }}"
                                            data-svc="{{ o.service_type }}" data-phone="{{ o.phone }}" data-fax="{{ o.fax }}"
                                            data-persons="{{ o.persons|join:',' }}" onclick="event.stopPropagation()">
                                 </td>
@@ -409,7 +412,7 @@
                                 </td>
                                 <td class="align-middle">
                                     <label for="modal_office_{{ o.id }}" style="cursor:pointer;margin:0;" onclick="event.stopPropagation()">
-                                        {% if o.furigana %}<small class="text-muted d-block" style="font-size:0.75rem;">{{ o.furigana }}</small>{% endif %}
+                                        {% if o.company_name %}<small class="text-muted d-block" style="font-size:0.75rem;">{{ o.company_name }}</small>{% endif %}
                                         <span class="fw-bold">{{ o.name }}</span>
                                     </label>
                                 </td>
@@ -521,7 +524,7 @@
                                     <input class="form-check-input medical-modal-check" type="checkbox"
                                            id="modal_medical_{{ m.id }}" value="{{ m.id }}"
                                            data-id="{{ m.id }}" data-name="{{ m.hospital_name }}"
-                                           data-furigana="{{ m.hospital_furigana }}"
+                                           data-company="{{ m.corp_name }}"
                                            data-type="{{ m.doctor_type }}"
                                            data-phone="{{ m.phone }}" data-fax="{{ m.fax }}"
                                            data-doctors="{{ m.doctors|join:',' }}"
@@ -532,7 +535,7 @@
                                 </td>
                                 <td class="align-middle">
                                     <label for="modal_medical_{{ m.id }}" style="cursor:pointer;margin:0;" onclick="event.stopPropagation()">
-                                        {% if m.hospital_furigana %}<small class="text-muted d-block" style="font-size:0.75rem;">{{ m.hospital_furigana }}</small>{% endif %}
+                                        {% if m.corp_name %}<small class="text-muted d-block" style="font-size:0.75rem;">{{ m.corp_name }}</small>{% endif %}
                                         <span class="fw-bold">{{ m.hospital_name }}</span>
                                     </label>
                                 </td>
@@ -651,7 +654,7 @@
                                     <input class="form-check-input homecare-modal-check" type="checkbox"
                                            id="modal_homecare_{{ h.id }}" value="{{ h.id }}"
                                            data-id="{{ h.id }}" data-name="{{ h.name }}"
-                                           data-furigana="{{ h.furigana }}"
+                                           data-company="{{ h.company_name }}"
                                            data-phone="{{ h.phone }}" data-fax="{{ h.fax }}"
                                            onclick="event.stopPropagation()">
                                 </td>
@@ -660,7 +663,7 @@
                                 </td>
                                 <td class="align-middle">
                                     <label for="modal_homecare_{{ h.id }}" style="cursor:pointer;margin:0;" onclick="event.stopPropagation()">
-                                        {% if h.furigana %}<small class="text-muted d-block" style="font-size:0.75rem;">{{ h.furigana }}</small>{% endif %}
+                                        {% if h.company_name %}<small class="text-muted d-block" style="font-size:0.75rem;">{{ h.company_name }}</small>{% endif %}
                                         <span class="fw-bold">{{ h.name }}</span>
                                     </label>
                                 </td>
@@ -1035,7 +1038,7 @@ document.addEventListener('DOMContentLoaded',function(){
     var ta=document.getElementById('fax_message');
     if(ta)ta.addEventListener('input',function(){
         var lines=0,result=[];
-        this.value.split('\n').forEach(function(p){if(!p.trim()){result.push('');lines++;}else{var s=p;while(s.length>0&&lines<11){result.push(s.slice(0,43));s=s.slice(43);lines++;}}});
+        this.value.split('\n').forEach(function(p){if(!p.trim()){result.push('');lines++;}else{var s=p;while(s.length>0&&lines<11){result.push(s.slice(0,42));s=s.slice(42);lines++;}}});
         if(lines>11){var pos=this.selectionStart;this.value=result.join('\n');this.setSelectionRange(Math.min(pos,this.value.length),Math.min(pos,this.value.length));}
     });
 });
@@ -1063,14 +1066,14 @@ function _renderAllTable() {
     var rows  = '';
 
     Object.values(_selectedOffices).forEach(function(o) {
-        var nameCell   = (o.furigana ? '<small class="text-muted d-block" style="font-size:0.75rem;">'+_escHtml(o.furigana)+'</small>' : '') + '<span class="fw-bold">'+_escHtml(o.name)+'</span>';
+        var nameCell   = (o.company ? '<small class="text-muted d-block" style="font-size:0.75rem;">'+_escHtml(o.company)+'</small>' : '') + '<span class="fw-bold">'+_escHtml(o.name)+'</span>';
         var telCell    = '<i class="fas fa-phone me-1 text-muted" style="font-size:0.75rem;"></i>'+_escHtml(o.phone||'―')+'<br><i class="fas fa-fax me-1 text-muted" style="font-size:0.75rem;"></i><span class="text-muted">'+_escHtml(o.fax||'―')+'</span>';
         var personCell = '<input type="text" class="form-control form-control-sm" placeholder="ご担当者" value="'+_escHtml(o.person||'')+'" oninput="_onOfficePersonChange(\''+o.id+'\',this.value)">';
         rows += '<tr><td class="align-middle">'+_svcBadge(o.svc)+'</td><td class="align-middle">'+nameCell+'</td><td class="align-middle">'+personCell+'</td><td class="align-middle" style="font-size:0.8rem;white-space:nowrap;">'+telCell+'</td><td class="text-center align-middle"><button type="button" class="btn btn-sm btn-outline-secondary" style="padding:2px 7px;font-size:0.75rem;" onclick="removeOffice(\''+o.id+'\')" title="削除"><i class="fas fa-times"></i></button></td></tr>';
     });
 
     Object.values(_selectedMedical).forEach(function(m) {
-        var nameCell   = (m.furigana ? '<small class="text-muted d-block" style="font-size:0.75rem;">'+_escHtml(m.furigana)+'</small>' : '') + '<span class="fw-bold">'+_escHtml(m.name)+'</span>';
+        var nameCell   = (m.company ? '<small class="text-muted d-block" style="font-size:0.75rem;">'+_escHtml(m.company)+'</small>' : '') + '<span class="fw-bold">'+_escHtml(m.name)+'</span>';
         var telCell    = '<i class="fas fa-phone me-1 text-muted" style="font-size:0.75rem;"></i>'+_escHtml(m.phone||'―')+'<br><i class="fas fa-fax me-1 text-muted" style="font-size:0.75rem;"></i><span class="text-muted">'+_escHtml(m.fax||'―')+'</span>';
         var badge      = '<span class="svc-type-badge" style="background-color:#fde8e8;">医療機関</span>';
         var personCell = '<input type="text" class="form-control form-control-sm" placeholder="ご担当者" value="'+_escHtml(m.doctor||'')+'" oninput="_onMedicalDoctorChange(\''+m.id+'\',this.value)">';
@@ -1078,7 +1081,7 @@ function _renderAllTable() {
     });
 
     Object.values(_selectedHomecare).forEach(function(h) {
-        var nameCell = (h.furigana ? '<small class="text-muted d-block" style="font-size:0.75rem;">'+_escHtml(h.furigana)+'</small>' : '') + '<span class="fw-bold">'+_escHtml(h.name)+'</span>';
+        var nameCell = (h.company ? '<small class="text-muted d-block" style="font-size:0.75rem;">'+_escHtml(h.company)+'</small>' : '') + '<span class="fw-bold">'+_escHtml(h.name)+'</span>';
         var telCell  = '<i class="fas fa-phone me-1 text-muted" style="font-size:0.75rem;"></i>'+_escHtml(h.phone||'―')+'<br><i class="fas fa-fax me-1 text-muted" style="font-size:0.75rem;"></i><span class="text-muted">'+_escHtml(h.fax||'―')+'</span>';
         var badge    = '<span class="svc-type-badge" style="background-color:#dde8f8;">居宅支援</span>';
         rows += '<tr><td class="align-middle">'+badge+'</td><td class="align-middle">'+nameCell+'</td><td class="align-middle"><span class="text-muted small">―</span></td><td class="align-middle" style="font-size:0.8rem;white-space:nowrap;">'+telCell+'</td><td class="text-center align-middle"><button type="button" class="btn btn-sm btn-outline-secondary" style="padding:2px 7px;font-size:0.75rem;" onclick="removeHomecare(\''+h.id+'\')" title="削除"><i class="fas fa-times"></i></button></td></tr>';
@@ -1136,7 +1139,7 @@ function _applySvcFilterBtnStyle(btn,isActive){if(isActive){btn.style.background
 function _updateOfficeModalCount(){var n=document.querySelectorAll('.office-modal-check:checked').length;var el=document.getElementById('office_select_count');if(el)el.textContent=n>0?n+'件選択中':'';}
 function confirmOfficeSelection(){
     _selectedOffices={};
-    document.querySelectorAll('.office-modal-check:checked').forEach(function(c){var d=c.dataset;_selectedOffices[d.id]={id:d.id,name:d.name,furigana:d.furigana||'',svc:d.svc||'',phone:d.phone||'',fax:d.fax||'',persons:d.persons?d.persons.split(',').filter(Boolean):[],person:_selectedOffices[d.id]?_selectedOffices[d.id].person:''};});
+    document.querySelectorAll('.office-modal-check:checked').forEach(function(c){var d=c.dataset;_selectedOffices[d.id]={id:d.id,name:d.name,company:d.company||'',svc:d.svc||'',phone:d.phone||'',fax:d.fax||'',persons:d.persons?d.persons.split(',').filter(Boolean):[],person:_selectedOffices[d.id]?_selectedOffices[d.id].person:''};});
     _updateOfficeInputs();_renderAllTable();bootstrap.Modal.getInstance(document.getElementById('officeSelectModal')).hide();
 }
 function removeOffice(id){delete _selectedOffices[id];var c=document.getElementById('modal_office_'+id);if(c)c.checked=false;_updateOfficeInputs();_renderAllTable();}
@@ -1166,7 +1169,7 @@ function toggleMedicalRow(tr){var c=tr.querySelector('.medical-modal-check');if(
 function _updateMedicalModalCount(){var n=document.querySelectorAll('.medical-modal-check:checked').length;var el=document.getElementById('medical_select_count');if(el)el.textContent=n>0?n+'件選択中':'';}
 function confirmMedicalSelection(){
     _selectedMedical={};
-    document.querySelectorAll('.medical-modal-check:checked').forEach(function(c){var d=c.dataset;_selectedMedical[d.id]={id:d.id,name:d.name,furigana:d.furigana||'',type:d.type||'',phone:d.phone||'',fax:d.fax||'',doctors:d.doctors?d.doctors.split(',').filter(Boolean):[],doctor:_selectedMedical[d.id]?_selectedMedical[d.id].doctor:''};});
+    document.querySelectorAll('.medical-modal-check:checked').forEach(function(c){var d=c.dataset;_selectedMedical[d.id]={id:d.id,name:d.name,company:d.company||'',type:d.type||'',phone:d.phone||'',fax:d.fax||'',doctors:d.doctors?d.doctors.split(',').filter(Boolean):[],doctor:_selectedMedical[d.id]?_selectedMedical[d.id].doctor:''};});
     _updateMedicalInputs();_renderAllTable();bootstrap.Modal.getInstance(document.getElementById('medicalSelectModal')).hide();
 }
 function removeMedical(id){delete _selectedMedical[id];var c=document.getElementById('modal_medical_'+id);if(c)c.checked=false;_updateMedicalInputs();_renderAllTable();}
@@ -1192,7 +1195,7 @@ function toggleHomecareRow(tr){var c=tr.querySelector('.homecare-modal-check');i
 function _updateHomecareModalCount(){var n=document.querySelectorAll('.homecare-modal-check:checked').length;var el=document.getElementById('homecare_select_count');if(el)el.textContent=n>0?n+'件選択中':'';}
 function confirmHomecareSelection(){
     _selectedHomecare={};
-    document.querySelectorAll('.homecare-modal-check:checked').forEach(function(c){var d=c.dataset;_selectedHomecare[d.id]={id:d.id,name:d.name,furigana:d.furigana||'',phone:d.phone||'',fax:d.fax||''};});
+    document.querySelectorAll('.homecare-modal-check:checked').forEach(function(c){var d=c.dataset;_selectedHomecare[d.id]={id:d.id,name:d.name,company:d.company||'',phone:d.phone||'',fax:d.fax||''};});
     _updateHomecareInputs();_renderAllTable();bootstrap.Modal.getInstance(document.getElementById('homecareSelectModal')).hide();
 }
 function removeHomecare(id){delete _selectedHomecare[id];var c=document.getElementById('modal_homecare_'+id);if(c)c.checked=false;_updateHomecareInputs();_renderAllTable();}
@@ -1284,9 +1287,10 @@ function submitMedicalAdd() {
             tr.className = 'medical-modal-item'; tr.style.cursor = 'pointer';
             tr.dataset.name = name;
             tr.setAttribute('onclick', 'toggleMedicalRow(this)');
-            tr.innerHTML = '<td class="text-center align-middle"><input class="form-check-input medical-modal-check" type="checkbox" id="modal_medical_'+id+'" value="'+id+'" data-id="'+id+'" data-name="'+_escHtml(name)+'" data-furigana="'+_escHtml(g('medical_new_furigana'))+'" data-phone="'+_escHtml(g('medical_new_phone'))+'" data-fax="'+_escHtml(g('medical_new_fax'))+'" data-doctors="" onclick="event.stopPropagation()"></td>'
+            var medCorpName = (g('medical_new_corp')||{value:''}).value||'';
+            tr.innerHTML = '<td class="text-center align-middle"><input class="form-check-input medical-modal-check" type="checkbox" id="modal_medical_'+id+'" value="'+id+'" data-id="'+id+'" data-name="'+_escHtml(name)+'" data-company="'+_escHtml(medCorpName)+'" data-phone="'+_escHtml(g('medical_new_phone'))+'" data-fax="'+_escHtml(g('medical_new_fax'))+'" data-doctors="" onclick="event.stopPropagation()"></td>'
                 + '<td class="align-middle"><span class="svc-type-badge" style="background-color:#fde8e8;">医療機関</span></td>'
-                + '<td class="align-middle"><label for="modal_medical_'+id+'" style="cursor:pointer;margin:0;" onclick="event.stopPropagation()"><span class="fw-bold">'+_escHtml(name)+'</span></label></td>'
+                + '<td class="align-middle"><label for="modal_medical_'+id+'" style="cursor:pointer;margin:0;" onclick="event.stopPropagation()">'+(medCorpName?'<small class="text-muted d-block" style="font-size:0.75rem;">'+_escHtml(medCorpName)+'</small>':'')+'<span class="fw-bold">'+_escHtml(name)+'</span></label></td>'
                 + '<td class="align-middle" style="font-size:0.85rem;"><span class="text-muted">―</span></td>'
                 + '<td class="align-middle" style="font-size:0.85rem;white-space:nowrap;"><i class="fas fa-phone me-1 text-muted" style="font-size:0.75rem;"></i>'+(g('medical_new_phone')||'―')+'<br><i class="fas fa-fax me-1 text-muted" style="font-size:0.75rem;"></i><span class="text-muted">'+(g('medical_new_fax')||'―')+'</span></td>';
             tbody.appendChild(tr);
@@ -1364,7 +1368,7 @@ function submitOfficeAdd() {
             tr.className = 'office-modal-item'; tr.style.cursor = 'pointer';
             tr.dataset.name = name; tr.dataset.svc = svcType;
             tr.setAttribute('onclick', 'toggleOfficeRow(this)');
-            tr.innerHTML = '<td class="text-center align-middle"><input class="form-check-input office-modal-check" type="checkbox" id="modal_office_'+id+'" value="'+id+'" data-id="'+id+'" data-name="'+_escHtml(name)+'" data-furigana="'+_escHtml(g('office_new_furigana'))+'" data-svc="'+_escHtml(svcType)+'" data-phone="'+_escHtml(g('office_new_phone'))+'" data-fax="'+_escHtml(g('office_new_fax'))+'" data-persons="" onclick="event.stopPropagation()"></td>'
+            tr.innerHTML = '<td class="text-center align-middle"><input class="form-check-input office-modal-check" type="checkbox" id="modal_office_'+id+'" value="'+id+'" data-id="'+id+'" data-name="'+_escHtml(name)+'" data-company="" data-svc="'+_escHtml(svcType)+'" data-phone="'+_escHtml(g('office_new_phone'))+'" data-fax="'+_escHtml(g('office_new_fax'))+'" data-persons="" onclick="event.stopPropagation()"></td>'
                 + '<td class="align-middle"><span class="svc-type-badge" style="background-color:'+bg+';">'+_escHtml(svcLabel)+'</span></td>'
                 + '<td class="align-middle"><label for="modal_office_'+id+'" style="cursor:pointer;margin:0;" onclick="event.stopPropagation()"><span class="fw-bold">'+_escHtml(name)+'</span></label></td>'
                 + '<td class="align-middle" style="font-size:0.85rem;"><span class="text-muted">―</span></td>'
@@ -1448,9 +1452,9 @@ function submitHomecareAdd() {
             tr.style.cursor = 'pointer';
             tr.dataset.name = data.name;
             tr.setAttribute('onclick', 'toggleHomecareRow(this)');
-            tr.innerHTML = '<td class="text-center align-middle"><input class="form-check-input homecare-modal-check" type="checkbox" id="modal_homecare_'+id+'" value="'+id+'" data-id="'+id+'" data-name="'+_escHtml(data.name)+'" data-furigana="'+_escHtml(data.furigana||'')+'" data-phone="'+_escHtml(data.phone||'')+'" data-fax="'+_escHtml(data.fax||'')+'" onclick="event.stopPropagation()"></td>'
+            tr.innerHTML = '<td class="text-center align-middle"><input class="form-check-input homecare-modal-check" type="checkbox" id="modal_homecare_'+id+'" value="'+id+'" data-id="'+id+'" data-name="'+_escHtml(data.name)+'" data-company="'+_escHtml(data.company_name||'')+'" data-phone="'+_escHtml(data.phone||'')+'" data-fax="'+_escHtml(data.fax||'')+'" onclick="event.stopPropagation()"></td>'
                 + '<td class="align-middle"><span class="svc-type-badge" style="background-color:#dde8f8;">居宅支援</span></td>'
-                + '<td class="align-middle"><label for="modal_homecare_'+id+'" style="cursor:pointer;margin:0;" onclick="event.stopPropagation()">'+(data.furigana?'<small class="text-muted d-block" style="font-size:0.75rem;">'+_escHtml(data.furigana)+'</small>':'')+'<span class="fw-bold">'+_escHtml(data.name)+'</span></label></td>'
+                + '<td class="align-middle"><label for="modal_homecare_'+id+'" style="cursor:pointer;margin:0;" onclick="event.stopPropagation()">'+(data.company_name?'<small class="text-muted d-block" style="font-size:0.75rem;">'+_escHtml(data.company_name)+'</small>':'')+'<span class="fw-bold">'+_escHtml(data.name)+'</span></label></td>'
                 + '<td class="align-middle"><span class="text-muted">―</span></td>'
                 + '<td class="align-middle" style="font-size:0.85rem;white-space:nowrap;"><i class="fas fa-phone me-1 text-muted" style="font-size:0.75rem;"></i>'+(data.phone||'―')+'<br><i class="fas fa-fax me-1 text-muted" style="font-size:0.75rem;"></i><span class="text-muted">'+(data.fax||'―')+'</span></td>';
             tbody.appendChild(tr);
@@ -1590,7 +1594,7 @@ function toggleRenewalProvider() {
         ['renewal_office_furigana','renewal_office_name','renewal_office_number',
          'renewal_postal_code','renewal_office_address','renewal_office_phone',
          'renewal_office_fax','renewal_office_manager'].forEach(function(id){ if(g(id)) g(id).value=''; });
-        var clr={'disp_office_furigana':'','disp_office_number':'','disp_office_name':'',
+        var clr={'disp_office_company':'','disp_office_number':'','disp_office_name':'',
                  'disp_office_postal':'','disp_office_address':'',
                  'disp_office_phone':'―','disp_office_fax':'―','disp_office_manager':'―'};
         Object.keys(clr).forEach(function(id){if(g(id))g(id).textContent=clr[id];});
@@ -1610,7 +1614,7 @@ function toggleRenewalProvider() {
             'renewal_office_manager':  _OFFICE_MANAGER,
         };
         Object.keys(d).forEach(function(id){if(g(id)) g(id).value=d[id];});
-        if(g('disp_office_furigana')) g('disp_office_furigana').textContent=d['renewal_office_furigana'];
+        if(g('disp_office_company')) g('disp_office_company').textContent=_OFFICE_COMPANY;
         if(g('disp_office_name'))     g('disp_office_name').textContent=d['renewal_office_name'];
         if(g('disp_office_number'))   g('disp_office_number').textContent=d['renewal_office_number'];
         if(g('disp_office_postal'))   g('disp_office_postal').textContent=d['renewal_postal_code']?'〒'+d['renewal_postal_code']:'';
@@ -1716,7 +1720,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 sv('renewal_office_address',address); sv('renewal_office_phone',phone);
                 sv('renewal_office_fax',fax); sv('renewal_office_manager',managerName);
                 var st=function(id,v){var e=g(id);if(e)e.textContent=v||'';};
-                st('disp_office_name',name); st('disp_office_furigana',furigana);
+                st('disp_office_name',name); st('disp_office_company',companyName);
                 st('disp_office_number',officeNumber);
                 st('disp_office_postal',postalCode?'〒'+postalCode:'');
                 st('disp_office_address',address);

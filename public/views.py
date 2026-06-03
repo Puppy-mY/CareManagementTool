@@ -24,11 +24,11 @@ def fee_simulation(request):
 def fax_cover_sheet(request):
     if request.method == 'POST':
         class _MockOffice:
-            def __init__(self, name, phone, fax):
+            def __init__(self, name, company_name, postal_code, address, phone, fax):
                 self.name = name
-                self.company_name = ''
-                self.postal_code = ''
-                self.address = ''
+                self.company_name = company_name
+                self.postal_code = postal_code
+                self.address = address
                 self.phone = phone
                 self.fax = fax
 
@@ -38,13 +38,19 @@ def fax_cover_sheet(request):
             office_name  = sender_name
             office_phone = request.POST.get('office_phone', '').strip()
             office_fax   = request.POST.get('relation', '').strip()
+            office_company = ''
+            office_postal  = ''
+            office_address = ''
         else:
-            office_name  = request.POST.get('office_name', '').strip()
-            office_phone = request.POST.get('office_phone', '').strip()
-            office_fax   = request.POST.get('office_fax', '').strip()
-            sender_name  = request.POST.get('staff_name_office', '').strip()
+            office_name    = request.POST.get('office_name', '').strip()
+            office_phone   = request.POST.get('office_phone', '').strip()
+            office_fax     = request.POST.get('office_fax', '').strip()
+            sender_name    = request.POST.get('staff_name_office', '').strip()
+            office_company = request.POST.get('office_company_name', '').strip()
+            office_postal  = request.POST.get('office_postal_code', '').strip()
+            office_address = request.POST.get('office_address', '').strip()
 
-        mock_office = _MockOffice(office_name, office_phone, office_fax) if office_name else None
+        mock_office = _MockOffice(office_name, office_company, office_postal, office_address, office_phone, office_fax) if office_name else None
         content = _generate_fax_cover_sheet_standalone_bytes(request, mock_office, sender_name)
         dl_name = 'FAX送付状.xlsx'
         response = HttpResponse(
